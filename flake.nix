@@ -12,7 +12,7 @@
     system = "x86_64-linux";
     hmCli = home-manager.packages.${system}.home-manager;
   in {
-    nixosConfigurations.nixos = nixpkgs.lib.nixpkgs.nixosSystem {
+    nixosConfigurations.nixos = nixpkgs.lib.nixosSystem {
       inherit system;
       modules = [
         ./configuration.nix
@@ -26,7 +26,7 @@
 
         {
           home-manager.useGlobalPkgs = true;
-          home-manager.useUserPackagers = true;
+          home-manager.useUserPackages = true;
           home-manager.users.tener = import ./home.nix;
         }
       ];
