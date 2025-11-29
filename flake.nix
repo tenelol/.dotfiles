@@ -27,7 +27,7 @@
         {
           home-manager.useGlobalPkgs = true;
           home-manager.useUserPackages = true;
-          home-manager.users.tener = import ./home.nix;
+          home-manager.users.tener = import ./home/home.nix;
         }
       ];
     };
