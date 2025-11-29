@@ -28,7 +28,14 @@
   # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
 
   # Enable networking
-  networking.networkmanager.enable = true;
+  networking.networkmanager.enable = false;
+  networking.wireless.iwd.enable = true;
+  networking.wireless.iwd.settings = {
+    General = {
+      EnableNetworkConfiguration = true;
+      };
+    Settings = {AutoConnect = true; };
+  };
 
   # Set your time zone.
   time.timeZone = "Asia/Tokyo";
@@ -48,17 +55,61 @@
     LC_TIME = "ja_JP.UTF-8";
   };
 
+  #IME
+
+  i18n.inputMethod = {
+    enabled = "fcitx5";
+    fcitx5 = {
+      waylandFrontend = true;
+      addons = with pkgs; [
+        fcitx5-skk
+      ];
+    };
+  };
+
+
+  services.xserver.desktopManager.runXdgAutostartIfNone = true;
+
+
+
+  environment.variables = {
+    GTK_IM_MODULE = "fcitx";
+    QT_IM_MODULE = "fcitx";
+    XMODIFIERS = "@im=fcitx";
+  };
+  
+  # Fonts
+  fonts = {
+    enableDefaultPackages = true;
+    packages = with pkgs; [
+      noto-fonts-cjk-sans
+      noto-fonts-color-emoji
+      jetbrains-mono
+      fira-code
+      hack-font
+      nerd-fonts.jetbrains-mono
+      nerd-fonts.fira-code
+    ];
+  };
+
   # Configure keymap in X11
   services.xserver.xkb = {
     layout = "us";
     variant = "";
   };
 
+  # GUI
+  programs.hyprland.enable = true;
+  xdg.portal = {
+    enable = true;
+    extraPortals = with pkgs; [ xdg-desktop-portal-hyprland ];
+  };
+
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.tener = {
     isNormalUser = true;
     description = "tener";
-    extraGroups = [ "networkmanager" "wheel" ];
+    extraGroups = [ "wheel" "network" ];
     packages = with pkgs; [];
   };
 
@@ -69,9 +120,7 @@
   # $ nix search wget
   environment.systemPackages = with pkgs; [
      vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
-     wget
-     git 
-     iwd
+     wget git iwd gcc cl zig clang
   ];
 
   # Some programs need SUID wrappers, can be configured further or are
