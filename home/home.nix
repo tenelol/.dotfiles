@@ -19,7 +19,7 @@
     ];
 
     import = [
-      ./modules/shell/fish.nix
+   #   ./modules/shell/fish.nix
       ./modules/git.nix
     ];
 
