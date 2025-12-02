@@ -7,7 +7,9 @@
     xdg.enable = true;
 
     home.packages = with pkgs; [
-      hyprland kitty eww gh hyprpaper waybar firefox google-chrome wofi floorp-bin grim slurp wl-clipboard eza bat tre-command
+      hyprland kitty eww gh hyprpaper waybar firefox
+      google-chrome wofi floorp-bin grim slurp
+      wl-clipboard eza bat tre-command imv
     ];
 
     imports = [
