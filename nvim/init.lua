@@ -15,24 +15,5 @@ vim.opt.rtp:prepend(lazypath)
 require("vim-options")
 require("lazy").setup("plugins")
 
-
-require("mason").setup()
-
-require("mason-lspconfig").setup({
-  ensure_installed = {
-    "lua_ls",
-    "basedpyright",
-    "gopls",
-    "nil_ls",
-  },
-  automatic_installation = true,
-})
-
-local servers = { "lua_ls", "basedpyright", "gopls", "nil_ls" }
-
-for _, server in ipairs(servers) do
-  vim.lsp.enable(server)
-end
-
 vim.diagnostic.config({})
 
