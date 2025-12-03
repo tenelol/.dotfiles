@@ -17,3 +17,7 @@ vim.keymap.set("t", "<C-k>", "<Cmd>wincmd k<CR>", { noremap = true, silent = tru
 vim.keymap.set("t", "<C-l>", "<Cmd>wincmd l<CR>", { noremap = true, silent = true })
 
 vim.opt.clipboard = "unnamedplus"
+
+vim.keymap.set('n', '<C-Tab>', '<Cmd>BufferNext<CR>')
+vim.keymap.set('n', '<C-S-Tab>', '<Cmd>BufferPrevious<CR>')
+
