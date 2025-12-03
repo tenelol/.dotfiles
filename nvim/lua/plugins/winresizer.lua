@@ -1,0 +1,4 @@
+{
+  "simeji/winresizer",
+}
+
