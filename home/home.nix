@@ -15,6 +15,7 @@
     imports = [
       ./modules/shell/fish.nix
       ./modules/git.nix
+      ./modules/nvim.nix
     ];
 
 
