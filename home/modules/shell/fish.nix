@@ -9,6 +9,7 @@
     '';
     shellAliases = {
       ls = "eza --icons";
+      deploy-mywebfw = "ssh -t homeserver '~/bin/deploy-mywebfw.sh'";
     };
   };
   
