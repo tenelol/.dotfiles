@@ -9,8 +9,6 @@
     wl-clipboard
   ];
 
-  xdg.enable = true;
-
   xdg.configFile."hypr/hyprland.conf".source = 
     ../../hypr/hyprland.conf;
 
