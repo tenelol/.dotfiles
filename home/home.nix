@@ -6,7 +6,7 @@
     home.enableNixpkgsReleaseCheck = false;
 
     home.packages = with pkgs; [
-      kitty eww gh waybar
+      kitty gh waybar parted
       wofi floorp-bin sqlitebrowser
       eza bat tre-command imv ripgrep
     ];
