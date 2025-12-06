@@ -16,6 +16,7 @@
       ./modules/git.nix
       ./modules/nvim.nix
       ./modules/hypr.nix
+      ./modules/waybar.nix
     ];
 
 
