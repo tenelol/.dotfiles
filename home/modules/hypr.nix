@@ -1,13 +1,15 @@
 { config, pkgs, ... }:
 
 {
-  programs.hyprland = {
-    enable = true;
+  home.packages = with pkgs; [
+    hyprland brightnessctl
+    hyprpaper
+    grim
+    slurp
+    wl-clipboard
+  ];
 
-    extraPackages = with pkgs; [
-      hyprpaper
-    ];
-  };
+  xdg.enable = true;
 
   xdg.configFile."hypr/hyprland.conf".source = 
     ../../hypr/hyprland.conf;

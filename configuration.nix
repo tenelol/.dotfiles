@@ -38,6 +38,9 @@
     Settings = {AutoConnect = true; };
   };
 
+  # talesclae
+  services.tailscale.enable = true;
+
   # Set your time zone.
   time.timeZone = "Asia/Tokyo";
 
@@ -131,7 +134,7 @@
   environment.systemPackages = with pkgs; [
      vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
      wget git iwd gcc cl zig clang neovim nodejs
-     nodePackages.npm go cargo python3
+     nodePackages.npm go cargo python3 tailscale
   ];
 
 
