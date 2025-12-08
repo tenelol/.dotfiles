@@ -5,7 +5,7 @@
     enable = true;
     
     interactiveShellInit = ''
-      set fish_greeting "こにちは"
+      set fish_greeting "🥳Hollow World!🥳"
     '';
     shellAliases = {
       ls = "eza --icons";
