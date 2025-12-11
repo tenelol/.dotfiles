@@ -77,17 +77,6 @@
   };
 
   ########################
-  # Incus サービス用 PATH
-  ########################
-  systemd.services.incus = {
-    path = [
-      pkgs.coreutils
-      pkgs.gnutar
-      pkgs.zstd
-    ];
-  };
-
-  ########################
   # root の subuid / subgid
   ########################
   users.users.root = {
