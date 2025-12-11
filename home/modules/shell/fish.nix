@@ -4,9 +4,14 @@
   programs.fish = {
     enable = true;
     
-    interactiveShellInit = ''
-      set fish_greeting "🥳Hollow World!🥳"
-    '';
+  interactiveShellInit = ''
+    set -g greetings "🥳Hollow World!🥳" "こにちは" "酒!暴力!Linux!"
+    set -l count (count $greetings)
+    set -l r (random)
+    set -l idx (math "$r % $count + 1")
+    set fish_greeting $greetings[$idx]
+'';
+
     shellAliases = {
       ls = "eza --icons";
       deploy-mywebfw = "ssh -t homeserver '~/bin/deploy-mywebfw.sh'";
