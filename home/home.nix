@@ -9,6 +9,7 @@
       kitty gh waybar parted
       wofi floorp-bin sqlitebrowser
       eza bat tre-command imv ripgrep
+      incus zstd
     ];
 
     imports = [
