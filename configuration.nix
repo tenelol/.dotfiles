@@ -112,6 +112,16 @@
     extraPortals = with pkgs; [ xdg-desktop-portal-hyprland ];
   };
 
+  
+  services.displayManager.sddm = {
+    enable = true;
+    wayland.enable = true;
+  };
+
+  programs.niri.enable = true;
+
+
+
   # Zsh
   # environment.shells = [ pkgs.zsh ];
   # programs.zsh.enable = true;
