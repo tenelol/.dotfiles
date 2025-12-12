@@ -8,7 +8,7 @@
     home.packages = with pkgs; [
       kitty gh waybar parted
       wofi floorp-bin sqlitebrowser
-      eza bat tre-command imv ripgrep
+      eza bat fuzzel tre-command imv ripgrep
       incus zstd
     ];
 
@@ -19,6 +19,7 @@
       ./modules/nvim.nix
       ./modules/hypr.nix
       ./modules/waybar.nix
+      ./modules/niri.nix
     ];
 
 
