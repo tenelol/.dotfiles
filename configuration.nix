@@ -97,6 +97,8 @@
       hack-font
       nerd-fonts.jetbrains-mono
       nerd-fonts.fira-code
+      ttf-fira-sans
+      ttf-firacode-nerd
     ];
   };
 
