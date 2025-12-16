@@ -19,8 +19,8 @@
       ./modules/nvim.nix
       ./modules/hypr.nix
       ./modules/waybar.nix
-      ./modules/niri.nix
+      ./modules/niri.nix       
     ];
+ 
 
-
-  }
+ }
