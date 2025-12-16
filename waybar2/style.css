@@ -1,17 +1,10 @@
-* {
-  border: none;
-  border-radius: 14px;
-  font-family: "Fira Sans", "FiraCode Nerd Font", monospace;
-  font-size: 12px;
-  min-height: 0;
-}
-
 window#waybar {
-  background: rgba(30, 18, 14, 0.85);
+  background: rgba(30, 18, 14, 0.88);
   color: #f2c4a5;
+  border-radius: 0;
 }
 
-/* 共通カード */
+/* モジュールはカード感を維持 */
 #workspaces,
 #clock,
 #tray,
@@ -20,35 +13,7 @@ window#waybar {
 #battery {
   background: rgba(70, 40, 30, 0.6);
   padding: 6px 14px;
-  margin: 6px 4px;
+  margin: 6px;
   border-radius: 12px;
-}
-
-/* ワークスペース */
-#workspaces button {
-  padding: 4px 8px;
-  margin: 0 2px;
-  color: #cfa18a;
-  background: transparent;
-}
-
-#workspaces button.active {
-  background: rgba(200, 120, 80, 0.8);
-  color: #1a0f0a;
-}
-
-#workspaces button:hover {
-  background: rgba(160, 90, 60, 0.6);
-}
-
-/* 中央の時計は主役 */
-#clock {
-  font-weight: 600;
-  letter-spacing: 1px;
-}
-
-/* トレイ */
-#tray {
-  padding-right: 10px;
 }
 
