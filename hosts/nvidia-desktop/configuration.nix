@@ -66,7 +66,7 @@
       ids = ["*"];
       settings = {
         main = {
-	  capslock = "control";
+	  capslock = "layer(control)";
 	  space = "overload(shift, space)";
 	};
       };
