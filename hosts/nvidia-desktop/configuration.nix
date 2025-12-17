@@ -59,6 +59,20 @@
     LC_TIME = "ja_JP.UTF-8";
   };
 
+    # keyd
+  services.keyd = {
+    enable = true;
+    keyboards.default = {
+      ids = ["*"];
+      settings = {
+        main = {
+	  capslock = "control";
+	  space = "overload(shift, space)";
+	};
+      };
+    };
+  };
+
   #IME
 
   i18n.inputMethod = {
