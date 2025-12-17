@@ -1,6 +1,6 @@
 { config, pkgs, ... }:
 {
-  xdg.configFile."kitty/kitty.conf".source = ../../kitty/kitty.conf;
+  xdg.configFile."kitty/kitty.conf".source = ../../config/kitty/kitty.conf;
 
   home.packages = with pkgs; [
     kitty
