@@ -158,7 +158,7 @@
   environment.systemPackages = with pkgs; [
      vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
      wget git iwd gcc cl zig clang neovim nodejs
-     nodePackages.npm go cargo python3 tailscale
+     nodePackages.npm go cargo python3 ghostty tailscale
   ];
 
 
