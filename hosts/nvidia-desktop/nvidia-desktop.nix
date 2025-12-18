@@ -4,8 +4,10 @@ let
 in
 {
   config = lib.mkIf isDesktop {
-    # ここにデスクトップだけの差分を書く
-    home.packages = with pkgs; [ /* ... */ ];
+    xdg.configFile."niri/config.kdl".text = ''
+      Mod+T hotkey-overlay-title="Open a Terminal: ghostty" { spawn "ghostty"; }
+    '';
+    home.packages = with pkgs; [ ghostty ];
   };
 }
 
