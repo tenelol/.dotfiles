@@ -20,6 +20,9 @@
     ./modules/hypr.nix
     ./modules/waybar.nix
     ./modules/niri.nix
+
+    ../hosts/nixos/nixos.nix
+    ../hosts/nvidia-desktop/nvidia-desktop.nix
   ];
 }
 
