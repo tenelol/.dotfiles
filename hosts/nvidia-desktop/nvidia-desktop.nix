@@ -1,6 +1,6 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, osConfig, ... }:
 let
-  isDesktop = (config.networking.hostName or "") == "nvidia-desktop";
+  isDesktop = (osConfig.networking.hostName or "") == "nvidia-desktop";
 in
 {
   config = lib.mkIf isDesktop {
