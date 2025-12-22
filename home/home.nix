@@ -6,10 +6,9 @@
   home.enableNixpkgsReleaseCheck = false;
 
   home.packages = with pkgs; [
-    kitty gh waybar parted
+    gh waybar parted
     wofi floorp-bin sqlitebrowser
     eza bat fuzzel tre-command imv ripgrep
-    incus zstd
   ];
 
   imports = [
