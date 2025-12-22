@@ -14,7 +14,7 @@
 
     shellAliases = {
       ls = "eza --icons";
-      deploy-mywebfw = "ssh -t homeserver '~/bin/deploy-mywebfw.sh'";
+      deploy-portfolio = "ssh -t homeserver '~/bin/deploy-portfolio.sh'";
     };
   };
   
