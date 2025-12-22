@@ -4,7 +4,7 @@ let
 in
 {
   config = lib.mkIf isLaptop {
-    # ここにラップトップだけの差分を書く
+    home.packages = with pkgs; [ kitty incus zstd ];
   };
 }
 
