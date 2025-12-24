@@ -34,7 +34,7 @@
     nixosConfigurations = {
       nixos = mkHost ./hosts/nixos/configuration.nix;
       nvidia-desktop = mkHost ./hosts/nvidia-desktop/configuration.nix;
+      nixos-server = mkHost ./hosts/nixos-server/configuration.nix;
     };
   };
 }
-
