@@ -4,6 +4,7 @@
   home.homeDirectory = "/home/tener";
   home.stateVersion = "25.05";
   home.enableNixpkgsReleaseCheck = false;
+  home.sessionPath = [ "$HOME/.npm-global/bin" ];
 
   home.packages = with pkgs; [
     gh waybar parted
@@ -24,4 +25,3 @@
     ../hosts/nvidia-desktop/nvidia-desktop.nix
   ];
 }
-
