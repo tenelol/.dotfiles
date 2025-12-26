@@ -4,7 +4,7 @@
   programs.git.settings = {
       enable = true;
       userName = "tenelol";
-      userEmail = "matsuda319@icloud.com";
+      userEmail = "tenelol@tenelol.dev";
       extraConfig.core.editor = "nvim";
     };
 
