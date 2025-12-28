@@ -4,7 +4,10 @@
   home.homeDirectory = "/home/tener";
   home.stateVersion = "25.05";
   home.enableNixpkgsReleaseCheck = false;
-  home.sessionPath = [ "/home/tener/.npm-global/bin" ];
+  home.sessionPath = [
+    "/home/tener/.npm-global/bin"
+    "/home/tener/.local/bin"
+  ];
 
 
 
@@ -12,7 +15,13 @@
     gh waybar parted
     wofi floorp-bin sqlitebrowser
     eza bat fuzzel tre-command imv ripgrep
+    unicode-emoji wtype
   ];
+
+  home.file.".local/bin/emoji-fuzzel" = {
+    source = ../config/scripts/emoji-fuzzel;
+    executable = true;
+  };
 
   imports = [
     ./modules/shell/fish.nix

@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+emoji_file=""
+for candidate in \
+  "${UNICODE_EMOJI_FILE:-}" \
+  "/run/current-system/sw/share/unicode/emoji/emoji-test.txt" \
+  "/etc/profiles/per-user/$USER/share/unicode/emoji/emoji-test.txt" \
+  "$HOME/.nix-profile/share/unicode/emoji/emoji-test.txt"
+do
+  if [[ -n "$candidate" && -f "$candidate" ]]; then
+    emoji_file="$candidate"
+    break
+  fi
+done
+
+if [[ -z "$emoji_file" ]]; then
+  echo "emoji-fuzzel: emoji-test.txt not found" >&2
+  exit 1
+fi
+
+selection="$(
+  awk -F '# ' '/; fully-qualified/ {
+    split($2, parts, " ");
+    emoji = parts[1];
+    desc = "";
+    for (i = 2; i <= length(parts); i++) {
+      desc = desc (desc ? " " : "") parts[i];
+    }
+    print emoji " " desc;
+  }' "$emoji_file" | fuzzel --dmenu
+)"
+
+if [[ -z "$selection" ]]; then
+  exit 0
+fi
+
+emoji="${selection%% *}"
+wtype -- "$emoji"
