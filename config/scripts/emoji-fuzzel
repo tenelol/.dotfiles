@@ -1,18 +1,36 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+PATH="/run/current-system/sw/bin:/etc/profiles/per-user/$USER/bin:/nix/var/nix/profiles/per-user/$USER/profile/bin:$HOME/.nix-profile/bin:$HOME/.local/state/nix/profiles/profile/bin:$HOME/.local/bin:$PATH"
+
 emoji_file=""
 for candidate in \
   "${UNICODE_EMOJI_FILE:-}" \
   "/run/current-system/sw/share/unicode/emoji/emoji-test.txt" \
   "/etc/profiles/per-user/$USER/share/unicode/emoji/emoji-test.txt" \
-  "$HOME/.nix-profile/share/unicode/emoji/emoji-test.txt"
+  "/nix/var/nix/profiles/per-user/$USER/profile/share/unicode/emoji/emoji-test.txt" \
+  "$HOME/.nix-profile/share/unicode/emoji/emoji-test.txt" \
+  "$HOME/.local/state/nix/profiles/profile/share/unicode/emoji/emoji-test.txt"
 do
   if [[ -n "$candidate" && -f "$candidate" ]]; then
     emoji_file="$candidate"
     break
   fi
 done
+
+if [[ -z "$emoji_file" ]]; then
+  shopt -s nullglob
+  for candidate in \
+    /nix/store/*-unicode-emoji-*/share/unicode/emoji/emoji-test.txt \
+    /nix/store/*-unicode-emoji-test-*/share/unicode/emoji/emoji-test.txt
+  do
+    if [[ -f "$candidate" ]]; then
+      emoji_file="$candidate"
+      break
+    fi
+  done
+  shopt -u nullglob
+fi
 
 if [[ -z "$emoji_file" ]]; then
   echo "emoji-fuzzel: emoji-test.txt not found" >&2
