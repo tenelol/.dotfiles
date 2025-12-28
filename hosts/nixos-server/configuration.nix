@@ -9,7 +9,7 @@
     ./hardware-configuration.nix
   ];
 
-  # Bootloader
+  # Bootloader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
@@ -24,6 +24,7 @@
     General = { EnableNetworkConfiguration = true; };
     Settings = { AutoConnect = true; };
   };
+  networking.firewall.allowedTCPPorts = [ 80 8080 ];
 
   # Locale / Timezone
   time.timeZone = "Asia/Tokyo";
@@ -51,32 +52,53 @@
     isNormalUser = true;
     description = "tener";
     extraGroups = [ "video" "input" "seat" "audio" "network" "wheel" ];
-    packages = with pkgs; [ ];              # ← ここで zsh を既定にする
+    packages = with pkgs; [ ];
   };
 
-  # zsh をログインシェルとして許可
- # environment.shells = [ pkgs.zsh ];
-#programs.zsh.enable = true;
+  # Optional shell settings
+  # environment.shells = [ pkgs.zsh ];
+  # programs.zsh.enable = true;
 
-  environment.variables.EDITOR = "nvim";
-  security.sudo.extraConfig = ''Defaults env_keep += "EDITOR VISUAL"'';
+  # Environment
+  environment.variables = {
+    EDITOR = "nvim";
+    GTK_IM_MODULE = "fcitx";
+    QT_IM_MODULE = "fcitx";
+    XMODIFIERS = "@im=fcitx";
+  };
 
-
-  # Auto login (必要なら残す)
+  # Auto login
   services.getty.autologinUser = "tener";
   services.seatd.enable = true;
 
-  # Unfree 許可
+  # Unfree
   nixpkgs.config.allowUnfree = true;
 
   # Packages
   environment.systemPackages = with pkgs; [
-    neovim wget hyprland kitty git gcc gnumake pkg-config cmake ripgrep nodejs python3 iwd tofi hyprpaper go cloudflared
-    gh tailscale
+    neovim
+    wget
+    hyprland
+    kitty
+    git
+    gcc
+    gnumake
+    pkg-config
+    cmake
+    ripgrep
+    nodejs
+    python3
+    iwd
+    tofi
+    hyprpaper
+    go
+    cloudflared
+    gh
+    tailscale
   ];
 
   # PipeWire / Audio
-  services.pulseaudio.enable = false;  # 旧式停止
+  services.pulseaudio.enable = false;
   security.rtkit.enable = true;
   services.pipewire = {
     enable = true;
@@ -87,9 +109,9 @@
   };
 
   # Portals (Hyprland)
-#  programs.hyprland.enable = true;
-#  xdg.portal.enable = true;
-#  xdg.portal.extraPortals = [ pkgs.xdg-desktop-portal-hyprland ];
+  # programs.hyprland.enable = true;
+  # xdg.portal.enable = true;
+  # xdg.portal.extraPortals = [ pkgs.xdg-desktop-portal-hyprland ];
 
   # IME
   i18n.inputMethod = {
@@ -99,11 +121,6 @@
       fcitx5-skk
       qt6Packages.fcitx5-configtool
     ];
-  };
-  environment.variables = {
-    GTK_IM_MODULE = "fcitx";
-    QT_IM_MODULE  = "fcitx";
-    XMODIFIERS    = "@im=fcitx";
   };
 
   # Fonts
@@ -122,27 +139,60 @@
 
   # nix settings
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
-  #systemd Server
-services.nginx = {
-  enable = true;
 
-  virtualHosts."local-portfolio" = {
-    # ローカル用の適当な名前でOK
-    listen = [
-      { addr = "0.0.0.0"; port = 80; }
-    ];
+  # Security
+  security.sudo.extraConfig = ''Defaults env_keep += "EDITOR VISUAL"'';
 
-    locations."/" = {
-      proxyPass = "http://127.0.0.1:8080";
+  # Services
+  services.nginx = {
+    enable = true;
+    virtualHosts."local-portfolio" = {
+      listen = [
+        { addr = "0.0.0.0"; port = 80; }
+      ];
+      locations."/" = {
+        proxyPass = "http://127.0.0.1:8080";
+      };
     };
   };
-};
 
+  services.cloudflared = {
+    enable = true;
+    tunnels."mywebfw" = {
+      credentialsFile = "/var/lib/cloudflared/mywebfw.json";
+      ingress = {
+        "tenelol.dev" = "http://localhost:8080";
+      };
+      default = "http_status:404";
+    };
+  };
 
+  services.tailscale.enable = true;
 
-# ファイアウォールで 8080 を開ける
-networking.firewall.allowedTCPPorts = [ 80 8080 ];
+  services.openssh = {
+    enable = true;
+    openFirewall = true;
+    settings = {
+      PasswordAuthentication = true;
+      PermitRootLogin = "no";
+    };
+  };
 
+  # suspend
+  services.logind.settings = {
+    Login = {
+      HandleLidSwitch = "ignore";
+      HandleLidSwitchDocked = "ignore";
+      HandleLidSwitchExternalPower = "ignore";
+    };
+  };
+
+  systemd.sleep.extraConfig = ''
+    AllowSuspend=no
+    AllowHibernation=no
+    AllowHybridSleep=no
+    AllowSuspendThenHibernate=no
+  '';
 
   # State version
   system.stateVersion = "25.05";
@@ -157,64 +207,16 @@ networking.firewall.allowedTCPPorts = [ 80 8080 ];
       libva
     ];
   };
-systemd.services.portfolio = {
-  description = "Portfolio Server";
-  after = [ "network.target" ];
-  wantedBy = [ "multi-user.target" ];
 
-  serviceConfig = {
-    ExecStart = "/home/tener/projects/portfolio/result/bin/server";
-    Restart = "always";
-    WorkingDirectory = "/home/tener/projects/portfolio";
-  };
-};
-
-services.cloudflared = {
-  enable = true;
-
-  tunnels."mywebfw" = {
-    # トンネル作成時にもらった JSON
-    credentialsFile = "/var/lib/cloudflared/mywebfw.json";
-
-    # tenelol.dev に来たリクエストを localhost:8080 に流す
-    ingress = {
-      "tenelol.dev" = "http://localhost:8080";
-    };
-
-    # どのルールにもマッチしなかったとき
-    default = "http_status:404";
-  };
-};
-
-# suspend
-services.logind.settings = {
-  Login = {
-    HandleLidSwitch = "ignore";
-    HandleLidSwitchDocked = "ignore";
-    HandleLidSwitchExternalPower = "ignore";
-  };
-};
-
-systemd.sleep.extraConfig = ''
-  AllowSuspend=no
-  AllowHibernation=no
-  AllowHybridSleep=no
-  AllowSuspendThenHibernate=no
-'';
-
-
-#tailscale
-services.tailscale.enable = true;
-
-#openssh
-services.openssh = {
-  enable = true;
-  openFirewall = true;
-  settings = {
-    PasswordAuthentication = true;
-    PermitRootLogin = "no";
+  # systemd Server
+  systemd.services.portfolio = {
+    description = "Portfolio Server";
+    after = [ "network.target" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      ExecStart = "/home/tener/projects/portfolio/result/bin/server";
+      Restart = "always";
+      WorkingDirectory = "/home/tener/projects/portfolio";
     };
   };
-
-
 }
