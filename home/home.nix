@@ -30,6 +30,7 @@
     ./modules/nvim.nix
     ./modules/hypr.nix
     ./modules/waybar.nix
+    ./modules/fuzzel.nix
     ./modules/niri.nix
 
     ../hosts/nixos/nixos.nix
