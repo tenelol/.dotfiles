@@ -10,6 +10,7 @@
       ./hardware-configuration.nix
       ./incus.nix
       ./incus-zstd.nix
+      ./virtualbox.nix
     ];
 
 
