@@ -32,6 +32,7 @@
     ./modules/waybar.nix
     ./modules/fuzzel.nix
     ./modules/niri.nix
+    ./modules/gtkgreet.nix
 
     ../hosts/nixos/nixos.nix
     ../hosts/nvidia-desktop/nvidia-desktop.nix
