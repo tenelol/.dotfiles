@@ -5,8 +5,10 @@
     settings = {
       default_session = {
         user = "greeter";
-        command = "${pkgs.tuigreet}/bin/tuigreet --cmd ${pkgs.niri}/bin/niri-session --time --remember --asterisks";
+        command = "${pkgs.gtkgreet}/bin/gtkgreet -l --cmd ${pkgs.niri}/bin/niri-session --css /etc/greetd/gtkgreet.css";
       };
     };
   };
+
+  environment.etc."greetd/gtkgreet.css".source = ./gtkgreet/style.css;
 }
