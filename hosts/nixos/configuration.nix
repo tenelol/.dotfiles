@@ -11,7 +11,6 @@
       ./incus.nix
       ./incus-zstd.nix
       ./virtualbox.nix
-      ../../config/greetd.nix
     ];
 
 
@@ -142,6 +141,11 @@
   };
 
   
+  services.displayManager.sddm = {
+    enable = true;
+    wayland.enable = true;
+  };
+
   programs.niri.enable = true;
 
 
