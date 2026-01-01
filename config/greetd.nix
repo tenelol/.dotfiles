@@ -4,9 +4,11 @@
     enable = true;
     settings = {
       default_session = {
-        user = "tener";
-        command = "${pkgs.gtkgreet}/bin/gtkgreet -l --cmd ${pkgs.niri}/bin/niri --css /home/tener/.config/gtkgreet/style.css";
+        user = "greeter";
+        command = "${pkgs.gtkgreet}/bin/gtkgreet -l --cmd ${pkgs.niri}/bin/niri-session --css /etc/greetd/gtkgreet.css";
       };
     };
   };
+
+  environment.etc."greetd/gtkgreet.css".source = ./gtkgreet/style.css;
 }
