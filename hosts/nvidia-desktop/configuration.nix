@@ -8,6 +8,7 @@
   imports =
     [ # Include the results of the hardware scan.
       ./hardware-configuration.nix
+      ../../config/greetd.nix
     ];
 
   # Audio settings
@@ -136,11 +137,6 @@
   };
 
   
-  services.displayManager.sddm = {
-    enable = true;
-    wayland.enable = true;
-  };
-
   programs.niri.enable = true;
 
 
