@@ -5,8 +5,10 @@
     settings = {
       default_session = {
         user = "greeter";
-        command = "${pkgs.tuigreet}/bin/tuigreet --cmd ${pkgs.niri}/bin/niri --time --remember --asterisks";
+        command = "${pkgs.regreet}/bin/regreet --style /etc/greetd/regreet.css";
       };
     };
   };
+
+  environment.etc."greetd/regreet.css".source = ./regreet/style.css;
 }
