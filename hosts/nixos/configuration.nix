@@ -2,7 +2,7 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
-{ config, pkgs, ... }:
+{ config, pkgs, lib, ... }:
 
 {
   imports =
@@ -12,7 +12,6 @@
       ./incus-zstd.nix
       ./virtualbox.nix
     ];
-
 
   # Audio settings
   services.pulseaudio.enable = false;
@@ -26,10 +25,16 @@
   };
 
   # Nix settings
-  nix.settings.experimental-features = [ "nix-command" "flakes"];
+  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  nix.gc = {
+    automatic = true;
+    dates = "weekly";
+    options = "--delete-older-than 7d";
+  };
 
   # Bootloader.
   boot.loader.systemd-boot.enable = true;
+  boot.loader.systemd-boot.configurationLimit = 5;
   boot.loader.efi.canTouchEfiVariables = true;
 
   # Use latest kernel.
@@ -49,11 +54,11 @@
   networking.wireless.iwd.settings = {
     General = {
       EnableNetworkConfiguration = true;
-      };
-    Settings = {AutoConnect = true; };
+    };
+    Settings = { AutoConnect = true; };
   };
 
-  # talesclae
+  # tailscale
   services.tailscale.enable = true;
 
   # Set your time zone.
@@ -74,22 +79,21 @@
     LC_TIME = "ja_JP.UTF-8";
   };
 
-    # keyd
+  # keyd
   services.keyd = {
     enable = true;
     keyboards.default = {
       ids = ["*"];
       settings = {
         main = {
-	  capslock = "layer(control)";
-	  space = "overload(shift, space)";
-	};
+          capslock = "layer(control)";
+          space = "overload(shift, space)";
+        };
       };
     };
   };
 
-  #IME
-
+  # IME
   i18n.inputMethod = {
     enable = true;
     type = "fcitx5";
@@ -102,17 +106,14 @@
     };
   };
 
-
   services.xserver.desktopManager.runXdgAutostartIfNone = true;
-
-
 
   environment.variables = {
     GTK_IM_MODULE = "fcitx";
     QT_IM_MODULE = "fcitx";
     XMODIFIERS = "@im=fcitx";
   };
-  
+
   # Fonts
   fonts = {
     enableDefaultPackages = true;
@@ -130,20 +131,27 @@
   # Configure keymap in X11
   services.xserver.xkb = { layout = "us"; variant = ""; };
 
-
-
   # GUI
   programs.hyprland.enable = true;
   programs.xwayland.enable = true;
   xdg.portal = {
     enable = true;
-    extraPortals = with pkgs; [ xdg-desktop-portal-hyprland ];
+    extraPortals = with pkgs; [
+      xdg-desktop-portal-hyprland
+      xdg-desktop-portal-wlr
+      xdg-desktop-portal-gtk
+    ];
+    config = {
+      common.default = "wlr";
+      hyprland.default = "hyprland";
+      niri.default = lib.mkForce "wlr";
+    };
   };
 
-  
   programs.niri.enable = true;
 
-
+  # Optional but avoids RealtimeKit warnings for portals/media apps.
+  security.rtkit.enable = true;
 
   # Zsh
   # environment.shells = [ pkgs.zsh ];
@@ -151,6 +159,7 @@
 
   # Fish
   programs.fish.enable = true;
+  programs.fish.useBabelfish = true;
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.tener = {
@@ -167,13 +176,11 @@
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
-     vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
-     wget git iwd gcc cl zig clang neovim nodejs kitty
-     nodePackages.npm go cargo python3 tailscale pnpm
-     xwayland-satellite
+    vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
+    wget git iwd gcc cl zig clang neovim nodejs kitty
+    nodePackages.npm go cargo python3 tailscale pnpm
+    xwayland-satellite
   ];
-
-
 
   # $EDITOR
   environment.variables.EDITOR = "nvim";
