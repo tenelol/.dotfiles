@@ -273,6 +273,8 @@ layout {
 // See the binds section below for more spawn examples.
 
 // This line starts waybar, a commonly used bar for Wayland compositors.
+spawn-sh-at-startup "env XDG_CURRENT_DESKTOP=niri dbus-update-activation-environment --systemd XDG_CURRENT_DESKTOP WAYLAND_DISPLAY XDG_SESSION_TYPE"
+spawn-sh-at-startup "fcitx5 -d"
 spawn-at-startup "waybar"
 spawn-at-startup "hyprpaper"
 

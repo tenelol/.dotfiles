@@ -9,8 +9,17 @@
     ./hardware-configuration.nix
   ];
 
+  # Nix settings
+  nix.settings.experimental-features = [ "nix-command" "flakes"];
+  nix.gc = {
+    automatic = true;
+    dates = "weekly";
+    options = "--delete-older-than 7d";
+  };
+
   # Bootloader.
   boot.loader.systemd-boot.enable = true;
+  boot.loader.systemd-boot.configurationLimit = 5;
   boot.loader.efi.canTouchEfiVariables = true;
 
   # Kernel
