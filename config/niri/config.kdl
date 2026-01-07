@@ -276,7 +276,8 @@ layout {
 spawn-sh-at-startup "env XDG_CURRENT_DESKTOP=niri dbus-update-activation-environment --systemd XDG_CURRENT_DESKTOP WAYLAND_DISPLAY XDG_SESSION_TYPE"
 spawn-sh-at-startup "fcitx5 -d"
 spawn-at-startup "waybar"
-spawn-at-startup "hyprpaper"
+spawn-at-startup "swww" "init"
+spawn-at-startup "swww" "img" "/home/tener/.dotfiles/img/nix-wallpaper.png" "--transition-type" "none"
 
 // To run a shell command (with variables, pipes, etc.), use spawn-sh-at-startup:
 // spawn-sh-at-startup "qs -c ~/source/qs/MyAwesomeShell"
