@@ -12,7 +12,7 @@
 
 
   home.packages = with pkgs; [
-    gh waybar parted
+    gh waybar parted ghostty
     wofi floorp-bin sqlitebrowser
     eza bat fuzzel tre-command imv ripgrep
     unicode-emoji wtype obsidian
