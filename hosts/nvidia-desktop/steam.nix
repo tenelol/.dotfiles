@@ -25,4 +25,9 @@
   environment.systemPackages = with pkgs; [
     xwayland-satellite
   ];
+
+  # Avoid mis-detecting the ASRock LED controller as a joystick.
+  services.udev.extraRules = ''
+    SUBSYSTEM=="input", ATTRS{idVendor}=="26ce", ATTRS{idProduct}=="01a2", ENV{ID_INPUT_JOYSTICK}="0", ENV{ID_INPUT_KEYBOARD}="0"
+  '';
 }
