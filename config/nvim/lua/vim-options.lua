@@ -21,3 +21,53 @@ vim.opt.clipboard = "unnamedplus"
 vim.keymap.set('n', '<C-Tab>', '<Cmd>BufferNext<CR>')
 vim.keymap.set('n', '<C-S-Tab>', '<Cmd>BufferPrevious<CR>')
 
+-- indentation
+vim.opt.expandtab = true
+vim.opt.shiftwidth = 2
+vim.opt.tabstop = 2
+vim.opt.softtabstop = 2
+vim.opt.smartindent = true
+
+local indent_group = vim.api.nvim_create_augroup("IndentSettings", { clear = true })
+vim.api.nvim_create_autocmd("FileType", {
+  group = indent_group,
+  pattern = { "python" },
+  callback = function()
+    vim.opt_local.expandtab = true
+    vim.opt_local.shiftwidth = 4
+    vim.opt_local.tabstop = 4
+    vim.opt_local.softtabstop = 4
+  end,
+})
+vim.api.nvim_create_autocmd("FileType", {
+  group = indent_group,
+  pattern = {
+    "nix",
+    "html",
+    "css",
+    "javascript",
+    "typescript",
+    "typescriptreact",
+    "javascriptreact",
+    "json",
+    "jsonc",
+    "markdown",
+    "astro",
+  },
+  callback = function()
+    vim.opt_local.expandtab = true
+    vim.opt_local.shiftwidth = 2
+    vim.opt_local.tabstop = 2
+    vim.opt_local.softtabstop = 2
+  end,
+})
+vim.api.nvim_create_autocmd("FileType", {
+  group = indent_group,
+  pattern = { "go" },
+  callback = function()
+    vim.opt_local.expandtab = false
+    vim.opt_local.shiftwidth = 4
+    vim.opt_local.tabstop = 4
+    vim.opt_local.softtabstop = 0
+  end,
+})
