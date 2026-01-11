@@ -25,7 +25,6 @@
 
   imports = [
     ./modules/shell/fish.nix
-    ./modules/kitty.nix
     ./modules/ghostty.nix
     ./modules/git.nix
     ./modules/nvim.nix
