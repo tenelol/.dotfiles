@@ -1,4 +1,4 @@
-{ pkgs, lib, ... }:
+{ pkgs, lib, inputs, ... }:
 {
   home.username = "tener";
   home.homeDirectory = "/home/tener";
@@ -29,6 +29,7 @@
     ./modules/ghostty.nix
     ./modules/git.nix
     ./modules/nvim.nix
+    ./modules/zen-browser.nix
     ./modules/hypr.nix
     ./modules/waybar.nix
     ./modules/niri.nix
