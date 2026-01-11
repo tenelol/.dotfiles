@@ -1,0 +1,4 @@
+# Use a custom theme from ~/.config/walker/themes.
+theme = "aurora"
+theme_location = ["~/.config/walker/themes"]
+hotreload_theme = true

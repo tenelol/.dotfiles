@@ -1,0 +1,139 @@
+@define-color fg rgba(238, 244, 255, 0.96);
+@define-color fg-muted rgba(214, 228, 245, 0.74);
+@define-color bg rgba(6, 10, 18, 0.9);
+@define-color bg-strong rgba(10, 16, 30, 0.96);
+@define-color accent-blue rgba(96, 176, 255, 0.92);
+@define-color accent-orange rgba(255, 168, 96, 0.92);
+@define-color accent-soft rgba(120, 170, 255, 0.18);
+@define-color glow rgba(255, 168, 96, 0.28);
+@define-color outline rgba(120, 170, 230, 0.28);
+
+#window,
+#box,
+#aiScroll,
+#aiList,
+#search,
+#password,
+#input,
+#prompt,
+#clear,
+#typeahead,
+#list,
+child,
+scrollbar,
+slider,
+#item,
+#text,
+#label,
+#bar,
+#sub,
+#activationlabel {
+  all: unset;
+}
+
+#window {
+  color: @fg;
+  font-family: "Iosevka Aile", "IBM Plex Sans", "Noto Sans JP", sans-serif;
+  font-size: 14px;
+}
+
+#box {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(96, 176, 255, 0.22), transparent 40%),
+    radial-gradient(circle at 92% 20%, rgba(255, 168, 96, 0.2), transparent 42%),
+    linear-gradient(145deg, @bg, @bg-strong);
+  border-radius: 22px;
+  padding: 22px;
+  border: 1px solid @outline;
+  box-shadow:
+    0 30px 70px rgba(0, 0, 0, 0.6),
+    0 10px 22px rgba(0, 0, 0, 0.35);
+}
+
+#search {
+  background: rgba(9, 12, 22, 0.84);
+  border-radius: 14px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.02),
+    0 10px 18px rgba(0, 0, 0, 0.34),
+    0 0 18px @glow;
+}
+
+#prompt {
+  margin-left: 6px;
+  margin-right: 10px;
+  color: @fg-muted;
+}
+
+#clear {
+  color: @fg;
+  opacity: 0.8;
+}
+
+#password,
+#input,
+#typeahead {
+  border-radius: 10px;
+}
+
+#input {
+  background: none;
+  color: @fg;
+}
+
+#typeahead {
+  color: @fg-muted;
+}
+
+#input placeholder {
+  color: @fg-muted;
+}
+
+child {
+  padding: 10px 12px;
+  border-radius: 12px;
+  transition: 140ms ease-in-out;
+}
+
+child:selected,
+child:hover {
+  background: linear-gradient(90deg, rgba(96, 176, 255, 0.22), rgba(255, 168, 96, 0.16));
+  box-shadow:
+    inset 0 0 0 1px rgba(120, 170, 255, 0.35),
+    0 8px 18px rgba(0, 0, 0, 0.32),
+    0 0 16px rgba(255, 168, 96, 0.2);
+}
+
+#icon {
+  margin-right: 10px;
+}
+
+#label {
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+#sub {
+  opacity: 0.7;
+  font-size: 0.82em;
+}
+
+.activation #text,
+.activation #icon,
+.activation #search {
+  opacity: 0.5;
+}
+
+.aiItem {
+  padding: 12px;
+  border-radius: 12px;
+  color: @fg;
+  background: rgba(14, 18, 30, 0.88);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
+}
+
+.aiItem.assistant {
+  background: rgba(22, 28, 44, 0.9);
+}

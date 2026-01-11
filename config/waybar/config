@@ -12,7 +12,7 @@
   "custom/launcher": {
     "format": "MENU",
     "tooltip": false,
-    "on-click": "fuzzel"
+    "on-click": "walker"
   },
   "niri/workspaces": {
     "format": "{name}",

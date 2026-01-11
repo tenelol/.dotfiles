@@ -33,7 +33,7 @@ if [[ -z "$emoji_file" ]]; then
 fi
 
 if [[ -z "$emoji_file" ]]; then
-  echo "emoji-fuzzel: emoji-test.txt not found" >&2
+  echo "emoji-walker: emoji-test.txt not found" >&2
   exit 1
 fi
 
@@ -46,7 +46,7 @@ selection="$(
       desc = desc (desc ? " " : "") parts[i];
     }
     print emoji " " desc;
-  }' "$emoji_file" | fuzzel --dmenu
+  }' "$emoji_file" | walker --dmenu
 )"
 
 if [[ -z "$selection" ]]; then

@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 {
   home.username = "tener";
   home.homeDirectory = "/home/tener";
@@ -14,12 +14,12 @@
   home.packages = with pkgs; [
     gh waybar parted ghostty swww
     wofi floorp-bin sqlitebrowser
-    eza bat fuzzel tre-command imv ripgrep
+    eza bat walker tre-command imv ripgrep
     unicode-emoji wtype obsidian vesktop
   ];
 
-  home.file.".local/bin/emoji-fuzzel" = {
-    source = ../config/scripts/emoji-fuzzel;
+  home.file.".local/bin/emoji-walker" = {
+    source = ../config/scripts/emoji-walker;
     executable = true;
   };
 
@@ -31,10 +31,18 @@
     ./modules/nvim.nix
     ./modules/hypr.nix
     ./modules/waybar.nix
-    ./modules/fuzzel.nix
     ./modules/niri.nix
 
     ../hosts/nixos/nixos.nix
     ../hosts/nvidia-desktop/nvidia-desktop.nix
   ];
+
+  home.activation.installWalkerConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    if [ -e "$HOME/.config/walker" ]; then
+      $DRY_RUN_CMD rm -rf "$HOME/.config/walker"
+    fi
+    $DRY_RUN_CMD mkdir -p "$HOME/.config/walker"
+    $DRY_RUN_CMD cp -r ${../config/walker}/. "$HOME/.config/walker/"
+    $DRY_RUN_CMD chmod -R u+rwX "$HOME/.config/walker"
+  '';
 }
