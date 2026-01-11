@@ -10,6 +10,7 @@ font-feature = "calt"
 window-padding-x = 12
 window-padding-y = 10
 window-decoration = "none"
+window-show-tab-bar = "never"
 background-opacity = 0.92
 
 # Cursor
