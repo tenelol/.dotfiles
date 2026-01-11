@@ -1,4 +1,7 @@
 <INSTRUCTIONS>
+## Repository context
+- This directory is a NixOS `.dotfiles` repository.
+
 ## Commit message format (required)
 - Use Semantic Commit Message format for every commit:
   - `<Type>: <Emoji> <Title>`
