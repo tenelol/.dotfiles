@@ -15,7 +15,7 @@
     gh waybar parted ghostty swww
     wofi floorp-bin sqlitebrowser
     eza bat fuzzel tre-command imv ripgrep
-    unicode-emoji wtype obsidian
+    unicode-emoji wtype obsidian vesktop
   ];
 
   home.file.".local/bin/emoji-fuzzel" = {
