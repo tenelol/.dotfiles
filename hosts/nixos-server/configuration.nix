@@ -87,7 +87,6 @@
     neovim
     wget
     hyprland
-    kitty
     git
     gcc
     gnumake

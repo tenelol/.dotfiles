@@ -4,7 +4,6 @@ let
 in
 {
   config = lib.mkIf isLaptop {
-    home.packages = with pkgs; [ kitty incus zstd ];
+    home.packages = with pkgs; [ incus zstd ];
   };
 }
-
