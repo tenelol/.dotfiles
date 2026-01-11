@@ -1,6 +1,6 @@
 { inputs, pkgs, ... }:
 let
-  system = pkgs.system;
+  system = pkgs.stdenv.hostPlatform.system;
   zenPackages = inputs.zen-browser.packages.${system};
 in
 {
