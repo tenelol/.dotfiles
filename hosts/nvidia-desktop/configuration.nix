@@ -50,6 +50,8 @@
   # Enable networking
   networking.networkmanager.enable = false;
   networking.useNetworkd = true;
+  # Pin DNS servers to avoid bad DHCP-provided resolvers.
+  networking.nameservers = [ "1.1.1.1" "8.8.8.8" ];
   networking.wireless.iwd.enable = true;
   networking.wireless.iwd.settings = {
     General = {
