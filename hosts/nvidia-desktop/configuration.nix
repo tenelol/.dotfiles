@@ -24,6 +24,8 @@
 
   # Nix settings
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  # Ensure Nix uses the system CA bundle for HTTPS fetches.
+  nix.settings.ssl-cert-file = "/etc/ssl/certs/ca-bundle.crt";
   nix.gc = {
     automatic = true;
     dates = "weekly";
