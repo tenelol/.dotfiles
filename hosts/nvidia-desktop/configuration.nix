@@ -52,6 +52,13 @@
   networking.useNetworkd = true;
   # Pin DNS servers to avoid bad DHCP-provided resolvers.
   networking.nameservers = [ "1.1.1.1" "8.8.8.8" ];
+  # Work around bad DNS resolution for GitHub release assets.
+  networking.extraHosts = ''
+    185.199.108.133 release-assets.githubusercontent.com
+    185.199.109.133 release-assets.githubusercontent.com
+    185.199.110.133 release-assets.githubusercontent.com
+    185.199.111.133 release-assets.githubusercontent.com
+  '';
   networking.wireless.iwd.enable = true;
   networking.wireless.iwd.settings = {
     General = {
