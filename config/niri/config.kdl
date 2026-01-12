@@ -374,7 +374,7 @@ binds {
 
     // Suggested binds for running programs: terminal, app launcher, screen locker.
     Mod+Return hotkey-overlay-title="Open a Terminal: Ghostty" { spawn "/etc/profiles/per-user/tener/bin/ghostty"; }
-    Mod+D hotkey-overlay-title="Run an Application: walker" { spawn "walker"; }
+    Mod+Space hotkey-overlay-title="Run an Application: walker" { spawn "walker"; }
     Mod+Shift+Period hotkey-overlay-title="Emoji Picker: walker" { spawn "/home/tener/.local/bin/emoji-walker"; }
     Super+Alt+L hotkey-overlay-title="Lock the Screen: swaylock" { spawn "swaylock"; }
 
