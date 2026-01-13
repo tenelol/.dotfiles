@@ -23,6 +23,27 @@
     "home-manager_2": {
       "inputs": {
         "nixpkgs": [
+          "nix-hazkey",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1767556355,
+        "narHash": "sha256-RDTUBDQBi9D4eD9iJQWtUDN/13MDLX+KmE+TwwNUp2s=",
+        "owner": "nix-community",
+        "repo": "home-manager",
+        "rev": "f894bc4ffde179d178d8deb374fcf9855d1a82b7",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "home-manager",
+        "type": "github"
+      }
+    },
+    "home-manager_3": {
+      "inputs": {
+        "nixpkgs": [
           "zen-browser",
           "nixpkgs"
         ]
@@ -38,6 +59,27 @@
       "original": {
         "owner": "nix-community",
         "repo": "home-manager",
+        "type": "github"
+      }
+    },
+    "nix-hazkey": {
+      "inputs": {
+        "home-manager": "home-manager_2",
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1767858318,
+        "narHash": "sha256-7B8MKvJyX4mV6h8ViZ0yeaDjdogUbHsiJkckQpWnu3Y=",
+        "owner": "aster-void",
+        "repo": "nix-hazkey",
+        "rev": "a5a9b01419410708ce63acbce957b61feab8b98e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "aster-void",
+        "repo": "nix-hazkey",
         "type": "github"
       }
     },
@@ -60,13 +102,14 @@
     "root": {
       "inputs": {
         "home-manager": "home-manager",
+        "nix-hazkey": "nix-hazkey",
         "nixpkgs": "nixpkgs",
         "zen-browser": "zen-browser"
       }
     },
     "zen-browser": {
       "inputs": {
-        "home-manager": "home-manager_2",
+        "home-manager": "home-manager_3",
         "nixpkgs": [
           "nixpkgs"
         ]
