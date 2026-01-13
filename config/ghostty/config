@@ -11,13 +11,10 @@ window-padding-x = 12
 window-padding-y = 10
 window-decoration = "none"
 window-show-tab-bar = "never"
-background-opacity = 0.92
+background-opacity = 0.0
 
 # Cursor
 cursor-style = "block"
 
-# Colors (Tokyo Night-like)
-background = "#1a1b26"
-foreground = "#c0caf5"
-selection-background = "#2a2f4f"
-selection-foreground = "#c0caf5"
+# Colors
+# Use Ghostty defaults by not setting explicit colors.
