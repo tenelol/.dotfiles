@@ -77,8 +77,8 @@ input {
 // Remember to uncomment the node by removing "/-"!
 
 output "HDMI-A-1" {
-    mode "1920x1080@164.995"
-    scale 1.0
+    mode "3840x2160@60.000"
+    scale 2.0
 }
 /-output "eDP-1" {
     // Uncomment this line to disable this output.
