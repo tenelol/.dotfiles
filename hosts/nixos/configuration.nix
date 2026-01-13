@@ -11,6 +11,7 @@
       ./incus.nix
       ./incus-zstd.nix
       ./kvm.nix
+      ../hazkey.nix
     ];
 
   # Audio settings
@@ -26,6 +27,7 @@
 
   # Nix settings
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  nix.settings.ssl-cert-file = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
   nix.gc = {
     automatic = true;
     dates = "weekly";
@@ -90,19 +92,6 @@
           space = "overload(shift, space)";
         };
       };
-    };
-  };
-
-  # IME
-  i18n.inputMethod = {
-    enable = true;
-    type = "fcitx5";
-
-    fcitx5 = {
-      waylandFrontend = true;
-      addons = with pkgs; [
-        fcitx5-skk
-      ];
     };
   };
 

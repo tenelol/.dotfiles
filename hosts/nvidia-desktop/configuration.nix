@@ -9,6 +9,7 @@
     [ # Include the results of the hardware scan.
       ./hardware-configuration.nix
       ./steam.nix
+      ../hazkey.nix
     ];
 
   # Audio settings
@@ -99,19 +100,6 @@
           space = "overload(shift, space)";
         };
       };
-    };
-  };
-
-  # IME
-  i18n.inputMethod = {
-    enable = true;
-    type = "fcitx5";
-
-    fcitx5 = {
-      waylandFrontend = true;
-      addons = with pkgs; [
-        fcitx5-skk
-      ];
     };
   };
 
