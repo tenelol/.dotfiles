@@ -11,7 +11,7 @@ window-padding-x = 14
 window-padding-y = 12
 window-decoration = "none"
 window-show-tab-bar = "never"
-background-opacity = 0.65
+background-opacity = 0.0
 
 # Cursor
 cursor-style = "block"
