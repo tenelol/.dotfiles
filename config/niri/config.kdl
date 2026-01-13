@@ -277,7 +277,7 @@ spawn-sh-at-startup "env XDG_CURRENT_DESKTOP=niri dbus-update-activation-environ
 spawn-sh-at-startup "fcitx5 -d"
 spawn-sh-at-startup "PATH=/etc/profiles/per-user/tener/bin:/run/current-system/sw/bin:$PATH; waybar"
 // Use explicit path so swww is found in the login-less niri environment.
-spawn-sh-at-startup "PATH=/etc/profiles/per-user/tener/bin:/run/current-system/sw/bin:$PATH; swww-daemon & sleep 0.2; swww img /home/tener/.dotfiles/img/nix-wallpaper.png --transition-type none"
+spawn-sh-at-startup "PATH=/etc/profiles/per-user/tener/bin:/run/current-system/sw/bin:$PATH; swww-daemon & sleep 0.2; swww img /home/tener/.dotfiles/img/nix-wallpaper.png --transition-type none; swww img /home/tener/Downloads/cat.png --outputs HDMI-A-1 --transition-type none"
 // Start Xwayland for X11 apps (e.g., Steam) under niri.
 spawn-sh-at-startup "PATH=/etc/profiles/per-user/tener/bin:/run/current-system/sw/bin:$PATH; xwayland-satellite"
 
