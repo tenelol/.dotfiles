@@ -16,6 +16,7 @@
     wofi floorp-bin sqlitebrowser
     eza bat walker tre-command imv ripgrep
     unicode-emoji wtype obsidian vesktop
+    libreoffice
   ];
 
   home.file.".local/bin/emoji-walker" = {
