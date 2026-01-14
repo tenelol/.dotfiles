@@ -1,21 +1,21 @@
 local function setup_lualine()
   -- 色コードをまとめて設定。各プラグインの色設定で使用
   local colors = {
-    fg = '#ffffff',
-    fg2 = '#353535',
-    fg3 = '#a8a8a8',
-    bg = '#525252',
-    bg3 = '#353535',
+    fg = '#e9f2ff',
+    fg2 = '#0a111d',
+    fg3 = '#b9c7d8',
+    bg = 'none',
+    bg3 = 'none',
     white = '#ffffff',
     black = '#000000',
     yellow = '#ffec50',
     orange = '#ffaf00',
     red = '#ff6510',
     magenta = '#e0898d',
-    cyan = '#7bbfff',
+    cyan = '#7cc6ff',
     blue = '#235bc8',
     darkblue = '#3672a4',
-    green = '#78ff94',
+    green = '#78ffd6',
     darkbrown = '#542d24',
   }
 
@@ -23,8 +23,8 @@ local function setup_lualine()
   local custom_theme = {
     normal = {
       a = { fg = colors.fg2, bg = colors.cyan, gui = 'bold' },
-      b = { fg = colors.fg, bg = colors.darkblue },
-      c = { fg = colors.fg, bg = colors.bg },
+      b = { fg = colors.fg, bg = colors.bg },
+      c = { fg = colors.fg3, bg = colors.bg },
     },
     insert = { a = { fg = colors.fg2, bg = colors.yellow, gui = 'bold' } },
     visual = { a = { fg = colors.fg2, bg = colors.magenta, gui = 'bold' } },
@@ -32,7 +32,7 @@ local function setup_lualine()
     command = { a = { fg = colors.fg2, bg = colors.red, gui = 'bold' } },
     terminal = { a = { fg = colors.fg2, bg = colors.orange, gui = 'bold' } },
     inactive = {
-      a = { fg = colors.fg, bg = colors.bg3, gui = 'bold' },
+      a = { fg = colors.fg3, bg = colors.bg3, gui = 'bold' },
       b = { fg = colors.fg3, bg = colors.bg3 },
       c = { fg = colors.fg3, bg = colors.bg3 },
     },
@@ -236,4 +236,3 @@ return {
   end,
   event = 'VeryLazy',
 }
-
