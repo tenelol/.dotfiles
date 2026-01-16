@@ -1,0 +1,4 @@
+// Minimal layout without tab/status bars.
+layout {
+    pane
+}

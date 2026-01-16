@@ -1,0 +1,20 @@
+// Minimal Zellij UI tweaks to keep transparency clean.
+pane_frames false
+theme "ghost-clean"
+default_layout "clean"
+
+themes {
+    ghost-clean {
+        fg 230 230 230
+        bg 0 0 0
+        red 235 87 87
+        green 255 255 255
+        yellow 245 199 66
+        blue 82 148 226
+        magenta 196 133 245
+        orange 240 164 89
+        cyan 88 196 193
+        black 0 0 0
+        white 255 255 255
+    }
+}
