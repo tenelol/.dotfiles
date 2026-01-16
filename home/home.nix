@@ -12,7 +12,7 @@
 
 
   home.packages = with pkgs; [
-    gh waybar parted ghostty swww
+    gh waybar parted ghostty zellij swww
     wofi floorp-bin sqlitebrowser
     eza bat walker tre-command imv ripgrep
     unicode-emoji wtype obsidian vesktop
@@ -27,6 +27,7 @@
   imports = [
     ./modules/shell/fish.nix
     ./modules/ghostty.nix
+    ./modules/zellij.nix
     ./modules/git.nix
     ./modules/nvim.nix
     ./modules/zen-browser.nix
