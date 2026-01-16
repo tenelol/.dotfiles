@@ -10,6 +10,10 @@
       set -l r (random)
       set -l idx (math "$r % $count + 1")
       set fish_greeting $greetings[$idx]
+
+      if not set -q ZELLIJ
+        exec zellij
+      end
     '';
 
     shellAliases = {
