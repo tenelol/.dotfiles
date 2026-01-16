@@ -2,6 +2,7 @@
 pane_frames false
 theme "ghost-clean"
 default_layout "clean"
+show_startup_tips false
 
 themes {
     ghost-clean {
