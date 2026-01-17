@@ -11,16 +11,6 @@
       set -l idx (math "$r % $count + 1")
       set fish_greeting $greetings[$idx]
 
-      set -l ppid (ps -o ppid= -p $fish_pid | string trim)
-      set -l parent (ps -o comm= -p $ppid | string trim)
-
-      if set -q ZELLIJ; and test "$ZELLIJ" = "0"; and test "$parent" != "zellij"
-        set -e ZELLIJ
-      end
-
-      if not set -q ZELLIJ; and not set -q INSIDE_ZELLIJ; and test "$parent" != "zellij"
-        exec zellij
-      end
     '';
 
     shellAliases = {
