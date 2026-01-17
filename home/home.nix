@@ -25,7 +25,6 @@
   };
 
   imports = [
-    ./modules/line.nix
     ./modules/shell/fish.nix
     ./modules/ghostty.nix
     ./modules/zellij.nix
