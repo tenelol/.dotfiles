@@ -35,6 +35,9 @@ vim.opt.smartindent = true
 
 vim.filetype.add({
   extension = {
+    js = "javascript",
+    mjs = "javascript",
+    cjs = "javascript",
     jsx = "javascriptreact",
     tsx = "typescriptreact",
   },
