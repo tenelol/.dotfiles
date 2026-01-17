@@ -12,6 +12,8 @@
       pyright
       gopls
       nil
+      nodePackages.typescript-language-server
+      nodePackages.typescript
     ];
 
   };
