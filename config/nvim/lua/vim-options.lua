@@ -26,11 +26,19 @@ vim.keymap.set('n', '<C-Tab>', '<Cmd>BufferNext<CR>')
 vim.keymap.set('n', '<C-S-Tab>', '<Cmd>BufferPrevious<CR>')
 
 -- indentation
+vim.opt.autoindent = true
 vim.opt.expandtab = true
 vim.opt.shiftwidth = 2
 vim.opt.tabstop = 2
 vim.opt.softtabstop = 2
 vim.opt.smartindent = true
+
+vim.filetype.add({
+  extension = {
+    jsx = "javascriptreact",
+    tsx = "typescriptreact",
+  },
+})
 
 local indent_group = vim.api.nvim_create_augroup("IndentSettings", { clear = true })
 vim.api.nvim_create_autocmd("FileType", {
