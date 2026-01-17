@@ -11,7 +11,11 @@
       set -l idx (math "$r % $count + 1")
       set fish_greeting $greetings[$idx]
 
-      if not set -q ZELLIJ; or not test -S "$ZELLIJ"
+      if set -q ZELLIJ; and test "$ZELLIJ" = "0"
+        set -e ZELLIJ
+      end
+
+      if not set -q ZELLIJ; and not set -q INSIDE_ZELLIJ
         exec zellij
       end
     '';
