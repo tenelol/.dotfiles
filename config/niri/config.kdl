@@ -77,12 +77,12 @@ input {
 // Remember to uncomment the node by removing "/-"!
 
 output "DP-3" {
-    mode "3840x2160@60.000"
-    scale 1.5
+    mode "3840x2160@75.000"
+    scale 2.0
     position x=0 y=0
 }
 output "HDMI-A-1" {
-    mode "1920x1080@59.934"
+    mode "1920x1080@164.995"
     scale 1.0
     position x=2560 y=0
 }
