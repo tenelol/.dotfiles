@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+app_id="LINEPorted@FoxRefire"
+
+declare -a candidates=()
+if command -v floorp >/dev/null 2>&1; then
+  candidates+=("floorp:$HOME/.floorp")
+fi
+if command -v firefox >/dev/null 2>&1; then
+  candidates+=("firefox:$HOME/.mozilla/firefox")
+fi
+
+if [[ ${#candidates[@]} -eq 0 ]]; then
+  echo "line-firefox: neither floorp nor firefox found in PATH" >&2
+  exit 1
+fi
+
+for candidate in "${candidates[@]}"; do
+  browser="${candidate%%:*}"
+  profile_base="${candidate#*:}"
+  profiles_ini="$profile_base/profiles.ini"
+  if [[ ! -f "$profiles_ini" ]]; then
+    continue
+  fi
+
+  if result="$(
+    PROFILE_BASE="$profile_base" PROFILES_INI="$profiles_ini" python - <<'PY'
+import configparser
+import json
+import os
+import sys
+
+app_id = "LINEPorted@FoxRefire"
+profile_base = os.environ["PROFILE_BASE"]
+profiles_ini = os.environ["PROFILES_INI"]
+
+cfg = configparser.ConfigParser()
+cfg.read(profiles_ini)
+
+def resolve_profile_path(section_name):
+  path = cfg.get(section_name, "Path", fallback=None)
+  if not path:
+    return None
+  is_rel = cfg.get(section_name, "IsRelative", fallback="1") == "1"
+  return os.path.join(profile_base, path) if is_rel else path
+
+profile_path = None
+for section in cfg.sections():
+  if cfg.get(section, "Default", fallback="0") == "1":
+    profile_path = resolve_profile_path(section)
+    if profile_path:
+      break
+
+if not profile_path:
+  for section in cfg.sections():
+    if section.startswith("Profile"):
+      profile_path = resolve_profile_path(section)
+      if profile_path:
+        break
+
+if not profile_path:
+  print("line-firefox: no profile found", file=sys.stderr)
+  sys.exit(1)
+
+extensions_json = os.path.join(profile_path, "extensions.json")
+if not os.path.isfile(extensions_json):
+  print(f"line-firefox: extensions.json not found in {profile_path}", file=sys.stderr)
+  sys.exit(1)
+
+with open(extensions_json, "r", encoding="utf-8") as f:
+  data = json.load(f)
+
+root_uri = None
+for addon in data.get("addons", []):
+  if addon.get("id") == app_id:
+    root_uri = addon.get("rootURI")
+    break
+
+if not root_uri:
+  print(f"line-firefox: addon id {app_id} not found", file=sys.stderr)
+  sys.exit(1)
+
+url = root_uri.rstrip("/") + "/index.html"
+print(f"{profile_path}\t{url}")
+PY
+  )"; then
+    profile_path="${result%%$'\t'*}"
+    url="${result#*$'\t'}"
+    exec "$browser" -profile "$profile_path" -new-window "$url"
+  fi
+done
+
+echo "line-firefox: addon id $app_id not found in any profile" >&2
+exit 1
