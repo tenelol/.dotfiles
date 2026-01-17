@@ -18,3 +18,6 @@ cursor-style = "block"
 
 # Colors
 # Keep default text colors; rely on background-opacity for transparency.
+
+# Use a context menu on right-click.
+right-click-action = "context-menu"
