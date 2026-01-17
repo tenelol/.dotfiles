@@ -1,0 +1,53 @@
+[manager]
+cwd = { fg = "#B8F4FF", bg = "reset" }
+hovered = { fg = "#0B1520", bg = "#A7E9F2" }
+preview_hovered = { fg = "#0B1520", bg = "#A7E9F2" }
+find_keyword = { fg = "#0B1520", bg = "#F5F1A8", bold = true }
+find_position = { fg = "#F5F1A8", bg = "reset", bold = true }
+marker_copied = { fg = "#0B1520", bg = "#B7F7D1" }
+marker_cut = { fg = "#0B1520", bg = "#FFB6A6" }
+marker_selected = { fg = "#0B1520", bg = "#B9C7FF" }
+tab_active = { fg = "#0B1520", bg = "#B8F4FF", bold = true }
+tab_inactive = { fg = "#C7D8E3", bg = "reset" }
+tab_width = 1
+border_style = { fg = "#86CFE0", bg = "reset" }
+
+[status]
+separator_open = ""
+separator_close = ""
+separator_style = { fg = "#86CFE0", bg = "reset" }
+mode_normal = { fg = "#0B1520", bg = "#B8F4FF", bold = true }
+mode_select = { fg = "#0B1520", bg = "#B9C7FF", bold = true }
+mode_unset = { fg = "#0B1520", bg = "#C7D8E3", bold = true }
+progress_label = { fg = "#C7D8E3", bg = "reset" }
+progress_normal = { fg = "#86CFE0", bg = "reset" }
+progress_error = { fg = "#FFB6A6", bg = "reset" }
+
+[input]
+border = { fg = "#86CFE0", bg = "reset" }
+title = { fg = "#C7D8E3", bg = "reset" }
+value = { fg = "#E9F6FB", bg = "reset" }
+selected = { fg = "#0B1520", bg = "#B8F4FF" }
+
+[select]
+border = { fg = "#86CFE0", bg = "reset" }
+active = { fg = "#0B1520", bg = "#A7E9F2" }
+inactive = { fg = "#C7D8E3", bg = "reset" }
+
+[completion]
+border = { fg = "#86CFE0", bg = "reset" }
+active = { fg = "#0B1520", bg = "#B8F4FF" }
+inactive = { fg = "#C7D8E3", bg = "reset" }
+
+[tasks]
+border = { fg = "#86CFE0", bg = "reset" }
+title = { fg = "#C7D8E3", bg = "reset" }
+hovered = { fg = "#0B1520", bg = "#A7E9F2" }
+
+[which]
+mask = { bg = "reset" }
+cand = { fg = "#B8F4FF", bg = "reset" }
+rest = { fg = "#C7D8E3", bg = "reset" }
+desc = { fg = "#86CFE0", bg = "reset" }
+separator = "  "
+separator_style = { fg = "#86CFE0", bg = "reset" }
