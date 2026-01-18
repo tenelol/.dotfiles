@@ -17,6 +17,7 @@
     eza bat walker tre-command imv ripgrep
     unicode-emoji wtype obsidian vesktop
     libreoffice spotify zathura
+    prettierd nodePackages.prettier
   ];
 
   home.file.".local/bin/emoji-walker" = {
