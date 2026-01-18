@@ -38,7 +38,13 @@ return {
       vim.api.nvim_create_autocmd("BufWritePre", {
         group = format_group,
         callback = function(args)
-          if #get_clients(args.buf) == 0 then
+          local clients = get_clients(args.buf)
+          if #clients == 0 then
+            if vim.bo[args.buf].filetype == "javascriptreact" then
+              local view = vim.fn.winsaveview()
+              vim.cmd("silent! normal! gg=G")
+              vim.fn.winrestview(view)
+            end
             return
           end
           vim.lsp.buf.format({ bufnr = args.buf, timeout_ms = 2000 })
