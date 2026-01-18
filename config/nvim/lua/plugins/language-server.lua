@@ -12,6 +12,7 @@ return {
         "nil_ls",
         "html",
         "cssls",
+        "tailwindcss",
         "tsserver",
         "jsonls",
         "marksman",
