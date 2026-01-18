@@ -14,6 +14,7 @@
       nil
       nodePackages.typescript-language-server
       nodePackages.typescript
+      nodePackages."@tailwindcss/language-server"
     ];
 
   };
