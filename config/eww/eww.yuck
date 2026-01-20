@@ -1,0 +1,42 @@
+(defpoll time :interval "5s" "date '+%H:%M'")
+(defpoll date :interval "10s" "date '+%a %d %b'")
+
+(defpoll brightness :interval "2s" "scripts/brightness.sh level")
+(defpoll brighticon :interval "2s" "scripts/brightness.sh icon")
+
+(defpoll volume :interval "2s" "scripts/volume --get")
+(defpoll volicon :interval "2s" "scripts/volume --icon")
+
+(defpoll batperc :interval "10s" "scripts/battery.sh --perc")
+(defpoll baticon :interval "5s" "scripts/battery.sh --icon")
+
+(defpoll netstat :interval "10s" "scripts/check-network --stat")
+(defpoll wifiicon :interval "10s" "scripts/check-network --icon")
+
+(defwidget clock []
+  (box :class "clock"
+    (label :class "time" :text time)
+    (label :class "date" :text date)))
+
+(defwidget stat [icon text]
+  (box :class "stat"
+    (image :class "icon" :path icon)
+    (label :class "stat-text" :text text)))
+
+(defwindow topbar
+  :monitor 0
+  :geometry (geometry :x "0%" :y "0%" :width "100%" :height "40px" :anchor "top center")
+  :stacking "fg"
+  :windowtype "dock"
+  :wm-ignore false
+  :layer "top"
+  :exclusive true
+  :focusable "none"
+  (box :class "bar"
+    (box :class "left" :spacing 10 :halign "start" :hexpand true
+      (clock))
+    (box :class "right" :spacing 10 :halign "end"
+      (stat :icon wifiicon :text netstat)
+      (stat :icon baticon :text batperc)
+      (stat :icon brighticon :text (str brightness "%"))
+      (stat :icon volicon :text volume))))
