@@ -3,7 +3,7 @@
 
 # Typography
 font-family = "JetBrains Mono"
-font-size = 12
+font-size = 13
 font-feature = "calt"
 
 # Window feel
@@ -11,8 +11,9 @@ window-padding-x = 14
 window-padding-y = 12
 window-decoration = "none"
 window-show-tab-bar = "never"
-background-opacity = 0.0
-background-blur = 60
+# Increase opacity to keep glyphs legible; drop blur to avoid haloing
+background-opacity = 0.9
+background-blur = 0
 
 # Cursor
 cursor-style = "block"
