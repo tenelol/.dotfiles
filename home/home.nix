@@ -52,6 +52,8 @@ in
       libreoffice
       spotify
       zathura
+      noto-fonts
+      noto-fonts-emoji
       pkgs.nerd-fonts.caskaydia-cove
       pkgs.material-symbols
     ];
@@ -61,6 +63,7 @@ in
       source = ../config/scripts/emoji-walker;
       executable = true;
     };
+    ".config/fontconfig/fonts.conf".source = ../config/fontconfig/fonts.conf;
   };
 
   home.activation = lib.optionalAttrs (!isServer) {
