@@ -66,7 +66,31 @@ StyledRect {
         Repeater {
             id: items
 
-            model: SystemTray.items
+            // Trayから入力メソッド系など不要なアイコンを除外する
+            model: {
+                const trayItems = [...SystemTray.items.values];
+                const blocklist = [
+                    "fcitx",
+                    "fcitx5",
+                    "im-module",
+                    "inputmethod",
+                    "ibus",
+                    "mozc",
+                    "skk",
+                    "hazkey",
+                    // デフォルトの IME (例: kimpanel) もまとめて除外
+                    "ime",
+                    "panel",
+                    "kimpanel",
+                    // Caelestia標準のkblayoutステータスは別に無効化済みだが念のため
+                    "kblayout",
+                    "hazkey"
+                ];
+                return trayItems.filter(item => {
+                    const id = (item.id ?? "").toLowerCase();
+                    return !blocklist.some(b => id.includes(b));
+                });
+            }
 
             TrayItem {}
         }

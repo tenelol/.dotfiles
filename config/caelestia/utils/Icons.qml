@@ -208,14 +208,30 @@ Singleton {
     }
 
     function getTrayIcon(id: string, icon: string): string {
-        for (const sub of Config.bar.tray.iconSubs)
-            if (sub.id === id)
-                return sub.image ? Qt.resolvedUrl(sub.image) : Quickshell.iconPath(sub.icon);
+        const lowerId = (id ?? "").toLowerCase();
+        const normalize = (value) => (value ?? "").toLowerCase();
+
+        for (const sub of Config.bar.tray.iconSubs) {
+            const subId = normalize(sub.id);
+            if (subId && (lowerId === subId || lowerId.includes(subId))) {
+                const resolved = sub.image ? Qt.resolvedUrl(sub.image) : Quickshell.iconPath(sub.icon ?? "input-keyboard", "input-keyboard");
+                return resolved || Quickshell.iconPath("input-keyboard");
+            }
+        }
+
+        if (!icon || icon.trim() === "")
+            return Quickshell.iconPath("input-keyboard");
 
         if (icon.includes("?path=")) {
             const [name, path] = icon.split("?path=");
             icon = Qt.resolvedUrl(`${path}/${name.slice(name.lastIndexOf("/") + 1)}`);
+            return icon;
         }
-        return icon;
+
+        if (icon.startsWith("file:") || icon.startsWith("/") || icon.startsWith("qrc:"))
+            return icon;
+
+        const themed = Quickshell.iconPath(icon, "input-keyboard");
+        return themed || Quickshell.iconPath("input-keyboard");
     }
 }
