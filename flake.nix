@@ -7,6 +7,14 @@
     home-manager.url = "github:nix-community/home-manager";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
 
+    nix-darwin.url = "github:nix-darwin/nix-darwin";
+    nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
+
+    denix.url = "github:yunfachi/denix";
+    denix.inputs.nixpkgs.follows = "nixpkgs";
+    denix.inputs.home-manager.follows = "home-manager";
+    denix.inputs.nix-darwin.follows = "nix-darwin";
+
     zen-browser.url = "github:0xc000022070/zen-browser-flake";
     zen-browser.inputs.nixpkgs.follows = "nixpkgs";
 
@@ -14,39 +22,43 @@
     nix-hazkey.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, nixpkgs, home-manager, zen-browser, nix-hazkey, ... }:
+  outputs = { denix, ... }@inputs:
   let
-    system = "x86_64-linux";
+    mkConfigurations =
+      moduleSystem:
+      denix.lib.configurations {
+        inherit moduleSystem;
+        homeManagerUser = "tener";
 
-    mkHost = hostPath: nixpkgs.lib.nixosSystem {
-      inherit system;
-      specialArgs = { inherit self nixpkgs home-manager zen-browser nix-hazkey; };
-      modules = [
-        hostPath
-        home-manager.nixosModules.home-manager
+        paths = [
+          ./hosts
+          ./modules
+        ];
+        exclude = [
+          ./hosts/nixos/hardware-configuration.nix
+          ./hosts/nvidia-desktop/hardware-configuration.nix
+          ./hosts/nixos-server/hardware-configuration.nix
+        ];
 
-        ({ pkgs, ... }: {
-          home-manager.useGlobalPkgs = true;
-          home-manager.useUserPackages = true;
-          home-manager.extraSpecialArgs = {
-            inputs = {
-              inherit zen-browser;
-            };
-          };
-          home-manager.users.tener = import ./home/home.nix;
+        extensions = with denix.lib.extensions; [
+          args
+          (base.withConfig {
+            args.enable = true;
+            rices.enable = false;
+          })
+        ];
 
-          environment.systemPackages = with pkgs; [
-            home-manager
-          ];
-        })
-      ];
-    };
+        specialArgs = {
+          inherit inputs;
+          nix-hazkey = inputs.nix-hazkey;
+          zen-browser = inputs.zen-browser;
+        };
+      };
   in
-  {
-    nixosConfigurations = {
-      nixos = mkHost ./hosts/nixos/configuration.nix;
-      nvidia-desktop = mkHost ./hosts/nvidia-desktop/configuration.nix;
-      nixos-server = mkHost ./hosts/nixos-server/configuration.nix;
-    };
+  rec {
+    nixosConfigurations = mkConfigurations "nixos";
+    nixos = nixosConfigurations.nixos;
+    nvidia-desktop = nixosConfigurations."nvidia-desktop";
+    nixos-server = nixosConfigurations."nixos-server";
   };
 }

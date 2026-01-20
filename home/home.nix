@@ -1,4 +1,11 @@
-{ pkgs, lib, inputs, ... }:
+{ config, pkgs, lib, inputs, ... }:
+let
+  isServer =
+    if config ? myconfig && config.myconfig ? host && config.myconfig.host ? isServer then
+      config.myconfig.host.isServer
+    else
+      false;
+in
 {
   home.username = "tener";
   home.homeDirectory = "/home/tener";
@@ -8,45 +15,59 @@
     "/home/tener/.npm-global/bin"
     "/home/tener/.local/bin"
   ];
+  home.packages =
+    with pkgs;
+    [
+      gh
+      parted
+      zellij
+      eza
+      bat
+      tre-command
+      ripgrep
+      prettierd
+      nodePackages.prettier
+    ]
+    ++ lib.optionals (!isServer) [
+      waybar
+      eww
+      acpi
+      alsa-utils
+      brightnessctl
+      iproute2
+      iputils
+      wireless-tools
+      ghostty
+      swww
+      wofi
+      floorp-bin
+      sqlitebrowser
+      walker
+      imv
+      unicode-emoji
+      wtype
+      obsidian
+      vesktop
+      libreoffice
+      spotify
+      zathura
+    ];
 
-
-
-  home.packages = with pkgs; [
-    gh waybar parted ghostty zellij swww
-    wofi floorp-bin sqlitebrowser
-    eza bat walker tre-command imv ripgrep
-    unicode-emoji wtype obsidian vesktop
-    libreoffice spotify zathura
-    prettierd nodePackages.prettier
-  ];
-
-  home.file.".local/bin/emoji-walker" = {
-    source = ../config/scripts/emoji-walker;
-    executable = true;
+  home.file = lib.optionalAttrs (!isServer) {
+    ".local/bin/emoji-walker" = {
+      source = ../config/scripts/emoji-walker;
+      executable = true;
+    };
   };
 
-  imports = [
-    ./modules/shell/fish.nix
-    ./modules/ghostty.nix
-    ./modules/zellij.nix
-    ./modules/git.nix
-    ./modules/nvim.nix
-    ./modules/zen-browser.nix
-    ./modules/hypr.nix
-    ./modules/waybar.nix
-    ./modules/niri.nix
-    ./modules/yazi.nix
-
-    ../hosts/nixos/nixos.nix
-    ../hosts/nvidia-desktop/nvidia-desktop.nix
-  ];
-
-  home.activation.installWalkerConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    if [ -e "$HOME/.config/walker" ]; then
-      $DRY_RUN_CMD rm -rf "$HOME/.config/walker"
-    fi
-    $DRY_RUN_CMD mkdir -p "$HOME/.config/walker"
-    $DRY_RUN_CMD cp -r ${../config/walker}/. "$HOME/.config/walker/"
-    $DRY_RUN_CMD chmod -R u+rwX "$HOME/.config/walker"
-  '';
+  home.activation = lib.optionalAttrs (!isServer) {
+    installWalkerConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      if [ -e "$HOME/.config/walker" ]; then
+        $DRY_RUN_CMD rm -rf "$HOME/.config/walker"
+      fi
+      $DRY_RUN_CMD mkdir -p "$HOME/.config/walker"
+      $DRY_RUN_CMD cp -r ${../config/walker}/. "$HOME/.config/walker/"
+      $DRY_RUN_CMD chmod -R u+rwX "$HOME/.config/walker"
+    '';
+  };
 }
