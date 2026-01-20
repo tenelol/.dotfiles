@@ -88,6 +88,10 @@ StyledRect {
                 ];
                 return trayItems.filter(item => {
                     const id = (item.id ?? "").toLowerCase();
+                    const icon = (item.icon ?? "").trim();
+                    // アイコンもIDも空のものは欠落表示になりがちなので落とす
+                    if (!id && !icon)
+                        return false;
                     return !blocklist.some(b => id.includes(b));
                 });
             }
