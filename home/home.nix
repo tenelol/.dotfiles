@@ -53,7 +53,7 @@ in
       spotify
       zathura
       noto-fonts
-      noto-fonts-emoji
+      noto-fonts-color-emoji
       pkgs.nerd-fonts.caskaydia-cove
       pkgs.material-symbols
     ];
