@@ -96,8 +96,9 @@ in
       }
     '';
     "caelestia/cli.json".text = "{}";
+    # Hide fcitx5 tray / layout indicator (classicui)
     "fcitx5/conf/classicui.conf".text = ''
-      [General]
+      [ClassicUI]
       UseTrayIcon=False
       ShowLayoutNameInIcon=False
       PreferTextIcon=False
