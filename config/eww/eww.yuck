@@ -58,6 +58,15 @@
     (button :class "app-btn" :onclick "scripts/apps --code"
       (image :class "app-icon" :path "images/icons/apps/visual-studio-code.png" :image-width 12 :image-height 12))))
 
+(defwidget calendar-launcher []
+  (box :class "calendar-launcher" :spacing 6 :halign "center"
+    (button :class "app-btn" :tooltip "Discord" :onclick "scripts/apps --chat"
+      (image :class "app-icon" :path "images/icons/apps/discord.png" :image-width 14 :image-height 14))
+    (button :class "app-btn" :tooltip "Spotify" :onclick "scripts/apps --spotify"
+      (image :class "app-icon" :path "images/icons/apps/spotify.png" :image-width 14 :image-height 14))
+    (button :class "app-btn" :tooltip "Terminal" :onclick "scripts/apps --terminal"
+      (image :class "app-icon" :path "images/icons/apps/terminal.png" :image-width 14 :image-height 14))))
+
 (defwidget toggle-row [icon label value action]
   (box :class "toggle-row" :spacing 8
     (image :class "toggle-icon" :path icon :image-width 16 :image-height 16)
@@ -107,6 +116,7 @@
 (defpoll zenities-calendar-html :interval "1h" "scripts/zenities-custom-calendar.sh")
 (defwidget zenities-calendar-widget []
   (box :orientation "vertical" :class "calendar-container"
+    (calendar-launcher)
     (literal :content zenities-calendar-html)))
 
 (defwindow zenities-calendar
