@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+launch() {
+  if command -v "$1" >/dev/null 2>&1; then
+    "$@" &
+    exit 0
+  fi
+}
+
+case "$1" in
+  --terminal)
+    launch ghostty
+    launch kitty
+    launch alacritty
+    ;;
+  --browser)
+    launch floorp
+    launch firefox
+    ;;
+  --files)
+    launch dolphin
+    launch thunar
+    xdg-open "$HOME" &
+    ;;
+  --chat)
+    launch vesktop
+    launch discord
+    ;;
+  --spotify)
+    launch spotify
+    ;;
+  --code)
+    launch code
+    ;;
+esac
