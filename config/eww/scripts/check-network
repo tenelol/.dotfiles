@@ -1,9 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 count=0
 
-ID="$(ip link | awk '/state UP/ {print $2}')"
-SSID="$(iwgetid -r)"
+ID="$(ip -o link | awk -F': ' '/state UP/ {print $2; exit}')"
+WIFI_IFACE="$(iw dev | awk '$1 == "Interface" {print $2; exit}')"
+SSID="$(iw dev "$WIFI_IFACE" link 2>/dev/null | awk -F': ' '/SSID/ {print $2; exit}')"
 
 truncate_ssid() {
     local ssid="$1"
@@ -15,18 +16,18 @@ truncate_ssid() {
 }
 
 net_stat () {
-    if (ping -c 1 archlinux.org || ping -c 1 google.com) &>/dev/null; then
+    if ip route show default | grep -q .; then
         if [[ $ID == e* ]]; then
             echo "Online"
             echo "images/icons/system/wifi.png"
         else
             truncated_ssid=$(truncate_ssid "$SSID")
-            echo "$truncated_ssid"
+            echo "${truncated_ssid:-Wi-Fi}"
             echo "images/icons/system/wifi.png"
         fi
     else
         echo "Offline"
-        echo "images/icons/system/no-wifi.png"    
+        echo "images/icons/system/no-wifi.png"
     fi
 }
 

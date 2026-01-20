@@ -1,7 +1,7 @@
 { config, lib, nix-hazkey, pkgs, ... }:
 let
   isServer = lib.attrByPath [ "myconfig" "host" "isServer" ] false config;
-  inherit (pkgs.stdenv) system;
+  inherit (pkgs.stdenv.hostPlatform) system;
   hazkeyVersion = "0.2.0";
   hazkeySrc = pkgs.fetchzip {
     name = "fcitx5-hazkey-bin";

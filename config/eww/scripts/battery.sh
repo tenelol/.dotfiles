@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 ## Get battery info
 BATTERY=$(acpi | awk -F ' ' 'END {print $4}' | tr -d '%',)
@@ -25,9 +25,9 @@ main() {
 if [[ "$1" == '--icon' ]]; then
 	main
 elif [[ "$1" == '--perc' && "$CHARGE" == *"Charging"* ]]; then
-	echo -n "$BATTERY"
+	echo "$BATTERY"
 elif [[ "$1" == '--perc' ]] && [[ "$ADAPTER" == *"on-line"* ]] && [[ "$CHARGE" != *"Charging"* ]]; then
-	echo -n "Plugged"
+	echo "Plugged"
 elif [[ "$1" == '--perc' ]]; then
-	echo -n "$BATTERY%"
+	echo "$BATTERY%"
 fi

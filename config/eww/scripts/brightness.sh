@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 if [ "$1" == "icon" ]; then
     echo "images/icons/brightness/brightness.png"

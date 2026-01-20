@@ -30,13 +30,14 @@ in
     ]
     ++ lib.optionals (!isServer) [
       waybar
-      eww
       acpi
       alsa-utils
       brightnessctl
+      playerctl
+      pulseaudio
+      iw
       iproute2
       iputils
-      wireless-tools
       ghostty
       swww
       wofi
@@ -51,6 +52,8 @@ in
       libreoffice
       spotify
       zathura
+      pkgs.nerd-fonts.caskaydia-cove
+      pkgs.material-symbols
     ];
 
   home.file = lib.optionalAttrs (!isServer) {
@@ -69,5 +72,26 @@ in
       $DRY_RUN_CMD cp -r ${../config/walker}/. "$HOME/.config/walker/"
       $DRY_RUN_CMD chmod -R u+rwX "$HOME/.config/walker"
     '';
+  };
+
+  programs.caelestia = lib.mkIf (!isServer) {
+    enable = true;
+    package = inputs.caelestia-shell.packages.${pkgs.system}.with-cli;
+    systemd.enable = false;
+    cli.enable = true;
+  };
+
+  xdg.configFile = lib.optionalAttrs (!isServer) {
+    "quickshell/caelestia".source = ../config/caelestia;
+    "caelestia/shell.json".text = ''
+      {
+        "paths": {
+          "wallpaperDir": "/home/tener/.dotfiles/img",
+          "sessionGif": "root:/assets/kurukuru.gif",
+          "mediaGif": "root:/assets/bongocat.gif"
+        }
+      }
+    '';
+    "caelestia/cli.json".text = "{}";
   };
 }

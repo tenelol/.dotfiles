@@ -1,31 +1,87 @@
-(defpoll time :interval "5s" "date '+%H:%M'")
-(defpoll date :interval "10s" "date '+%a %d %b'")
+(defpoll time :interval "30s" "date '+%H:%M'")
+(defpoll date :interval "5m" "date '+%a %d %b'")
 
-(defpoll brightness :interval "2s" "scripts/brightness.sh level")
-(defpoll brighticon :interval "2s" "scripts/brightness.sh icon")
+(defpoll brightness :interval "5s" "scripts/brightness.sh level")
+(defpoll brighticon :interval "10s" "scripts/brightness.sh icon")
 
-(defpoll volume :interval "2s" "scripts/volume --get")
-(defpoll volicon :interval "2s" "scripts/volume --icon")
+(defpoll volume :interval "5s" "scripts/volume --get")
+(defpoll volicon :interval "10s" "scripts/volume --icon")
 
-(defpoll batperc :interval "10s" "scripts/battery.sh --perc")
-(defpoll baticon :interval "5s" "scripts/battery.sh --icon")
+(defpoll batperc :interval "30s" "scripts/battery.sh --perc")
+(defpoll baticon :interval "30s" "scripts/battery.sh --icon")
 
-(defpoll netstat :interval "10s" "scripts/check-network --stat")
-(defpoll wifiicon :interval "10s" "scripts/check-network --icon")
+(defpoll netstat :interval "30s" "scripts/check-network --stat")
+(defpoll wifiicon :interval "30s" "scripts/check-network --icon")
+
+(defpoll song :interval "5s" "scripts/spotify/spotify-song.sh")
+(defpoll artist :interval "5s" "scripts/spotify/spotify-artist.sh")
+(defpoll playicon :interval "5s" "scripts/spotify/spotify-status.sh")
+
+(defpoll mic :interval "5s" "scripts/mic.sh")
+(defpoll micicon :interval "5s" "scripts/micicon.sh")
 
 (defwidget clock []
-  (box :class "clock"
+  (box :class "clock" :spacing 2 :orientation "v"
     (label :class "time" :text time)
     (label :class "date" :text date)))
 
 (defwidget stat [icon text]
-  (box :class "stat"
-    (image :class "icon" :path icon)
+  (box :class "stat" :spacing 6
+    (image :class "icon" :path icon :image-width 18 :image-height 18)
     (label :class "stat-text" :text text)))
+
+(defwidget spotify []
+  (box :class "spotify" :spacing 6
+    (box :class "spotify-text" :orientation "v" :spacing 0
+      (label :class "track" :text song)
+      (label :class "artist" :text artist))
+    (box :class "spotify-controls" :spacing 6
+      (button :onclick "scripts/spotify/spotify-previous.sh"
+        (image :class "control-icon" :path "images/icons/music/previous-button.png" :image-width 12 :image-height 12))
+      (button :onclick "scripts/spotify/spotify-toggle.sh"
+        (image :class "control-icon" :path playicon :image-width 14 :image-height 14))
+      (button :onclick "scripts/spotify/spotify-next.sh"
+        (image :class "control-icon" :path "images/icons/music/next-button.png" :image-width 12 :image-height 12)))))
+
+(defwidget apps []
+  (box :class "apps" :spacing 6
+    (button :class "app-btn" :onclick "scripts/apps --terminal"
+      (image :class "app-icon" :path "images/icons/apps/terminal.png" :image-width 12 :image-height 12))
+    (button :class "app-btn" :onclick "scripts/apps --browser"
+      (image :class "app-icon" :path "images/icons/apps/firefox.png" :image-width 12 :image-height 12))
+    (button :class "app-btn" :onclick "scripts/apps --files"
+      (image :class "app-icon" :path "images/icons/apps/files.png" :image-width 12 :image-height 12))
+    (button :class "app-btn" :onclick "scripts/apps --chat"
+      (image :class "app-icon" :path "images/icons/apps/discord.png" :image-width 12 :image-height 12))
+    (button :class "app-btn" :onclick "scripts/apps --spotify"
+      (image :class "app-icon" :path "images/icons/apps/spotify.png" :image-width 12 :image-height 12))
+    (button :class "app-btn" :onclick "scripts/apps --code"
+      (image :class "app-icon" :path "images/icons/apps/visual-studio-code.png" :image-width 12 :image-height 12))))
+
+(defwidget toggle-row [icon label value action]
+  (box :class "toggle-row" :spacing 8
+    (image :class "toggle-icon" :path icon :image-width 16 :image-height 16)
+    (label :class "toggle-label" :text label)
+    (label :class "toggle-value" :text value :hexpand true :halign "end")
+    (button :class "toggle-btn" :onclick action
+      (label :class "toggle-btn-text" :text "Toggle"))))
+
+(defwindow dashboard
+  :monitor 0
+  :geometry (geometry :x "100%" :y "0%" :width "320px" :height "220px" :anchor "top right")
+  :stacking "fg"
+  :layer "overlay"
+  :exclusive false
+  :focusable "none"
+  (box :class "dashboard" :orientation "v" :spacing 10
+    (label :class "dash-title" :text "Quick Controls")
+    (toggle-row :icon volicon :label "Volume" :value volume :action "scripts/volume --toggle")
+    (toggle-row :icon micicon :label "Mic" :value mic :action "scripts/mictoggle.sh")
+    (toggle-row :icon brighticon :label "Brightness" :value "${brightness}%" :action "scripts/brightness-toggle.sh")))
 
 (defwindow topbar
   :monitor 0
-  :geometry (geometry :x "0%" :y "0%" :width "100%" :height "40px" :anchor "top center")
+  :geometry (geometry :x "0%" :y "0%" :width "100%" :height "24px" :anchor "top center")
   :stacking "fg"
   :windowtype "dock"
   :wm-ignore false
@@ -35,8 +91,13 @@
   (box :class "bar"
     (box :class "left" :spacing 10 :halign "start" :hexpand true
       (clock))
+    (box :class "center" :spacing 10 :halign "center"
+      (apps)
+      (spotify))
     (box :class "right" :spacing 10 :halign "end"
       (stat :icon wifiicon :text netstat)
       (stat :icon baticon :text batperc)
-      (stat :icon brighticon :text (str brightness "%"))
-      (stat :icon volicon :text volume))))
+      (stat :icon brighticon :text "${brightness}%")
+      (stat :icon volicon :text volume)
+      (button :class "menu-btn" :onclick "eww open --toggle dashboard"
+        (image :class "menu-icon" :path "images/options.png" :image-width 12 :image-height 12)))))
