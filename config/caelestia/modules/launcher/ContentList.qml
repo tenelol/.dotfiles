@@ -19,7 +19,8 @@ Item {
     required property int padding
     required property int rounding
 
-    readonly property bool showWallpapers: search.text.startsWith(`${Config.launcher.actionPrefix}wallpaper `)
+    // Accept both ">wallpaper" (default actionPrefix) and plain "wallpaper" triggers
+    readonly property bool showWallpapers: search.text.startsWith(`${Config.launcher.actionPrefix}wallpaper`) || search.text.startsWith("wallpaper")
     readonly property Item currentList: showWallpapers ? wallpaperList.item : appList.item
 
     anchors.horizontalCenter: parent.horizontalCenter
