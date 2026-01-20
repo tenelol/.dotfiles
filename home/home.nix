@@ -79,7 +79,7 @@ in
 
   programs.caelestia = lib.mkIf (!isServer) {
     enable = true;
-    package = inputs.caelestia-shell.packages.${pkgs.system}.with-cli;
+    package = inputs.caelestia-shell.packages.${pkgs.stdenv.hostPlatform.system}.with-cli;
     systemd.enable = false;
     cli.enable = true;
   };
