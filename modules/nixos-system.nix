@@ -135,6 +135,7 @@ delib.module {
       wget
       git
       iwd
+      adwaita-icon-theme
       gcc
       cl
       zig
