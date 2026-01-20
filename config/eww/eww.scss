@@ -165,3 +165,35 @@
   font-size: 9px;
   letter-spacing: 0.02em;
 }
+
+/* Zenities-inspired calendar */
+.calendar-container {
+  padding: 4px;
+  border-radius: 12px;
+  background-color: rgba(18, 26, 36, 0.8);
+  color: #eef2f6;
+  min-width: 218px;
+}
+
+.calendar-title {
+  font-size: 20px;
+  font-weight: bold;
+  color: #c8d4ff;
+}
+
+.weekdays .label {
+  color: #9fb3c8;
+}
+
+.calendar-grid .day {
+  min-width: 22px;
+  margin: 2px;
+}
+
+.calendar-grid .today {
+  color: #0e141c;
+  background-color: #a68bff;
+  border-radius: 6px;
+  font-weight: bold;
+  padding: 2px;
+}

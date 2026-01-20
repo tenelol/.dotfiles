@@ -99,5 +99,19 @@
       (stat :icon baticon :text batperc)
       (stat :icon brighticon :text "${brightness}%")
       (stat :icon volicon :text volume)
+      ;; Toggle dashboard
       (button :class "menu-btn" :onclick "eww open --toggle dashboard"
         (image :class "menu-icon" :path "images/options.png" :image-width 12 :image-height 12)))))
+
+;; Zenities-inspired calendar popup
+(defpoll zenities-calendar-html :interval "1h" "scripts/zenities-custom-calendar.sh")
+(defwidget zenities-calendar-widget []
+  (box :orientation "vertical" :class "calendar-container"
+    (literal :content zenities-calendar-html)))
+
+(defwindow zenities-calendar
+  :monitor 0
+  :geometry (geometry :x "0.8%" :y "475px" :anchor "top right")
+  :stacking "bg"
+  :focusable false
+  (zenities-calendar-widget))
