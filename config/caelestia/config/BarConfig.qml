@@ -88,7 +88,18 @@ JsonObject {
         property bool background: false
         property bool recolour: false
         property bool compact: false
-        property list<var> iconSubs: []
+        // トレイでアイコンが欠ける入力メソッド系を分かりやすいアイコンに置き換え
+        property list<var> iconSubs: [
+            { id: "fcitx5", icon: "input-keyboard" },
+            { id: "fcitx", icon: "input-keyboard" },
+            { id: "kimpanel", icon: "input-keyboard" },
+            { id: "org.fcitx.fcitx5", icon: "input-keyboard" },
+            { id: "hazkey", icon: "input-keyboard" },
+            { id: "ibus", icon: "input-keyboard" },
+            { id: "mozc", icon: "input-keyboard" },
+            { id: "im-module", icon: "input-keyboard" },
+            { id: "panel", icon: "input-keyboard" }
+        ]
     }
 
     component Status: JsonObject {
