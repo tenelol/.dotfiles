@@ -6,7 +6,7 @@ delib.module {
 
   home.ifEnabled = {
     home.packages = [
-      inputs.caelestia-shell.packages.${pkgs.system}.with-cli
+      inputs.caelestia-shell.packages.${pkgs.stdenv.hostPlatform.system}.with-cli
     ];
   };
 }
