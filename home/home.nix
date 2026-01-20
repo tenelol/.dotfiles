@@ -96,5 +96,11 @@ in
       }
     '';
     "caelestia/cli.json".text = "{}";
+    "fcitx5/conf/classicui.conf".text = ''
+      [General]
+      UseTrayIcon=False
+      ShowLayoutNameInIcon=False
+      PreferTextIcon=False
+    '';
   };
 }

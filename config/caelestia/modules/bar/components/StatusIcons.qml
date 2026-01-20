@@ -128,16 +128,10 @@ StyledRect {
         }
 
         // Keyboard layout icon
+        // IME / keyboard layout icon (hidden by default)
         WrappedLoader {
             name: "kblayout"
-            active: Config.bar.status.showKbLayout
-
-            sourceComponent: StyledText {
-                animate: true
-                text: Hypr.kbLayout
-                color: root.colour
-                font.family: Appearance.font.family.mono
-            }
+            active: false
         }
 
         // Network icon
