@@ -49,7 +49,8 @@ PathView {
 
         readonly property string search: root.search.text.split(" ").slice(1).join(" ")
 
-        values: Wallpapers.query(search)
+        // Without a query, show全壁紙; with query, use検索結果
+        values: search ? Wallpapers.query(search) : Wallpapers.list
         onValuesChanged: root.currentIndex = search ? 0 : values.findIndex(w => w.path === Wallpapers.actualCurrent)
     }
 
