@@ -17,32 +17,8 @@ PathView {
 
     readonly property int itemWidth: Config.launcher.sizes.wallpaperWidth * 0.8 + Appearance.padding.larger * 2
 
-    readonly property int numItems: {
-        const screen = QsWindow.window?.screen;
-        if (!screen)
-            return 0;
-
-        // Screen width - 4x outer rounding - 2x max side thickness (cause centered)
-        const barMargins = Math.max(Config.border.thickness, panels.bar.implicitWidth);
-        let outerMargins = 0;
-        if (panels.popouts.hasCurrent && panels.popouts.currentCenter + panels.popouts.nonAnimHeight / 2 > screen.height - content.implicitHeight - Config.border.thickness * 2)
-            outerMargins = panels.popouts.nonAnimWidth;
-        if ((visibilities.utilities || visibilities.sidebar) && panels.utilities.implicitWidth > outerMargins)
-            outerMargins = panels.utilities.implicitWidth;
-        const maxWidth = screen.width - Config.border.rounding * 4 - (barMargins + outerMargins) * 2;
-
-        if (maxWidth <= 0)
-            return 0;
-
-        const maxItemsOnScreen = Math.floor(maxWidth / itemWidth);
-        const visible = Math.min(maxItemsOnScreen, Config.launcher.maxWallpapers, scriptModel.values.length);
-
-        if (visible === 2)
-            return 1;
-        if (visible > 1 && visible % 2 === 0)
-            return visible - 1;
-        return visible;
-    }
+    // Always show up to maxWallpapers (no compression to a single item)
+    readonly property int numItems: Math.min(Config.launcher.maxWallpapers, scriptModel.values.length)
 
     model: ScriptModel {
         id: scriptModel
