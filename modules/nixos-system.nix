@@ -41,6 +41,9 @@ delib.module {
       Settings = { AutoConnect = true; };
     };
 
+    # Battery/UPower (for残量取得)
+    services.upower.enable = true;
+
     services.tailscale.enable = true;
 
     time.timeZone = "Asia/Tokyo";
