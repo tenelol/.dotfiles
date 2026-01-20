@@ -19,7 +19,7 @@ JsonObject {
         property bool actions: false
         property bool schemes: false
         property bool variants: false
-        property bool wallpapers: false
+        property bool wallpapers: true
     }
 
     component Sizes: JsonObject {
