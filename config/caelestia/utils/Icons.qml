@@ -8,6 +8,9 @@ import QtQuick
 Singleton {
     id: root
 
+    // ローカルのキーボードアイコン (テーマに無くても表示できるようにする)
+    readonly property string keyboardFallback: Qt.resolvedUrl("../assets/keyboard.svg")
+
     readonly property var weatherIcons: ({
             "0": "clear_day",
             "1": "clear_day",
@@ -215,23 +218,23 @@ Singleton {
             const subId = normalize(sub.id);
             if (subId && (lowerId === subId || lowerId.includes(subId))) {
                 const resolved = sub.image ? Qt.resolvedUrl(sub.image) : Quickshell.iconPath(sub.icon ?? "input-keyboard", "input-keyboard");
-                return resolved || Quickshell.iconPath("input-keyboard");
+                return resolved || Quickshell.iconPath("input-keyboard") || keyboardFallback;
             }
         }
 
         if (!icon || icon.trim() === "")
-            return Quickshell.iconPath("input-keyboard");
+            return Quickshell.iconPath("input-keyboard") || keyboardFallback;
 
         if (icon.includes("?path=")) {
             const [name, path] = icon.split("?path=");
             icon = Qt.resolvedUrl(`${path}/${name.slice(name.lastIndexOf("/") + 1)}`);
-            return icon;
+            return icon || keyboardFallback;
         }
 
         if (icon.startsWith("file:") || icon.startsWith("/") || icon.startsWith("qrc:"))
             return icon;
 
         const themed = Quickshell.iconPath(icon, "input-keyboard");
-        return themed || Quickshell.iconPath("input-keyboard");
+        return themed || Quickshell.iconPath("input-keyboard") || keyboardFallback;
     }
 }
