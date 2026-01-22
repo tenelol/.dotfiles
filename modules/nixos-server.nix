@@ -54,7 +54,6 @@ delib.module {
 
     environment.variables = {
       EDITOR = "nvim";
-      GTK_IM_MODULE = "fcitx";
       QT_IM_MODULE = "fcitx";
       XMODIFIERS = "@im=fcitx";
     };

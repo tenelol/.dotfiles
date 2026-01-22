@@ -103,6 +103,18 @@ Item {
 
             Keys.onUpPressed: list.currentList?.decrementCurrentIndex()
             Keys.onDownPressed: list.currentList?.incrementCurrentIndex()
+            Keys.onLeftPressed: event => {
+                if (!list.showWallpapers)
+                    return;
+                list.currentList?.decrementCurrentIndex();
+                event.accepted = true;
+            }
+            Keys.onRightPressed: event => {
+                if (!list.showWallpapers)
+                    return;
+                list.currentList?.incrementCurrentIndex();
+                event.accepted = true;
+            }
 
             Keys.onEscapePressed: root.visibilities.launcher = false
 
