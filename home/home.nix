@@ -42,6 +42,7 @@ in
       swww
       wofi
       floorp-bin
+      google-chrome
       sqlitebrowser
       walker
       imv
