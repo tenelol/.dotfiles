@@ -52,6 +52,7 @@ in
       libreoffice
       spotify
       zathura
+      antigravity-fhs
       noto-fonts
       noto-fonts-color-emoji
       pkgs.nerd-fonts.caskaydia-cove
