@@ -51,6 +51,7 @@ in
       obsidian
       vesktop
       libreoffice
+      vscode
       spotify
       zathura
       antigravity-fhs
