@@ -69,6 +69,20 @@ delib.module {
           main = {
             capslock = "layer(control)";
             space = "overload(shift, space)";
+            "meta+c" = "C-c";
+            "meta+v" = "C-v";
+            "meta+x" = "C-x";
+            "meta+z" = "C-z";
+            "meta+a" = "C-a";
+            "meta+w" = "A-f4";
+          };
+          "app:ghostty" = {
+            "meta+c" = "meta+c"; # let Ghostty handle Super+C
+            "meta+v" = "meta+v"; # let Ghostty handle Super+V
+          };
+          "app:Ghostty" = {
+            "meta+c" = "meta+c";
+            "meta+v" = "meta+v";
           };
         };
       };
