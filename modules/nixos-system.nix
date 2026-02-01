@@ -68,7 +68,7 @@ delib.module {
         settings = {
           main = {
             capslock = "layer(control)";
-            space = "overload(shift, space)";
+            # space = "overload(shift, space)"; # SandS disabled for games
             "meta+c" = "C-c";
             "meta+v" = "C-v";
             "meta+x" = "C-x";
