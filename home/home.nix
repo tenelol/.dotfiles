@@ -15,6 +15,9 @@ in
     "/home/tener/.npm-global/bin"
     "/home/tener/.local/bin"
   ];
+  home.sessionVariables = {
+    JAVA_HOME = "${pkgs.jdk}/lib/openjdk";
+  };
   home.packages =
     with pkgs;
     [
@@ -25,6 +28,7 @@ in
       bat
       tre-command
       ripgrep
+      jdk
       prettierd
       nodePackages.prettier
     ]
