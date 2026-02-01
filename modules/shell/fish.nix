@@ -13,6 +13,8 @@ delib.module {
         set -l idx (math "$r % $count + 1")
         set fish_greeting $greetings[$idx]
 
+        fish_add_path ~/.opencode/bin
+
       '';
 
       shellAliases = {
