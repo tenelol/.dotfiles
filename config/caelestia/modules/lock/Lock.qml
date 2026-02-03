@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import qs.components.misc
+import qs.config
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
@@ -35,6 +36,31 @@ Scope {
         name: "unlock"
         description: "Unlock the current session"
         onPressed: lock.unlock()
+    }
+
+    // Auto-suspend some time after the session is manually locked.
+    Timer {
+        id: suspendTimer
+
+        interval: (Config.lock.suspendTimeout ?? 0) * 1000
+        repeat: false
+        running: lock.locked && (Config.lock.suspendTimeout ?? 0) > 0
+
+        onTriggered: {
+            if (lock.locked)
+                Quickshell.execDetached(["systemctl", "suspend-then-hibernate"]);
+        }
+    }
+
+    Connections {
+        target: lock
+
+        function onLockedChanged(): void {
+            if (lock.locked && (Config.lock.suspendTimeout ?? 0) > 0)
+                suspendTimer.restart();
+            else
+                suspendTimer.stop();
+        }
     }
 
     IpcHandler {
