@@ -349,6 +349,7 @@ Singleton {
             recolourLogo: lock.recolourLogo,
             enableFprint: lock.enableFprint,
             maxFprintTries: lock.maxFprintTries,
+            suspendTimeout: lock.suspendTimeout,
             sizes: {
                 heightMult: lock.sizes.heightMult,
                 ratio: lock.sizes.ratio,
