@@ -103,6 +103,15 @@ in
       }
     '';
     "caelestia/cli.json".text = "{}";
+    "keyd/app.conf".text = ''
+      [com-mitchellh-ghostty]
+      meta.c = C-S-c
+      meta.v = C-S-v
+
+      [*ghostty*]
+      meta.c = C-S-c
+      meta.v = C-S-v
+    '';
     # Hide fcitx5 tray / layout indicator (classicui)
     "fcitx5/conf/classicui.conf".source = ../config/fcitx5/classicui.conf;
   };
