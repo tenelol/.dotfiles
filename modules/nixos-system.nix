@@ -69,23 +69,23 @@ delib.module {
           main = {
             capslock = "layer(control)";
             # space = "overload(shift, space)"; # SandS disabled for games
-            "meta+c" = "C-c";
-            "meta+v" = "C-v";
-            "meta+x" = "C-x";
-            "meta+z" = "C-z";
-            "meta+a" = "C-a";
-            "meta+w" = "A-f4";
           };
-          "app:ghostty" = {
-            "meta+c" = "meta+c"; # let Ghostty handle Super+C
-            "meta+v" = "meta+v"; # let Ghostty handle Super+V
-          };
-          "app:Ghostty" = {
-            "meta+c" = "meta+c";
-            "meta+v" = "meta+v";
+          meta = {
+            c = "C-c";
+            v = "C-v";
+            x = "C-x";
+            z = "C-z";
+            a = "C-a";
+            w = "A-f4";
           };
         };
       };
+    };
+    users.groups.keyd = { };
+    systemd.services.keyd.serviceConfig = {
+      Group = "keyd";
+      # Keep keyd's socket readable by the keyd group for keyd-application-mapper.
+      UMask = lib.mkForce "0007";
     };
 
     services.xserver.desktopManager.runXdgAutostartIfNone = true;
@@ -141,7 +141,7 @@ delib.module {
     users.users.tener = {
       isNormalUser = true;
       description = "tener";
-      extraGroups = [ "wheel" "network" ];
+      extraGroups = [ "wheel" "network" "keyd" ];
       packages = with pkgs; [ ];
       shell = pkgs.fish;
     };
@@ -152,6 +152,7 @@ delib.module {
       vim
       wget
       git
+      keyd
       iwd
       adwaita-icon-theme
       gcc
