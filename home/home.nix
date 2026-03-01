@@ -54,7 +54,7 @@ in
       wtype
       obsidian
       vesktop
-      libreoffice
+      libreoffice-fresh
       vscode
       spotify
       zathura
