@@ -2,7 +2,7 @@
 let
   isServer = lib.attrByPath [ "myconfig" "host" "isServer" ] false config;
   inherit (pkgs.stdenv.hostPlatform) system;
-  hazkeyVersion = "0.2.0";
+  hazkeyVersion = "0.2.1";
   hazkeySrc = pkgs.fetchzip {
     name = "fcitx5-hazkey-bin";
     version = hazkeyVersion;
@@ -11,7 +11,7 @@ let
       "https://ghproxy.net/https://github.com/7ka-Hiira/fcitx5-hazkey/releases/download/${hazkeyVersion}/fcitx5-hazkey-${hazkeyVersion}-x86_64.tar.gz"
       "https://github.moeyy.xyz/https://github.com/7ka-Hiira/fcitx5-hazkey/releases/download/${hazkeyVersion}/fcitx5-hazkey-${hazkeyVersion}-x86_64.tar.gz"
     ];
-    hash = "sha256-agpqU8uVpmGJEnqQPsZBv3uSOw9pD0iri3/R/hRAACA=";
+    hash = "sha256-jwv1UTRz/FVHmeaumwP45Q4JZcSuZHTrF2/PAzrxeC8=";
     stripRoot = false;
   };
 
@@ -20,20 +20,26 @@ let
   hazkeySettings = hazkeyPackages.hazkey-settings.overrideAttrs (_: { src = hazkeySrc; });
   hazkeyServer = hazkeyPackages.hazkey-server.overrideAttrs (_: { src = hazkeySrc; });
   hazkeyDictionary = hazkeyPackages.dictionary.overrideAttrs (_: { src = hazkeySrc; });
+  hasLibllamaCpu = builtins.hasAttr "libllama-cpu" hazkeyPackages;
 
   libllamaVersion = "20251109.0";
-  libllamaSrc = pkgs.fetchzip {
-    name = "libllama-cpu-bin";
-    version = libllamaVersion;
-    urls = [
-      "https://github.com/7ka-Hiira/llama.cpp/releases/download/v${libllamaVersion}/llama-linux-x86_64-cpu-v${libllamaVersion}.tar.gz"
-      "https://ghproxy.net/https://github.com/7ka-Hiira/llama.cpp/releases/download/v${libllamaVersion}/llama-linux-x86_64-cpu-v${libllamaVersion}.tar.gz"
-      "https://github.moeyy.xyz/https://github.com/7ka-Hiira/llama.cpp/releases/download/v${libllamaVersion}/llama-linux-x86_64-cpu-v${libllamaVersion}.tar.gz"
-    ];
-    hash = "sha256-Hw96OYrd3LoePFhNk3Whk90I0pREx2gpxanIMxo+bHs=";
-    stripRoot = false;
-  };
-  libllamaCpu = hazkeyPackages.libllama-cpu.overrideAttrs (_: { src = libllamaSrc; });
+  libllamaSrc =
+    if hasLibllamaCpu then
+      pkgs.fetchzip {
+        name = "libllama-cpu-bin";
+        version = libllamaVersion;
+        urls = [
+          "https://github.com/7ka-Hiira/llama.cpp/releases/download/v${libllamaVersion}/llama-linux-x86_64-cpu-v${libllamaVersion}.tar.gz"
+          "https://ghproxy.net/https://github.com/7ka-Hiira/llama.cpp/releases/download/v${libllamaVersion}/llama-linux-x86_64-cpu-v${libllamaVersion}.tar.gz"
+          "https://github.moeyy.xyz/https://github.com/7ka-Hiira/llama.cpp/releases/download/v${libllamaVersion}/llama-linux-x86_64-cpu-v${libllamaVersion}.tar.gz"
+        ];
+        hash = "sha256-Hw96OYrd3LoePFhNk3Whk90I0pREx2gpxanIMxo+bHs=";
+        stripRoot = false;
+      }
+    else
+      null;
+  libllamaCpu =
+    if hasLibllamaCpu then hazkeyPackages.libllama-cpu.overrideAttrs (_: { src = libllamaSrc; }) else null;
 in
 {
   imports = [
