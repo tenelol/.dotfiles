@@ -56,7 +56,6 @@ in
       vesktop
       libreoffice-fresh
       vscode
-      spotify
       zathura
       antigravity-fhs
       noto-fonts
