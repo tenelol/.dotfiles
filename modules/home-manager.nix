@@ -12,6 +12,7 @@ delib.module {
     home-manager.extraSpecialArgs = { inherit inputs; };
     home-manager.sharedModules = [
       inputs.caelestia-shell.homeManagerModules.default
+      inputs.spicetify-nix.homeManagerModules.spicetify
     ];
 
     environment.systemPackages = [
