@@ -13,8 +13,25 @@ delib.module {
         hidePodcasts
         shuffle
       ];
-      theme = spicePkgs.themes.catppuccin;
-      colorScheme = "mocha";
+      enabledCustomApps = with spicePkgs.apps; [
+        lyricsPlus
+      ];
+      theme = {
+        name = "appletify";
+        src = (pkgs.fetchFromGitHub {
+          owner = "raysin1";
+          repo = "Appletify";
+          rev = "cdd14682d5b7e8c7d108c0caf5a1a7476cd0dd3d";
+          hash = "sha256-CEpNThqEXma45jn+ZL19vEZ2mOERB87qOyfVGRaUBZA=";
+        }) + /appletify;
+        additionalCss = ''
+          [data-testid="lyrics-button"],
+          button[aria-label="Lyrics"] {
+            display: inline-flex !important;
+          }
+        '';
+      };
+      colorScheme = "Base";
     };
   };
 }
