@@ -5,6 +5,10 @@ let
       config.myconfig.host.isServer
     else
       false;
+
+  caelestiaShellPackage = import ../packages/caelestia-shell.nix {
+    inherit inputs pkgs lib;
+  };
 in
 {
   home.username = "tener";
@@ -87,7 +91,7 @@ in
 
   programs.caelestia = lib.mkIf (!isServer) {
     enable = true;
-    package = inputs.caelestia-shell.packages.${pkgs.stdenv.hostPlatform.system}.with-cli;
+    package = caelestiaShellPackage.override { withCli = true; };
     systemd.enable = false;
     cli.enable = true;
   };
