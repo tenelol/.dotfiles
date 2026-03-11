@@ -8,9 +8,6 @@ delib.module {
 
   home.ifEnabled = {
     home.activation.installHyprConfig = ''
-      if [ -e "$HOME/.config/hypr" ]; then
-        $DRY_RUN_CMD rm -rf "$HOME/.config/hypr"
-      fi
       $DRY_RUN_CMD mkdir -p "$HOME/.config/hypr"
       $DRY_RUN_CMD cp -r ${../config/hypr}/. "$HOME/.config/hypr/"
       $DRY_RUN_CMD chmod -R u+rwX "$HOME/.config/hypr"

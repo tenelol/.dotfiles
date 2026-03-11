@@ -54,8 +54,10 @@ in
       wtype
       obsidian
       vesktop
+      slack
       libreoffice-fresh
       vscode
+      zed-editor
       zathura
       antigravity-fhs
       noto-fonts
