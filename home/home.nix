@@ -9,6 +9,9 @@ let
   caelestiaShellPackage = import ../packages/caelestia-shell.nix {
     inherit inputs pkgs lib;
   };
+  codexBarPackage = import ../packages/codexbar.nix {
+    inherit pkgs lib;
+  };
 in
 {
   home.username = "tener";
@@ -37,6 +40,7 @@ in
       nodePackages.prettier
     ]
     ++ lib.optionals (!isServer) [
+      codexBarPackage
       waybar
       acpi
       alsa-utils

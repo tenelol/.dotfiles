@@ -147,6 +147,12 @@ ColumnLayout {
                 }
             }
             DelegateChoice {
+                roleValue: "codexBar"
+                delegate: WrappedLoader {
+                    sourceComponent: CodexBar {}
+                }
+            }
+            DelegateChoice {
                 roleValue: "clock"
                 delegate: WrappedLoader {
                     sourceComponent: Clock {}

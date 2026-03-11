@@ -40,6 +40,10 @@ JsonObject {
             enabled: true
         },
         {
+            id: "codexBar",
+            enabled: true
+        },
+        {
             id: "clock",
             enabled: true
         },
