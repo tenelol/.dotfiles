@@ -114,8 +114,14 @@ delib.module {
     programs.xwayland.enable = true;
     programs.nix-ld = {
       enable = true;
-      # Allow third-party dynamically linked binaries (e.g. OpenCode) to run on NixOS.
-      libraries = with pkgs; [ stdenv.cc.cc ];
+      # Allow third-party dynamically linked binaries (e.g. Zed external agents) to run on NixOS.
+      libraries = with pkgs; [
+        stdenv.cc.cc
+        libcap
+        xz
+        openssl
+        zlib
+      ];
     };
     xdg.portal = {
       enable = true;
