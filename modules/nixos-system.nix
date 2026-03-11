@@ -17,49 +17,12 @@ delib.module {
       jack.enable = true;
     };
 
-    nix.settings.experimental-features = [ "nix-command" "flakes" ];
     nix.settings.ssl-cert-file = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
-    nix.gc = {
-      automatic = true;
-      dates = "weekly";
-      options = "--delete-older-than 7d";
-    };
 
-    boot.loader.systemd-boot.enable = true;
-    boot.loader.systemd-boot.configurationLimit = 5;
-    boot.loader.efi.canTouchEfiVariables = true;
-
-    boot.kernelPackages = pkgs.linuxPackages_latest;
-
-    networking.networkmanager.enable = false;
     networking.useNetworkd = true;
-    networking.wireless.iwd.enable = true;
-    networking.wireless.iwd.settings = {
-      General = {
-        EnableNetworkConfiguration = true;
-      };
-      Settings = { AutoConnect = true; };
-    };
 
-    # Battery/UPower (for残量取得)
+    # バッテリー残量取得
     services.upower.enable = true;
-
-    services.tailscale.enable = true;
-
-    time.timeZone = "Asia/Tokyo";
-
-    i18n.defaultLocale = "en_US.UTF-8";
-    i18n.extraLocaleSettings = {
-      LC_ADDRESS = "ja_JP.UTF-8";
-      LC_IDENTIFICATION = "ja_JP.UTF-8";
-      LC_MEASUREMENT = "ja_JP.UTF-8";
-      LC_MONETARY = "ja_JP.UTF-8";
-      LC_NAME = "ja_JP.UTF-8";
-      LC_NUMERIC = "ja_JP.UTF-8";
-      LC_PAPER = "ja_JP.UTF-8";
-      LC_TELEPHONE = "ja_JP.UTF-8";
-      LC_TIME = "ja_JP.UTF-8";
-    };
 
     services.keyd = {
       enable = true;
@@ -145,14 +108,9 @@ delib.module {
     programs.fish.useBabelfish = true;
 
     users.users.tener = {
-      isNormalUser = true;
-      description = "tener";
       extraGroups = [ "wheel" "network" "keyd" ];
-      packages = with pkgs; [ ];
       shell = pkgs.fish;
     };
-
-    nixpkgs.config.allowUnfree = true;
 
     environment.systemPackages = with pkgs; [
       vim
@@ -176,10 +134,5 @@ delib.module {
       xwayland-satellite
       nh
     ];
-
-    environment.variables.EDITOR = "nvim";
-    security.sudo.extraConfig = ''Defaults env_keep += "EDITOR VISUAL"'';
-
-    system.stateVersion = "25.05";
   };
 }
