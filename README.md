@@ -4,10 +4,11 @@
 
 ## 構成
 
-- `flake.nix`: NixOS フレークのエントリ。`nixos` / `nvidia-desktop` / `nixos-server` を定義
+- `flake.nix`: NixOS flake のエントリ。`nixosConfigurations` を定義
 - `hosts/`: ホスト別の NixOS 設定
 - `home/`: Home Manager のエントリとモジュール
-- `config/`: 各種アプリ設定 (nvim, fish, hypr, waybar など)
+- `config/`: 各種アプリ設定 (`nvim`, `fish`, `hypr`, `waybar` など)
+- `modules/`: denix ベースのモジュール群
 
 ## 前提
 
@@ -18,18 +19,22 @@
 
 ホストに合わせて `nixos-rebuild` を実行します。
 
-```bash
-sudo nixos-rebuild switch --flake .#nixos
+`nixos` ホスト:
+
+```sh
+sudo nixos-rebuild switch --flake .#nixosConfigurations.nixos
 ```
 
 別ホストの場合:
 
-```bash
-sudo nixos-rebuild switch --flake .#nvidia-desktop
-sudo nixos-rebuild switch --flake .#nixos-server
+```sh
+sudo nixos-rebuild switch --flake .#nixosConfigurations.nvidia-desktop
+sudo nixos-rebuild switch --flake .#nixosConfigurations.nixos-server
 ```
 
 ## メモ
 
 - `home/home.nix` が `tener` ユーザーの Home Manager 設定の入口です。
 - ホスト固有の設定は `hosts/<host>/` 配下にあります。
+- `modules/` 配下の denix モジュールが各ホスト / Home Manager 設定を組み立てます。
+- 新しい `.nix` ファイルを `modules/` や `hosts/` に追加した場合、flake から確実に見えるよう Git 管理下に置いておくのが安全です。

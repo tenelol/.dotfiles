@@ -93,7 +93,8 @@ delib.module {
       enable = true;
       openFirewall = true;
       settings = {
-        PasswordAuthentication = false;
+        # Keep password auth enabled until authorizedKeys are managed in this repo.
+        PasswordAuthentication = true;
         PermitRootLogin = "no";
       };
     };

@@ -29,42 +29,38 @@
   };
 
   outputs = { denix, ... }@inputs:
-  let
-    mkConfigurations =
-      moduleSystem:
-      denix.lib.configurations {
-        inherit moduleSystem;
-        homeManagerUser = "tener";
+    let
+      mkConfigurations =
+        moduleSystem:
+        denix.lib.configurations {
+          inherit moduleSystem;
+          homeManagerUser = "tener";
 
-        paths = [
-          ./hosts
-          ./modules
-        ];
-        exclude = [
-          ./hosts/nixos/hardware-configuration.nix
-          ./hosts/nvidia-desktop/hardware-configuration.nix
-          ./hosts/nixos-server/hardware-configuration.nix
-        ];
+          paths = [
+            ./hosts
+            ./modules
+          ];
+          exclude = [
+            ./hosts/nixos/hardware-configuration.nix
+            ./hosts/nvidia-desktop/hardware-configuration.nix
+            ./hosts/nixos-server/hardware-configuration.nix
+          ];
 
-        extensions = with denix.lib.extensions; [
-          args
-          (base.withConfig {
-            args.enable = true;
-            rices.enable = false;
-          })
-        ];
+          extensions = with denix.lib.extensions; [
+            args
+            (base.withConfig {
+              args.enable = true;
+              rices.enable = false;
+            })
+          ];
 
-        specialArgs = {
-          inherit inputs;
-          nix-hazkey = inputs.nix-hazkey;
-          zen-browser = inputs.zen-browser;
+          specialArgs = {
+            inherit inputs;
+            nix-hazkey = inputs.nix-hazkey;
+          };
         };
-      };
-  in
-  rec {
-    nixosConfigurations = mkConfigurations "nixos";
-    nixos = nixosConfigurations.nixos;
-    nvidia-desktop = nixosConfigurations."nvidia-desktop";
-    nixos-server = nixosConfigurations."nixos-server";
-  };
+    in
+    {
+      nixosConfigurations = mkConfigurations "nixos";
+    };
 }
