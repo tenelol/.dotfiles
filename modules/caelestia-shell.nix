@@ -1,4 +1,9 @@
-{ delib, host, pkgs, inputs, ... }:
+{ delib, host, pkgs, inputs, lib, ... }:
+let
+  caelestiaShellPackage = import ../packages/caelestia-shell.nix {
+    inherit inputs pkgs lib;
+  };
+in
 delib.module {
   name = "caelestia-shell";
 
@@ -6,7 +11,7 @@ delib.module {
 
   home.ifEnabled = {
     home.packages = [
-      inputs.caelestia-shell.packages.${pkgs.stdenv.hostPlatform.system}.with-cli
+      (caelestiaShellPackage.override { withCli = true; })
     ];
   };
 }
