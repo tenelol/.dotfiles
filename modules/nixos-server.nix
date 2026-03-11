@@ -10,6 +10,7 @@ delib.module {
 
     users.users.tener = {
       extraGroups = [ "video" "input" "seat" "audio" "network" "wheel" ];
+      openssh.authorizedKeys.keyFiles = [ ../keys/tener.pub ];
     };
 
     services.getty.autologinUser = "tener";
@@ -93,7 +94,7 @@ delib.module {
       enable = true;
       openFirewall = true;
       settings = {
-        # Keep password auth enabled until authorizedKeys are managed in this repo.
+        # TODO: Set to false after adding your public key to keys/tener.pub.
         PasswordAuthentication = true;
         PermitRootLogin = "no";
       };

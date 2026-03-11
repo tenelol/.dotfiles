@@ -1,7 +1,8 @@
-{ config, lib, nix-hazkey, pkgs, ... }:
+{ delib, host, inputs, pkgs, ... }:
 let
-  isServer = lib.attrByPath [ "myconfig" "host" "isServer" ] false config;
+  nix-hazkey = inputs.nix-hazkey;
   inherit (pkgs.stdenv.hostPlatform) system;
+
   hazkeyVersion = "0.2.1";
   hazkeySrc = pkgs.fetchzip {
     name = "fcitx5-hazkey-bin";
@@ -15,12 +16,12 @@ let
     stripRoot = false;
   };
 
-  hazkeyPackages = nix-hazkey.packages.${system};
-  fcitx5Hazkey = hazkeyPackages.fcitx5-hazkey.overrideAttrs (_: { src = hazkeySrc; });
-  hazkeySettings = hazkeyPackages.hazkey-settings.overrideAttrs (_: { src = hazkeySrc; });
-  hazkeyServer = hazkeyPackages.hazkey-server.overrideAttrs (_: { src = hazkeySrc; });
-  hazkeyDictionary = hazkeyPackages.dictionary.overrideAttrs (_: { src = hazkeySrc; });
-  hasLibllamaCpu = builtins.hasAttr "libllama-cpu" hazkeyPackages;
+  hazkeyPackages    = nix-hazkey.packages.${system};
+  fcitx5Hazkey      = hazkeyPackages.fcitx5-hazkey.overrideAttrs    (_: { src = hazkeySrc; });
+  hazkeySettings    = hazkeyPackages.hazkey-settings.overrideAttrs  (_: { src = hazkeySrc; });
+  hazkeyServer      = hazkeyPackages.hazkey-server.overrideAttrs    (_: { src = hazkeySrc; });
+  hazkeyDictionary  = hazkeyPackages.dictionary.overrideAttrs       (_: { src = hazkeySrc; });
+  hasLibllamaCpu    = builtins.hasAttr "libllama-cpu" hazkeyPackages;
 
   libllamaVersion = "20251109.0";
   libllamaSrc =
@@ -39,18 +40,25 @@ let
     else
       null;
   libllamaCpu =
-    if hasLibllamaCpu then hazkeyPackages.libllama-cpu.overrideAttrs (_: { src = libllamaSrc; }) else null;
+    if hasLibllamaCpu
+    then hazkeyPackages.libllama-cpu.overrideAttrs (_: { src = libllamaSrc; })
+    else null;
 in
-{
-  imports = [
-    nix-hazkey.nixosModules.hazkey
-  ];
+delib.module {
+  name = "nixos.hazkey";
 
-  config = lib.mkIf (!isServer) {
+  options = delib.singleEnableOption (!host.isServer);
+
+  # Always import the hazkey NixOS module so its options are defined on every host.
+  # Actual configuration is guarded by ifEnabled below.
+  nixos.always = {
+    imports = [ nix-hazkey.nixosModules.hazkey ];
+  };
+
+  nixos.ifEnabled = {
     i18n.inputMethod = {
       enable = true;
       type = "fcitx5";
-
       fcitx5 = {
         waylandFrontend = true;
         addons = with pkgs; [
@@ -60,9 +68,7 @@ in
       };
     };
 
-    environment.pathsToLink = [
-      "/share/fcitx5"
-    ];
+    environment.pathsToLink = [ "/share/fcitx5" ];
 
     services.hazkey = {
       enable = true;
@@ -74,8 +80,6 @@ in
       zenzai.package = hazkeyPackages.zenzai_v3_1-small;
     };
 
-    environment.systemPackages = [
-      hazkeySettings
-    ];
+    environment.systemPackages = [ hazkeySettings ];
   };
 }
