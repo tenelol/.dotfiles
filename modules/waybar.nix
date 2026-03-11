@@ -1,4 +1,4 @@
-{ delib, host, pkgs, ... }:
+{ delib, host, ... }:
 delib.module {
   name = "waybar";
 
@@ -6,9 +6,5 @@ delib.module {
 
   home.ifEnabled = {
     xdg.configFile."waybar".source = ../config/waybar2;
-
-    home.packages = with pkgs; [
-      waybar
-    ];
   };
 }

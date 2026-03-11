@@ -3,11 +3,13 @@ delib.module {
   name = "git";
 
   home.always = {
-    programs.git.settings = {
+    programs.git = {
       enable = true;
-      userName = "tenelol";
-      userEmail = "tenelol@tenelol.dev";
-      extraConfig.core.editor = "nvim";
+      settings = {
+        user.name = "tenelol";
+        user.email = "tenelol@tenelol.dev";
+        core.editor = "nvim";
+      };
     };
   };
 }

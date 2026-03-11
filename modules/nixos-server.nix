@@ -5,63 +5,15 @@ delib.module {
   options = delib.singleEnableOption (host.name == "nixos-server");
 
   nixos.ifEnabled = {
-    nix.gc = {
-      automatic = true;
-      dates = "weekly";
-      options = "--delete-older-than 7d";
-    };
-
-    boot.loader.systemd-boot.enable = true;
-    boot.loader.systemd-boot.configurationLimit = 5;
-    boot.loader.efi.canTouchEfiVariables = true;
-
-    boot.kernelPackages = pkgs.linuxPackages_latest;
-
     networking.hostName = "nixos-server";
-    networking.networkmanager.enable = false;
-    networking.wireless.iwd.enable = true;
-    networking.wireless.iwd.settings = {
-      General = { EnableNetworkConfiguration = true; };
-      Settings = { AutoConnect = true; };
-    };
     networking.firewall.allowedTCPPorts = [ 80 8080 ];
 
-    time.timeZone = "Asia/Tokyo";
-    i18n.defaultLocale = "en_US.UTF-8";
-    i18n.extraLocaleSettings = {
-      LC_ADDRESS = "ja_JP.UTF-8";
-      LC_IDENTIFICATION = "ja_JP.UTF-8";
-      LC_MEASUREMENT = "ja_JP.UTF-8";
-      LC_MONETARY = "ja_JP.UTF-8";
-      LC_NAME = "ja_JP.UTF-8";
-      LC_NUMERIC = "ja_JP.UTF-8";
-      LC_PAPER = "ja_JP.UTF-8";
-      LC_TELEPHONE = "ja_JP.UTF-8";
-      LC_TIME = "ja_JP.UTF-8";
-    };
-
-    services.xserver.xkb = {
-      layout = "us";
-      variant = "";
-    };
-
     users.users.tener = {
-      isNormalUser = true;
-      description = "tener";
       extraGroups = [ "video" "input" "seat" "audio" "network" "wheel" ];
-      packages = with pkgs; [ ];
-    };
-
-    environment.variables = {
-      EDITOR = "nvim";
-      QT_IM_MODULE = "fcitx";
-      XMODIFIERS = "@im=fcitx";
     };
 
     services.getty.autologinUser = "tener";
     services.seatd.enable = true;
-
-    nixpkgs.config.allowUnfree = true;
 
     environment.systemPackages = with pkgs; [
       neovim
@@ -114,10 +66,6 @@ delib.module {
       ];
     };
 
-    nix.settings.experimental-features = [ "nix-command" "flakes" ];
-
-    security.sudo.extraConfig = ''Defaults env_keep += "EDITOR VISUAL"'';
-
     services.nginx = {
       enable = true;
       virtualHosts."local-portfolio" = {
@@ -141,13 +89,11 @@ delib.module {
       };
     };
 
-    services.tailscale.enable = true;
-
     services.openssh = {
       enable = true;
       openFirewall = true;
       settings = {
-        PasswordAuthentication = true;
+        PasswordAuthentication = false;
         PermitRootLogin = "no";
       };
     };
@@ -160,14 +106,12 @@ delib.module {
       };
     };
 
-    systemd.sleep.extraConfig = ''
-      AllowSuspend=no
-      AllowHibernation=no
-      AllowHybridSleep=no
-      AllowSuspendThenHibernate=no
-    '';
-
-    system.stateVersion = "25.05";
+    systemd.sleep.settings.Sleep = {
+      AllowSuspend = "no";
+      AllowHibernation = "no";
+      AllowHybridSleep = "no";
+      AllowSuspendThenHibernate = "no";
+    };
 
     hardware.graphics = {
       enable = true;
@@ -188,6 +132,8 @@ delib.module {
         ExecStart = "/home/tener/projects/portfolio/result/bin/server";
         Restart = "always";
         WorkingDirectory = "/home/tener/projects/portfolio";
+        User = "tener";
+        Group = "users";
       };
     };
   };
