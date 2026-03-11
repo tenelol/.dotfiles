@@ -75,6 +75,7 @@ in
       source = ../config/scripts/emoji-walker;
       executable = true;
     };
+    ".local/bin/zed".source = "${pkgs.zed-editor}/bin/zeditor";
     ".config/fontconfig/fonts.conf".source = ../config/fontconfig/fonts.conf;
   };
 
