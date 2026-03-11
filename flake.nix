@@ -56,7 +56,6 @@
 
           specialArgs = {
             inherit inputs;
-            nix-hazkey = inputs.nix-hazkey;
           };
         };
     in

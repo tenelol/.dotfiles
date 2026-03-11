@@ -1,10 +1,10 @@
-{ delib, lib, pkgs, ... }:
+{ delib, host, pkgs, ... }:
 delib.module {
   name = "nixos.steam";
 
-  nixos.always =
-    { myconfig, ... }:
-    lib.mkIf (myconfig.host.name == "nvidia-desktop") {
+  options = delib.singleEnableOption (host.name == "nvidia-desktop");
+
+  nixos.ifEnabled = {
     programs.steam = {
       enable = true;
       remotePlay.openFirewall = true;
