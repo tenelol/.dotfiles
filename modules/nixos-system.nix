@@ -1,4 +1,7 @@
 { delib, host, lib, pkgs, ... }:
+let
+  isDesktop = host.type == "desktop";
+in
 delib.module {
   name = "nixos.common";
 
@@ -79,7 +82,7 @@ delib.module {
 
     services.xserver.xkb = { layout = "us"; variant = ""; };
 
-    programs.hyprland.enable = true;
+    programs.hyprland.enable = isDesktop;
     programs.xwayland.enable = true;
     programs.nix-ld = {
       enable = true;
@@ -94,15 +97,17 @@ delib.module {
     };
     xdg.portal = {
       enable = true;
-      extraPortals = with pkgs; [
+      extraPortals = with pkgs; lib.optionals isDesktop [
         xdg-desktop-portal-hyprland
+      ] ++ [
         xdg-desktop-portal-wlr
         xdg-desktop-portal-gtk
       ];
       config = {
         common.default = "wlr";
-        hyprland.default = "hyprland";
         niri.default = lib.mkForce "wlr";
+      } // lib.optionalAttrs isDesktop {
+        hyprland.default = "hyprland";
       };
     };
 

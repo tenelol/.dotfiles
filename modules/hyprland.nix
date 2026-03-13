@@ -1,10 +1,11 @@
 { delib, host, ... }:
+let
+  isDesktop = host.type == "desktop";
+in
 delib.module {
   name = "hyprland";
 
-  options = delib.singleEnableOption (
-    host.name == "nixos" || host.name == "nvidia-desktop"
-  );
+  options = delib.singleEnableOption isDesktop;
 
   home.ifEnabled = {
     home.activation.installHyprConfig = ''
