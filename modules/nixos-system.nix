@@ -17,6 +17,12 @@ delib.module {
       jack.enable = true;
     };
 
+    hardware.bluetooth = {
+      enable = true;
+      powerOnBoot = true;
+    };
+    services.blueman.enable = true;
+
     nix.settings.ssl-cert-file = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
 
     networking.useNetworkd = true;
