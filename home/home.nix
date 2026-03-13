@@ -1,8 +1,20 @@
-{ config, pkgs, lib, inputs, ... }:
+{ config, osConfig ? null, pkgs, lib, inputs, ... }:
 let
+  hostConfig =
+    if osConfig != null && osConfig ? myconfig && osConfig.myconfig ? host then
+      osConfig.myconfig.host
+    else if config ? myconfig && config.myconfig ? host then
+      config.myconfig.host
+    else
+      { };
   isServer =
-    if config ? myconfig && config.myconfig ? host && config.myconfig.host ? isServer then
-      config.myconfig.host.isServer
+    if hostConfig ? isServer then
+      hostConfig.isServer
+    else
+      false;
+  isDesktop =
+    if hostConfig ? type then
+      hostConfig.type == "desktop"
     else
       false;
 
@@ -94,15 +106,14 @@ in
     '';
   };
 
-  programs.caelestia = lib.mkIf (!isServer) {
+  programs.caelestia = lib.mkIf isDesktop {
     enable = true;
     package = caelestiaShellPackage.override { withCli = true; };
     systemd.enable = false;
     cli.enable = true;
   };
 
-  xdg.configFile = lib.optionalAttrs (!isServer) {
-    "quickshell/caelestia".source = ../config/caelestia;
+  xdg.configFile = lib.optionalAttrs (!isServer) ({
     "caelestia/shell.json".text = ''
       {
         "paths": {
@@ -124,5 +135,7 @@ in
     '';
     # Hide fcitx5 tray / layout indicator (classicui)
     "fcitx5/conf/classicui.conf".source = ../config/fcitx5/classicui.conf;
-  };
+  } // lib.optionalAttrs isDesktop {
+    "quickshell/caelestia".source = ../config/caelestia;
+  });
 }
