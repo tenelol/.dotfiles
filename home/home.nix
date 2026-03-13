@@ -53,10 +53,10 @@ in
       ghostty
       swww
       wofi
+      fuzzel
       floorp-bin
       google-chrome
       sqlitebrowser
-      walker
       imv
       unicode-emoji
       wtype
@@ -75,8 +75,8 @@ in
     ];
 
   home.file = lib.optionalAttrs (!isServer) {
-    ".local/bin/emoji-walker" = {
-      source = ../config/scripts/emoji-walker;
+    ".local/bin/emoji-fuzzel" = {
+      source = ../config/scripts/emoji-fuzzel;
       executable = true;
     };
     ".local/bin/zed".source = "${pkgs.zed-editor}/bin/zeditor";
@@ -84,13 +84,13 @@ in
   };
 
   home.activation = lib.optionalAttrs (!isServer) {
-    installWalkerConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      if [ -e "$HOME/.config/walker" ]; then
-        $DRY_RUN_CMD rm -rf "$HOME/.config/walker"
+    installFuzzelConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      if [ -e "$HOME/.config/fuzzel" ]; then
+        $DRY_RUN_CMD rm -rf "$HOME/.config/fuzzel"
       fi
-      $DRY_RUN_CMD mkdir -p "$HOME/.config/walker"
-      $DRY_RUN_CMD cp -r ${../config/walker}/. "$HOME/.config/walker/"
-      $DRY_RUN_CMD chmod -R u+rwX "$HOME/.config/walker"
+      $DRY_RUN_CMD mkdir -p "$HOME/.config/fuzzel"
+      $DRY_RUN_CMD cp -r ${../config/fuzzel}/. "$HOME/.config/fuzzel/"
+      $DRY_RUN_CMD chmod -R u+rwX "$HOME/.config/fuzzel"
     '';
   };
 

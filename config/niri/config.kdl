@@ -76,15 +76,15 @@ input {
 // https://yalter.github.io/niri/Configuration:-Outputs
 // Remember to uncomment the node by removing "/-"!
 
-output "DP-3" {
-    mode "3840x2160@75.000"
-    scale 2.0
-    position x=0 y=0
+output "eDP-1" {
+    mode "2256x1504@59.999"
+    scale 1.5
+    position x=208 y=1080
 }
-output "HDMI-A-1" {
-    mode "1920x1080@164.995"
+output "DP-2" {
+    mode "1920x1080@60.000"
     scale 1.0
-    position x=1920 y=80
+    position x=0 y=0
 }
 
 // Settings that influence how windows are positioned and sized.
@@ -352,8 +352,8 @@ binds {
 
     // Suggested binds for running programs: terminal, app launcher, screen locker.
     Mod+Return hotkey-overlay-title="Open a Terminal: Ghostty" { spawn "/etc/profiles/per-user/tener/bin/ghostty"; }
-    Mod+Space hotkey-overlay-title="Run an Application: walker" { spawn "walker"; }
-    Mod+Shift+Period hotkey-overlay-title="Emoji Picker: walker" { spawn "/home/tener/.local/bin/emoji-walker"; }
+    Mod+Space hotkey-overlay-title="Run an Application: fuzzel" { spawn "/etc/profiles/per-user/tener/bin/fuzzel"; }
+    Mod+Shift+Period hotkey-overlay-title="Emoji Picker: fuzzel" { spawn "/home/tener/.local/bin/emoji-fuzzel"; }
     Super+Alt+L hotkey-overlay-title="Lock the Screen: swaylock" { spawn "swaylock"; }
 
     // Use spawn-sh to run a shell command. Do this if you need pipes, multiple commands, etc.

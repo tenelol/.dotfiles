@@ -12,7 +12,7 @@
   "custom/launcher": {
     "format": "MENU",
     "tooltip": false,
-    "on-click": "walker"
+    "on-click": "/etc/profiles/per-user/tener/bin/fuzzel"
   },
   "niri/workspaces": {
     "format": "{name}",
