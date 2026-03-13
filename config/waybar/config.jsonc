@@ -1,61 +1,59 @@
 {
   "layer": "top",
   "position": "top",
-  "height": 34,
-  "spacing": 8,
-  "margin-top": 6,
-  "margin-right": 10,
-  "margin-left": 10,
-  "modules-left": ["custom/launcher", "niri/workspaces", "niri/window"],
-  "modules-center": ["clock"],
-  "modules-right": ["pulseaudio", "network", "cpu", "memory", "battery", "tray"],
+  "height": 30,
+  "spacing": 10,
+  "margin-top": 8,
+  "margin-right": 12,
+  "margin-left": 12,
+  "modules-left": ["custom/launcher", "niri/window"],
+  "modules-center": [],
+  "modules-right": ["tray", "pulseaudio", "network", "battery", "custom/clock"],
   "custom/launcher": {
-    "format": "MENU",
+    "format": "",
     "tooltip": false,
     "on-click": "/etc/profiles/per-user/tener/bin/fuzzel"
   },
-  "niri/workspaces": {
-    "format": "{name}",
-    "on-click": "activate",
-    "sort-by-name": true
-  },
   "niri/window": {
     "format": "{title}",
-    "max-length": 60,
+    "max-length": 42,
     "swap-icon-label": false
   },
-  "clock": {
+  "custom/clock": {
+    "exec": "LC_TIME=en_US.UTF-8 LANG=en_US.UTF-8 date '+%a %b %-d %H:%M'",
     "interval": 30,
-    "format": "{:%a %b %d  %H:%M}",
-    "tooltip-format": "{:%Y-%m-%d %H:%M:%S}"
+    "tooltip": false
   },
   "pulseaudio": {
-    "format": "VOL {volume}%",
-    "format-muted": "VOL muted",
-    "scroll-step": 5,
-    "on-click": "pavucontrol"
+    "format": "{icon}",
+    "format-muted": "󰝟",
+    "format-icons": {
+      "headphone": "󰋋",
+      "hands-free": "󰋎",
+      "headset": "󰋎",
+      "phone": "󰏲",
+      "portable": "󰏲",
+      "car": "󰄋",
+      "default": ["󰕿", "󰖀", "󰕾"]
+    },
+    "tooltip-format": "Volume {volume}%",
+    "scroll-step": 5
   },
   "network": {
-    "format-wifi": "NET {essid} {signalStrength}%",
-    "format-ethernet": "NET {ifname}",
-    "format-disconnected": "NET off",
+    "format-wifi": "󰖩",
+    "format-ethernet": "󰈀",
+    "format-disconnected": "󰖪",
     "tooltip-format": "{ifname} {ipaddr}"
   },
-  "cpu": {
-    "format": "CPU {usage}%",
-    "interval": 2
-  },
-  "memory": {
-    "format": "MEM {used:0.1f}G",
-    "interval": 5
-  },
   "battery": {
-    "format": "BAT {capacity}%",
-    "format-charging": "BAT {capacity}%+",
-    "format-full": "BAT full",
-    "interval": 30
+    "interval": 30,
+    "format": "{icon}",
+    "format-charging": "󰂄",
+    "format-full": "󰁹",
+    "format-icons": ["󰂎", "󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"],
+    "tooltip-format": "{capacity}%"
   },
   "tray": {
-    "spacing": 8
+    "spacing": 10
   }
 }
