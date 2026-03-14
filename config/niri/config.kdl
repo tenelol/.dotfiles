@@ -251,14 +251,14 @@ layout {
 // This line starts waybar, a commonly used bar for Wayland compositors.
 spawn-sh-at-startup "env XDG_CURRENT_DESKTOP=niri dbus-update-activation-environment --systemd XDG_CURRENT_DESKTOP WAYLAND_DISPLAY XDG_SESSION_TYPE"
 spawn-sh-at-startup "fcitx5 -d"
-spawn-sh-at-startup "PATH=/etc/profiles/per-user/tener/bin:/run/current-system/sw/bin:$PATH; pkill -x keyd-application-mapper; keyd-application-mapper -d"
-spawn-sh-at-startup "PATH=/etc/profiles/per-user/tener/bin:/run/current-system/sw/bin:$PATH; waybar"
+spawn-sh-at-startup "PATH=$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PATH; pkill -x keyd-application-mapper; keyd-application-mapper -d"
+spawn-sh-at-startup "PATH=$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PATH; waybar"
 // Use explicit path so swww is found in the login-less niri environment.
-spawn-sh-at-startup "PATH=/etc/profiles/per-user/tener/bin:/run/current-system/sw/bin:$PATH; swww-daemon & sleep 0.2; swww img /home/tener/.dotfiles/img/cat.png --transition-type none"
+spawn-sh-at-startup "PATH=$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PATH; swww-daemon & sleep 0.2; swww img $HOME/.config/wallpapers/Indigo.heic --transition-type none"
 // Start Xwayland for X11 apps (e.g., Steam) under niri.
-spawn-sh-at-startup "PATH=/etc/profiles/per-user/tener/bin:/run/current-system/sw/bin:$PATH; xwayland-satellite"
-// Focus the left monitor (DP-3) on startup.
-spawn-sh-at-startup "sleep 0.3; niri msg action focus-monitor-left"
+spawn-sh-at-startup "PATH=$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PATH; xwayland-satellite"
+// Focus the right monitor (DP-3) on startup.
+spawn-sh-at-startup "sleep 0.3; niri msg action focus-monitor-right"
 
 // To run a shell command (with variables, pipes, etc.), use spawn-sh-at-startup:
 // spawn-sh-at-startup "qs -c ~/source/qs/MyAwesomeShell"
@@ -352,9 +352,9 @@ binds {
     Mod+Shift+Slash { show-hotkey-overlay; }
 
     // Suggested binds for running programs: terminal, app launcher, screen locker.
-    Mod+Return hotkey-overlay-title="Open a Terminal: Ghostty" { spawn "/etc/profiles/per-user/tener/bin/ghostty"; }
-    Mod+Space hotkey-overlay-title="Run an Application: fuzzel" { spawn "/etc/profiles/per-user/tener/bin/fuzzel"; }
-    Mod+Shift+Period hotkey-overlay-title="Emoji Picker: fuzzel" { spawn "/home/tener/.local/bin/emoji-fuzzel"; }
+    Mod+Return hotkey-overlay-title="Open a Terminal: Ghostty" { spawn-sh "PATH=$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PATH; exec ghostty"; }
+    Mod+Space hotkey-overlay-title="Run an Application: fuzzel" { spawn-sh "PATH=$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PATH; exec fuzzel"; }
+    Mod+Shift+Period hotkey-overlay-title="Emoji Picker: fuzzel" { spawn-sh "PATH=$HOME/.local/bin:$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PATH; exec emoji-fuzzel"; }
     Super+Alt+L hotkey-overlay-title="Lock the Screen: swaylock" { spawn "swaylock"; }
 
     // Use spawn-sh to run a shell command. Do this if you need pipes, multiple commands, etc.

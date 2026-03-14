@@ -22,5 +22,6 @@ delib.module {
 
     xdg.configFile."nvim/init.lua".source = ../config/nvim/init.lua;
     xdg.configFile."nvim/lua".source = ../config/nvim/lua;
+    xdg.dataFile."nvim/lazy/lazy.nvim".source = pkgs.vimPlugins.lazy-nvim;
   };
 }

@@ -98,7 +98,6 @@
     tofi
     hyprpaper
     go
-    cloudflared
     gh
     tailscale
     nh
@@ -151,29 +150,6 @@
   security.sudo.extraConfig = ''Defaults env_keep += "EDITOR VISUAL"'';
 
   # Services
-  services.nginx = {
-    enable = true;
-    virtualHosts."local-portfolio" = {
-      listen = [
-        { addr = "0.0.0.0"; port = 80; }
-      ];
-      locations."/" = {
-        proxyPass = "http://127.0.0.1:8080";
-      };
-    };
-  };
-
-  services.cloudflared = {
-    enable = true;
-    tunnels."mywebfw" = {
-      credentialsFile = "/var/lib/cloudflared/mywebfw.json";
-      ingress = {
-        "tenelol.dev" = "http://localhost:8080";
-      };
-      default = "http_status:404";
-    };
-  };
-
   services.tailscale = {
     enable = true;
     useRoutingFeatures = "server"; # Exit node advertising
@@ -216,17 +192,5 @@
       vulkan-tools
       libva
     ];
-  };
-
-  # systemd Server
-  systemd.services.portfolio = {
-    description = "Portfolio Server";
-    after = [ "network.target" ];
-    wantedBy = [ "multi-user.target" ];
-    serviceConfig = {
-      ExecStart = "/home/tener/projects/portfolio/result/bin/server";
-      Restart = "always";
-      WorkingDirectory = "/home/tener/projects/portfolio";
-    };
   };
 }
