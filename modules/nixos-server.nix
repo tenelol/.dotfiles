@@ -8,11 +8,10 @@ delib.module {
     networking.hostName = "nixos-server";
 
     users.users.tener = {
-      extraGroups = [ "video" "input" "seat" "audio" "network" "wheel" ];
+      extraGroups = [ "video" "input" "seat" "audio" "wheel" ];
       openssh.authorizedKeys.keyFiles = [ ../keys/tener.pub ];
     };
 
-    services.getty.autologinUser = "tener";
     services.seatd.enable = true;
 
     environment.systemPackages = with pkgs; [

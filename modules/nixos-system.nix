@@ -117,7 +117,7 @@ delib.module {
     programs.fish.useBabelfish = true;
 
     users.users.tener = {
-      extraGroups = [ "wheel" "network" "keyd" ];
+      extraGroups = [ "wheel" "keyd" ];
       shell = pkgs.fish;
     };
 
