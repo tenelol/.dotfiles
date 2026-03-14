@@ -1,42 +1,28 @@
-{ config, osConfig ? null, pkgs, lib, inputs, ... }:
+{ host, pkgs, lib, inputs, config, ... }:
 let
-  hostConfig =
-    if osConfig != null && osConfig ? myconfig && osConfig.myconfig ? host then
-      osConfig.myconfig.host
-    else if config ? myconfig && config.myconfig ? host then
-      config.myconfig.host
-    else
-      { };
-  isServer =
-    if hostConfig ? isServer then
-      hostConfig.isServer
-    else
-      false;
-  isDesktop =
-    if hostConfig ? type then
-      hostConfig.type == "desktop"
-    else
-      false;
+  isServer = host.isServer or false;
+  isDesktop = (host.type or null) == "desktop";
+  homeDir = config.home.homeDirectory;
 
-  caelestiaShellPackage = import ../packages/caelestia-shell.nix {
-    inherit inputs pkgs lib;
-  };
   codexBarPackage = import ../packages/codexbar.nix {
     inherit pkgs lib;
   };
 in
 {
   home.username = "tener";
-  home.homeDirectory = "/home/tener";
+  home.homeDirectory = "/home/${config.home.username}";
   home.stateVersion = "25.05";
   home.enableNixpkgsReleaseCheck = false;
+
   home.sessionPath = [
-    "/home/tener/.npm-global/bin"
-    "/home/tener/.local/bin"
+    "${homeDir}/.npm-global/bin"
+    "${homeDir}/.local/bin"
   ];
+
   home.sessionVariables = {
     JAVA_HOME = "${pkgs.jdk}/lib/openjdk";
   };
+
   home.packages =
     with pkgs;
     [
@@ -95,35 +81,18 @@ in
     ".config/fontconfig/fonts.conf".source = ../config/fontconfig/fonts.conf;
   };
 
-  home.activation = lib.optionalAttrs (!isServer) {
-    installFuzzelConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      if [ -e "$HOME/.config/fuzzel" ]; then
-        $DRY_RUN_CMD rm -rf "$HOME/.config/fuzzel"
-      fi
-      $DRY_RUN_CMD mkdir -p "$HOME/.config/fuzzel"
-      $DRY_RUN_CMD cp -r ${../config/fuzzel}/. "$HOME/.config/fuzzel/"
-      $DRY_RUN_CMD chmod -R u+rwX "$HOME/.config/fuzzel"
-    '';
-  };
-
-  programs.caelestia = lib.mkIf isDesktop {
-    enable = true;
-    package = caelestiaShellPackage.override { withCli = true; };
-    systemd.enable = false;
-    cli.enable = true;
-  };
-
   xdg.configFile = lib.optionalAttrs (!isServer) ({
     "caelestia/shell.json".text = ''
       {
         "paths": {
-          "wallpaperDir": "/home/tener/.dotfiles/img",
+          "wallpaperDir": "${config.xdg.configHome}/wallpapers",
           "sessionGif": "root:/assets/kurukuru.gif",
           "mediaGif": "root:/assets/bongocat.gif"
         }
       }
     '';
     "caelestia/cli.json".text = "{}";
+    "wallpapers".source = ../img;
     "keyd/app.conf".text = ''
       [com-mitchellh-ghostty]
       meta.c = C-S-c
@@ -133,7 +102,6 @@ in
       meta.c = C-S-c
       meta.v = C-S-v
     '';
-    # Hide fcitx5 tray / layout indicator (classicui)
     "fcitx5/conf/classicui.conf".source = ../config/fcitx5/classicui.conf;
   } // lib.optionalAttrs isDesktop {
     "quickshell/caelestia".source = ../config/caelestia;

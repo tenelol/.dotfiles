@@ -6,7 +6,6 @@ delib.module {
 
   nixos.ifEnabled = {
     networking.hostName = "nixos-server";
-    networking.firewall.allowedTCPPorts = [ 80 8080 ];
 
     users.users.tener = {
       extraGroups = [ "video" "input" "seat" "audio" "network" "wheel" ];
@@ -29,7 +28,6 @@ delib.module {
       python3
       iwd
       go
-      cloudflared
       gh
       tailscale
       nh
@@ -67,35 +65,11 @@ delib.module {
       ];
     };
 
-    services.nginx = {
-      enable = true;
-      virtualHosts."local-portfolio" = {
-        listen = [
-          { addr = "0.0.0.0"; port = 80; }
-        ];
-        locations."/" = {
-          proxyPass = "http://127.0.0.1:8080";
-        };
-      };
-    };
-
-    services.cloudflared = {
-      enable = true;
-      tunnels."mywebfw" = {
-        credentialsFile = "/var/lib/cloudflared/mywebfw.json";
-        ingress = {
-          "tenelol.dev" = "http://localhost:8080";
-        };
-        default = "http_status:404";
-      };
-    };
-
     services.openssh = {
       enable = true;
       openFirewall = true;
       settings = {
-        # TODO: Set to false after adding your public key to keys/tener.pub.
-        PasswordAuthentication = true;
+        PasswordAuthentication = false;
         PermitRootLogin = "no";
       };
     };
@@ -124,19 +98,6 @@ delib.module {
         vulkan-tools
         libva
       ];
-    };
-
-    systemd.services.portfolio = {
-      description = "Portfolio Server";
-      after = [ "network.target" ];
-      wantedBy = [ "multi-user.target" ];
-      serviceConfig = {
-        ExecStart = "/home/tener/projects/portfolio/result/bin/server";
-        Restart = "always";
-        WorkingDirectory = "/home/tener/projects/portfolio";
-        User = "tener";
-        Group = "users";
-      };
     };
   };
 }
