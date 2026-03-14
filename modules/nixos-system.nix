@@ -1,7 +1,4 @@
 { delib, host, lib, pkgs, ... }:
-let
-  isDesktop = host.type == "desktop";
-in
 delib.module {
   name = "nixos.common";
 
@@ -42,13 +39,19 @@ delib.module {
             capslock = "layer(control)";
             # space = "overload(shift, space)"; # SandS disabled for games
           };
+          # Use Super as the "Command" key for app shortcuts.
           meta = {
-            c = "C-c";
-            v = "C-v";
-            x = "C-x";
-            z = "C-z";
             a = "C-a";
-            w = "A-f4";
+            c = "C-c";
+            f = "C-f";
+            r = "C-r";
+            s = "C-s";
+            t = "C-t";
+            v = "C-v";
+            w = "C-w";
+            x = "C-x";
+            y = "C-y";
+            z = "C-z";
           };
         };
       };
@@ -82,7 +85,6 @@ delib.module {
 
     services.xserver.xkb = { layout = "us"; variant = ""; };
 
-    programs.hyprland.enable = isDesktop;
     programs.xwayland.enable = true;
     programs.nix-ld = {
       enable = true;
@@ -97,17 +99,13 @@ delib.module {
     };
     xdg.portal = {
       enable = true;
-      extraPortals = with pkgs; lib.optionals isDesktop [
-        xdg-desktop-portal-hyprland
-      ] ++ [
+      extraPortals = with pkgs; [
         xdg-desktop-portal-wlr
         xdg-desktop-portal-gtk
       ];
       config = {
         common.default = "wlr";
         niri.default = lib.mkForce "wlr";
-      } // lib.optionalAttrs isDesktop {
-        hyprland.default = "hyprland";
       };
     };
 

@@ -1,7 +1,6 @@
-{ host, pkgs, lib, inputs, config, ... }:
+{ host, pkgs, lib, config, ... }:
 let
   isServer = host.isServer or false;
-  isDesktop = (host.type or null) == "desktop";
   homeDir = config.home.homeDirectory;
 
   codexBarPackage = import ../packages/codexbar.nix {
@@ -44,6 +43,7 @@ in
       acpi
       alsa-utils
       brightnessctl
+      cliphist
       grim
       playerctl
       pulseaudio
@@ -60,8 +60,10 @@ in
       google-chrome
       sqlitebrowser
       imv
+      swaylock
       unicode-emoji
       wtype
+      ydotool
       obsidian
       vesktop
       slack
@@ -91,16 +93,6 @@ in
   };
 
   xdg.configFile = lib.optionalAttrs (!isServer) ({
-    "caelestia/shell.json".text = ''
-      {
-        "paths": {
-          "wallpaperDir": "${config.xdg.configHome}/wallpapers",
-          "sessionGif": "root:/assets/kurukuru.gif",
-          "mediaGif": "root:/assets/bongocat.gif"
-        }
-      }
-    '';
-    "caelestia/cli.json".text = "{}";
     "wallpapers".source = ../img;
     "keyd/app.conf".text = ''
       [com-mitchellh-ghostty]
@@ -112,7 +104,5 @@ in
       meta.v = C-S-v
     '';
     "fcitx5/conf/classicui.conf".source = ../config/fcitx5/classicui.conf;
-  } // lib.optionalAttrs isDesktop {
-    "quickshell/caelestia".source = ../config/caelestia;
   });
 }
