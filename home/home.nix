@@ -15,6 +15,7 @@ in
   home.enableNixpkgsReleaseCheck = false;
 
   home.sessionPath = [
+    "/run/wrappers/bin"
     "${homeDir}/.npm-global/bin"
     "${homeDir}/.local/bin"
   ];

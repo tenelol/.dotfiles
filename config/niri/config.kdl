@@ -76,15 +76,15 @@ input {
 // https://yalter.github.io/niri/Configuration:-Outputs
 // Remember to uncomment the node by removing "/-"!
 
-output "eDP-1" {
-    mode "2256x1504@59.999"
+output "DP-3" {
+    mode "3840x2160@60.000"
     scale 1.5
-    position x=208 y=1080
-}
-output "DP-2" {
-    mode "1920x1080@60.000"
-    scale 1.0
     position x=0 y=0
+}
+output "HDMI-A-1" {
+    mode "1920x1080@59.934"
+    scale 1.0
+    position x=2560 y=0
 }
 
 // Settings that influence how windows are positioned and sized.
@@ -254,11 +254,11 @@ spawn-sh-at-startup "fcitx5 -d"
 spawn-sh-at-startup "PATH=$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PATH; pkill -x keyd-application-mapper; keyd-application-mapper -d"
 spawn-sh-at-startup "PATH=$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PATH; waybar"
 // Use explicit path so swww is found in the login-less niri environment.
-spawn-sh-at-startup "PATH=$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PATH; swww-daemon & sleep 0.2; swww img $HOME/.config/wallpapers/Indigo.heic --transition-type none"
+spawn-sh-at-startup "PATH=$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PATH; swww-daemon & sleep 0.2; swww img $HOME/.config/wallpapers/Indigo.png --transition-type none"
 // Start Xwayland for X11 apps (e.g., Steam) under niri.
 spawn-sh-at-startup "PATH=$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PATH; xwayland-satellite"
-// Focus the right monitor (DP-3) on startup.
-spawn-sh-at-startup "sleep 0.3; niri msg action focus-monitor-right"
+// Focus the left monitor (DP-3) on startup.
+spawn-sh-at-startup "sleep 0.3; niri msg action focus-monitor-left"
 
 // To run a shell command (with variables, pipes, etc.), use spawn-sh-at-startup:
 // spawn-sh-at-startup "qs -c ~/source/qs/MyAwesomeShell"

@@ -1,4 +1,4 @@
-local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
+local lazypath = dofile(vim.fn.stdpath("config") .. "/lazy-path.lua")
 vim.opt.rtp:prepend(lazypath)
 
 
