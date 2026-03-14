@@ -1,0 +1,15 @@
+// Host-specific output layout for nvidia-desktop.
+output "DP-3" {
+    mode "3840x2160@75.000"
+    scale 1.5
+    position x=0 y=0
+}
+
+output "HDMI-A-1" {
+    mode "1920x1080@164.995"
+    scale 1.0
+    position x=2560 y=540
+}
+
+// Focus the left monitor (DP-3) after outputs settle.
+spawn-sh-at-startup "sleep 0.3; niri msg action focus-monitor-left"

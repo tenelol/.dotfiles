@@ -12,7 +12,7 @@
   "custom/launcher": {
     "format": "",
     "tooltip": false,
-    "on-click": "/etc/profiles/per-user/tener/bin/fuzzel"
+    "on-click": "fuzzel"
   },
   "niri/window": {
     "format": "{title}",

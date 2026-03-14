@@ -2,40 +2,64 @@
   delib,
   host,
   inputs,
+  lib,
   pkgs,
   ...
 }:
 let
   nix-hazkey = inputs.nix-hazkey;
   inherit (pkgs.stdenv.hostPlatform) system;
+  hasHazkeyPackages = builtins.hasAttr system nix-hazkey.packages;
+  hasX86_64Binary = system == "x86_64-linux";
+  isSupportedHazkeySystem = hasHazkeyPackages && hasX86_64Binary;
 
   hazkeyVersion = "0.2.1";
-  hazkeySrc = pkgs.fetchzip {
-    name = "fcitx5-hazkey-bin";
-    version = hazkeyVersion;
-    urls = [
-      "https://github.com/7ka-Hiira/fcitx5-hazkey/releases/download/${hazkeyVersion}/fcitx5-hazkey-${hazkeyVersion}-x86_64.tar.gz"
-      "https://ghproxy.net/https://github.com/7ka-Hiira/fcitx5-hazkey/releases/download/${hazkeyVersion}/fcitx5-hazkey-${hazkeyVersion}-x86_64.tar.gz"
-      "https://github.moeyy.xyz/https://github.com/7ka-Hiira/fcitx5-hazkey/releases/download/${hazkeyVersion}/fcitx5-hazkey-${hazkeyVersion}-x86_64.tar.gz"
-    ];
-    hash = "sha256-jwv1UTRz/FVHmeaumwP45Q4JZcSuZHTrF2/PAzrxeC8=";
-    stripRoot = false;
-  };
+  hazkeySrc =
+    if hasX86_64Binary then
+      pkgs.fetchzip {
+        name = "fcitx5-hazkey-bin";
+        version = hazkeyVersion;
+        urls = [
+          "https://github.com/7ka-Hiira/fcitx5-hazkey/releases/download/${hazkeyVersion}/fcitx5-hazkey-${hazkeyVersion}-x86_64.tar.gz"
+          "https://ghproxy.net/https://github.com/7ka-Hiira/fcitx5-hazkey/releases/download/${hazkeyVersion}/fcitx5-hazkey-${hazkeyVersion}-x86_64.tar.gz"
+          "https://github.moeyy.xyz/https://github.com/7ka-Hiira/fcitx5-hazkey/releases/download/${hazkeyVersion}/fcitx5-hazkey-${hazkeyVersion}-x86_64.tar.gz"
+        ];
+        hash = "sha256-jwv1UTRz/FVHmeaumwP45Q4JZcSuZHTrF2/PAzrxeC8=";
+        stripRoot = false;
+      }
+    else
+      null;
 
-  hazkeyPackages = nix-hazkey.packages.${system};
-  fcitx5Hazkey = hazkeyPackages.fcitx5-hazkey.overrideAttrs (_: {
-    src = hazkeySrc;
-  });
-  hazkeySettings = hazkeyPackages.hazkey-settings.overrideAttrs (_: {
-    src = hazkeySrc;
-  });
-  hazkeyServer = hazkeyPackages.hazkey-server.overrideAttrs (_: {
-    src = hazkeySrc;
-  });
-  hazkeyDictionary = hazkeyPackages.dictionary.overrideAttrs (_: {
-    src = hazkeySrc;
-  });
-  hasLibllamaCpu = builtins.hasAttr "libllama-cpu" hazkeyPackages;
+  hazkeyPackages = if hasHazkeyPackages then nix-hazkey.packages.${system} else null;
+  fcitx5Hazkey =
+    if isSupportedHazkeySystem then
+      hazkeyPackages.fcitx5-hazkey.overrideAttrs (_: {
+        src = hazkeySrc;
+      })
+    else
+      null;
+  hazkeySettings =
+    if isSupportedHazkeySystem then
+      hazkeyPackages.hazkey-settings.overrideAttrs (_: {
+        src = hazkeySrc;
+      })
+    else
+      null;
+  hazkeyServer =
+    if isSupportedHazkeySystem then
+      hazkeyPackages.hazkey-server.overrideAttrs (_: {
+        src = hazkeySrc;
+      })
+    else
+      null;
+  hazkeyDictionary =
+    if isSupportedHazkeySystem then
+      hazkeyPackages.dictionary.overrideAttrs (_: {
+        src = hazkeySrc;
+      })
+    else
+      null;
+  hasLibllamaCpu = isSupportedHazkeySystem && builtins.hasAttr "libllama-cpu" hazkeyPackages;
 
   libllamaVersion = "20251109.0";
   libllamaSrc =
@@ -64,12 +88,15 @@ in
 delib.module {
   name = "nixos.hazkey";
 
-  options = delib.singleEnableOption (!host.isServer);
+  options = delib.singleEnableOption (!host.isServer && isSupportedHazkeySystem);
 
   # Always import the hazkey NixOS module so its options are defined on every host.
   # Actual configuration is guarded by ifEnabled below.
   nixos.always = {
     imports = [ nix-hazkey.nixosModules.hazkey ];
+    warnings = lib.optional (
+      !host.isServer && builtins.match ".*-linux" host.system != null && !isSupportedHazkeySystem
+    ) "nixos.hazkey is disabled on ${system}: the pinned upstream binary overrides are only packaged for x86_64-linux.";
   };
 
   nixos.ifEnabled = {
