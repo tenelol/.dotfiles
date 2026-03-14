@@ -1,10 +1,17 @@
-{ delib, pkgs, ... }:
+{
+  delib,
+  lib,
+  pkgs,
+  ...
+}:
 delib.module {
   name = "yazi";
 
   home.always = {
     home.packages = [ pkgs.yazi ];
-
+    xdg.configFile."yazi".source = ../config/yazi;
+  }
+  // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
     xdg.mimeApps = {
       enable = true;
       defaultApplications = {
@@ -15,7 +22,5 @@ delib.module {
 
     xdg.configFile."mimeapps.list".force = true;
     xdg.dataFile."applications/mimeapps.list".force = true;
-
-    xdg.configFile."yazi".source = ../config/yazi;
   };
 }

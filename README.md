@@ -33,6 +33,13 @@ sudo nixos-rebuild switch --flake .#nvidia-desktop
 sudo nixos-rebuild switch --flake .#nixos-server
 ```
 
+macOS (`macbook` ホスト、Apple Silicon 前提):
+
+```sh
+sudo nix run github:nix-darwin/nix-darwin#darwin-rebuild -- switch --flake .#macbook
+sudo darwin-rebuild switch --flake .#macbook
+```
+
 構成の評価だけをしたい場合:
 
 ```sh
@@ -50,5 +57,6 @@ nix fmt
 - `home/home.nix` が `tener` ユーザーの Home Manager 設定の入口です。
 - ホスト固有の設定は `hosts/<host>/` 配下にあります。
 - `modules/` 配下の denix モジュールが各ホスト / Home Manager 設定を組み立てます。
+- `hosts/macbook/default.nix` は `aarch64-darwin` を前提にしているので、Intel Mac の場合は `x86_64-darwin` に変更してください。
 - 新しい `.nix` ファイルを `modules/` や `hosts/` に追加した場合、flake から確実に見えるよう Git 管理下に置いておくのが安全です。
 - Home Manager 管理下のアプリ設定は、基本的に `xdg.configFile` / `home.file` で宣言的に配置しています。

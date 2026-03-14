@@ -24,7 +24,8 @@
     nix-hazkey.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { denix, nixpkgs, ... }@inputs:
+  outputs =
+    { denix, nixpkgs, ... }@inputs:
     let
       mkConfigurations =
         moduleSystem:
@@ -55,13 +56,19 @@
           };
         };
       nixosConfigurations = mkConfigurations "nixos";
+      darwinConfigurations = mkConfigurations "darwin";
     in
     {
-      inherit nixosConfigurations;
+      inherit nixosConfigurations darwinConfigurations;
 
-      checks.x86_64-linux =
-        nixpkgs.lib.mapAttrs (_: configuration: configuration.config.system.build.toplevel) nixosConfigurations;
+      checks.x86_64-linux = nixpkgs.lib.mapAttrs (
+        _: configuration: configuration.config.system.build.toplevel
+      ) nixosConfigurations;
 
-      formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixfmt;
+      formatter = {
+        x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixfmt;
+        aarch64-darwin = nixpkgs.legacyPackages.aarch64-darwin.nixfmt;
+        x86_64-darwin = nixpkgs.legacyPackages.x86_64-darwin.nixfmt;
+      };
     };
 }

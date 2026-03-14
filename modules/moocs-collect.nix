@@ -1,4 +1,10 @@
-{ delib, host, lib, pkgs, ... }:
+{
+  delib,
+  host,
+  lib,
+  pkgs,
+  ...
+}:
 let
   moocs-collect-cli = pkgs.rustPlatform.buildRustPackage {
     pname = "moocs-collect-cli";
@@ -10,8 +16,14 @@ let
       pkgs.dbus
     ];
 
-    cargoBuildFlags = [ "-p" "collect-cli" ];
-    cargoCheckFlags = [ "-p" "collect-cli" ];
+    cargoBuildFlags = [
+      "-p"
+      "collect-cli"
+    ];
+    cargoCheckFlags = [
+      "-p"
+      "collect-cli"
+    ];
 
     src = pkgs.fetchFromGitHub {
       owner = "yu7400ki";

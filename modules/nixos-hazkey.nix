@@ -1,4 +1,10 @@
-{ delib, host, inputs, pkgs, ... }:
+{
+  delib,
+  host,
+  inputs,
+  pkgs,
+  ...
+}:
 let
   nix-hazkey = inputs.nix-hazkey;
   inherit (pkgs.stdenv.hostPlatform) system;
@@ -16,12 +22,20 @@ let
     stripRoot = false;
   };
 
-  hazkeyPackages    = nix-hazkey.packages.${system};
-  fcitx5Hazkey      = hazkeyPackages.fcitx5-hazkey.overrideAttrs    (_: { src = hazkeySrc; });
-  hazkeySettings    = hazkeyPackages.hazkey-settings.overrideAttrs  (_: { src = hazkeySrc; });
-  hazkeyServer      = hazkeyPackages.hazkey-server.overrideAttrs    (_: { src = hazkeySrc; });
-  hazkeyDictionary  = hazkeyPackages.dictionary.overrideAttrs       (_: { src = hazkeySrc; });
-  hasLibllamaCpu    = builtins.hasAttr "libllama-cpu" hazkeyPackages;
+  hazkeyPackages = nix-hazkey.packages.${system};
+  fcitx5Hazkey = hazkeyPackages.fcitx5-hazkey.overrideAttrs (_: {
+    src = hazkeySrc;
+  });
+  hazkeySettings = hazkeyPackages.hazkey-settings.overrideAttrs (_: {
+    src = hazkeySrc;
+  });
+  hazkeyServer = hazkeyPackages.hazkey-server.overrideAttrs (_: {
+    src = hazkeySrc;
+  });
+  hazkeyDictionary = hazkeyPackages.dictionary.overrideAttrs (_: {
+    src = hazkeySrc;
+  });
+  hasLibllamaCpu = builtins.hasAttr "libllama-cpu" hazkeyPackages;
 
   libllamaVersion = "20251109.0";
   libllamaSrc =
@@ -40,9 +54,12 @@ let
     else
       null;
   libllamaCpu =
-    if hasLibllamaCpu
-    then hazkeyPackages.libllama-cpu.overrideAttrs (_: { src = libllamaSrc; })
-    else null;
+    if hasLibllamaCpu then
+      hazkeyPackages.libllama-cpu.overrideAttrs (_: {
+        src = libllamaSrc;
+      })
+    else
+      null;
 in
 delib.module {
   name = "nixos.hazkey";
