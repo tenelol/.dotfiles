@@ -87,9 +87,10 @@ let
   ];
 in
 {
-  home.username = "tener";
-  home.homeDirectory =
-    if isDarwin then "/Users/${config.home.username}" else "/home/${config.home.username}";
+  home.username = lib.mkDefault "tener";
+  home.homeDirectory = lib.mkDefault (
+    if isDarwin then "/Users/${config.home.username}" else "/home/${config.home.username}"
+  );
   home.stateVersion = "25.05";
   home.enableNixpkgsReleaseCheck = false;
 

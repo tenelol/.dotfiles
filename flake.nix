@@ -27,6 +27,7 @@
   outputs =
     { denix, nixpkgs, ... }@inputs:
     let
+      lib = nixpkgs.lib;
       mkConfigurations =
         moduleSystem:
         denix.lib.configurations {
@@ -55,15 +56,30 @@
             inherit inputs;
           };
         };
-      nixosConfigurations = mkConfigurations "nixos";
-      darwinConfigurations = mkConfigurations "darwin";
+
+      filterConfigurationsBySystem =
+        systemPattern: configurations:
+        lib.filterAttrs (
+          _: configuration: builtins.match systemPattern configuration.pkgs.stdenv.hostPlatform.system != null
+        ) configurations;
+
+      mkChecks =
+        configurations:
+        lib.mapAttrs (_: configuration: configuration.config.system.build.toplevel) configurations;
+
+      # denix currently returns every host in both outputs, so filter them to keep
+      # the public flake interface aligned with the actual target platform.
+      nixosConfigurations = filterConfigurationsBySystem ".*-linux" (mkConfigurations "nixos");
+      darwinConfigurations = filterConfigurationsBySystem ".*-darwin" (mkConfigurations "darwin");
     in
     {
       inherit nixosConfigurations darwinConfigurations;
 
-      checks.x86_64-linux = nixpkgs.lib.mapAttrs (
-        _: configuration: configuration.config.system.build.toplevel
-      ) nixosConfigurations;
+      checks = {
+        x86_64-linux = mkChecks (filterConfigurationsBySystem "x86_64-linux" nixosConfigurations);
+        aarch64-darwin = mkChecks (filterConfigurationsBySystem "aarch64-darwin" darwinConfigurations);
+        x86_64-darwin = mkChecks (filterConfigurationsBySystem "x86_64-darwin" darwinConfigurations);
+      };
 
       formatter = {
         x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixfmt;
