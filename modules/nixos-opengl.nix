@@ -1,16 +1,14 @@
-{ delib, pkgs, ... }:
+{ delib, host, pkgs, ... }:
 delib.module {
   name = "nixos.opengl";
 
-  options = delib.singleEnableOption true;
+  options = delib.singleEnableOption (!host.isServer);
 
   nixos.ifEnabled = {
-    # Enable hardware graphics (OpenGL/Vulkan/Mesa)
     hardware.graphics = {
       enable = true;
       enable32Bit = true;
 
-      # Extra packages for better OpenGL support
       extraPackages = with pkgs; [
         mesa
         libglvnd
@@ -23,15 +21,9 @@ delib.module {
       ];
     };
 
-    # Ensure GLX works properly
     environment.systemPackages = with pkgs; [
-      mesa-demos  # includes glxinfo, glxgears
+      mesa-demos
       vulkan-tools
     ];
-
-    # Set library path for OpenGL
-    environment.variables = {
-      LIBGL_DRIVERS_PATH = "${pkgs.mesa}/lib/dri";
-    };
   };
 }

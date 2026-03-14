@@ -11,8 +11,11 @@ delib.module {
   options = delib.singleEnableOption isDesktop;
 
   home.ifEnabled = {
-    home.packages = [
-      (caelestiaShellPackage.override { withCli = true; })
-    ];
+    programs.caelestia = {
+      enable = true;
+      package = caelestiaShellPackage.override { withCli = true; };
+      systemd.enable = false;
+      cli.enable = true;
+    };
   };
 }

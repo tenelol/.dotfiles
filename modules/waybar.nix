@@ -5,6 +5,6 @@ delib.module {
   options = delib.singleEnableOption (!host.isServer);
 
   home.ifEnabled = {
-    xdg.configFile."waybar".source = ../config/waybar2;
+    xdg.configFile."waybar".source = ../config/waybar;
   };
 }

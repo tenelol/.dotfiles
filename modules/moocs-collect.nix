@@ -15,10 +15,10 @@ let
 
     src = pkgs.fetchFromGitHub {
       owner = "yu7400ki";
-    repo = "moocs-collect";
-    rev = "cli-v1.0.1";
-    hash = "sha256-MVUrgyrSH6hMr6IVxsEVJyij5ec7PTGwWaqOPOs0sxM=";
-  };
+      repo = "moocs-collect";
+      rev = "cli-v1.0.1";
+      hash = "sha256-MVUrgyrSH6hMr6IVxsEVJyij5ec7PTGwWaqOPOs0sxM=";
+    };
 
     cargoHash = "sha256-gcquTNdbfAQWpRdRlqzKBhPtaKCxhRnE+IO0984+HF0=";
 
