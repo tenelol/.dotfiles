@@ -1,11 +1,13 @@
-{ delib, host, inputs, pkgs, lib, ... }:
+{ delib, host, inputs, pkgs, ... }:
 let
   spicePkgs = inputs.spicetify-nix.legacyPackages.${pkgs.stdenv.hostPlatform.system};
 in
 delib.module {
   name = "spicetify";
 
-  home.always = lib.mkIf (!host.isServer) {
+  options = delib.singleEnableOption (!host.isServer);
+
+  home.ifEnabled = {
     programs.spicetify = {
       enable = true;
       enabledExtensions = with spicePkgs.extensions; [

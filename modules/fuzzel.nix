@@ -1,11 +1,11 @@
-{ delib, host, ... }:
+{ delib, host, hm, ... }:
 delib.module {
   name = "fuzzel";
 
   options = delib.singleEnableOption (!host.isServer);
 
   home.ifEnabled = {
-    home.activation.installFuzzelConfig = ''
+    home.activation.installFuzzelConfig = hm.dag.entryAfter [ "writeBoundary" ] ''
       if [ -e "$HOME/.config/fuzzel" ]; then
         $DRY_RUN_CMD rm -rf "$HOME/.config/fuzzel"
       fi

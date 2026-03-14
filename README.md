@@ -22,14 +22,14 @@
 `nixos` ホスト:
 
 ```sh
-sudo nixos-rebuild switch --flake .#nixosConfigurations.nixos
+sudo nixos-rebuild switch --flake .#nixos
 ```
 
 別ホストの場合:
 
 ```sh
-sudo nixos-rebuild switch --flake .#nixosConfigurations.nvidia-desktop
-sudo nixos-rebuild switch --flake .#nixosConfigurations.nixos-server
+sudo nixos-rebuild switch --flake .#nvidia-desktop
+sudo nixos-rebuild switch --flake .#nixos-server
 ```
 
 ## メモ
