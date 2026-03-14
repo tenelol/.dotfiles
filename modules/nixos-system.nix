@@ -106,13 +106,19 @@ delib.module {
     };
     xdg.portal = {
       enable = true;
+      xdgOpenUsePortal = true;
+      configPackages = [ pkgs.niri ];
       extraPortals = with pkgs; [
-        xdg-desktop-portal-wlr
+        xdg-desktop-portal-gnome
         xdg-desktop-portal-gtk
       ];
       config = {
-        common.default = "wlr";
-        niri.default = lib.mkForce "wlr";
+        common.default = [ "gtk" ];
+        niri = {
+          default = [ "gnome" "gtk" ];
+          "org.freedesktop.impl.portal.Screencast" = [ "gnome" ];
+          "org.freedesktop.impl.portal.Screenshot" = [ "gnome" ];
+        };
       };
     };
 
