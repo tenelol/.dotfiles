@@ -250,6 +250,8 @@ layout {
 
 // This line starts waybar, a commonly used bar for Wayland compositors.
 spawn-sh-at-startup "env XDG_CURRENT_DESKTOP=niri dbus-update-activation-environment --systemd XDG_CURRENT_DESKTOP WAYLAND_DISPLAY XDG_SESSION_TYPE"
+spawn-sh-at-startup "PATH=$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PATH; wl-paste --type text --watch cliphist store"
+spawn-sh-at-startup "PATH=$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PATH; wl-paste --type image --watch cliphist store"
 spawn-sh-at-startup "fcitx5 -d"
 spawn-sh-at-startup "PATH=$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PATH; pkill -x keyd-application-mapper; keyd-application-mapper -d"
 spawn-sh-at-startup "PATH=$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PATH; waybar"
@@ -541,22 +543,23 @@ binds {
     // Expel the bottom window from the focused column to the right.
     Mod+Period { expel-window-from-column; }
 
-    Mod+R { switch-preset-column-width; }
+    // Keep common Super-letter combos free for app shortcuts via keyd.
+    Mod+Backslash { switch-preset-column-width; }
     // Cycling through the presets in reverse order is also possible.
-    // Mod+R { switch-preset-column-width-back; }
-    Mod+Shift+R { switch-preset-window-height; }
-    Mod+Ctrl+R { reset-window-height; }
-    Mod+F { maximize-column; }
-    Mod+Shift+F { fullscreen-window; }
+    // Mod+Backslash { switch-preset-column-width-back; }
+    Mod+Shift+Backslash { switch-preset-window-height; }
+    Mod+Ctrl+Backslash { reset-window-height; }
+    Mod+M { maximize-column; }
+    Mod+Shift+M { fullscreen-window; }
 
     // Expand the focused column to space not taken up by other fully visible columns.
     // Makes the column "fill the rest of the space".
-    Mod+Ctrl+F { expand-column-to-available-width; }
+    Mod+Ctrl+M { expand-column-to-available-width; }
 
-    Mod+C { center-column; }
+    Mod+G { center-column; }
 
     // Center all fully visible columns on screen.
-    Mod+Ctrl+C { center-visible-columns; }
+    Mod+Shift+G { center-visible-columns; }
 
     // Finer width adjustments.
     // This command can also:
@@ -574,13 +577,13 @@ binds {
     Mod+Shift+Equal { set-window-height "+10%"; }
 
     // Move the focused window between the floating and the tiling layout.
-    Mod+V       { toggle-window-floating; }
-    Mod+Shift+V { switch-focus-between-floating-and-tiling; }
+    Mod+Apostrophe       { toggle-window-floating; }
+    Mod+Shift+Apostrophe { switch-focus-between-floating-and-tiling; }
 
     // Toggle tabbed column display mode.
     // Windows in this column will appear as vertical tabs,
     // rather than stacked on top of each other.
-    Mod+W { toggle-column-tabbed-display; }
+    Mod+B { toggle-column-tabbed-display; }
 
     // Actions to switch layouts.
     // Note: if you uncomment these, make sure you do NOT have

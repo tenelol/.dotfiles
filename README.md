@@ -7,7 +7,7 @@
 - `flake.nix`: NixOS flake のエントリ。`nixosConfigurations` を定義
 - `hosts/`: ホスト別の NixOS 設定
 - `home/`: Home Manager のエントリとモジュール
-- `config/`: 各種アプリ設定 (`nvim`, `fish`, `hypr`, `waybar` など)
+- `config/`: 各種アプリ設定 (`nvim`, `fish`, `niri`, `waybar` など)
 - `modules/`: denix ベースのモジュール群
 - `legacy/`: 旧構成の退避先。現行の flake からは未使用
 
