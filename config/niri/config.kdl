@@ -69,24 +69,6 @@ input {
     focus-follows-mouse
 }
 
-// You can configure outputs by their name, which you can find
-// by running `niri msg outputs` while inside a niri instance.
-// The built-in laptop monitor is usually called "eDP-1".
-// Find more information on the wiki:
-// https://yalter.github.io/niri/Configuration:-Outputs
-// Remember to uncomment the node by removing "/-"!
-
-output "DP-3" {
-    mode "3840x2160@75.000"
-    scale 1.5
-    position x=0 y=0
-}
-output "HDMI-A-1" {
-    mode "1920x1080@164.995"
-    scale 1.0
-    position x=2560 y=540
-}
-
 // Settings that influence how windows are positioned and sized.
 // Find more information on the wiki:
 // https://yalter.github.io/niri/Configuration:-Layout
@@ -257,8 +239,6 @@ spawn-sh-at-startup "PATH=$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PAT
 spawn-sh-at-startup "PATH=$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PATH; waybar"
 // Use explicit path so swww is found in the login-less niri environment.
 spawn-sh-at-startup "PATH=$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PATH; swww-daemon & sleep 0.2; swww img $HOME/.config/wallpapers/Indigo.png --transition-type none"
-// Focus the left monitor (DP-3) on startup.
-spawn-sh-at-startup "sleep 0.3; niri msg action focus-monitor-left"
 
 // To run a shell command (with variables, pipes, etc.), use spawn-sh-at-startup:
 // spawn-sh-at-startup "qs -c ~/source/qs/MyAwesomeShell"

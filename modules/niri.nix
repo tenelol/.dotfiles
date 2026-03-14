@@ -1,4 +1,17 @@
-{ delib, host, ... }:
+{
+  delib,
+  host,
+  lib,
+  ...
+}:
+let
+  baseConfig = builtins.readFile ../config/niri/config.kdl;
+  hostOverlay =
+    if host.name == "nvidia-desktop" then
+      builtins.readFile ../config/niri/nvidia-desktop.kdl
+    else
+      "";
+in
 delib.module {
   name = "niri";
 
@@ -7,6 +20,9 @@ delib.module {
   );
 
   home.ifEnabled = {
-    xdg.configFile."niri".source = ../config/niri;
+    xdg.configFile."niri/config.kdl".text =
+      baseConfig
+      + lib.optionalString (hostOverlay != "") "\n"
+      + hostOverlay;
   };
 }
