@@ -44,12 +44,15 @@ in
       acpi
       alsa-utils
       brightnessctl
+      grim
       playerctl
       pulseaudio
       iw
       iproute2
       iputils
       ghostty
+      libnotify
+      slurp
       swww
       wofi
       fuzzel
@@ -64,6 +67,7 @@ in
       slack
       libreoffice-fresh
       vscode
+      wl-clipboard
       zed-editor
       zathura
       antigravity-fhs
@@ -76,6 +80,10 @@ in
   home.file = lib.optionalAttrs (!isServer) {
     ".local/bin/emoji-fuzzel" = {
       source = ../config/scripts/emoji-fuzzel;
+      executable = true;
+    };
+    ".local/bin/niri-screenshot" = {
+      source = ../config/scripts/niri-screenshot;
       executable = true;
     };
     ".local/bin/zed".source = "${pkgs.zed-editor}/bin/zeditor";
