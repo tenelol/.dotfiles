@@ -27,7 +27,7 @@
     caelestia-shell.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { denix, ... }@inputs:
+  outputs = { denix, nixpkgs, ... }@inputs:
     let
       mkConfigurations =
         moduleSystem:
@@ -57,8 +57,14 @@
             inherit inputs;
           };
         };
+      nixosConfigurations = mkConfigurations "nixos";
     in
     {
-      nixosConfigurations = mkConfigurations "nixos";
+      inherit nixosConfigurations;
+
+      checks.x86_64-linux =
+        nixpkgs.lib.mapAttrs (_: configuration: configuration.config.system.build.toplevel) nixosConfigurations;
+
+      formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixfmt;
     };
 }

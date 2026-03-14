@@ -9,6 +9,7 @@
 - `home/`: Home Manager のエントリとモジュール
 - `config/`: 各種アプリ設定 (`nvim`, `fish`, `hypr`, `waybar` など)
 - `modules/`: denix ベースのモジュール群
+- `legacy/`: 旧構成の退避先。現行の flake からは未使用
 
 ## 前提
 
@@ -32,9 +33,22 @@ sudo nixos-rebuild switch --flake .#nvidia-desktop
 sudo nixos-rebuild switch --flake .#nixos-server
 ```
 
+構成の評価だけをしたい場合:
+
+```sh
+nix flake check
+```
+
+フォーマット:
+
+```sh
+nix fmt
+```
+
 ## メモ
 
 - `home/home.nix` が `tener` ユーザーの Home Manager 設定の入口です。
 - ホスト固有の設定は `hosts/<host>/` 配下にあります。
 - `modules/` 配下の denix モジュールが各ホスト / Home Manager 設定を組み立てます。
 - 新しい `.nix` ファイルを `modules/` や `hosts/` に追加した場合、flake から確実に見えるよう Git 管理下に置いておくのが安全です。
+- Home Manager 管理下のアプリ設定は、基本的に `xdg.configFile` / `home.file` で宣言的に配置しています。
