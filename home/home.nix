@@ -3,6 +3,7 @@
   pkgs,
   lib,
   config,
+  profile,
   ...
 }:
 let
@@ -87,7 +88,7 @@ let
   ];
 in
 {
-  home.username = lib.mkDefault "tener";
+  home.username = lib.mkDefault profile.username;
   home.homeDirectory = lib.mkDefault (
     if isDarwin then "/Users/${config.home.username}" else "/home/${config.home.username}"
   );

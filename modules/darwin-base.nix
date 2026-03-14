@@ -2,6 +2,7 @@
   delib,
   host,
   pkgs,
+  profile,
   ...
 }:
 delib.module {
@@ -10,12 +11,12 @@ delib.module {
   options = delib.singleEnableOption (builtins.match ".*-darwin" host.system != null);
 
   darwin.ifEnabled = {
-    system.primaryUser = "tener";
+    system.primaryUser = profile.username;
     system.stateVersion = 6;
 
-    users.users.tener = {
-      name = "tener";
-      home = "/Users/tener";
+    users.users.${profile.username} = {
+      name = profile.username;
+      home = "/Users/${profile.username}";
       shell = pkgs.fish;
     };
 

@@ -28,11 +28,17 @@
     { denix, nixpkgs, ... }@inputs:
     let
       lib = nixpkgs.lib;
+      profile = {
+        username = "tener";
+        gitName = "tenelol";
+        gitEmail = "tenelol@tenelol.dev";
+        sshPublicKey = ./keys/tener.pub;
+      };
       mkConfigurations =
         moduleSystem:
         denix.lib.configurations {
           inherit moduleSystem;
-          homeManagerUser = "tener";
+          homeManagerUser = profile.username;
 
           paths = [
             ./hosts
@@ -54,6 +60,7 @@
 
           specialArgs = {
             inherit inputs;
+            inherit profile;
           };
         };
 

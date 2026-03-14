@@ -2,6 +2,7 @@
   delib,
   host,
   pkgs,
+  profile,
   ...
 }:
 delib.module {
@@ -12,7 +13,7 @@ delib.module {
   nixos.ifEnabled = {
     networking.hostName = "nixos-server";
 
-    users.users.tener = {
+    users.users.${profile.username} = {
       extraGroups = [
         "video"
         "input"
@@ -20,7 +21,7 @@ delib.module {
         "audio"
         "wheel"
       ];
-      openssh.authorizedKeys.keyFiles = [ ../keys/tener.pub ];
+      openssh.authorizedKeys.keyFiles = [ profile.sshPublicKey ];
     };
 
     services.seatd.enable = true;

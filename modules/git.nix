@@ -1,4 +1,4 @@
-{ delib, ... }:
+{ delib, profile, ... }:
 delib.module {
   name = "git";
 
@@ -6,8 +6,8 @@ delib.module {
     programs.git = {
       enable = true;
       settings = {
-        user.name = "tenelol";
-        user.email = "tenelol@tenelol.dev";
+        user.name = profile.gitName;
+        user.email = profile.gitEmail;
         core.editor = "nvim";
       };
     };
