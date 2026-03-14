@@ -1,0 +1,30 @@
+#!/bin/sh
+set -eu
+
+mode="${1:-full}"
+screenshots_dir="${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots"
+timestamp="$(date '+%Y-%m-%d %H-%M-%S')"
+outfile="$screenshots_dir/Screenshot from $timestamp.png"
+
+mkdir -p "$screenshots_dir"
+
+case "$mode" in
+  full)
+    grim - | tee "$outfile" | wl-copy --type image/png >/dev/null
+    ;;
+  area)
+    geometry="$(slurp)" || exit 0
+    [ -n "$geometry" ] || exit 0
+    grim -g "$geometry" - | tee "$outfile" | wl-copy --type image/png >/dev/null
+    ;;
+  *)
+    echo "usage: niri-screenshot [full|area]" >&2
+    exit 2
+    ;;
+esac
+
+if command -v notify-send >/dev/null 2>&1; then
+  notify-send -a "niri-screenshot" -i "$outfile" "Screenshot taken" "$outfile"
+fi
+
+printf '%s\n' "$outfile"

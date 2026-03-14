@@ -77,14 +77,14 @@ input {
 // Remember to uncomment the node by removing "/-"!
 
 output "DP-3" {
-    mode "3840x2160@60.000"
+    mode "3840x2160@75.000"
     scale 1.5
     position x=0 y=0
 }
 output "HDMI-A-1" {
-    mode "1920x1080@165.000"
+    mode "1920x1080@164.995"
     scale 1.0
-    position x=2560 y=0
+    position x=2560 y=540
 }
 
 // Settings that influence how windows are positioned and sized.
@@ -590,9 +590,10 @@ binds {
     // Mod+Space       { switch-layout "next"; }
     // Mod+Shift+Space { switch-layout "prev"; }
 
-    Print { screenshot; }
+    Print hotkey-overlay-title="Screenshot: Save and copy full screen" { spawn-sh "PATH=$HOME/.local/bin:$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PATH; exec niri-screenshot full"; }
     Ctrl+Print { screenshot-screen; }
     Alt+Print { screenshot-window; }
+    Super+Shift+S hotkey-overlay-title="Screenshot: Save and copy area" { spawn-sh "PATH=$HOME/.local/bin:$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PATH; exec niri-screenshot area"; }
 
     // Applications such as remote-desktop clients and software KVM switches may
     // request that niri stops processing the keyboard shortcuts defined here
