@@ -1,4 +1,10 @@
-{ delib, host, inputs, pkgs, ... }:
+{
+  delib,
+  host,
+  inputs,
+  pkgs,
+  ...
+}:
 let
   system = pkgs.stdenv.hostPlatform.system;
   zenPackages = inputs.zen-browser.packages.${system};
@@ -6,7 +12,9 @@ in
 delib.module {
   name = "zen-browser";
 
-  options = delib.singleEnableOption (!host.isServer);
+  options = delib.singleEnableOption (
+    !host.isServer && builtins.match ".*-linux" host.system != null
+  );
 
   home.ifEnabled = {
     home.packages = [

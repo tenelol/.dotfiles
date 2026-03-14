@@ -1,10 +1,14 @@
-{ delib, host, lib, pkgs, ... }:
+{
+  delib,
+  host,
+  lib,
+  pkgs,
+  ...
+}:
 delib.module {
   name = "nixos.common";
 
-  options = delib.singleEnableOption (
-    host.name == "nixos" || host.name == "nvidia-desktop"
-  );
+  options = delib.singleEnableOption (host.name == "nixos" || host.name == "nvidia-desktop");
 
   nixos.ifEnabled = {
     services.pulseaudio.enable = false;
@@ -83,7 +87,10 @@ delib.module {
       ];
     };
 
-    services.xserver.xkb = { layout = "us"; variant = ""; };
+    services.xserver.xkb = {
+      layout = "us";
+      variant = "";
+    };
 
     programs.xwayland.enable = true;
     programs.nix-ld = {
@@ -117,7 +124,10 @@ delib.module {
     programs.fish.useBabelfish = true;
 
     users.users.tener = {
-      extraGroups = [ "wheel" "keyd" ];
+      extraGroups = [
+        "wheel"
+        "keyd"
+      ];
       shell = pkgs.fish;
     };
 

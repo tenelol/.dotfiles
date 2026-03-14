@@ -3,7 +3,10 @@ delib.module {
   name = "nixos.base";
 
   nixos.always = {
-    nix.settings.experimental-features = [ "nix-command" "flakes" ];
+    nix.settings.experimental-features = [
+      "nix-command"
+      "flakes"
+    ];
     nix.gc = {
       automatic = true;
       dates = "weekly";
@@ -22,7 +25,9 @@ delib.module {
       General = {
         EnableNetworkConfiguration = true;
       };
-      Settings = { AutoConnect = true; };
+      Settings = {
+        AutoConnect = true;
+      };
     };
 
     time.timeZone = "Asia/Tokyo";

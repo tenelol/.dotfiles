@@ -1,4 +1,9 @@
-{ delib, host, pkgs, ... }:
+{
+  delib,
+  host,
+  pkgs,
+  ...
+}:
 delib.module {
   name = "nixos.host.nixos-server";
 
@@ -8,7 +13,13 @@ delib.module {
     networking.hostName = "nixos-server";
 
     users.users.tener = {
-      extraGroups = [ "video" "input" "seat" "audio" "wheel" ];
+      extraGroups = [
+        "video"
+        "input"
+        "seat"
+        "audio"
+        "wheel"
+      ];
       openssh.authorizedKeys.keyFiles = [ ../keys/tener.pub ];
     };
 

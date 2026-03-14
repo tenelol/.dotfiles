@@ -1,4 +1,9 @@
-{ delib, pkgs, hm, ... }:
+{
+  delib,
+  pkgs,
+  hm,
+  ...
+}:
 delib.module {
   name = "nvim";
 

@@ -6,6 +6,9 @@ delib.module {
 
   nixos.ifEnabled = {
     networking.hostName = "nvidia-desktop";
-    networking.nameservers = [ "1.1.1.1" "8.8.8.8" ];
+    networking.nameservers = [
+      "1.1.1.1"
+      "8.8.8.8"
+    ];
   };
 }

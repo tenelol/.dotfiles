@@ -1,30 +1,53 @@
 #!/bin/sh
 set -eu
 
+PATH="$HOME/.local/bin:$HOME/.nix-profile/bin:/etc/profiles/per-user/${USER:-$(id -un)}/bin:/run/current-system/sw/bin:${PATH:-}"
+export PATH
+
 mode="${1:-full}"
 screenshots_dir="${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots"
 timestamp="$(date '+%Y-%m-%d %H-%M-%S')"
 outfile="$screenshots_dir/Screenshot from $timestamp.png"
+log_dir="${XDG_STATE_HOME:-$HOME/.local/state}/niri"
+log_file="$log_dir/screenshot.log"
 
-mkdir -p "$screenshots_dir"
+mkdir -p "$screenshots_dir" "$log_dir"
+
+notify() {
+  if command -v notify-send >/dev/null 2>&1; then
+    notify-send -a "niri-screenshot" "$@"
+  fi
+}
+
+fail() {
+  message="$1"
+  printf '%s: %s\n' "$(date '+%F %T')" "$message" >>"$log_file"
+  notify "Screenshot failed" "$message"
+  exit 1
+}
+
+for cmd in grim wl-copy tee date mkdir; do
+  command -v "$cmd" >/dev/null 2>&1 || fail "missing command: $cmd"
+done
 
 case "$mode" in
   full)
-    grim - | tee "$outfile" | wl-copy --type image/png >/dev/null
+    if ! grim - | tee "$outfile" | wl-copy --type image/png >/dev/null; then
+      fail "grim or wl-copy failed for full screenshot"
+    fi
     ;;
   area)
+    command -v slurp >/dev/null 2>&1 || fail "missing command: slurp"
     geometry="$(slurp)" || exit 0
     [ -n "$geometry" ] || exit 0
-    grim -g "$geometry" - | tee "$outfile" | wl-copy --type image/png >/dev/null
+    if ! grim -g "$geometry" - | tee "$outfile" | wl-copy --type image/png >/dev/null; then
+      fail "grim or wl-copy failed for area screenshot"
+    fi
     ;;
   *)
-    echo "usage: niri-screenshot [full|area]" >&2
-    exit 2
+    fail "usage: niri-screenshot [full|area]"
     ;;
 esac
 
-if command -v notify-send >/dev/null 2>&1; then
-  notify-send -a "niri-screenshot" -i "$outfile" "Screenshot taken" "$outfile"
-fi
-
+notify -i "$outfile" "Screenshot taken" "$outfile"
 printf '%s\n' "$outfile"
