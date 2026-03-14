@@ -13,6 +13,12 @@ delib.module {
         set -l idx (math "$r % $count + 1")
         set fish_greeting $greetings[$idx]
 
+        if not contains /run/wrappers/bin $PATH
+          set -gx PATH /run/wrappers/bin $PATH
+        else if test "$PATH[1]" != /run/wrappers/bin
+          set -gx PATH /run/wrappers/bin (string match -v /run/wrappers/bin $PATH)
+        end
+
         fish_add_path ~/.opencode/bin
 
       '';
