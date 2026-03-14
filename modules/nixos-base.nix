@@ -1,4 +1,9 @@
-{ delib, pkgs, ... }:
+{
+  delib,
+  pkgs,
+  profile,
+  ...
+}:
 delib.module {
   name = "nixos.base";
 
@@ -45,9 +50,9 @@ delib.module {
       LC_TIME = "ja_JP.UTF-8";
     };
 
-    users.users.tener = {
+    users.users.${profile.username} = {
       isNormalUser = true;
-      description = "tener";
+      description = profile.username;
     };
 
     nixpkgs.config.allowUnfree = true;

@@ -54,7 +54,8 @@ nix fmt
 
 ## メモ
 
-- `home/home.nix` が `tener` ユーザーの Home Manager 設定の入口です。
+- `home/home.nix` が `profile.username` に紐づく Home Manager 設定の入口です。
+- ユーザー名や Git identity などの共通プロフィール値は `flake.nix` の `profile` に集約しています。
 - ホスト固有の設定は `hosts/<host>/` 配下にあります。
 - `modules/` 配下の denix モジュールが各ホスト / Home Manager 設定を組み立てます。
 - `hosts/macbook/default.nix` は `aarch64-darwin` を前提にしているので、Intel Mac の場合は `x86_64-darwin` に変更してください。

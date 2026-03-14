@@ -3,6 +3,7 @@
   host,
   lib,
   pkgs,
+  profile,
   ...
 }:
 delib.module {
@@ -129,7 +130,7 @@ delib.module {
     programs.fish.enable = true;
     programs.fish.useBabelfish = true;
 
-    users.users.tener = {
+    users.users.${profile.username} = {
       extraGroups = [
         "wheel"
         "keyd"
