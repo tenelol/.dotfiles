@@ -2,17 +2,19 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
-{ config, pkgs, lib, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
 
 {
-  imports =
-    [ # Include the results of the hardware scan.
-      ./hardware-configuration.nix
-      ./incus.nix
-      ./incus-zstd.nix
-      ./kvm.nix
-      ../hazkey.nix
-    ];
+  imports = [
+    # Include the results of the hardware scan.
+    ./hardware-configuration.nix
+    ../hazkey.nix
+  ];
 
   # Audio settings
   services.pulseaudio.enable = false;
@@ -26,7 +28,10 @@
   };
 
   # Nix settings
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  nix.settings.experimental-features = [
+    "nix-command"
+    "flakes"
+  ];
   nix.settings.ssl-cert-file = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
   nix.gc = {
     automatic = true;
@@ -57,7 +62,9 @@
     General = {
       EnableNetworkConfiguration = true;
     };
-    Settings = { AutoConnect = true; };
+    Settings = {
+      AutoConnect = true;
+    };
   };
 
   # tailscale
@@ -85,7 +92,7 @@
   services.keyd = {
     enable = true;
     keyboards.default = {
-      ids = ["*"];
+      ids = [ "*" ];
       settings = {
         main = {
           capslock = "layer(control)";
@@ -117,7 +124,10 @@
   };
 
   # Configure keymap in X11
-  services.xserver.xkb = { layout = "us"; variant = ""; };
+  services.xserver.xkb = {
+    layout = "us";
+    variant = "";
+  };
 
   # GUI
   programs.hyprland.enable = true;
@@ -153,8 +163,11 @@
   users.users.tener = {
     isNormalUser = true;
     description = "tener";
-    extraGroups = [ "wheel" "network" ];
-    packages = with pkgs; [];
+    extraGroups = [
+      "wheel"
+      "network"
+    ];
+    packages = with pkgs; [ ];
     shell = pkgs.fish;
   };
 
@@ -165,8 +178,21 @@
   # $ nix search wget
   environment.systemPackages = with pkgs; [
     vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
-    wget git iwd gcc cl zig clang neovim nodejs
-    nodePackages.npm go cargo python3 tailscale pnpm
+    wget
+    git
+    iwd
+    gcc
+    cl
+    zig
+    clang
+    neovim
+    nodejs
+    nodePackages.npm
+    go
+    cargo
+    python3
+    tailscale
+    pnpm
     xwayland-satellite
     nh
   ];
