@@ -7,9 +7,12 @@ section() {
 
 section "system"
 date
-hostnamectl --static 2>/dev/null || hostname
+hostname
 uname -srmo
 uptime
+
+section "cpu"
+ps -eo pid,comm,%cpu,%mem --sort=-%cpu | head -n 20
 
 section "power"
 if command -v powerprofilesctl >/dev/null 2>&1; then
@@ -27,9 +30,6 @@ if compgen -G "/sys/devices/system/cpu/cpu*/cpufreq/scaling_driver" >/dev/null; 
   echo "drivers:"
   cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_driver 2>/dev/null | sort -u
 fi
-
-section "cpu"
-ps -eo pid,comm,%cpu,%mem --sort=-%cpu | head -n 20
 
 section "thermal"
 if [ -d /sys/class/thermal ]; then

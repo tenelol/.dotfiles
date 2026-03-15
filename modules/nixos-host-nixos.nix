@@ -18,6 +18,5 @@ delib.module {
     boot.kernelPackages = lib.mkForce pkgs.linuxPackages;
 
     services.power-profiles-daemon.enable = true;
-    powerManagement.cpuFreqGovernor = "powersave";
   };
 }
