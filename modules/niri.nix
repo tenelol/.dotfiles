@@ -1,7 +1,9 @@
 {
   delib,
+  hm,
   host,
   lib,
+  pkgs,
   ...
 }:
 let
@@ -20,6 +22,20 @@ delib.module {
   );
 
   home.ifEnabled = {
+    home.activation.cleanupLegacyNiriDir = hm.dag.entryBefore [ "checkLinkTargets" ] ''
+      legacy_niri="$HOME/.config/niri"
+
+      if [ -L "$legacy_niri" ]; then
+        target="$(${pkgs.coreutils}/bin/readlink "$legacy_niri")"
+
+        case "$target" in
+          /nix/store/*-home-manager-files/.config/niri)
+            $DRY_RUN_CMD ${pkgs.coreutils}/bin/rm "$legacy_niri"
+            ;;
+        esac
+      fi
+    '';
+
     xdg.configFile."niri/config.kdl".text =
       baseConfig
       + lib.optionalString (hostOverlay != "") "\n"
