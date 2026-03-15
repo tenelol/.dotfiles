@@ -34,7 +34,6 @@ let
 
   linuxDesktopPackages = with pkgs; [
     codexBarPackage
-    waybar
     acpi
     alsa-utils
     brightnessctl
@@ -45,7 +44,6 @@ let
     iw
     iproute2
     iputils
-    ghostty
     libnotify
     slurp
     swww
