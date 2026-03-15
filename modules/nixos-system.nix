@@ -9,7 +9,9 @@
 delib.module {
   name = "nixos.common";
 
-  options = delib.singleEnableOption (host.name == "nixos" || host.name == "nvidia-desktop");
+  options = delib.singleEnableOption (
+    !host.isServer && builtins.match ".*-linux" host.system != null
+  );
 
   nixos.ifEnabled = {
     services.pulseaudio.enable = false;
