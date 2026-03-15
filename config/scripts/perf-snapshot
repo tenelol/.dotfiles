@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+section() {
+  printf '\n== %s ==\n' "$1"
+}
+
+section "system"
+date
+hostnamectl --static 2>/dev/null || hostname
+uname -srmo
+uptime
+
+section "power"
+if command -v powerprofilesctl >/dev/null 2>&1; then
+  powerprofilesctl get || true
+else
+  echo "powerprofilesctl: unavailable"
+fi
+
+if compgen -G "/sys/devices/system/cpu/cpu*/cpufreq/scaling_governor" >/dev/null; then
+  echo "governors:"
+  cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor 2>/dev/null | sort -u
+fi
+
+if compgen -G "/sys/devices/system/cpu/cpu*/cpufreq/scaling_driver" >/dev/null; then
+  echo "drivers:"
+  cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_driver 2>/dev/null | sort -u
+fi
+
+section "cpu"
+ps -eo pid,comm,%cpu,%mem --sort=-%cpu | head -n 20
+
+section "thermal"
+if [ -d /sys/class/thermal ]; then
+  for zone in /sys/class/thermal/thermal_zone*; do
+    [ -d "$zone" ] || continue
+    zone_type="$(cat "$zone/type" 2>/dev/null || echo unknown)"
+    zone_temp="$(cat "$zone/temp" 2>/dev/null || echo unknown)"
+    printf '%s %s %s\n' "$(basename "$zone")" "$zone_type" "$zone_temp"
+  done
+else
+  echo "/sys/class/thermal: unavailable"
+fi
+
+section "memory"
+free -h
+
+section "session"
+printf 'XDG_CURRENT_DESKTOP=%s\n' "${XDG_CURRENT_DESKTOP:-}"
+printf 'XDG_SESSION_TYPE=%s\n' "${XDG_SESSION_TYPE:-}"
+
+section "hot processes"
+top -b -n 1 | head -n 20
