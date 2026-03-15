@@ -142,6 +142,7 @@ delib.module {
       vim
       wget
       git
+      ghostty
       keyd
       iwd
       adwaita-icon-theme
@@ -157,6 +158,7 @@ delib.module {
       python3
       tailscale
       pnpm
+      waybar
       xwayland-satellite
       nh
     ];
