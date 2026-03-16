@@ -371,19 +371,20 @@ binds {
 
     Alt+Q repeat=false { close-window; }
 
-    Alt+Left  { focus-column-left; }
-    Alt+Down  { focus-window-down; }
-    Alt+Up    { focus-window-up; }
-    Alt+Right { focus-column-right; }
+    // Keep Alt+Arrow free for application shortcuts such as VS Code.
+    // Alt+Left  { focus-column-left; }
+    // Alt+Down  { focus-window-down; }
+    // Alt+Up    { focus-window-up; }
+    // Alt+Right { focus-column-right; }
     Alt+H     { focus-column-left; }
     Alt+J     { focus-window-down; }
     Alt+K     { focus-window-up; }
     Alt+L     { focus-column-right; }
 
-    Alt+Ctrl+Left  { move-column-left; }
-    Alt+Ctrl+Down  { move-window-down; }
-    Alt+Ctrl+Up    { move-window-up; }
-    Alt+Ctrl+Right { move-column-right; }
+    // Alt+Ctrl+Left  { move-column-left; }
+    // Alt+Ctrl+Down  { move-window-down; }
+    // Alt+Ctrl+Up    { move-window-up; }
+    // Alt+Ctrl+Right { move-column-right; }
     Alt+Ctrl+H     { move-column-left; }
     Alt+Ctrl+J     { move-window-down; }
     Alt+Ctrl+K     { move-window-up; }
@@ -401,19 +402,19 @@ binds {
     Alt+Ctrl+Home { move-column-to-first; }
     Alt+Ctrl+End  { move-column-to-last; }
 
-    Alt+Shift+Left  { focus-monitor-left; }
-    Alt+Shift+Down  { focus-monitor-down; }
-    Alt+Shift+Up    { focus-monitor-up; }
-    Alt+Shift+Right { focus-monitor-right; }
+    // Alt+Shift+Left  { focus-monitor-left; }
+    // Alt+Shift+Down  { focus-monitor-down; }
+    // Alt+Shift+Up    { focus-monitor-up; }
+    // Alt+Shift+Right { focus-monitor-right; }
     Alt+Shift+H     { focus-monitor-left; }
     Alt+Shift+J     { focus-monitor-down; }
     Alt+Shift+K     { focus-monitor-up; }
     Alt+Shift+L     { focus-monitor-right; }
 
-    Alt+Shift+Ctrl+Left  { move-column-to-monitor-left; }
-    Alt+Shift+Ctrl+Down  { move-column-to-monitor-down; }
-    Alt+Shift+Ctrl+Up    { move-column-to-monitor-up; }
-    Alt+Shift+Ctrl+Right { move-column-to-monitor-right; }
+    // Alt+Shift+Ctrl+Left  { move-column-to-monitor-left; }
+    // Alt+Shift+Ctrl+Down  { move-column-to-monitor-down; }
+    // Alt+Shift+Ctrl+Up    { move-column-to-monitor-up; }
+    // Alt+Shift+Ctrl+Right { move-column-to-monitor-right; }
     Alt+Shift+Ctrl+H     { move-column-to-monitor-left; }
     Alt+Shift+Ctrl+J     { move-column-to-monitor-down; }
     Alt+Shift+Ctrl+K     { move-column-to-monitor-up; }
