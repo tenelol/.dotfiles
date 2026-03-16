@@ -11,6 +11,7 @@ let
   isLinux = pkgs.stdenv.hostPlatform.isLinux;
   isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
   homeDir = config.home.homeDirectory;
+  wallpaper = ../img/Indigo.png;
 
   codexBarPackage = import ../packages/codexbar.nix {
     inherit pkgs lib;
@@ -137,6 +138,7 @@ in
 
   xdg.configFile =
     lib.optionalAttrs (!isServer) {
+      "theme/wallpaper.png".source = wallpaper;
       "wallpapers".source = ../img;
     }
     // lib.optionalAttrs (!isServer && isLinux) {

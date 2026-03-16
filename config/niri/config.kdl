@@ -237,8 +237,8 @@ spawn-sh-at-startup "PATH=$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PAT
 spawn-sh-at-startup "fcitx5 -d"
 spawn-sh-at-startup "PATH=$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PATH; pkill -x keyd-application-mapper; keyd-application-mapper -d"
 spawn-sh-at-startup "PATH=$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PATH; waybar"
-// Use explicit path so swww is found in the login-less niri environment.
-spawn-sh-at-startup "PATH=$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PATH; swww-daemon & sleep 0.2; swww img $HOME/.config/wallpapers/Indigo.png --transition-type none"
+// Use a stable wallpaper path so every desktop component can share one source.
+spawn-sh-at-startup "PATH=$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PATH; swww-daemon & sleep 0.2; swww img $HOME/.config/theme/wallpaper.png --transition-type none"
 
 // To run a shell command (with variables, pipes, etc.), use spawn-sh-at-startup:
 // spawn-sh-at-startup "qs -c ~/source/qs/MyAwesomeShell"
