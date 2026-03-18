@@ -523,6 +523,7 @@ binds {
     Alt+Period { expel-window-from-column; }
 
     // Keep common Super-letter combos free for app shortcuts via keyd.
+    Alt+R { switch-preset-column-width; }
     Alt+Backslash { switch-preset-column-width; }
     // Cycling through the presets in reverse order is also possible.
     // Alt+Backslash { switch-preset-column-width-back; }
