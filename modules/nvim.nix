@@ -21,6 +21,7 @@ let
     cmp-buffer = pkgs.vimPlugins.cmp-buffer;
     cmp-path = pkgs.vimPlugins.cmp-path;
     cmp-cmdline = pkgs.vimPlugins.cmp-cmdline;
+    cmp_luasnip = pkgs.vimPlugins.cmp_luasnip;
     conform-nvim = pkgs.vimPlugins.conform-nvim;
     copilot-vim = pkgs.vimPlugins.copilot-vim;
     nvim-dap = pkgs.vimPlugins.nvim-dap;
@@ -39,6 +40,8 @@ let
     nightfox-nvim = pkgs.vimPlugins.nightfox-nvim;
     noice-nvim = pkgs.vimPlugins.noice-nvim;
     nvim-notify = pkgs.vimPlugins.nvim-notify;
+    luasnip = pkgs.vimPlugins.luasnip;
+    friendly-snippets = pkgs.vimPlugins.friendly-snippets;
     smear-cursor-nvim = pkgs.vimPlugins.smear-cursor-nvim;
     telescope-nvim = pkgs.vimPlugins.telescope-nvim;
     toggleterm-nvim = pkgs.vimPlugins.toggleterm-nvim;
@@ -59,6 +62,16 @@ let
     vim-test = pkgs.vimPlugins.vim-test;
     inherit winresizer;
   };
+  nixManagedPluginPaths = builtins.mapAttrs (_: plugin: toString plugin) nixManagedPlugins;
+  nixManagedPluginsLua =
+    let
+      renderEntry = name: ''  [${builtins.toJSON name}] = ${builtins.toJSON nixManagedPluginPaths.${name}}'';
+    in
+    ''
+      return {
+      ${builtins.concatStringsSep ",\n" (map renderEntry (builtins.attrNames nixManagedPluginPaths))}
+      }
+    '';
 in
 delib.module {
   name = "nvim";
@@ -95,9 +108,7 @@ delib.module {
     xdg.configFile."nvim/lazy-path.lua".text = ''
       return ${builtins.toJSON (toString pkgs.vimPlugins.lazy-nvim)}
     '';
-    xdg.configFile."nvim/nix-managed-plugins.lua".text = ''
-      return ${builtins.toJSON (builtins.mapAttrs (_: plugin: toString plugin) nixManagedPlugins)}
-    '';
+    xdg.configFile."nvim/nix-managed-plugins.lua".text = nixManagedPluginsLua;
 
     home.activation.cleanupLegacyLazyNvim = hm.dag.entryAfter [ "writeBoundary" ] ''
       if [ -e "$HOME/.local/share/nvim/lazy/lazy.nvim" ]; then

@@ -12,6 +12,7 @@ return {
 
       wk.add({
         { "<leader>d", group = "debug" },
+        { "<leader>h", group = "git hunk" },
         { "<leader>t", group = "test" },
       })
     end,

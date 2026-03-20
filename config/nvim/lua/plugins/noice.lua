@@ -3,13 +3,17 @@ local plugin = require("nix-plugin")
 return {
   plugin.spec("noice-nvim", {
     event = "VeryLazy",
-    opts = {},
+    config = function()
+      require("noice").setup({})
+    end,
     dependencies = {
       plugin.dep("nui-nvim"),
       plugin.dep("nvim-notify", {
-        opts = {
-          background_colour = "#000000",
-        },
+        config = function()
+          require("notify").setup({
+            background_colour = "#000000",
+          })
+        end,
       }),
     },
   }),

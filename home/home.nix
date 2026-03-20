@@ -62,7 +62,6 @@ let
     vesktop
     slack
     libreoffice-fresh
-    vscode
     wl-clipboard
     zed-editor
     zathura
@@ -81,7 +80,6 @@ let
     obsidian
     vesktop
     slack
-    vscode
     zed-editor
     zathura
   ];
