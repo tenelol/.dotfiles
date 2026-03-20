@@ -1,6 +1,7 @@
+local plugin = require("nix-plugin")
+
 return {
-  {
-    "hrsh7th/nvim-cmp",
+  plugin.spec("nvim-cmp", {
     event = { "InsertEnter", "CmdlineEnter" },
     config = function ()
       local cmp = require("cmp")
@@ -31,9 +32,9 @@ return {
         },
       })
     end,
-  },
-  "hrsh7th/cmp-nvim-lsp",
-  "hrsh7th/cmp-buffer",
-  "hrsh7th/cmp-path",
-  "hrsh7th/cmp-cmdline",
+  }),
+  plugin.dep("cmp-nvim-lsp"),
+  plugin.dep("cmp-buffer"),
+  plugin.dep("cmp-path"),
+  plugin.dep("cmp-cmdline"),
 }

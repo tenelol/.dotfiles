@@ -1,12 +1,14 @@
+local plugin = require("nix-plugin")
+
 return {
-    "nvim-neo-tree/neo-tree.nvim",
-    branch = "v3.x",
-    dependencies = {
-        "nvim-lua/plenary.nvim",
-        "nvim-tree/nvim-web-devicons",
-	    "MunifTanjim/nui.nvim"
-    },
-    config = function()
-        vim.keymap.set('n','<C-n>',':Neotree filesystem reveal left<CR>',{})
-    end
+  plugin.spec("neo-tree-nvim", {
+  dependencies = {
+    plugin.dep("plenary-nvim"),
+    plugin.dep("nvim-web-devicons"),
+    plugin.dep("nui-nvim"),
+  },
+  config = function()
+    vim.keymap.set("n", "<C-n>", ":Neotree filesystem reveal left<CR>", { desc = "Toggle file tree" })
+  end,
+  }),
 }

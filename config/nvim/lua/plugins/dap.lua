@@ -1,10 +1,11 @@
+local plugin = require("nix-plugin")
+
 return {
-  {
-    "mfussenegger/nvim-dap",
+  plugin.spec("nvim-dap", {
     dependencies = {
-      "mfussenegger/nvim-dap-python",
-      "rcarriga/nvim-dap-ui",
-      "nvim-neotest/nvim-nio",
+      plugin.dep("nvim-dap-python"),
+      plugin.dep("nvim-dap-ui"),
+      plugin.dep("nvim-nio"),
     },
     config = function()
       local dap = require("dap")
@@ -22,16 +23,16 @@ return {
         dapui.close()
       end
 
-      vim.keymap.set("n", "<leader>db", dap.toggle_breakpoint, { silent = true })
-      vim.keymap.set("n", "<leader>dc", dap.continue, { silent = true })
-      vim.keymap.set("n", "<leader>do", dap.step_over, { silent = true })
-      vim.keymap.set("n", "<leader>di", dap.step_into, { silent = true })
-      vim.keymap.set("n", "<leader>dO", dap.step_out, { silent = true })
-      vim.keymap.set("n", "<leader>dr", dap.repl.open, { silent = true })
+      vim.keymap.set("n", "<leader>db", dap.toggle_breakpoint, { silent = true, desc = "Toggle breakpoint" })
+      vim.keymap.set("n", "<leader>dc", dap.continue, { silent = true, desc = "Continue" })
+      vim.keymap.set("n", "<leader>do", dap.step_over, { silent = true, desc = "Step over" })
+      vim.keymap.set("n", "<leader>di", dap.step_into, { silent = true, desc = "Step into" })
+      vim.keymap.set("n", "<leader>dO", dap.step_out, { silent = true, desc = "Step out" })
+      vim.keymap.set("n", "<leader>dr", dap.repl.open, { silent = true, desc = "Open REPL" })
 
       local dap_python = require("dap-python")
       dap_python.setup("python")
       dap_python.test_runner = "pytest"
     end,
-  },
+  }),
 }

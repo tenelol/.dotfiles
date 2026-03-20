@@ -1,3 +1,5 @@
+local plugin = require("nix-plugin")
+
 local function setup_lualine()
   -- 色コードをまとめて設定。各プラグインの色設定で使用
   local colors = {
@@ -221,8 +223,8 @@ end
 
 -- 本体
 return {
-  'nvim-lualine/lualine.nvim',
-  dependencies = { 'nvim-tree/nvim-web-devicons' },
+  plugin.spec("lualine-nvim", {
+  dependencies = { plugin.dep("nvim-web-devicons") },
   config = function()
     -- 上記の設定を適用
     setup_lualine()
@@ -235,4 +237,5 @@ return {
     })
   end,
   event = 'VeryLazy',
+  }),
 }

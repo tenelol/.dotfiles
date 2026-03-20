@@ -1,5 +1,7 @@
+local plugin = require("nix-plugin")
+
 return {
-  "github/copilot.vim",
+  plugin.spec("copilot-vim", {
   lazy = false,  -- ← ここ
   config = function()
     vim.g.copilot_no_tab_map = true
@@ -8,5 +10,5 @@ return {
       expr = true,
     })
   end,
+  }),
 }
-

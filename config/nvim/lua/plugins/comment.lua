@@ -1,7 +1,10 @@
+local plugin = require("nix-plugin")
+
 return {
-  "numToStr/Comment.nvim",
+  plugin.spec("comment-nvim", {
   event = "VeryLazy",
   config = function()
     require("Comment").setup()
   end,
+  }),
 }

@@ -1,5 +1,7 @@
+local plugin = require("nix-plugin")
+
 return {
-    'nvimdev/dashboard-nvim',
+    plugin.spec("dashboard-nvim", {
     event = 'VimEnter',
     config = function()
         require('dashboard').setup{
@@ -69,8 +71,9 @@ return {
         }
     end,
     dependencies = {
-        {'nvim-tree/nvim-web-devicons'},
-        {'nvim-telescope/telescope.nvim'},
-        {'nvim-lua/plenary.nvim'}
+        plugin.dep("nvim-web-devicons"),
+        plugin.dep("telescope-nvim"),
+        plugin.dep("plenary-nvim")
     }
+})
 }

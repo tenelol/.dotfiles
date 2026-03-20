@@ -1,6 +1,7 @@
+local plugin = require("nix-plugin")
+
 return {
-  {
-    "neovim/nvim-lspconfig",
+  plugin.spec("nvim-lspconfig", {
     event = { "BufReadPre", "BufNewFile" },
     config = function()
       local capabilities = require("cmp_nvim_lsp").default_capabilities()
@@ -13,7 +14,7 @@ return {
         "html",
         "cssls",
         "tailwindcss",
-        "tsserver",
+        "ts_ls",
         "jsonls",
         "marksman",
         "astro",
@@ -28,5 +29,5 @@ return {
       vim.lsp.enable(servers)
 
     end,
-  },
+  }),
 }

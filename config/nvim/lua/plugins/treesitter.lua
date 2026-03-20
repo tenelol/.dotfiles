@@ -1,22 +1,14 @@
+local plugin = require("nix-plugin")
+
 return {
-    "nvim-treesitter/nvim-treesitter", 
-    build = ":TSUpdate",
+    plugin.spec("nvim-treesitter", {
     config = function()
         local configs = require("nvim-treesitter.configs")
         configs.setup({
-            ensure_installed = {
-                "lua",
-                "javascript",
-                "typescript",
-                "tsx",
-                "python",
-                "json",
-                "html",
-                "markdown",
-                "css",
-            },
+            auto_install = false,
             highlight = { enable = true},
             indent = { enable = true }
         })
     end
+})
 }

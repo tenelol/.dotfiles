@@ -1,5 +1,7 @@
+local plugin = require("nix-plugin")
+
 return {
-  "EdenEast/nightfox.nvim",
+  plugin.spec("nightfox-nvim", {
   lazy = false,
   name = "nightfox",
   priority = 1000,
@@ -69,4 +71,5 @@ return {
       callback = apply_glass_highlights,
     })
   end,
+  }),
 }

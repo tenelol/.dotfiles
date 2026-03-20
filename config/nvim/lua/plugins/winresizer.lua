@@ -1,11 +1,10 @@
+local plugin = require("nix-plugin")
+
 return {
-  "simeji/winresizer",
-
+  plugin.spec("winresizer", {
   event = "VeryLazy",
-
   config = function()
-
-    vim.keymap.set("n", "<C-w>e", ":WinResizerStartResize<CR>", { silent = true })
+    vim.keymap.set("n", "<C-w>e", ":WinResizerStartResize<CR>", { silent = true, desc = "Resize window" })
   end,
+  }),
 }
-
