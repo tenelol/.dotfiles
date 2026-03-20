@@ -5,6 +5,7 @@
   ...
 }:
 let
+  winresizer = import ../packages/winresizer.nix { inherit pkgs; };
   nixManagedPlugins = {
     emmet-vim = pkgs.vimPlugins.emmet-vim;
     which-key-nvim = pkgs.vimPlugins.which-key-nvim;
@@ -56,16 +57,7 @@ let
       ]
     );
     vim-test = pkgs.vimPlugins.vim-test;
-    winresizer = pkgs.vimUtils.buildVimPlugin {
-      pname = "winresizer";
-      version = "unstable-2022-08-15";
-      src = pkgs.fetchFromGitHub {
-        owner = "simeji";
-        repo = "winresizer";
-        rev = "9bd559a03ccec98a458e60c705547119eb5350f3";
-        hash = "sha256-5LR9A23BvpCBY9QVSF9PadRuDSBjv+knHSmdQn/3mH0=";
-      };
-    };
+    inherit winresizer;
   };
 in
 delib.module {
@@ -91,6 +83,10 @@ delib.module {
         astro-language-server
         prettierd
         prettier
+        stylua
+        nixfmt
+        gofumpt
+        gotools
       ];
     };
 
