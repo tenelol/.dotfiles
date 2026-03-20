@@ -1,8 +1,9 @@
+local plugin = require("nix-plugin")
+
 return {
-	{
-  "sphamba/smear-cursor.nvim",
+	plugin.spec("smear-cursor-nvim", {
   init = function()
     require("smear_cursor").setup()
   end,
-}
+})
 }

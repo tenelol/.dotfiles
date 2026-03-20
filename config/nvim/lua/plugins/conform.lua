@@ -1,5 +1,7 @@
+local plugin = require("nix-plugin")
+
 return {
-  "stevearc/conform.nvim",
+  plugin.spec("conform-nvim", {
   event = { "BufWritePre" },
   opts = {
     formatters_by_ft = {
@@ -21,4 +23,5 @@ return {
       }
     end,
   },
+  }),
 }

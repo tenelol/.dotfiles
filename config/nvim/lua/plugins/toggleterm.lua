@@ -1,6 +1,7 @@
+local plugin = require("nix-plugin")
+
 return {
-  "akinsho/toggleterm.nvim",
-  version = "*",
+  plugin.spec("toggleterm-nvim", {
   config = function()
     require("toggleterm").setup({
       size = 15,
@@ -9,5 +10,5 @@ return {
       direction = "horizontal",
     })
   end
+  })
 }
-

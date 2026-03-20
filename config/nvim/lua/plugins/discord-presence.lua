@@ -1,5 +1,7 @@
+local plugin = require("nix-plugin")
+
 return {
-  "andweeb/presence.nvim",
+  plugin.spec("presence-nvim", {
   enabled = vim.env.NVIM_DISCORD_PRESENCE == "1",
   config = function()
     require("presence").setup({
@@ -8,4 +10,5 @@ return {
       neovim_image_text = "Neovim",
     })
   end,
+  }),
 }

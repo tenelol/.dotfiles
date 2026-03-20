@@ -1,12 +1,14 @@
+local plugin = require("nix-plugin")
+
 return {
-    "iamcco/markdown-preview.nvim",
-    build = function() vim.fn["mkdp#util#install"]() end,
+    plugin.spec("markdown-preview-nvim", {
     cmd = { "MarkdownPreviewToggle", "MarkdownPreview", "MarkdownPreviewStop" },
-    ft = { "markdown" },      
+    ft = { "markdown" },
     config = function()
-        vim.g.mkdp_auto_start = 0         
-        vim.g.mkdp_refresh_slow = 0          
-	--vim.g.mkdp_browser = "vivaldi"  
+        vim.g.mkdp_auto_start = 0
+        vim.g.mkdp_refresh_slow = 0
+	--vim.g.mkdp_browser = "vivaldi"
     end,
-    lazy = true  
+    lazy = true
+})
 }

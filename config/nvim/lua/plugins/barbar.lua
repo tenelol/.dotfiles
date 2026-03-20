@@ -1,8 +1,10 @@
+local plugin = require("nix-plugin")
+
 return {
-  'romgrk/barbar.nvim',
+  plugin.spec("barbar-nvim", {
   dependencies = {
-    'lewis6991/gitsigns.nvim',
-    'nvim-tree/nvim-web-devicons',
+    plugin.dep("gitsigns-nvim"),
+    plugin.dep("nvim-web-devicons"),
   },
   init = function() vim.g.barbar_auto_setup = false end,
   opts = {
@@ -11,6 +13,5 @@ return {
     tabpages = true,
     clickable = true,
   },
-  version = '^1.0.0',
+  }),
 }
-

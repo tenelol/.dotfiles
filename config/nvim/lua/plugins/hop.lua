@@ -1,6 +1,7 @@
+local plugin = require("nix-plugin")
+
 return {
-  "smoka7/hop.nvim",
-  version = "*",
+  plugin.spec("hop-nvim", {
   config = function()
     local hop = require("hop")
     hop.setup({
@@ -15,5 +16,5 @@ return {
       { noremap = true, silent = true, desc = "Hop to word" }
     )
   end
+  })
 }
-

@@ -1,3 +1,5 @@
+local plugin = require("nix-plugin")
+
 return {
-  "wuelnerdotexe/vim-astro",
+  plugin.spec("vim-astro"),
 }
