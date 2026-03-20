@@ -14,6 +14,9 @@ let
     vim-astro = pkgs.vimPlugins.vim-astro;
     barbar-nvim = pkgs.vimPlugins.barbar-nvim;
     gitsigns-nvim = pkgs.vimPlugins.gitsigns-nvim;
+    trouble-nvim = pkgs.vimPlugins.trouble-nvim;
+    aerial-nvim = pkgs.vimPlugins.aerial-nvim;
+    nvim-navic = pkgs.vimPlugins.nvim-navic;
     nvim-web-devicons = pkgs.vimPlugins.nvim-web-devicons;
     comment-nvim = pkgs.vimPlugins.comment-nvim;
     nvim-cmp = pkgs.vimPlugins.nvim-cmp;
