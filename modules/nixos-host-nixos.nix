@@ -12,6 +12,9 @@ delib.module {
 
   nixos.ifEnabled = {
     networking.hostName = "nixos";
+    # Keep the laptop on the default DHCP backend. The generated hardware
+    # config still carries useDHCP, so forcing networkd here enables both.
+    networking.useNetworkd = lib.mkForce false;
 
     # Keep the laptop on the regular kernel track; unstable+latest is more likely
     # to regress power management and fan behavior on this host.
