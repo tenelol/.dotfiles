@@ -61,6 +61,7 @@ let
         html
         markdown
         css
+        scss
         astro
       ]
     );
@@ -93,7 +94,9 @@ delib.module {
         pyright
         gopls
         nil
+        python3
         typescript-language-server
+        nodePackages.eslint
         nodePackages.typescript
         tailwindcss-language-server
         vscode-langservers-extracted

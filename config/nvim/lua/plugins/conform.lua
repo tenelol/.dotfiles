@@ -13,6 +13,8 @@ return {
           json = { "prettierd", "prettier" },
           jsonc = { "prettierd", "prettier" },
           css = { "prettierd", "prettier" },
+          sass = { "prettierd", "prettier" },
+          scss = { "prettierd", "prettier" },
           html = { "prettierd", "prettier" },
           markdown = { "prettierd", "prettier" },
           astro = { "prettierd", "prettier" },
