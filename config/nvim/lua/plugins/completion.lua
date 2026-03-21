@@ -17,20 +17,7 @@ return {
                 },
                 mapping = cmp.mapping.preset.insert({
                     ["<C-Space>"] = cmp.mapping.complete(),
-                    ["<CR>"] = cmp.mapping(function(fallback)
-                        if cmp.visible() then
-                            cmp.confirm({ select = true })
-                            return
-                        end
-
-                        local ok, expandable = pcall(vim.fn["emmet#isExpandable"])
-                        if ok and expandable == 1 then
-                            vim.fn["emmet#expandAbbr"](0, "")
-                            return
-                        end
-
-                        fallback()
-                    end, { "i", "s" }),
+                    ["<CR>"] = cmp.mapping.confirm({ select = true }),
                     ["<C-j>"] = cmp.mapping(function(fallback)
                         if luasnip.expand_or_jumpable() then
                             luasnip.expand_or_jump()
