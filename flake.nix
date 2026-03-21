@@ -72,7 +72,12 @@
 
       mkChecks =
         configurations:
-        lib.mapAttrs (_: configuration: configuration.config.system.build.toplevel) configurations;
+        lib.mapAttrs (
+          name: configuration:
+          configuration.pkgs.runCommand "eval-${name}" { } ''
+            printf '%s\n' ${lib.escapeShellArg configuration.config.system.build.toplevel.drvPath} > "$out"
+          ''
+        ) configurations;
 
       # denix currently returns every host in both outputs, so filter them to keep
       # the public flake interface aligned with the actual target platform.

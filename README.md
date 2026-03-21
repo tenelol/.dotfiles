@@ -46,6 +46,12 @@ sudo darwin-rebuild switch --flake .#macbook
 nix flake check
 ```
 
+実際に Linux ホストの system closure までビルドしたい場合:
+
+```sh
+nix build .#nixosConfigurations.nixos.config.system.build.toplevel
+```
+
 フォーマット:
 
 ```sh
