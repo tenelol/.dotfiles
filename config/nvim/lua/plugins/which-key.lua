@@ -15,6 +15,7 @@ return {
                 { "<leader>d", group = "debug" },
                 { "<leader>h", group = "git hunk" },
                 { "<leader>l", group = "language" },
+                { "<leader>o", group = "open" },
                 { "<leader>s", group = "session" },
                 { "<leader>x", group = "problems" },
                 { "<leader>t", group = "test" },

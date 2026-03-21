@@ -49,6 +49,7 @@ return {
                 "pyright",
                 "gopls",
                 "nil_ls",
+                "eslint",
                 "html",
                 "cssls",
                 "tailwindcss",
@@ -58,11 +59,55 @@ return {
                 "astro",
             }
 
+            vim.lsp.config("ts_ls", {
+                capabilities = capabilities,
+                on_attach = on_attach,
+                settings = {
+                    typescript = {
+                        inlayHints = {
+                            includeInlayParameterNameHints = "all",
+                            includeInlayParameterNameHintsWhenArgumentMatchesName = false,
+                            includeInlayFunctionParameterTypeHints = true,
+                            includeInlayVariableTypeHints = true,
+                            includeInlayVariableTypeHintsWhenTypeMatchesName = false,
+                            includeInlayPropertyDeclarationTypeHints = true,
+                            includeInlayFunctionLikeReturnTypeHints = true,
+                            includeInlayEnumMemberValueHints = true,
+                        },
+                    },
+                    javascript = {
+                        inlayHints = {
+                            includeInlayParameterNameHints = "all",
+                            includeInlayParameterNameHintsWhenArgumentMatchesName = false,
+                            includeInlayFunctionParameterTypeHints = true,
+                            includeInlayVariableTypeHints = true,
+                            includeInlayVariableTypeHintsWhenTypeMatchesName = false,
+                            includeInlayPropertyDeclarationTypeHints = true,
+                            includeInlayFunctionLikeReturnTypeHints = true,
+                            includeInlayEnumMemberValueHints = true,
+                        },
+                    },
+                },
+            })
+
+            vim.lsp.config("eslint", {
+                capabilities = capabilities,
+                on_attach = on_attach,
+                settings = {
+                    format = false,
+                    workingDirectory = {
+                        mode = "auto",
+                    },
+                },
+            })
+
             for _, server in ipairs(servers) do
-                vim.lsp.config(server, {
-                    capabilities = capabilities,
-                    on_attach = on_attach,
-                })
+                if server ~= "ts_ls" and server ~= "eslint" then
+                    vim.lsp.config(server, {
+                        capabilities = capabilities,
+                        on_attach = on_attach,
+                    })
+                end
             end
 
             vim.lsp.enable(servers)

@@ -5,6 +5,7 @@ return {
     ft = {
       "html",
       "css",
+      "sass",
       "scss",
       "javascriptreact",
       "typescriptreact",
@@ -13,6 +14,12 @@ return {
     init = function()
       vim.g.user_emmet_install_global = 0
       vim.g.user_emmet_settings = {
+        sass = {
+          extends = "css",
+        },
+        scss = {
+          extends = "css",
+        },
         javascriptreact = {
           extends = "html",
         },
@@ -33,6 +40,7 @@ return {
         pattern = {
           "html",
           "css",
+          "sass",
           "scss",
           "javascriptreact",
           "typescriptreact",

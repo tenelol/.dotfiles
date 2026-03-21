@@ -2,6 +2,7 @@ a.out
 result
 result-*
 .direnv
+.nvimlog
 *.swp
 .#*
 #*#
