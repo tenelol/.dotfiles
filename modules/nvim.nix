@@ -17,6 +17,8 @@ let
     trouble-nvim = pkgs.vimPlugins.trouble-nvim;
     aerial-nvim = pkgs.vimPlugins.aerial-nvim;
     nvim-navic = pkgs.vimPlugins.nvim-navic;
+    todo-comments-nvim = pkgs.vimPlugins.todo-comments-nvim;
+    persistence-nvim = pkgs.vimPlugins.persistence-nvim;
     nvim-web-devicons = pkgs.vimPlugins.nvim-web-devicons;
     comment-nvim = pkgs.vimPlugins.comment-nvim;
     nvim-cmp = pkgs.vimPlugins.nvim-cmp;

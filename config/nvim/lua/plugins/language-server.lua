@@ -5,10 +5,12 @@ return {
         event = { "BufReadPre", "BufNewFile" },
         dependencies = {
             plugin.dep("nvim-navic"),
+            plugin.dep("telescope-nvim"),
         },
         config = function()
             local capabilities = require("cmp_nvim_lsp").default_capabilities()
             local navic = require("nvim-navic")
+            local builtin = require("telescope.builtin")
 
             navic.setup({
                 highlight = true,
@@ -26,13 +28,15 @@ return {
                 end
 
                 map("n", "K", vim.lsp.buf.hover, "Hover")
-                map("n", "gd", vim.lsp.buf.definition, "Go to definition")
-                map("n", "gD", vim.lsp.buf.declaration, "Go to declaration")
-                map("n", "gi", vim.lsp.buf.implementation, "Go to implementation")
-                map("n", "gr", vim.lsp.buf.references, "Go to references")
+                map("n", "gd", builtin.lsp_definitions, "Go to definition")
+                map("n", "gD", builtin.lsp_declarations, "Go to declaration")
+                map("n", "gi", builtin.lsp_implementations, "Go to implementation")
+                map("n", "gr", builtin.lsp_references, "Go to references")
                 map("n", "<F2>", vim.lsp.buf.rename, "Rename symbol")
                 map("n", "<leader>la", vim.lsp.buf.code_action, "Code action")
                 map("n", "<leader>lr", vim.lsp.buf.rename, "Rename symbol")
+                map("n", "<leader>ls", builtin.lsp_document_symbols, "Document symbols")
+                map("n", "<leader>lS", builtin.lsp_dynamic_workspace_symbols, "Workspace symbols")
                 map("n", "<leader>lf", function()
                     vim.lsp.buf.format({ async = true })
                 end, "Format buffer")
