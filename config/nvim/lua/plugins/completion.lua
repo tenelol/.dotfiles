@@ -25,8 +25,7 @@ return {
 
                         local ok, expandable = pcall(vim.fn["emmet#isExpandable"])
                         if ok and expandable == 1 then
-                            local keys = vim.fn["emmet#expandAbbrIntelligent"]("\r")
-                            vim.api.nvim_feedkeys(vim.keycode(keys), "m", false)
+                            vim.fn["emmet#expandAbbr"](0, "")
                             return
                         end
 
