@@ -152,6 +152,7 @@ vim.opt.termguicolors = true
 vim.opt.winblend = 12
 vim.opt.pumblend = 12
 vim.opt.number = true
+vim.opt.updatetime = 500
 
 vim.keymap.set('n', '<C-Tab>', '<Cmd>BufferNext<CR>')
 vim.keymap.set('n', '<C-S-Tab>', '<Cmd>BufferPrevious<CR>')
@@ -188,19 +189,37 @@ local web_filetypes = {
     "astro",
 }
 
-vim.api.nvim_create_autocmd({ "InsertLeave", "CursorHold" }, {
+local function autosave_buffer(bufnr)
+    if not vim.bo[bufnr].modifiable or vim.bo[bufnr].readonly then
+        return
+    end
+
+    if vim.bo[bufnr].buftype ~= "" or not vim.bo[bufnr].modified then
+        return
+    end
+
+    vim.api.nvim_buf_call(bufnr, function()
+        vim.cmd("silent noautocmd write")
+    end)
+end
+
+vim.api.nvim_create_autocmd("FileType", {
     group = autosave_group,
     pattern = web_filetypes,
     callback = function(args)
-        if not vim.bo[args.buf].modifiable or vim.bo[args.buf].readonly then
+        if vim.b[args.buf].web_autosave_initialized then
             return
         end
 
-        if vim.bo[args.buf].buftype ~= "" or not vim.bo[args.buf].modified then
-            return
-        end
+        vim.b[args.buf].web_autosave_initialized = true
 
-        vim.cmd("silent noautocmd write")
+        vim.api.nvim_create_autocmd({ "InsertLeave", "CursorHold", "CursorHoldI" }, {
+            group = autosave_group,
+            buffer = args.buf,
+            callback = function()
+                autosave_buffer(args.buf)
+            end,
+        })
     end,
 })
 
