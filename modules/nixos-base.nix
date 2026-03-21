@@ -57,8 +57,15 @@ delib.module {
 
     nixpkgs.config.allowUnfree = true;
     environment.variables.EDITOR = "nvim";
+    environment.systemPackages = with pkgs; [
+      bubblewrap
+    ];
     security.sudo.extraConfig = ''Defaults env_keep += "EDITOR VISUAL"'';
     services.tailscale.enable = true;
+    # Codex probes a conventional FHS path for bubblewrap on Linux.
+    systemd.tmpfiles.rules = [
+      "L+ /usr/bin/bwrap - - - - ${pkgs.bubblewrap}/bin/bwrap"
+    ];
 
     system.stateVersion = "25.05";
   };
