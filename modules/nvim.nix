@@ -29,6 +29,7 @@ let
     cmp_luasnip = pkgs.vimPlugins.cmp_luasnip;
     conform-nvim = pkgs.vimPlugins.conform-nvim;
     copilot-vim = pkgs.vimPlugins.copilot-vim;
+    nvim-colorizer-lua = pkgs.vimPlugins.nvim-colorizer-lua;
     nvim-dap = pkgs.vimPlugins.nvim-dap;
     nvim-dap-python = pkgs.vimPlugins.nvim-dap-python;
     nvim-dap-ui = pkgs.vimPlugins.nvim-dap-ui;
@@ -50,6 +51,7 @@ let
     smear-cursor-nvim = pkgs.vimPlugins.smear-cursor-nvim;
     telescope-nvim = pkgs.vimPlugins.telescope-nvim;
     toggleterm-nvim = pkgs.vimPlugins.toggleterm-nvim;
+    nvim-ts-autotag = pkgs.vimPlugins.nvim-ts-autotag;
     nvim-treesitter = pkgs.vimPlugins.nvim-treesitter.withPlugins (
       parsers: with parsers; [
         lua
@@ -104,6 +106,7 @@ delib.module {
         astro-language-server
         prettierd
         prettier
+        sassc
         stylua
         nixfmt
         gofumpt
