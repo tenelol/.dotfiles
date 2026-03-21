@@ -18,8 +18,10 @@ vim.keymap.set("t", "<C-l>", "<Cmd>wincmd l<CR>", { noremap = true, silent = tru
 
 local preview_job_id
 local preview_port = 5500
+local scss_watch_job_id
 local uv = vim.uv or vim.loop
 local preview_script = vim.fs.normalize(vim.fn.stdpath("config") .. "/lua/live_preview_server.py")
+local scss_watch_script = vim.fs.normalize(vim.fn.stdpath("config") .. "/lua/scss_watch.py")
 
 local function open_in_browser(target)
     local opener = vim.fn.has("mac") == 1 and "open" or "xdg-open"
@@ -112,8 +114,118 @@ local function open_current_file_in_browser()
     open_in_browser(vim.uri_from_fname(filepath))
 end
 
+local function current_scss_target(opts)
+    opts = opts or {}
+    local filepath = current_file_path()
+    if filepath == nil then
+        return nil
+    end
+
+    local ext = vim.fn.fnamemodify(filepath, ":e")
+    if ext ~= "scss" and ext ~= "sass" then
+        vim.notify("Current file is not an SCSS/Sass file", vim.log.levels.WARN)
+        return nil
+    end
+
+    local output = opts.output
+    if output == nil or output == "" then
+        output = vim.fn.fnamemodify(filepath, ":r") .. ".css"
+    elseif not vim.startswith(output, "/") then
+        output = vim.fs.normalize(vim.fn.getcwd() .. "/" .. output)
+    else
+        output = vim.fs.normalize(output)
+    end
+
+    return {
+        input = vim.fs.normalize(filepath),
+        output = output,
+        root = vim.fs.normalize(vim.fs.dirname(filepath)),
+    }
+end
+
+local function scss_compile(opts)
+    local target = current_scss_target(opts)
+    if target == nil then
+        return
+    end
+
+    if vim.bo.modified then
+        vim.cmd("silent write")
+    end
+
+    if vim.fn.executable("sassc") ~= 1 then
+        vim.notify("sassc is required for SCSS compilation", vim.log.levels.ERROR)
+        return
+    end
+
+    local result = vim.system({ "sassc", target.input, target.output }):wait()
+    if result.code == 0 then
+        vim.notify(("Compiled %s"):format(target.output), vim.log.levels.INFO)
+        return
+    end
+
+    local message = result.stderr ~= "" and result.stderr or "SCSS compile failed"
+    vim.notify(message, vim.log.levels.ERROR)
+end
+
+local function stop_scss_watch()
+    if scss_watch_job_id == nil then
+        return
+    end
+
+    local status = vim.fn.jobwait({ scss_watch_job_id }, 0)[1]
+    if status == -1 then
+        vim.fn.jobstop(scss_watch_job_id)
+    end
+    scss_watch_job_id = nil
+end
+
+local function start_scss_watch(opts)
+    local target = current_scss_target(opts)
+    if target == nil then
+        return
+    end
+
+    if vim.bo.modified then
+        vim.cmd("silent write")
+    end
+
+    if vim.fn.executable("python3") ~= 1 or uv.fs_stat(scss_watch_script) == nil then
+        vim.notify("python3 and scss_watch.py are required for SCSS watch", vim.log.levels.ERROR)
+        return
+    end
+
+    if vim.fn.executable("sassc") ~= 1 then
+        vim.notify("sassc is required for SCSS watch", vim.log.levels.ERROR)
+        return
+    end
+
+    stop_scss_watch()
+    scss_watch_job_id = vim.fn.jobstart({
+        "python3",
+        scss_watch_script,
+        "--input",
+        target.input,
+        "--output",
+        target.output,
+        "--root",
+        target.root,
+    })
+
+    if scss_watch_job_id <= 0 then
+        scss_watch_job_id = nil
+        vim.notify("Failed to start SCSS watch", vim.log.levels.ERROR)
+        return
+    end
+
+    vim.notify(("Watching %s -> %s"):format(target.input, target.output), vim.log.levels.INFO)
+end
+
 vim.api.nvim_create_autocmd("VimLeavePre", {
-    callback = stop_live_server,
+    callback = function()
+        stop_live_server()
+        stop_scss_watch()
+    end,
 })
 
 vim.api.nvim_create_user_command("OpenInBrowser", open_current_file_in_browser, {
@@ -124,6 +236,21 @@ vim.api.nvim_create_user_command("PreviewStart", start_live_server, {
 })
 vim.api.nvim_create_user_command("PreviewStop", stop_live_server, {
     desc = "Stop local preview server",
+})
+vim.api.nvim_create_user_command("ScssCompile", function(args)
+    scss_compile({ output = args.args })
+end, {
+    desc = "Compile current SCSS/Sass file",
+    nargs = "?",
+})
+vim.api.nvim_create_user_command("ScssWatchStart", function(args)
+    start_scss_watch({ output = args.args })
+end, {
+    desc = "Watch current SCSS/Sass file and compile to CSS",
+    nargs = "?",
+})
+vim.api.nvim_create_user_command("ScssWatchStop", stop_scss_watch, {
+    desc = "Stop SCSS watch",
 })
 vim.api.nvim_create_user_command("LiveServerStart", start_live_server, {
     desc = "Start local preview server for current file",
@@ -145,6 +272,21 @@ vim.keymap.set("n", "<leader>oS", stop_live_server, {
     noremap = true,
     silent = true,
     desc = "Stop preview server",
+})
+vim.keymap.set("n", "<leader>lc", scss_compile, {
+    noremap = true,
+    silent = true,
+    desc = "Compile SCSS",
+})
+vim.keymap.set("n", "<leader>lw", start_scss_watch, {
+    noremap = true,
+    silent = true,
+    desc = "Watch SCSS",
+})
+vim.keymap.set("n", "<leader>lW", stop_scss_watch, {
+    noremap = true,
+    silent = true,
+    desc = "Stop SCSS watch",
 })
 
 vim.opt.clipboard = "unnamedplus"
