@@ -18,6 +18,8 @@ vim.keymap.set("t", "<C-l>", "<Cmd>wincmd l<CR>", { noremap = true, silent = tru
 
 local preview_job_id
 local preview_port = 5500
+local uv = vim.uv or vim.loop
+local preview_script = vim.fs.normalize(vim.fn.stdpath("config") .. "/lua/live_preview_server.py")
 
 local function open_in_browser(target)
     local opener = vim.fn.has("mac") == 1 and "open" or "xdg-open"
@@ -76,26 +78,17 @@ local function start_live_server()
 
     stop_live_server()
 
-    if vim.fn.executable("live-server") == 1 then
-        preview_job_id = vim.fn.jobstart({
-            "live-server",
-            target.root,
-            "--host=127.0.0.1",
-            ("--port=%d"):format(preview_port),
-            "--no-browser",
-            "--quiet",
-        })
-    elseif vim.fn.executable("python3") == 1 then
+    if vim.fn.executable("python3") == 1 and uv.fs_stat(preview_script) ~= nil then
         preview_job_id = vim.fn.jobstart({
             "python3",
-            "-m",
-            "http.server",
+            preview_script,
+            "--port",
             tostring(preview_port),
-            "--directory",
+            "--root",
             target.root,
         })
     else
-        vim.notify("live-server or python3 is required for preview", vim.log.levels.ERROR)
+        vim.notify("python3 and live_preview_server.py are required for preview", vim.log.levels.ERROR)
         return
     end
 
@@ -182,6 +175,35 @@ vim.filetype.add({
 })
 
 local indent_group = vim.api.nvim_create_augroup("IndentSettings", { clear = true })
+local autosave_group = vim.api.nvim_create_augroup("WebAutoSave", { clear = true })
+local web_filetypes = {
+    "html",
+    "css",
+    "sass",
+    "scss",
+    "javascript",
+    "typescript",
+    "typescriptreact",
+    "javascriptreact",
+    "astro",
+}
+
+vim.api.nvim_create_autocmd({ "InsertLeave", "CursorHold" }, {
+    group = autosave_group,
+    pattern = web_filetypes,
+    callback = function(args)
+        if not vim.bo[args.buf].modifiable or vim.bo[args.buf].readonly then
+            return
+        end
+
+        if vim.bo[args.buf].buftype ~= "" or not vim.bo[args.buf].modified then
+            return
+        end
+
+        vim.cmd("silent noautocmd write")
+    end,
+})
+
 vim.api.nvim_create_autocmd("FileType", {
     group = indent_group,
     pattern = { "python" },
@@ -194,21 +216,7 @@ vim.api.nvim_create_autocmd("FileType", {
 })
 vim.api.nvim_create_autocmd("FileType", {
     group = indent_group,
-    pattern = {
-        "nix",
-        "html",
-        "css",
-        "sass",
-        "scss",
-        "javascript",
-        "typescript",
-        "typescriptreact",
-        "javascriptreact",
-        "json",
-        "jsonc",
-        "markdown",
-        "astro",
-    },
+    pattern = vim.list_extend(vim.deepcopy(web_filetypes), { "nix", "json", "jsonc", "markdown" }),
     callback = function()
         vim.opt_local.expandtab = true
         vim.opt_local.shiftwidth = 2

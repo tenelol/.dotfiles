@@ -3,6 +3,8 @@ result
 result-*
 .direnv
 .nvimlog
+__pycache__/
+*.pyc
 *.swp
 .#*
 #*#
