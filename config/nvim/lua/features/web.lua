@@ -1,4 +1,4 @@
-if vim.env.NVIM_WEB_WORKFLOW ~= "1" then
+if vim.env.NVIM_WEB_WORKFLOW == "0" then
     return
 end
 
