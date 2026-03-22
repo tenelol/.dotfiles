@@ -74,9 +74,9 @@
         configurations:
         lib.mapAttrs (
           name: configuration:
-          configuration.pkgs.runCommand "eval-${name}" { } ''
-            printf '%s\n' ${lib.escapeShellArg configuration.config.system.build.toplevel.drvPath} > "$out"
-          ''
+          configuration.pkgs.writeText "eval-${name}" (
+            builtins.unsafeDiscardStringContext configuration.config.system.build.toplevel.drvPath + "\n"
+          )
         ) configurations;
 
       # denix currently returns every host in both outputs, so filter them to keep

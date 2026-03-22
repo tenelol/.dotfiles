@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dotfiles Workflow"
+  short_description: "Work safely in this denix + nh dotfiles repo"
+  default_prompt: "Use the denix host/module layout, validate with nh and nix flake checks, and keep documentation aligned with this repository."
