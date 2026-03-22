@@ -96,6 +96,7 @@ delib.module {
         pyright
         gopls
         nil
+        python3Packages.debugpy
         python3
         typescript-language-server
         nodePackages.eslint
@@ -104,8 +105,10 @@ delib.module {
         vscode-langservers-extracted
         marksman
         astro-language-server
+        fd
         prettierd
         prettier
+        ripgrep
         sassc
         stylua
         nixfmt

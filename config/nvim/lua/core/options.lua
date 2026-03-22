@@ -1,0 +1,14 @@
+vim.opt.autoindent = true
+vim.opt.clipboard = "unnamedplus"
+vim.opt.expandtab = true
+vim.opt.number = true
+vim.opt.pumblend = 12
+vim.opt.shiftwidth = 2
+vim.opt.signcolumn = "yes"
+vim.opt.smartindent = true
+vim.opt.softtabstop = 2
+vim.opt.tabstop = 2
+vim.opt.termguicolors = true
+vim.opt.undofile = true
+vim.opt.updatetime = 500
+vim.opt.winblend = 12
