@@ -1,69 +1,72 @@
-# NixOS dotfiles
+# tener dotfiles
 
-このリポジトリは、NixOS のマルチホスト構成と Home Manager の設定をまとめた `.dotfiles` です。
+個人用の `denix` ベース multi-host dotfiles です。  
+NixOS と `nix-darwin` を 1 つの flake で管理し、Home Manager は各 system に統合しています。
 
-## 構成
+汎用テンプレートではなく、自分のホストと普段使う GUI/CLI、Neovim、Niri 周りに最適化した repo です。
 
-- `flake.nix`: NixOS flake のエントリ。`nixosConfigurations` を定義
-- `hosts/`: ホスト別の NixOS 設定
-- `home/`: Home Manager のエントリとモジュール
-- `config/`: 各種アプリ設定 (`nvim`, `fish`, `niri`, `waybar` など)
-- `modules/`: denix ベースのモジュール群
-- `legacy/`: 旧構成の退避先。現行の flake からは未使用
+## Host
 
-## 前提
+- `nixos`: x86_64 Linux laptop
+- `nvidia-desktop`: x86_64 Linux desktop
+- `nixos-server`: x86_64 Linux server
+- `macbook`: aarch64 Darwin laptop
 
-- Nix と Flakes が有効な NixOS
-- `home-manager` は flake 経由で使用
+## Architecture
 
-## 使い方
+- [flake.nix](/home/tener/.dotfiles/flake.nix): flake entrypoint。`denix.lib.configurations` で host/module を束ねる
+- [hosts](/home/tener/.dotfiles/hosts): host 名、種別、system、hardware import だけを置く薄い定義
+- [modules](/home/tener/.dotfiles/modules): denix が自動発見する shared / host-specific module
+- [home/home.nix](/home/tener/.dotfiles/home/home.nix): 共通 Home Manager 設定
+- [config](/home/tener/.dotfiles/config): Neovim、fish、niri、waybar などの実ファイル
+- [packages](/home/tener/.dotfiles/packages): 軽い独自 package 定義
+- [legacy](/home/tener/.dotfiles/legacy): 退避した旧構成。現行 flake では未使用
 
-ホストに合わせて `nixos-rebuild` を実行します。
+`hosts/` と `modules/` は `denix` が自動で読むので、新しい `.nix` を足したら Git 管理下に置く前提です。
 
-`nixos` ホスト:
+## Workflow
 
-```sh
-sudo nixos-rebuild switch --flake .#nixos
-```
-
-別ホストの場合:
-
-```sh
-sudo nixos-rebuild switch --flake .#nvidia-desktop
-sudo nixos-rebuild switch --flake .#nixos-server
-```
-
-macOS (`macbook` ホスト、Apple Silicon 前提):
+評価:
 
 ```sh
-sudo nix run github:nix-darwin/nix-darwin#darwin-rebuild -- switch --flake .#macbook
-sudo darwin-rebuild switch --flake .#macbook
+nix flake check --no-build
 ```
 
-構成の評価だけをしたい場合:
+Linux host を build:
 
 ```sh
-nix flake check
+nh os build . -H nixos
+nh os build . -H nvidia-desktop
+nh os build . -H nixos-server
 ```
 
-実際に Linux ホストの system closure までビルドしたい場合:
+Linux host を switch:
 
 ```sh
-nix build .#nixosConfigurations.nixos.config.system.build.toplevel
+nh os switch . -H nixos
+nh os switch . -H nvidia-desktop
+nh os switch . -H nixos-server
 ```
 
-フォーマット:
+macOS host を build / switch:
 
 ```sh
-nix fmt
+nh darwin build . -H macbook
+nh darwin switch . -H macbook
 ```
 
-## メモ
+`nh` を使う前提で書いています。`nixos-rebuild` や `darwin-rebuild` を直接叩くより、普段の運用では `nh` を優先します。
 
-- `home/home.nix` が `profile.username` に紐づく Home Manager 設定の入口です。
-- ユーザー名や Git identity などの共通プロフィール値は `flake.nix` の `profile` に集約しています。
-- ホスト固有の設定は `hosts/<host>/` 配下にあります。
-- `modules/` 配下の denix モジュールが各ホスト / Home Manager 設定を組み立てます。
-- `hosts/macbook/default.nix` は `aarch64-darwin` を前提にしているので、Intel Mac の場合は `x86_64-darwin` に変更してください。
-- 新しい `.nix` ファイルを `modules/` や `hosts/` に追加した場合、flake から確実に見えるよう Git 管理下に置いておくのが安全です。
-- Home Manager 管理下のアプリ設定は、基本的に `xdg.configFile` / `home.file` で宣言的に配置しています。
+## Design Notes
+
+- 共通プロフィール値は [flake.nix](/home/tener/.dotfiles/flake.nix) の `profile` に集約
+- Home Manager は standalone `homeConfigurations` ではなく system 側に統合
+- Linux desktop は `niri` 前提
+- macOS でも同じ Neovim 設定を使う。clipboard や language toolchain は Nix 側で揃える
+- VS Code の vendor 拡張は [vendor/vscode-extensions](/home/tener/.dotfiles/vendor/vscode-extensions) に展開して declarative に読む
+
+## Editing Notes
+
+- repo の説明を書くときは「個人用」「denix で host/module を自動発見」「`nh` で build/switch」を前提にする
+- 新しい host を追加するときは `hosts/<name>/default.nix` を作り、必要なら hardware config を同階層に置く
+- 新しい module は `modules/` に置けば denix が拾う
