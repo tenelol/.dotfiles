@@ -12,6 +12,10 @@ delib.module {
 
   nixos.ifEnabled = {
     networking.hostName = "nixos";
+    networking.nameservers = [
+      "1.1.1.1"
+      "8.8.8.8"
+    ];
     # Keep the laptop on the default DHCP backend. The generated hardware
     # config still carries useDHCP, so forcing networkd here enables both.
     networking.useNetworkd = lib.mkForce false;
