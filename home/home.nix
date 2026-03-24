@@ -11,7 +11,6 @@ let
   isLinux = pkgs.stdenv.hostPlatform.isLinux;
   isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
   homeDir = config.home.homeDirectory;
-  wallpaper = ../img/Indigo.png;
 
   codexBarPackage = import ../packages/codexbar.nix {
     inherit pkgs lib;
@@ -177,21 +176,16 @@ in
       ".config/fontconfig/fonts.conf".source = ../config/fontconfig/fonts.conf;
     };
 
-  xdg.configFile =
-    lib.optionalAttrs (!isServer) {
-      "theme/wallpaper.png".source = wallpaper;
-      "wallpapers".source = ../img;
-    }
-    // lib.optionalAttrs (!isServer && isLinux) {
-      "keyd/app.conf".text = ''
-        [com-mitchellh-ghostty]
-        meta.c = C-S-c
-        meta.v = C-S-v
+  xdg.configFile = lib.optionalAttrs (!isServer && isLinux) {
+    "keyd/app.conf".text = ''
+      [com-mitchellh-ghostty]
+      meta.c = C-S-c
+      meta.v = C-S-v
 
-        [*ghostty*]
-        meta.c = C-S-c
-        meta.v = C-S-v
-      '';
-      "fcitx5/conf/classicui.conf".source = ../config/fcitx5/classicui.conf;
-    };
+      [*ghostty*]
+      meta.c = C-S-c
+      meta.v = C-S-v
+    '';
+    "fcitx5/conf/classicui.conf".source = ../config/fcitx5/classicui.conf;
+  };
 }
