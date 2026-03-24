@@ -29,6 +29,7 @@ let
     cmp_luasnip = pkgs.vimPlugins.cmp_luasnip;
     conform-nvim = pkgs.vimPlugins.conform-nvim;
     copilot-vim = pkgs.vimPlugins.copilot-vim;
+    ccc-nvim = pkgs.vimPlugins.ccc-nvim;
     nvim-colorizer-lua = pkgs.vimPlugins.nvim-colorizer-lua;
     nvim-dap = pkgs.vimPlugins.nvim-dap;
     nvim-dap-python = pkgs.vimPlugins.nvim-dap-python;
