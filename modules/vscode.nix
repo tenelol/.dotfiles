@@ -21,13 +21,11 @@ delib.module {
           "files.autoSave" = "afterDelay";
         };
 
-        extensions =
-          with pkgs.vscode-extensions;
-          [
-            esbenp.prettier-vscode
-            ritwickdey.liveserver
-            asvetliakov.vscode-neovim
-          ];
+        extensions = with pkgs.vscode-extensions; [
+          esbenp.prettier-vscode
+          ritwickdey.liveserver
+          asvetliakov.vscode-neovim
+        ];
       };
     };
   };
