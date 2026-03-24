@@ -90,13 +90,11 @@
       checks = {
         x86_64-linux = mkChecks (filterConfigurationsBySystem "x86_64-linux" nixosConfigurations);
         aarch64-darwin = mkChecks (filterConfigurationsBySystem "aarch64-darwin" darwinConfigurations);
-        x86_64-darwin = mkChecks (filterConfigurationsBySystem "x86_64-darwin" darwinConfigurations);
       };
 
       formatter = {
         x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixfmt;
         aarch64-darwin = nixpkgs.legacyPackages.aarch64-darwin.nixfmt;
-        x86_64-darwin = nixpkgs.legacyPackages.x86_64-darwin.nixfmt;
       };
     };
 }
