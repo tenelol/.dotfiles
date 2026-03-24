@@ -1,4 +1,9 @@
-{ delib, host, ... }:
+{
+  delib,
+  host,
+  pkgs,
+  ...
+}:
 delib.module {
   name = "nixos.host.nvidia-desktop";
 
@@ -10,5 +15,6 @@ delib.module {
       "1.1.1.1"
       "8.8.8.8"
     ];
+    boot.kernelPackages = pkgs.linuxPackages_latest;
   };
 }

@@ -7,13 +7,25 @@
   ...
 }:
 delib.module {
-  name = "nixos.common";
+  name = "nixos.desktop";
 
   options = delib.singleEnableOption (
     !host.isServer && builtins.match ".*-linux" host.system != null
   );
 
   nixos.ifEnabled = {
+    networking.networkmanager.enable = false;
+    networking.useNetworkd = true;
+    networking.wireless.iwd.enable = true;
+    networking.wireless.iwd.settings = {
+      General = {
+        EnableNetworkConfiguration = true;
+      };
+      Settings = {
+        AutoConnect = true;
+      };
+    };
+
     services.pulseaudio.enable = false;
 
     services.pipewire = {
@@ -29,10 +41,6 @@ delib.module {
       powerOnBoot = true;
     };
     services.blueman.enable = true;
-
-    nix.settings.ssl-cert-file = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
-
-    networking.useNetworkd = true;
 
     # バッテリー残量取得
     services.upower.enable = true;
@@ -132,31 +140,19 @@ delib.module {
 
     security.rtkit.enable = true;
 
-    programs.fish.enable = true;
-    programs.fish.useBabelfish = true;
-
     users.users.${profile.username} = {
-      extraGroups = [
-        "wheel"
-        "keyd"
-      ];
-      shell = pkgs.fish;
+      extraGroups = [ "keyd" ];
     };
 
-    # Keep system packages focused on host bootstrap and service-adjacent tools.
+    # Keep system packages focused on desktop integration and local tooling.
     environment.systemPackages = with pkgs; [
-      vim
       wget
-      git
       gcc
       keyd
       iwd
       clang
       cl
-      neovim
       nodePackages.npm
-      tailscale
-      nh
     ];
   };
 }

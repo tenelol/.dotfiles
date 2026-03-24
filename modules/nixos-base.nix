@@ -17,23 +17,11 @@ delib.module {
       dates = "weekly";
       options = "--delete-older-than 7d";
     };
+    nix.settings.ssl-cert-file = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
 
     boot.loader.systemd-boot.enable = true;
     boot.loader.systemd-boot.configurationLimit = 5;
     boot.loader.efi.canTouchEfiVariables = true;
-
-    boot.kernelPackages = pkgs.linuxPackages_latest;
-
-    networking.networkmanager.enable = false;
-    networking.wireless.iwd.enable = true;
-    networking.wireless.iwd.settings = {
-      General = {
-        EnableNetworkConfiguration = true;
-      };
-      Settings = {
-        AutoConnect = true;
-      };
-    };
 
     time.timeZone = "Asia/Tokyo";
 
@@ -53,13 +41,21 @@ delib.module {
     users.users.${profile.username} = {
       isNormalUser = true;
       description = profile.username;
+      extraGroups = [ "wheel" ];
+      shell = pkgs.fish;
     };
 
     nixpkgs.config.allowUnfree = true;
     environment.variables.EDITOR = "nvim";
     environment.systemPackages = with pkgs; [
       bubblewrap
+      git
+      neovim
+      nh
+      tailscale
     ];
+    programs.fish.enable = true;
+    programs.fish.useBabelfish = true;
     security.sudo.extraConfig = ''Defaults env_keep += "EDITOR VISUAL"'';
     services.tailscale.enable = true;
     # Codex probes a conventional FHS path for bubblewrap on Linux.

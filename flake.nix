@@ -55,6 +55,7 @@
           paths = [
             ./hosts
             ./modules
+            ./rices
           ];
           # Keep generated hardware configs out of denix auto-discovery without
           # needing to update this list every time a new NixOS host is added.
@@ -64,7 +65,7 @@
             args
             (base.withConfig {
               args.enable = true;
-              rices.enable = false;
+              rices.enable = true;
             })
           ];
 
