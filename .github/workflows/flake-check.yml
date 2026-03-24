@@ -57,15 +57,15 @@ jobs:
       - name: Evaluate all supported systems
         run: nix flake check --all-systems --no-build
 
-  linux-builds:
+  linux-build-checks:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        host:
-          - nixos
-          - nvidia-desktop
-          - nixos-server
+        check:
+          - build-nixos
+          - build-nvidia-desktop
+          - build-nixos-server
 
     steps:
       - name: Checkout repository
@@ -74,5 +74,5 @@ jobs:
       - name: Install Nix
         uses: DeterminateSystems/determinate-nix-action@v3
 
-      - name: Build Linux host with nh
-        run: nix run nixpkgs#nh -- os build . -H ${{ matrix.host }}
+      - name: Build Linux flake check
+        run: nix build .#checks.x86_64-linux.${{ matrix.check }}
