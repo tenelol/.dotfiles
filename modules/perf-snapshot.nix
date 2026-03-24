@@ -1,13 +1,12 @@
 {
   delib,
   host,
-  hostLib,
   ...
 }:
 delib.module {
   name = "perf-snapshot";
 
-  options = delib.singleEnableOption (hostLib.isLinux host);
+  options = delib.singleEnableOption (builtins.match ".*-linux" host.system != null);
 
   home.ifEnabled = {
     home.file.".local/bin/perf-snapshot" = {
