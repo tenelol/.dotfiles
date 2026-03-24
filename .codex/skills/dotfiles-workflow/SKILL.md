@@ -24,7 +24,7 @@ Use this skill for any repo change that touches `flake.nix`, `hosts/`, `modules/
 
 ## Validation
 
-- Default validation command: `nix flake check --no-build`
+- Default validation command: `nix flake check --all-systems --no-build`
 - Linux hosts:
   - `nh os build . -H nixos`
   - `nh os build . -H nvidia-desktop`

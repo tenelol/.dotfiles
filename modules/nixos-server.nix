@@ -26,20 +26,12 @@ delib.module {
 
     services.seatd.enable = true;
 
+    # Keep host packages to server operations; user tooling comes from Home Manager.
     environment.systemPackages = with pkgs; [
-      neovim
-      wget
-      git
       gcc
-      gnumake
-      pkg-config
-      cmake
-      ripgrep
-      nodejs
-      python3
       iwd
-      go
-      gh
+      clang
+      neovim
       tailscale
       nh
     ];

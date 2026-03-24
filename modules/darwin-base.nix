@@ -42,39 +42,12 @@ delib.module {
     nixpkgs.config.allowUnfree = true;
 
     environment.variables.EDITOR = "nvim";
+    # Keep system packages minimal; user-facing CLI tooling lives in home/home.nix.
     environment.systemPackages = with pkgs; [
-      bat
-      cargo
-      clang
-      cmake
-      coreutils
-      eza
-      fd
-      findutils
       fish
-      gawk
       git
-      gnugrep
-      gnumake
-      gnused
-      gnutar
-      go
-      jdk
       neovim
       nh
-      nil
-      nodejs
-      nodePackages.prettier
-      pkg-config
-      pnpm
-      prettierd
-      python3
-      ripgrep
-      tre-command
-      wget
-      yazi
-      zellij
-      zig
     ];
 
     fonts.packages = with pkgs; [

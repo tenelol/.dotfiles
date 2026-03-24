@@ -143,28 +143,19 @@ delib.module {
       shell = pkgs.fish;
     };
 
+    # Keep system packages focused on host bootstrap and service-adjacent tools.
     environment.systemPackages = with pkgs; [
       vim
       wget
       git
-      ghostty
+      gcc
       keyd
       iwd
-      adwaita-icon-theme
-      gcc
-      cl
-      zig
       clang
+      cl
       neovim
-      nodejs
       nodePackages.npm
-      go
-      cargo
-      python3
       tailscale
-      pnpm
-      waybar
-      xwayland-satellite
       nh
     ];
   };
