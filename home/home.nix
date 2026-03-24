@@ -17,6 +17,8 @@ let
     inherit pkgs lib;
   };
 
+  # User-facing CLI and dev tools live in Home Manager so they stay aligned
+  # across Linux and Darwin without bloating system-level package sets.
   commonPackages = with pkgs; [
     gh
     zellij
@@ -27,18 +29,29 @@ let
     jdk
     prettierd
     nodePackages.prettier
+    go
+    nodejs
+    python3
   ];
 
   linuxBasePackages = with pkgs; [
     parted
   ];
 
+  nonServerPackages = with pkgs; [
+    cargo
+    pnpm
+    zig
+  ];
+
   linuxDesktopPackages = with pkgs; [
+    adwaita-icon-theme
     codexBarPackage
     acpi
     alsa-utils
     brightnessctl
     cliphist
+    ghostty
     grim
     playerctl
     pulseaudio
@@ -62,7 +75,9 @@ let
     vesktop
     slack
     libreoffice-fresh
+    waybar
     wl-clipboard
+    xwayland-satellite
     zed-editor
     zathura
     antigravity-fhs
@@ -82,6 +97,28 @@ let
     slack
     zed-editor
     zathura
+  ];
+
+  darwinCliPackages = with pkgs; [
+    clang
+    cmake
+    coreutils
+    fd
+    findutils
+    gawk
+    gnugrep
+    gnumake
+    gnused
+    gnutar
+    nil
+    pkg-config
+    yazi
+  ];
+
+  linuxServerPackages = with pkgs; [
+    cmake
+    gnumake
+    pkg-config
   ];
 in
 {
@@ -117,8 +154,10 @@ in
   home.packages =
     commonPackages
     ++ lib.optionals isLinux linuxBasePackages
+    ++ lib.optionals (!isServer) nonServerPackages
     ++ lib.optionals (!isServer && isLinux) linuxDesktopPackages
-    ++ lib.optionals (!isServer && isDarwin) darwinDesktopPackages;
+    ++ lib.optionals (!isServer && isDarwin) (darwinCliPackages ++ darwinDesktopPackages)
+    ++ lib.optionals (isServer && isLinux) linuxServerPackages;
 
   home.file =
     lib.optionalAttrs (!isServer && isLinux) {

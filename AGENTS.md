@@ -7,7 +7,7 @@
 
 ## Repository workflow
 - Prefer `nh` commands over raw `nixos-rebuild` / `darwin-rebuild` unless the user explicitly asks otherwise.
-- Preferred validation command: `nix flake check --no-build`
+- Preferred validation command: `nix flake check --all-systems --no-build`
 - Preferred Linux build commands:
   - `nh os build . -H nixos`
   - `nh os build . -H nvidia-desktop`
