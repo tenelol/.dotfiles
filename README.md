@@ -29,8 +29,10 @@ NixOS と `nix-darwin` を 1 つの flake で管理し、Home Manager は各 sys
 評価:
 
 ```sh
-nix flake check --no-build
+nix flake check --all-systems --no-build
 ```
+
+Darwin 実機がまだ無い段階でも `macbook` host を腐らせないため、普段の評価は Linux / Darwin をまとめて見る `--all-systems` を基準にします。
 
 Linux host を build:
 
