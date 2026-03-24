@@ -2,15 +2,14 @@
   delib,
   hm,
   host,
+  hostLib,
   pkgs,
   ...
 }:
 delib.module {
   name = "waybar";
 
-  options = delib.singleEnableOption (
-    !host.isServer && builtins.match ".*-linux" host.system != null
-  );
+  options = delib.singleEnableOption (hostLib.isLinuxDesktop host);
 
   home.ifEnabled = {
     home.activation.cleanupLegacyWaybarDir = hm.dag.entryBefore [ "checkLinkTargets" ] ''

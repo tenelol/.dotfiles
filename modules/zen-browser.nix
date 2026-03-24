@@ -1,6 +1,7 @@
 {
   delib,
   host,
+  hostLib,
   inputs,
   pkgs,
   ...
@@ -12,9 +13,7 @@ in
 delib.module {
   name = "zen-browser";
 
-  options = delib.singleEnableOption (
-    !host.isServer && builtins.match ".*-linux" host.system != null
-  );
+  options = delib.singleEnableOption (hostLib.isLinuxDesktop host);
 
   home.ifEnabled = {
     home.packages = [

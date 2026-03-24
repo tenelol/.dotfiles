@@ -34,6 +34,7 @@ nix flake check --all-systems --no-build
 ```
 
 Darwin 実機がまだ無い段階でも `macbook` host を腐らせないため、普段の評価は Linux / Darwin をまとめて見る `--all-systems` を基準にします。
+`flake.nix` の `checks` には Linux host の `system.build.toplevel` も含めてあるので、`--no-build` を外した `nix flake check --all-systems` では Linux 側の実 build まで確認できます。
 CI でもまずこの評価を走らせ、その上で Linux 3 host は `nh os build` まで確認します。Darwin は GitHub Actions の Linux runner では build せず、ローカルで `nh darwin build . -H macbook` を回す運用です。
 
 整形確認:

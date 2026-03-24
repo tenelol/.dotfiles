@@ -1,6 +1,7 @@
 {
   delib,
   host,
+  hostLib,
   lib,
   pkgs,
   profile,
@@ -9,9 +10,7 @@
 delib.module {
   name = "nixos.common";
 
-  options = delib.singleEnableOption (
-    !host.isServer && builtins.match ".*-linux" host.system != null
-  );
+  options = delib.singleEnableOption (hostLib.isLinuxDesktop host);
 
   nixos.ifEnabled = {
     services.pulseaudio.enable = false;

@@ -1,6 +1,7 @@
 {
   delib,
   host,
+  hostLib,
   lib,
   pkgs,
   ...
@@ -45,7 +46,7 @@ in
 delib.module {
   name = "moocs-collect-cli";
 
-  options = delib.singleEnableOption (!host.isServer);
+  options = delib.singleEnableOption (hostLib.isDesktop host);
 
   home.ifEnabled = {
     home.packages = [ moocs-collect-cli ];

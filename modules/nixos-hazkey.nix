@@ -1,6 +1,7 @@
 {
   delib,
   host,
+  hostLib,
   inputs,
   lib,
   pkgs,
@@ -88,15 +89,14 @@ in
 delib.module {
   name = "nixos.hazkey";
 
-  options = delib.singleEnableOption (!host.isServer && isSupportedHazkeySystem);
+  options = delib.singleEnableOption (hostLib.isDesktop host && isSupportedHazkeySystem);
 
   # Always import the hazkey NixOS module so its options are defined on every host.
   # Actual configuration is guarded by ifEnabled below.
   nixos.always = {
     imports = [ nix-hazkey.nixosModules.hazkey ];
     warnings =
-      lib.optional
-        (!host.isServer && builtins.match ".*-linux" host.system != null && !isSupportedHazkeySystem)
+      lib.optional (hostLib.isLinuxDesktop host && !isSupportedHazkeySystem)
         "nixos.hazkey is disabled on ${system}: the pinned upstream binary overrides are only packaged for x86_64-linux.";
   };
 
