@@ -28,16 +28,8 @@
     { denix, nixpkgs, ... }@inputs:
     let
       lib = nixpkgs.lib;
-      hostLib = rec {
-        isLinuxSystem = system: lib.hasSuffix "-linux" system;
-        isDarwinSystem = system: lib.hasSuffix "-darwin" system;
-        isServer = host: host.isServer or false;
-        isDesktop = host: !(isServer host);
-        isLinux = host: isLinuxSystem host.system;
-        isDarwin = host: isDarwinSystem host.system;
-        isLinuxDesktop = host: isLinux host && isDesktop host;
-        isDarwinDesktop = host: isDarwin host && isDesktop host;
-      };
+      isLinuxSystem = system: lib.hasSuffix "-linux" system;
+      isDarwinSystem = system: lib.hasSuffix "-darwin" system;
       hostDirectories = lib.filterAttrs (_: type: type == "directory") (builtins.readDir ./hosts);
       hardwareConfigurationExcludes = lib.concatLists (
         lib.mapAttrsToList (
@@ -79,7 +71,6 @@
           specialArgs = {
             inherit inputs;
             inherit profile;
-            inherit hostLib;
           };
         };
 
@@ -110,8 +101,8 @@
 
       # denix currently returns every host in both outputs, so filter them to keep
       # the public flake interface aligned with the actual target platform.
-      nixosConfigurations = filterConfigurations hostLib.isLinuxSystem (mkConfigurations "nixos");
-      darwinConfigurations = filterConfigurations hostLib.isDarwinSystem (mkConfigurations "darwin");
+      nixosConfigurations = filterConfigurations isLinuxSystem (mkConfigurations "nixos");
+      darwinConfigurations = filterConfigurations isDarwinSystem (mkConfigurations "darwin");
       allConfigurations = nixosConfigurations // darwinConfigurations;
       supportedSystems = lib.unique (
         map (configuration: configuration.pkgs.stdenv.hostPlatform.system) (
@@ -129,7 +120,7 @@
           linuxSystemConfigurations = filterConfigurationsBySystem system nixosConfigurations;
         in
         mkEvalChecks systemConfigurations
-        // lib.optionalAttrs (hostLib.isLinuxSystem system) (mkLinuxBuildChecks linuxSystemConfigurations)
+        // lib.optionalAttrs (isLinuxSystem system) (mkLinuxBuildChecks linuxSystemConfigurations)
       );
 
       formatter = lib.genAttrs supportedSystems (system: nixpkgs.legacyPackages.${system}.nixfmt-tree);

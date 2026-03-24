@@ -1,13 +1,14 @@
 {
   delib,
   host,
-  hostLib,
   ...
 }:
 delib.module {
   name = "fuzzel";
 
-  options = delib.singleEnableOption (hostLib.isLinuxDesktop host);
+  options = delib.singleEnableOption (
+    !host.isServer && builtins.match ".*-linux" host.system != null
+  );
 
   home.ifEnabled = {
     xdg.configFile."fuzzel" = {

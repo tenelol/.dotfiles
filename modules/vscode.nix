@@ -1,7 +1,6 @@
 {
   delib,
   host,
-  hostLib,
   pkgs,
   lib,
   ...
@@ -9,7 +8,7 @@
 delib.module {
   name = "vscode";
 
-  home.always = lib.mkIf (hostLib.isDesktop host) {
+  home.always = lib.mkIf (!host.isServer) {
     programs.vscode = {
       enable = true;
       mutableExtensionsDir = false;
