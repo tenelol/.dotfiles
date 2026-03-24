@@ -23,6 +23,7 @@ NixOS と `nix-darwin` を 1 つの flake で管理し、Home Manager は各 sys
 - [legacy](/home/tener/.dotfiles/legacy): 退避した旧構成。現行 flake では未使用
 
 `hosts/` と `modules/` は `denix` が自動で読むので、新しい `.nix` を足したら Git 管理下に置く前提です。
+NixOS host の `hosts/*/hardware-configuration.nix` は `flake.nix` 側で自動除外しているので、host 追加時に除外リストを手で更新する必要はありません。
 
 ## Workflow
 
@@ -33,6 +34,7 @@ nix flake check --all-systems --no-build
 ```
 
 Darwin 実機がまだ無い段階でも `macbook` host を腐らせないため、普段の評価は Linux / Darwin をまとめて見る `--all-systems` を基準にします。
+CI でもまずこの評価を走らせ、その上で Linux 3 host は `nh os build` まで確認します。Darwin は GitHub Actions の Linux runner では build せず、ローカルで `nh darwin build . -H macbook` を回す運用です。
 
 整形確認:
 

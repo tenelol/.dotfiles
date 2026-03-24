@@ -28,6 +28,16 @@
     { denix, nixpkgs, ... }@inputs:
     let
       lib = nixpkgs.lib;
+      hostDirectories = lib.filterAttrs (_: type: type == "directory") (builtins.readDir ./hosts);
+      hardwareConfigurationExcludes = lib.concatLists (
+        lib.mapAttrsToList (
+          name: _:
+          let
+            hardwareConfiguration = ./hosts + "/${name}/hardware-configuration.nix";
+          in
+          lib.optional (builtins.pathExists hardwareConfiguration) hardwareConfiguration
+        ) hostDirectories
+      );
       profile = {
         username = "tener";
         gitName = "tenelol";
@@ -44,11 +54,9 @@
             ./hosts
             ./modules
           ];
-          exclude = [
-            ./hosts/nixos/hardware-configuration.nix
-            ./hosts/nvidia-desktop/hardware-configuration.nix
-            ./hosts/nixos-server/hardware-configuration.nix
-          ];
+          # Keep generated hardware configs out of denix auto-discovery without
+          # needing to update this list every time a new NixOS host is added.
+          exclude = hardwareConfigurationExcludes;
 
           extensions = with denix.lib.extensions; [
             args
