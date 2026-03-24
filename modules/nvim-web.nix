@@ -1,8 +1,13 @@
-{ delib, host, ... }:
+{
+  delib,
+  host,
+  hostLib,
+  ...
+}:
 delib.module {
   name = "nvim-web";
 
-  options = delib.singleEnableOption (!host.isServer);
+  options = delib.singleEnableOption (hostLib.isDesktop host);
 
   home.ifEnabled = {
     home.sessionVariables = {

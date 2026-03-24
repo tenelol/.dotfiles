@@ -1,10 +1,13 @@
-{ delib, host, ... }:
+{
+  delib,
+  host,
+  hostLib,
+  ...
+}:
 delib.module {
   name = "darwin.homebrew";
 
-  options = delib.singleEnableOption (
-    builtins.match ".*-darwin" host.system != null && !host.isServer
-  );
+  options = delib.singleEnableOption (hostLib.isDarwinDesktop host);
 
   darwin.ifEnabled = {
     homebrew = {

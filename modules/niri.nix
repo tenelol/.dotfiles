@@ -2,6 +2,7 @@
   delib,
   hm,
   host,
+  hostLib,
   lib,
   pkgs,
   ...
@@ -14,9 +15,7 @@ in
 delib.module {
   name = "niri";
 
-  options = delib.singleEnableOption (
-    !host.isServer && builtins.match ".*-linux" host.system != null
-  );
+  options = delib.singleEnableOption (hostLib.isLinuxDesktop host);
 
   home.ifEnabled = {
     home.activation.cleanupLegacyNiriDir = hm.dag.entryBefore [ "checkLinkTargets" ] ''

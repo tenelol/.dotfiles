@@ -28,6 +28,16 @@
     { denix, nixpkgs, ... }@inputs:
     let
       lib = nixpkgs.lib;
+      hostLib = rec {
+        isLinuxSystem = system: lib.hasSuffix "-linux" system;
+        isDarwinSystem = system: lib.hasSuffix "-darwin" system;
+        isServer = host: host.isServer or false;
+        isDesktop = host: !(isServer host);
+        isLinux = host: isLinuxSystem host.system;
+        isDarwin = host: isDarwinSystem host.system;
+        isLinuxDesktop = host: isLinux host && isDesktop host;
+        isDarwinDesktop = host: isDarwin host && isDesktop host;
+      };
       hostDirectories = lib.filterAttrs (_: type: type == "directory") (builtins.readDir ./hosts);
       hardwareConfigurationExcludes = lib.concatLists (
         lib.mapAttrsToList (
@@ -69,6 +79,7 @@
           specialArgs = {
             inherit inputs;
             inherit profile;
+            inherit hostLib;
           };
         };
 
@@ -78,15 +89,11 @@
           _: configuration: predicate configuration.pkgs.stdenv.hostPlatform.system
         ) configurations;
 
-      filterConfigurationsByPattern =
-        systemPattern: configurations:
-        filterConfigurations (system: builtins.match systemPattern system != null) configurations;
-
       filterConfigurationsBySystem =
         system: configurations:
         filterConfigurations (configurationSystem: configurationSystem == system) configurations;
 
-      mkChecks =
+      mkEvalChecks =
         configurations:
         lib.mapAttrs (
           name: configuration:
@@ -95,10 +102,16 @@
           )
         ) configurations;
 
+      mkLinuxBuildChecks =
+        configurations:
+        lib.mapAttrs' (
+          name: configuration: lib.nameValuePair "build-${name}" configuration.config.system.build.toplevel
+        ) configurations;
+
       # denix currently returns every host in both outputs, so filter them to keep
       # the public flake interface aligned with the actual target platform.
-      nixosConfigurations = filterConfigurationsByPattern ".*-linux" (mkConfigurations "nixos");
-      darwinConfigurations = filterConfigurationsByPattern ".*-darwin" (mkConfigurations "darwin");
+      nixosConfigurations = filterConfigurations hostLib.isLinuxSystem (mkConfigurations "nixos");
+      darwinConfigurations = filterConfigurations hostLib.isDarwinSystem (mkConfigurations "darwin");
       allConfigurations = nixosConfigurations // darwinConfigurations;
       supportedSystems = lib.unique (
         map (configuration: configuration.pkgs.stdenv.hostPlatform.system) (
@@ -110,7 +123,13 @@
       inherit nixosConfigurations darwinConfigurations;
 
       checks = lib.genAttrs supportedSystems (
-        system: mkChecks (filterConfigurationsBySystem system allConfigurations)
+        system:
+        let
+          systemConfigurations = filterConfigurationsBySystem system allConfigurations;
+          linuxSystemConfigurations = filterConfigurationsBySystem system nixosConfigurations;
+        in
+        mkEvalChecks systemConfigurations
+        // lib.optionalAttrs (hostLib.isLinuxSystem system) (mkLinuxBuildChecks linuxSystemConfigurations)
       );
 
       formatter = lib.genAttrs supportedSystems (system: nixpkgs.legacyPackages.${system}.nixfmt-tree);
