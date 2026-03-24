@@ -5,9 +5,6 @@
   lib,
   ...
 }:
-let
-  localExtensions = import ../packages/vscode-extensions.nix { inherit pkgs lib; };
-in
 delib.module {
   name = "vscode";
 
@@ -30,8 +27,7 @@ delib.module {
             esbenp.prettier-vscode
             ritwickdey.liveserver
             asvetliakov.vscode-neovim
-          ]
-          ++ builtins.filter (extension: extension != null) (builtins.attrValues localExtensions);
+          ];
       };
     };
   };
