@@ -71,7 +71,6 @@ nh darwin switch . -H macbook
 - Home Manager は standalone `homeConfigurations` ではなく system 側に統合
 - Linux desktop は `niri` 前提
 - macOS でも同じ Neovim 設定を使う。clipboard や language toolchain は Nix 側で揃える
-- VS Code の vendor 拡張は [vendor/vscode-extensions](/home/tener/.dotfiles/vendor/vscode-extensions) に展開して declarative に読む
 
 ## Editing Notes
 
