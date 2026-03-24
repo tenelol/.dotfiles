@@ -118,7 +118,10 @@ delib.module {
       config = {
         common.default = [ "gtk" ];
         niri = {
-          default = lib.mkForce [ "wlr" "gtk" ];
+          default = lib.mkForce [
+            "wlr"
+            "gtk"
+          ];
           "org.freedesktop.impl.portal.Screencast" = [ "wlr" ];
           "org.freedesktop.impl.portal.Screenshot" = [ "wlr" ];
         };

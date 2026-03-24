@@ -64,11 +64,19 @@
           };
         };
 
-      filterConfigurationsBySystem =
-        systemPattern: configurations:
+      filterConfigurations =
+        predicate: configurations:
         lib.filterAttrs (
-          _: configuration: builtins.match systemPattern configuration.pkgs.stdenv.hostPlatform.system != null
+          _: configuration: predicate configuration.pkgs.stdenv.hostPlatform.system
         ) configurations;
+
+      filterConfigurationsByPattern =
+        systemPattern: configurations:
+        filterConfigurations (system: builtins.match systemPattern system != null) configurations;
+
+      filterConfigurationsBySystem =
+        system: configurations:
+        filterConfigurations (configurationSystem: configurationSystem == system) configurations;
 
       mkChecks =
         configurations:
@@ -81,20 +89,22 @@
 
       # denix currently returns every host in both outputs, so filter them to keep
       # the public flake interface aligned with the actual target platform.
-      nixosConfigurations = filterConfigurationsBySystem ".*-linux" (mkConfigurations "nixos");
-      darwinConfigurations = filterConfigurationsBySystem ".*-darwin" (mkConfigurations "darwin");
+      nixosConfigurations = filterConfigurationsByPattern ".*-linux" (mkConfigurations "nixos");
+      darwinConfigurations = filterConfigurationsByPattern ".*-darwin" (mkConfigurations "darwin");
+      allConfigurations = nixosConfigurations // darwinConfigurations;
+      supportedSystems = lib.unique (
+        map (configuration: configuration.pkgs.stdenv.hostPlatform.system) (
+          builtins.attrValues allConfigurations
+        )
+      );
     in
     {
       inherit nixosConfigurations darwinConfigurations;
 
-      checks = {
-        x86_64-linux = mkChecks (filterConfigurationsBySystem "x86_64-linux" nixosConfigurations);
-        aarch64-darwin = mkChecks (filterConfigurationsBySystem "aarch64-darwin" darwinConfigurations);
-      };
+      checks = lib.genAttrs supportedSystems (
+        system: mkChecks (filterConfigurationsBySystem system allConfigurations)
+      );
 
-      formatter = {
-        x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixfmt;
-        aarch64-darwin = nixpkgs.legacyPackages.aarch64-darwin.nixfmt;
-      };
+      formatter = lib.genAttrs supportedSystems (system: nixpkgs.legacyPackages.${system}.nixfmt-tree);
     };
 }

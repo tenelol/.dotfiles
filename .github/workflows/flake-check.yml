@@ -2,9 +2,35 @@ name: Flake Check
 
 on:
   pull_request:
+    paths:
+      - ".github/workflows/**"
+      - "flake.nix"
+      - "flake.lock"
+      - "hosts/**"
+      - "modules/**"
+      - "home/**"
+      - "config/**"
+      - "packages/**"
+      - "vendor/**"
+      - "img/**"
+      - "keys/**"
+      - "README.md"
   push:
     branches:
       - main
+    paths:
+      - ".github/workflows/**"
+      - "flake.nix"
+      - "flake.lock"
+      - "hosts/**"
+      - "modules/**"
+      - "home/**"
+      - "config/**"
+      - "packages/**"
+      - "vendor/**"
+      - "img/**"
+      - "keys/**"
+      - "README.md"
   workflow_dispatch:
 
 permissions:
@@ -24,6 +50,9 @@ jobs:
 
       - name: Install Nix
         uses: DeterminateSystems/determinate-nix-action@v3
+
+      - name: Check Nix formatting
+        run: nix fmt -- flake.nix hosts modules home packages --ci --excludes 'hosts/*/hardware-configuration.nix' --excludes 'legacy/**'
 
       - name: Evaluate all supported systems
         run: nix flake check --all-systems --no-build

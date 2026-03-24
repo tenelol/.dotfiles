@@ -74,7 +74,7 @@ let
   nixManagedPluginPaths = builtins.mapAttrs (_: plugin: toString plugin) nixManagedPlugins;
   nixManagedPluginsLua =
     let
-      renderEntry = name: ''  [${builtins.toJSON name}] = ${builtins.toJSON nixManagedPluginPaths.${name}}'';
+      renderEntry = name: "[${builtins.toJSON name}] = ${builtins.toJSON nixManagedPluginPaths.${name}}";
     in
     ''
       return {

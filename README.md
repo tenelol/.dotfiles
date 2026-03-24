@@ -34,6 +34,12 @@ nix flake check --all-systems --no-build
 
 Darwin 実機がまだ無い段階でも `macbook` host を腐らせないため、普段の評価は Linux / Darwin をまとめて見る `--all-systems` を基準にします。
 
+整形確認:
+
+```sh
+nix fmt -- flake.nix hosts modules home packages --ci --excludes 'hosts/*/hardware-configuration.nix' --excludes 'legacy/**'
+```
+
 Linux host を build:
 
 ```sh

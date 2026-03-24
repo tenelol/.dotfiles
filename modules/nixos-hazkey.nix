@@ -94,9 +94,10 @@ delib.module {
   # Actual configuration is guarded by ifEnabled below.
   nixos.always = {
     imports = [ nix-hazkey.nixosModules.hazkey ];
-    warnings = lib.optional (
-      !host.isServer && builtins.match ".*-linux" host.system != null && !isSupportedHazkeySystem
-    ) "nixos.hazkey is disabled on ${system}: the pinned upstream binary overrides are only packaged for x86_64-linux.";
+    warnings =
+      lib.optional
+        (!host.isServer && builtins.match ".*-linux" host.system != null && !isSupportedHazkeySystem)
+        "nixos.hazkey is disabled on ${system}: the pinned upstream binary overrides are only packaged for x86_64-linux.";
   };
 
   nixos.ifEnabled = {
