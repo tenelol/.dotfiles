@@ -16,7 +16,12 @@ let
     }:
     if builtins.pathExists srcPath then
       extensionFromDir {
-        inherit publisher name version meta;
+        inherit
+          publisher
+          name
+          version
+          meta
+          ;
         src = builtins.path {
           path = srcPath;
           name = "${publisher}-${name}-${version}";
