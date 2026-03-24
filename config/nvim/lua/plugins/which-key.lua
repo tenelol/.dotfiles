@@ -11,6 +11,7 @@ return {
             })
 
             wk.add({
+                { "<leader>c", group = "color" },
                 { "<leader>f", group = "find" },
                 { "<leader>d", group = "debug" },
                 { "<leader>h", group = "git hunk" },
