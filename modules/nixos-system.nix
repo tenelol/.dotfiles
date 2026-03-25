@@ -15,11 +15,11 @@ delib.module {
 
   nixos.ifEnabled = {
     networking.networkmanager.enable = false;
-    networking.useNetworkd = true;
+    networking.useNetworkd = lib.mkDefault true;
     networking.wireless.iwd.enable = true;
     networking.wireless.iwd.settings = {
       General = {
-        EnableNetworkConfiguration = true;
+        EnableNetworkConfiguration = lib.mkDefault true;
       };
       Settings = {
         AutoConnect = true;
@@ -81,6 +81,7 @@ delib.module {
     services.xserver.desktopManager.runXdgAutostartIfNone = true;
 
     environment.variables = {
+      GTK_IM_MODULE = "fcitx";
       QT_IM_MODULE = "fcitx";
       XMODIFIERS = "@im=fcitx";
     };

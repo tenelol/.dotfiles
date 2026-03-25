@@ -16,13 +16,13 @@ delib.module {
       "1.1.1.1"
       "8.8.8.8"
     ];
-    # Keep the laptop on the default DHCP backend. The generated hardware
-    # config still carries useDHCP, so forcing networkd here enables both.
+    # Keep the laptop on the default DHCP backend instead of the desktop-wide
+    # networkd+iwd L3 stack.
     networking.useNetworkd = lib.mkForce false;
-    # Tailscale's MagicDNS integrates more reliably with systemd-resolved than
-    # the current resolvconf-only path used by iwd on this host.
+    networking.wireless.iwd.settings.General.EnableNetworkConfiguration = lib.mkForce false;
+    # Keep DNS on systemd-resolved for Tailscale MagicDNS while dhcpcd owns
+    # address assignment on this host.
     services.resolved.enable = true;
-    networking.resolvconf.enable = lib.mkForce false;
 
     # Keep the laptop on the regular kernel track; unstable+latest is more likely
     # to regress power management and fan behavior on this host.
