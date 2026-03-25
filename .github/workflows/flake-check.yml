@@ -55,7 +55,7 @@ jobs:
         run: nix fmt -- flake.nix hosts modules home packages --ci --excludes 'hosts/*/hardware-configuration.nix' --excludes 'legacy/**'
 
       - name: Evaluate all supported systems
-        run: nix flake check --all-systems --no-build
+        run: ./scripts/validate eval
 
   linux-build-checks:
     runs-on: ubuntu-latest

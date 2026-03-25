@@ -6,6 +6,7 @@ delib.host {
 
   myconfig.boot.efiSystemdBoot = true;
   myconfig.rice = "indigo";
+  myconfig.nixos.desktop.networkBackend = "iwd-networkd";
 
   nixos.imports = [
     ./hardware-configuration.nix

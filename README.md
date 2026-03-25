@@ -31,12 +31,12 @@ NixOS host の `hosts/*/hardware-configuration.nix` は `flake.nix` 側で自動
 評価:
 
 ```sh
-nix flake check --all-systems --no-build
+./scripts/validate eval
 ```
 
-Darwin 実機がまだ無い段階でも `macbook` host を腐らせないため、普段の評価は Linux / Darwin をまとめて見る `--all-systems` を基準にします。
+Darwin 実機がまだ無い段階でも `macbook` host を腐らせないため、普段の評価は Linux / Darwin をまとめて見る `./scripts/validate eval` を基準にします。
 `flake.nix` の `checks` には Linux host の `system.build.toplevel` も含めてあるので、`--no-build` を外した `nix flake check --all-systems` では Linux 側の実 build まで確認できます。
-CI ではまず `nix flake check --all-systems --no-build` で全 platform の評価を見て、その上で `checks.x86_64-linux.build-*` を個別に build します。ローカルの実運用は引き続き `nh os build` / `nh darwin build` を使います。Darwin は GitHub Actions の Linux runner では build せず、ローカルで `nh darwin build . -H macbook` を回す運用です。
+CI ではまず `./scripts/validate eval` で全 platform の評価を見て、その上で `checks.x86_64-linux.build-*` を個別に build します。ローカルの実運用は引き続き `nh os build` / `nh darwin build` を使います。Darwin は GitHub Actions の Linux runner では build せず、ローカルで `./scripts/validate darwin` を回す運用です。
 
 整形確認:
 
@@ -47,9 +47,7 @@ nix fmt -- flake.nix hosts modules rices home packages --ci --excludes 'hosts/*/
 Linux host を build:
 
 ```sh
-nh os build . -H nixos
-nh os build . -H nvidia-desktop
-nh os build . -H nixos-server
+./scripts/validate linux
 ```
 
 Linux host を switch:
@@ -63,6 +61,7 @@ nh os switch . -H nixos-server
 macOS host を build / switch:
 
 ```sh
+./scripts/validate darwin
 nh darwin build . -H macbook
 nh darwin switch . -H macbook
 ```
@@ -75,6 +74,7 @@ nh darwin build . -H macbook-redmoon
 ```
 
 `nh` を使う前提で書いています。`nixos-rebuild` や `darwin-rebuild` を直接叩くより、普段の運用では `nh` を優先します。
+共通の評価入口として `./scripts/validate` を置いていて、`eval` / `linux` / `darwin` の 3 モードを使い分けます。
 通常の `nixos` / `nvidia-desktop` / `macbook` は `indigo` rice を使い、`*-redmoon` のような派生 config で別 wallpaper を試せます。Linux desktop では `switch` 後に Home Manager activation が `apply-theme-wallpaper` を叩くので、`niri` 上でも wallpaper が即時反映されます。headless な `nixos-server` にも rice 名は付きますが、今のところ見た目には影響しません。
 
 ## Design Notes
