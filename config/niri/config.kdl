@@ -237,8 +237,8 @@ spawn-sh-at-startup "PATH=$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PAT
 spawn-sh-at-startup "fcitx5 -d"
 spawn-sh-at-startup "PATH=$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PATH; pkill -x keyd-application-mapper; keyd-application-mapper -d"
 spawn-sh-at-startup "PATH=$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PATH; waybar"
-// Use a stable wallpaper path so every desktop component can share one source.
-spawn-sh-at-startup "PATH=$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PATH; swww-daemon & sleep 0.2; swww img $HOME/.config/theme/wallpaper.png --transition-type none"
+// Apply the current denix wallpaper through the shared helper script.
+spawn-sh-at-startup "PATH=$HOME/.local/bin:$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PATH; apply-theme-wallpaper"
 
 // To run a shell command (with variables, pipes, etc.), use spawn-sh-at-startup:
 // spawn-sh-at-startup "qs -c ~/source/qs/MyAwesomeShell"
