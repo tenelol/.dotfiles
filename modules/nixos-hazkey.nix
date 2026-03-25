@@ -9,6 +9,11 @@
 let
   nix-hazkey = inputs.nix-hazkey;
   inherit (pkgs.stdenv.hostPlatform) system;
+  hazkeyHosts = [
+    "nixos"
+    "nvidia-desktop"
+  ];
+  hazkeyEnabled = builtins.elem host.name hazkeyHosts;
   hasHazkeyPackages = builtins.hasAttr system nix-hazkey.packages;
   hasX86_64Binary = system == "x86_64-linux";
   isSupportedHazkeySystem = hasHazkeyPackages && hasX86_64Binary;
@@ -88,17 +93,21 @@ in
 delib.module {
   name = "nixos.hazkey";
 
-  options = delib.singleEnableOption (!host.isServer && isSupportedHazkeySystem);
+  options = delib.singleEnableOption (hazkeyEnabled && isSupportedHazkeySystem);
 
-  # Always import the hazkey NixOS module so its options are defined on every host.
-  # Actual configuration is guarded by ifEnabled below.
-  nixos.always = {
-    imports = [ nix-hazkey.nixosModules.hazkey ];
-    warnings =
-      lib.optional
-        (!host.isServer && builtins.match ".*-linux" host.system != null && !isSupportedHazkeySystem)
-        "nixos.hazkey is disabled on ${system}: the pinned upstream binary overrides are only packaged for x86_64-linux.";
-  };
+  nixos.always =
+    { ... }:
+    {
+      warnings =
+        lib.optional
+          (
+            hazkeyEnabled
+            && !host.isServer
+            && builtins.match ".*-linux" host.system != null
+            && !isSupportedHazkeySystem
+          )
+          "nixos.hazkey is enabled for ${host.name}, but the pinned upstream binary overrides are only packaged for x86_64-linux.";
+    };
 
   nixos.ifEnabled = {
     i18n.inputMethod = {
