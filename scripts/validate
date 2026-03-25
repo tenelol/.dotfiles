@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$repo_root"
+
+usage() {
+  cat <<'EOF'
+Usage: ./scripts/validate <eval|linux|darwin>
+
+  eval    Run cross-system flake evaluation only
+  linux   Run flake evaluation, then build all Linux hosts with nh
+  darwin  Run flake evaluation, then build the macOS host with nh
+EOF
+}
+
+mode="${1:-linux}"
+
+case "$mode" in
+  eval|linux|darwin)
+    ;;
+  -h|--help|help)
+    usage
+    exit 0
+    ;;
+  *)
+    usage >&2
+    exit 1
+    ;;
+esac
+
+nix flake check --all-systems --no-build
+
+case "$mode" in
+  eval)
+    ;;
+  linux)
+    nh os build . -H nixos
+    nh os build . -H nvidia-desktop
+    nh os build . -H nixos-server
+    ;;
+  darwin)
+    nh darwin build . -H macbook
+    ;;
+esac
