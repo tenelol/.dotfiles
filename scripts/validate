@@ -8,10 +8,53 @@ usage() {
   cat <<'EOF'
 Usage: ./scripts/validate <eval|linux|darwin>
 
-  eval    Run cross-system flake evaluation only
-  linux   Run flake evaluation, then build all Linux hosts with nh
-  darwin  Run flake evaluation, then build the macOS host with nh
+  eval    Evaluate every nixos/darwin configuration without building
+  linux   Run lightweight evaluation, then build all Linux hosts with nh
+  darwin  Run lightweight evaluation, then build the macOS host with nh
 EOF
+}
+
+eval_configuration() {
+  local config_attr="$1"
+  local config_name="$2"
+  local drv_path
+
+  drv_path="$(nix eval --raw ".#${config_attr}.${config_name}.config.system.build.toplevel.drvPath")"
+  printf '%s: %s\n' "$config_name" "$drv_path"
+}
+
+eval_configurations() {
+  local config_attr="$1"
+  local system_suffix="$2"
+  local host_dir
+  local host_name
+  local host_system
+  local rice_file
+  local rice_name
+
+  shopt -s nullglob
+
+  for host_dir in hosts/*; do
+    [ -d "$host_dir" ] || continue
+    [ -f "$host_dir/default.nix" ] || continue
+
+    host_name="$(basename "$host_dir")"
+    host_system="$(sed -n 's/^[[:space:]]*system = "\(.*\)";/\1/p' "$host_dir/default.nix")"
+
+    case "$host_system" in
+      *"$system_suffix")
+        eval_configuration "$config_attr" "$host_name"
+
+        for rice_file in rices/*.nix; do
+          rice_name="${rice_file##*/}"
+          rice_name="${rice_name%.nix}"
+          eval_configuration "$config_attr" "${host_name}-${rice_name}"
+        done
+        ;;
+    esac
+  done
+
+  shopt -u nullglob
 }
 
 mode="${1:-linux}"
@@ -29,7 +72,8 @@ case "$mode" in
     ;;
 esac
 
-nix flake check --all-systems --no-build
+eval_configurations "nixosConfigurations" "-linux"
+eval_configurations "darwinConfigurations" "-darwin"
 
 case "$mode" in
   eval)
