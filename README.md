@@ -28,14 +28,14 @@ NixOS host の `hosts/*/hardware-configuration.nix` は `flake.nix` 側で自動
 
 ## Workflow
 
-評価:
+軽量評価:
 
 ```sh
 ./scripts/validate eval
 ```
 
-Darwin 実機がまだ無い段階でも `macbook` host を腐らせないため、普段の評価は Linux / Darwin をまとめて見る `./scripts/validate eval` を基準にします。
-`flake.nix` の `checks` には Linux host の `system.build.toplevel` も含めてあるので、`--no-build` を外した `nix flake check --all-systems` では Linux 側の実 build まで確認できます。
+Darwin 実機がまだ無い段階でも `macbook` host を腐らせないため、普段の軽量チェックは Linux / Darwin をまとめて見る `./scripts/validate eval` を基準にします。
+このコマンドは各 configuration の `system.build.toplevel.drvPath` を直接評価して、全 host と rice 派生 config が壊れていないかを build なしで確認します。
 CI ではまず `./scripts/validate eval` で全 platform の評価を見て、その上で `checks.x86_64-linux.build-*` を個別に build します。ローカルの実運用は引き続き `nh os build` / `nh darwin build` を使います。Darwin は GitHub Actions の Linux runner では build せず、ローカルで `./scripts/validate darwin` を回す運用です。
 
 整形確認:
