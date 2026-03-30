@@ -2,9 +2,15 @@
   "nodes": {
     "denix": {
       "inputs": {
-        "home-manager": ["home-manager"],
-        "nix-darwin": ["nix-darwin"],
-        "nixpkgs": ["nixpkgs"],
+        "home-manager": [
+          "home-manager"
+        ],
+        "nix-darwin": [
+          "nix-darwin"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ],
         "nixpkgs-lib": "nixpkgs-lib",
         "pre-commit-hooks": "pre-commit-hooks"
       },
@@ -40,7 +46,11 @@
     },
     "gitignore": {
       "inputs": {
-        "nixpkgs": ["denix", "pre-commit-hooks", "nixpkgs"]
+        "nixpkgs": [
+          "denix",
+          "pre-commit-hooks",
+          "nixpkgs"
+        ]
       },
       "locked": {
         "lastModified": 1709087332,
@@ -58,7 +68,9 @@
     },
     "home-manager": {
       "inputs": {
-        "nixpkgs": ["nixpkgs"]
+        "nixpkgs": [
+          "nixpkgs"
+        ]
       },
       "locked": {
         "lastModified": 1774135471,
@@ -76,7 +88,10 @@
     },
     "home-manager_2": {
       "inputs": {
-        "nixpkgs": ["nix-hazkey", "nixpkgs"]
+        "nixpkgs": [
+          "nix-hazkey",
+          "nixpkgs"
+        ]
       },
       "locked": {
         "lastModified": 1767556355,
@@ -94,7 +109,10 @@
     },
     "home-manager_3": {
       "inputs": {
-        "nixpkgs": ["zen-browser", "nixpkgs"]
+        "nixpkgs": [
+          "zen-browser",
+          "nixpkgs"
+        ]
       },
       "locked": {
         "lastModified": 1773422513,
@@ -112,7 +130,9 @@
     },
     "nix-darwin": {
       "inputs": {
-        "nixpkgs": ["nixpkgs"]
+        "nixpkgs": [
+          "nixpkgs"
+        ]
       },
       "locked": {
         "lastModified": 1773000227,
@@ -131,7 +151,9 @@
     "nix-hazkey": {
       "inputs": {
         "home-manager": "home-manager_2",
-        "nixpkgs": ["nixpkgs"]
+        "nixpkgs": [
+          "nixpkgs"
+        ]
       },
       "locked": {
         "lastModified": 1773145693,
@@ -227,7 +249,9 @@
     },
     "spicetify-nix": {
       "inputs": {
-        "nixpkgs": ["nixpkgs"],
+        "nixpkgs": [
+          "nixpkgs"
+        ],
         "systems": "systems"
       },
       "locked": {
@@ -262,7 +286,9 @@
     "zen-browser": {
       "inputs": {
         "home-manager": "home-manager_3",
-        "nixpkgs": ["nixpkgs"]
+        "nixpkgs": [
+          "nixpkgs"
+        ]
       },
       "locked": {
         "lastModified": 1774155194,

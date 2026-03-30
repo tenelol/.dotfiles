@@ -55,7 +55,6 @@ return {
                 "tailwindcss",
                 "ts_ls",
                 "jsonls",
-                "marksman",
                 "astro",
             }
 

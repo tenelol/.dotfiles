@@ -1,8 +1,12 @@
 {
   delib,
   host,
+  lib,
   ...
 }:
+let
+  brewInstalled = builtins.pathExists "/opt/homebrew/bin/brew" || builtins.pathExists "/usr/local/bin/brew";
+in
 delib.module {
   name = "darwin.homebrew";
 
@@ -11,7 +15,7 @@ delib.module {
   );
 
   darwin.ifEnabled = {
-    homebrew = {
+    homebrew = lib.mkIf brewInstalled {
       enable = true;
       enableFishIntegration = true;
 

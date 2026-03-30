@@ -66,6 +66,20 @@ nh darwin build . -H macbook
 nh darwin switch . -H macbook
 ```
 
+macOS に初回導入するときは、まず upstream Nix を入れてからこの repo を初回 switch します。
+この repo は `nix-darwin` 側で `nix.*` を管理しているので、Determinate installer を使う場合も upstream Nix を選ぶ前提です。
+
+```sh
+curl -fsSL https://install.determinate.systems/nix | sh -s -- install --prefer-upstream-nix
+source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+cd ~/.dotfiles
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+sudo nix run github:nix-darwin/nix-darwin#darwin-rebuild -- switch --flake .#macbook
+```
+
+初回は Homebrew を公式インストーラで入れてから `switch` します。以降の cask 管理は既存の `homebrew.*` 設定に寄せています。
+その後は `nh` と `darwin-rebuild` が入るので、通常どおり `nh darwin build . -H macbook` / `nh darwin switch . -H macbook` を使います。
+
 rice を切り替えて build:
 
 ```sh
