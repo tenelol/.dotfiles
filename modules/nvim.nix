@@ -106,7 +106,6 @@ delib.module {
         nodePackages.typescript
         tailwindcss-language-server
         vscode-langservers-extracted
-        marksman
         astro-language-server
         fd
         prettierd
