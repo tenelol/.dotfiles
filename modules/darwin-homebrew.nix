@@ -1,12 +1,8 @@
 {
   delib,
   host,
-  lib,
   ...
 }:
-let
-  brewInstalled = builtins.pathExists "/opt/homebrew/bin/brew" || builtins.pathExists "/usr/local/bin/brew";
-in
 delib.module {
   name = "darwin.homebrew";
 
@@ -15,7 +11,7 @@ delib.module {
   );
 
   darwin.ifEnabled = {
-    homebrew = lib.mkIf brewInstalled {
+    homebrew = {
       enable = true;
       enableFishIntegration = true;
 
@@ -34,6 +30,9 @@ delib.module {
       };
 
       casks = [
+        "chatgpt"
+        "chatgpt-atlas"
+        "codex-app"
         "ghostty"
         "raycast"
         "spotify"
