@@ -42,6 +42,9 @@ delib.module {
     nixpkgs.config.allowUnfree = true;
 
     environment.variables.EDITOR = "nvim";
+    environment.shells = with pkgs; [
+      fish
+    ];
     # Keep system packages minimal; user-facing CLI tooling lives in home/home.nix.
     environment.systemPackages = with pkgs; [
       fish
@@ -65,6 +68,11 @@ delib.module {
     programs.fish.enable = true;
 
     security.pam.services.sudo_local.touchIdAuth = true;
+
+    system.activationScripts.setFishLoginShell.text = ''
+      grep -qx '/run/current-system/sw/bin/fish' /etc/shells || printf '\n/run/current-system/sw/bin/fish\n' >> /etc/shells
+      dscl . -create /Users/${profile.username} UserShell /run/current-system/sw/bin/fish
+    '';
 
     system.defaults = {
       NSGlobalDomain = {
