@@ -29,7 +29,7 @@ return {
 
                 map("n", "K", vim.lsp.buf.hover, "Hover")
                 map("n", "gd", builtin.lsp_definitions, "Go to definition")
-                map("n", "gD", builtin.lsp_declarations, "Go to declaration")
+                map("n", "gD", vim.lsp.buf.declaration, "Go to declaration")
                 map("n", "gi", builtin.lsp_implementations, "Go to implementation")
                 map("n", "gr", builtin.lsp_references, "Go to references")
                 map("n", "<F2>", vim.lsp.buf.rename, "Rename symbol")
