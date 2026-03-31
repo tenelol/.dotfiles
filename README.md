@@ -25,6 +25,8 @@ NixOS と `nix-darwin` を 1 つの flake で管理し、Home Manager は各 sys
 
 `hosts/` と `modules/` と `rices/` は `denix` が自動で読むので、新しい `.nix` を足したら Git 管理下に置く前提です。
 NixOS host の `hosts/*/hardware-configuration.nix` は `flake.nix` 側で自動除外しているので、host 追加時に除外リストを手で更新する必要はありません。
+Darwin の共通土台は [modules/darwin-base.nix](/home/tener/.dotfiles/modules/darwin-base.nix)、`macbook` 固有の UX 調整は [modules/darwin-host-macbook.nix](/home/tener/.dotfiles/modules/darwin-host-macbook.nix) に寄せています。
+macOS の GUI アプリは「cross-platform なものは Nix、App Store / cask-first なものは Homebrew」を目安に分けています。
 
 ## Workflow
 

@@ -86,6 +86,8 @@ let
     pkgs.material-symbols
   ];
 
+  # Prefer Nix here when the package is cross-platform or when keeping the
+  # same binary/toolchain as Linux is useful.
   darwinDesktopPackages = with pkgs; [
     floorp-bin
     google-chrome
@@ -146,6 +148,7 @@ in
   ];
 
   home.sessionVariables = {
+    EDITOR = "nvim";
     JAVA_HOME = pkgs.jdk.home;
   };
 
