@@ -73,42 +73,5 @@ delib.module {
       grep -qx '/run/current-system/sw/bin/fish' /etc/shells || printf '\n/run/current-system/sw/bin/fish\n' >> /etc/shells
       dscl . -create /Users/${profile.username} UserShell /run/current-system/sw/bin/fish
     '';
-
-    system.defaults = {
-      NSGlobalDomain = {
-        AppleKeyboardUIMode = 3;
-        ApplePressAndHoldEnabled = false;
-        InitialKeyRepeat = 15;
-        KeyRepeat = 2;
-        NSAutomaticCapitalizationEnabled = false;
-        NSAutomaticDashSubstitutionEnabled = false;
-        NSAutomaticPeriodSubstitutionEnabled = false;
-        NSAutomaticQuoteSubstitutionEnabled = false;
-        NSAutomaticSpellingCorrectionEnabled = false;
-      };
-
-      dock = {
-        autohide = true;
-        mru-spaces = false;
-        show-recents = false;
-        showhidden = true;
-      };
-
-      finder = {
-        AppleShowAllExtensions = true;
-        FXEnableExtensionChangeWarning = false;
-        QuitMenuItem = true;
-      };
-
-      trackpad = {
-        Clicking = true;
-        TrackpadThreeFingerDrag = true;
-      };
-    };
-
-    system.keyboard = {
-      enableKeyMapping = true;
-      remapCapsLockToControl = true;
-    };
   };
 }

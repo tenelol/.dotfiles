@@ -1,4 +1,9 @@
-{ delib, host, ... }:
+{
+  delib,
+  host,
+  profile,
+  ...
+}:
 delib.module {
   name = "darwin.host.macbook";
 
@@ -8,5 +13,73 @@ delib.module {
     networking.computerName = "macbook";
     networking.hostName = "macbook";
     networking.localHostName = "macbook";
+
+    system.defaults = {
+      NSGlobalDomain = {
+        AppleICUForce24HourTime = true;
+        AppleKeyboardUIMode = 3;
+        ApplePressAndHoldEnabled = false;
+        AppleShowScrollBars = "Automatic";
+        InitialKeyRepeat = 15;
+        KeyRepeat = 2;
+        NSAutomaticCapitalizationEnabled = false;
+        NSAutomaticDashSubstitutionEnabled = false;
+        NSAutomaticInlinePredictionEnabled = false;
+        NSAutomaticPeriodSubstitutionEnabled = false;
+        NSAutomaticQuoteSubstitutionEnabled = false;
+        NSAutomaticSpellingCorrectionEnabled = false;
+        NSDocumentSaveNewDocumentsToCloud = false;
+        NSNavPanelExpandedStateForSaveMode = true;
+        NSNavPanelExpandedStateForSaveMode2 = true;
+        PMPrintingExpandedStateForPrint = true;
+        PMPrintingExpandedStateForPrint2 = true;
+      };
+
+      dock = {
+        autohide = true;
+        autohide-delay = 0.0;
+        autohide-time-modifier = 0.15;
+        launchanim = false;
+        mineffect = "scale";
+        mru-spaces = false;
+        show-process-indicators = true;
+        show-recents = false;
+        showhidden = true;
+        tilesize = 48;
+      };
+
+      finder = {
+        AppleShowAllExtensions = true;
+        FXDefaultSearchScope = "SCcf";
+        FXEnableExtensionChangeWarning = false;
+        FXPreferredViewStyle = "clmv";
+        QuitMenuItem = true;
+        ShowPathbar = true;
+        ShowStatusBar = true;
+        _FXShowPosixPathInTitle = true;
+        _FXSortFoldersFirst = true;
+        _FXSortFoldersFirstOnDesktop = true;
+      };
+
+      screencapture = {
+        disable-shadow = true;
+        include-date = true;
+        location = "/Users/${profile.username}/Pictures/Screenshots";
+        show-thumbnail = false;
+        type = "png";
+      };
+
+      spaces.spans-displays = false;
+
+      trackpad = {
+        Clicking = true;
+        TrackpadThreeFingerDrag = true;
+      };
+    };
+
+    system.keyboard = {
+      enableKeyMapping = true;
+      remapCapsLockToControl = true;
+    };
   };
 }
