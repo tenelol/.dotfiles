@@ -19,15 +19,25 @@ delib.module {
       enable = true;
       enableFishIntegration = true;
 
+      brews = [
+        "mas"
+      ];
+
       onActivation = {
         autoUpdate = false;
         upgrade = false;
         cleanup = "check";
       };
 
+      masApps = {
+        LINE = 539883307;
+      };
+
       casks = [
         "ghostty"
         "raycast"
+        "spotify"
+        "slack"
       ];
     };
   };

@@ -1,0 +1,43 @@
+# Ghostty config for macOS
+# See: https://ghostty.org/docs/config
+
+# Typography
+font-family = "JetBrains Mono"
+font-size = 14
+font-feature = "calt"
+window-title-font-family = "SF Pro Text"
+
+# Visual style
+theme = "light:Rose Pine Dawn,dark:TokyoNight Storm"
+window-colorspace = "display-p3"
+background-opacity = 0.94
+background-opacity-cells = true
+background-blur = true
+window-padding-x = 16
+window-padding-y = 14
+window-save-state = "always"
+
+# macOS window behavior
+macos-titlebar-style = "transparent"
+macos-window-buttons = "visible"
+macos-window-shadow = true
+macos-option-as-alt = "left"
+window-show-tab-bar = "always"
+
+# Cursor and selection
+cursor-style = "bar"
+cursor-style-blink = false
+cursor-click-to-move = true
+copy-on-select = false
+right-click-action = "context-menu"
+
+# Quick terminal
+keybind = "ctrl+shift+space=toggle_quick_terminal"
+quick-terminal-position = "bottom"
+quick-terminal-size = "34%"
+
+# Familiar macOS clipboard shortcuts
+keybind = "super+c=copy_to_clipboard"
+keybind = "super+v=paste_from_clipboard"
+keybind = "super+w=close_surface"
+keybind = "super+t=new_tab"

@@ -93,7 +93,6 @@ let
     unicode-emoji
     obsidian
     vesktop
-    slack
     zed-editor
     zathura
   ];
