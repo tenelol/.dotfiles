@@ -15,6 +15,10 @@ delib.module {
       enable = true;
       enableFishIntegration = true;
 
+      taps = [
+        "steipete/tap"
+      ];
+
       brews = [
         "mas"
       ];
@@ -35,6 +39,7 @@ delib.module {
       casks = [
         "chatgpt"
         "chatgpt-atlas"
+        "codexbar"
         "codex-app"
         "ghostty"
         "raycast"
