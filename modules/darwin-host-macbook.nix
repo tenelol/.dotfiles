@@ -81,5 +81,10 @@ delib.module {
       enableKeyMapping = true;
       remapCapsLockToControl = true;
     };
+
+    system.activationScripts.ensureScreenshotDirectory.text = ''
+      mkdir -p /Users/${profile.username}/Pictures/Screenshots
+      chown ${profile.username} /Users/${profile.username}/Pictures/Screenshots
+    '';
   };
 }

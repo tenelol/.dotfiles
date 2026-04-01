@@ -14,18 +14,18 @@ NixOS と `nix-darwin` を 1 つの flake で管理し、Home Manager は各 sys
 
 ## Architecture
 
-- [flake.nix](/home/tener/.dotfiles/flake.nix): flake entrypoint。`denix.lib.configurations` で host/module を束ねる
-- [hosts](/home/tener/.dotfiles/hosts): host 名、種別、system、rice や boot のような host 固有 metadata と hardware import だけを置く薄い定義
-- [modules](/home/tener/.dotfiles/modules): denix が自動発見する shared / host-specific module
-- [rices](/home/tener/.dotfiles/rices): denix の rice 定義。今は共通 wallpaper を切り替える最小実装
-- [home/home.nix](/home/tener/.dotfiles/home/home.nix): 共通 Home Manager 設定
-- [config](/home/tener/.dotfiles/config): Neovim、fish、niri、waybar などの実ファイル
-- [packages](/home/tener/.dotfiles/packages): 軽い独自 package 定義
-- [legacy](/home/tener/.dotfiles/legacy): 退避した旧構成。現行 flake では未使用
+- [flake.nix](./flake.nix): flake entrypoint。`denix.lib.configurations` で host/module を束ねる
+- [hosts](./hosts): host 名、種別、system、rice や boot のような host 固有 metadata と hardware import だけを置く薄い定義
+- [modules](./modules): denix が自動発見する shared / host-specific module
+- [rices](./rices): denix の rice 定義。今は共通 wallpaper を切り替える最小実装
+- [home/home.nix](./home/home.nix): 共通 Home Manager 設定
+- [config](./config): Neovim、fish、niri、waybar などの実ファイル
+- [packages](./packages): 軽い独自 package 定義
+- [legacy](./legacy): 退避した旧構成。現行 flake では未使用
 
 `hosts/` と `modules/` と `rices/` は `denix` が自動で読むので、新しい `.nix` を足したら Git 管理下に置く前提です。
 NixOS host の `hosts/*/hardware-configuration.nix` は `flake.nix` 側で自動除外しているので、host 追加時に除外リストを手で更新する必要はありません。
-Darwin の共通土台は [modules/darwin-base.nix](/home/tener/.dotfiles/modules/darwin-base.nix)、`macbook` 固有の UX 調整は [modules/darwin-host-macbook.nix](/home/tener/.dotfiles/modules/darwin-host-macbook.nix) に寄せています。
+Darwin の共通土台は [modules/darwin-base.nix](./modules/darwin-base.nix)、`macbook` 固有の UX 調整は [modules/darwin-host-macbook.nix](./modules/darwin-host-macbook.nix) に寄せています。
 macOS の GUI アプリは「cross-platform なものは Nix、App Store / cask-first なものは Homebrew」を目安に分けています。
 
 ## Raycast
@@ -107,7 +107,7 @@ nh darwin build . -H macbook-redmoon
 
 ## Design Notes
 
-- 共通プロフィール値は [flake.nix](/home/tener/.dotfiles/flake.nix) の `profile` に集約
+- 共通プロフィール値は [flake.nix](./flake.nix) の `profile` に集約
 - Home Manager は standalone `homeConfigurations` ではなく system 側に統合
 - bootloader のような machine 固有前提は host metadata で明示し、共通 base module に埋め込まない
 - 外部バイナリに依存する integration は explicit allowlist に寄せ、将来 host を足しても暗黙に広げない

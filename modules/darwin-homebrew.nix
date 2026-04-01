@@ -27,6 +27,7 @@ delib.module {
 
       masApps = {
         LINE = 539883307;
+        RunCat = 1429033973;
       };
 
       # Keep cross-platform GUI tools in Nix where possible, and reserve
