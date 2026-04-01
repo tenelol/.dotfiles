@@ -8,31 +8,57 @@
 # Optional parameters:
 # @raycast.packageName Dotfiles
 # @raycast.icon laptop
-# @raycast.description Run nh darwin switch in Terminal.app and close it when done
+# @raycast.description Run nh darwin switch in Terminal.app and close it on success
 
 set -euo pipefail
 
-osascript <<'APPLESCRIPT'
-set rebuildCommand to "cd ~/.dotfiles && nh darwin switch . -H macbook"
+tmp_script="$(mktemp /tmp/raycast-rebuild-macbook.XXXXXX.sh)"
 
-tell application "Terminal"
-  do script rebuildCommand
-  set rebuildTab to selected tab of front window
-  activate
+cat >"$tmp_script" <<'SHELL'
+#!/usr/bin/env bash
+set -euo pipefail
 
-  repeat while busy of rebuildTab
-    delay 1
-  end repeat
+cd ~/.dotfiles || exit 1
 
-  delay 0.2
-  set rebuildWindow to first window whose tabs contains rebuildTab
+if nh darwin switch . -H macbook; then
+  tab_tty="$(tty)"
 
-  if (count of tabs of rebuildWindow) is 1 then
-    close rebuildWindow saving no
-  else
-    close rebuildTab saving no
-  end if
-end tell
+  /usr/bin/osascript - "$tab_tty" <<'APPLESCRIPT'
+on run argv
+  set targetTty to item 1 of argv
+
+  tell application "Terminal"
+    repeat with w in windows
+      repeat with t in tabs of w
+        if tty of t is targetTty then
+          if (count of tabs of w) is 1 then
+            close w saving no
+          else
+            close t saving no
+          end if
+          return
+        end if
+      end repeat
+    end repeat
+  end tell
+end run
+APPLESCRIPT
+fi
+
+rm -f "$0"
+SHELL
+
+chmod +x "$tmp_script"
+
+osascript - "$tmp_script" <<'APPLESCRIPT'
+on run argv
+  set rebuildScript to item 1 of argv
+
+  tell application "Terminal"
+    do script "/bin/bash " & quoted form of rebuildScript
+    activate
+  end tell
+end run
 APPLESCRIPT
 
-printf 'Opened Terminal, started nh darwin switch . -H macbook, and will close it when finished\n'
+printf 'Opened Terminal and started nh darwin switch . -H macbook; it will close on success\n'
