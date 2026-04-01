@@ -28,6 +28,18 @@ NixOS host の `hosts/*/hardware-configuration.nix` は `flake.nix` 側で自動
 Darwin の共通土台は [modules/darwin-base.nix](/home/tener/.dotfiles/modules/darwin-base.nix)、`macbook` 固有の UX 調整は [modules/darwin-host-macbook.nix](/home/tener/.dotfiles/modules/darwin-host-macbook.nix) に寄せています。
 macOS の GUI アプリは「cross-platform なものは Nix、App Store / cask-first なものは Homebrew」を目安に分けています。
 
+## Raycast
+
+`macbook` では Raycast を Homebrew cask で入れています。Window Management は Raycast 側で hotkey を割り当て、Script Commands はこの repo から配る前提です。
+
+Script Commands は `~/.config/raycast/scripts` に展開されるので、Raycast の `Extensions` → `Script Commands` でその directory を追加すると使えます。
+
+最初に入れてある個人用コマンド:
+
+- `Dotfiles: Rebuild macbook`: Terminal.app を開いて `nh darwin switch . -H macbook` を実行
+
+Raycast の Script Command 自体は対話的な `sudo` に弱いので、リビルドは Raycast 内で直接完結させず、Terminal.app を開いてそこで `nh darwin switch` を走らせる形にしています。
+
 ## Workflow
 
 軽量評価:
