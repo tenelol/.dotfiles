@@ -10,6 +10,7 @@ from pathlib import Path
 
 def parse_args():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--compiler", required=True)
     parser.add_argument("--input", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--root", required=True)
@@ -31,13 +32,15 @@ def scan_latest(root: Path) -> float:
     return latest
 
 
-def compile_once(input_path: Path, output_path: Path) -> bool:
+def compile_once(compiler: str, input_path: Path, output_path: Path) -> bool:
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    result = subprocess.run(
-        ["sassc", str(input_path), str(output_path)],
-        capture_output=True,
-        text=True,
-    )
+    cmd = [compiler]
+    if compiler == "sass":
+        cmd.extend(["--no-source-map", str(input_path), str(output_path)])
+    else:
+        cmd.extend([str(input_path), str(output_path)])
+
+    result = subprocess.run(cmd, capture_output=True, text=True)
 
     if result.stdout:
         sys.stdout.write(result.stdout)
@@ -49,6 +52,7 @@ def compile_once(input_path: Path, output_path: Path) -> bool:
 
 def main():
     args = parse_args()
+    compiler = args.compiler
     input_path = Path(args.input).resolve()
     output_path = Path(args.output).resolve()
     root = Path(args.root).resolve()
@@ -61,7 +65,7 @@ def main():
     while True:
         current = scan_latest(root)
         if current > last_mtime:
-            if compile_once(input_path, output_path):
+            if compile_once(compiler, input_path, output_path):
                 print(
                     f"[scss-watch] compiled {input_path} -> {output_path}", flush=True
                 )

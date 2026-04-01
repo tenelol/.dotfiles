@@ -3,9 +3,11 @@ if vim.env.NVIM_WEB_WORKFLOW == "0" then
 end
 
 local autosave_group = vim.api.nvim_create_augroup("WebAutoSave", { clear = true })
+local scss_watch_group = vim.api.nvim_create_augroup("ScssWatch", { clear = true })
 local preview_job_id
 local preview_port = 5500
 local scss_watch_job_id
+local scss_watch_target
 local uv = vim.uv or vim.loop
 local web_filetypes = {
     "html",
@@ -40,6 +42,67 @@ local function current_file_path()
     end
 
     return vim.fs.normalize(filepath)
+end
+
+local function path_is_within(root, filepath)
+    local normalized_root = vim.fs.normalize(root)
+    local normalized_path = vim.fs.normalize(filepath)
+    local root_with_sep = normalized_root:sub(-1) == "/" and normalized_root or (normalized_root .. "/")
+
+    return normalized_path == normalized_root or normalized_path:sub(1, #root_with_sep) == root_with_sep
+end
+
+local function scss_compiler()
+    if vim.fn.executable("sass") == 1 then
+        return "sass"
+    end
+
+    if vim.fn.executable("sassc") == 1 then
+        return "sassc"
+    end
+
+    return nil
+end
+
+local function infer_scss_entrypoint(filepath)
+    local normalized = vim.fs.normalize(filepath)
+    local basename = vim.fs.basename(normalized)
+
+    if basename:sub(1, 1) ~= "_" then
+        return normalized
+    end
+
+    local cwd = vim.fs.normalize(vim.fn.getcwd())
+    local search_dir = vim.fs.dirname(normalized)
+    local candidates = {
+        "style.scss",
+        "style.sass",
+        "main.scss",
+        "main.sass",
+        "index.scss",
+        "index.sass",
+    }
+
+    while search_dir ~= nil do
+        for _, candidate in ipairs(candidates) do
+            local candidate_path = vim.fs.joinpath(search_dir, candidate)
+            if uv.fs_stat(candidate_path) ~= nil then
+                return vim.fs.normalize(candidate_path)
+            end
+        end
+
+        if search_dir == cwd then
+            break
+        end
+
+        local parent = vim.fs.dirname(search_dir)
+        if parent == nil or parent == search_dir then
+            break
+        end
+        search_dir = parent
+    end
+
+    return normalized
 end
 
 local function stop_live_server()
@@ -131,9 +194,10 @@ local function current_scss_target(opts)
         return nil
     end
 
+    local input = infer_scss_entrypoint(filepath)
     local output = opts.output
     if output == nil or output == "" then
-        output = vim.fn.fnamemodify(filepath, ":r") .. ".css"
+        output = vim.fn.fnamemodify(input, ":r") .. ".css"
     elseif not vim.startswith(output, "/") then
         output = vim.fs.normalize(vim.fn.getcwd() .. "/" .. output)
     else
@@ -141,10 +205,35 @@ local function current_scss_target(opts)
     end
 
     return {
-        input = vim.fs.normalize(filepath),
+        input = input,
         output = output,
-        root = vim.fs.normalize(vim.fs.dirname(filepath)),
+        root = vim.fs.normalize(vim.fs.dirname(input)),
     }
+end
+
+local function compile_scss_target(target)
+    local compiler = scss_compiler()
+    if compiler == nil then
+        vim.notify("sass or sassc is required for SCSS compilation", vim.log.levels.ERROR)
+        return false
+    end
+
+    local cmd
+    if compiler == "sass" then
+        cmd = { compiler, "--no-source-map", target.input, target.output }
+    else
+        cmd = { compiler, target.input, target.output }
+    end
+
+    local result = vim.system(cmd):wait()
+    if result.code == 0 then
+        vim.notify(("Compiled %s"):format(target.output), vim.log.levels.INFO)
+        return true
+    end
+
+    local message = result.stderr ~= "" and result.stderr or "SCSS compile failed"
+    vim.notify(message, vim.log.levels.ERROR)
+    return false
 end
 
 local function scss_compile(opts)
@@ -157,19 +246,12 @@ local function scss_compile(opts)
         vim.cmd("silent write")
     end
 
-    if vim.fn.executable("sassc") ~= 1 then
-        vim.notify("sassc is required for SCSS compilation", vim.log.levels.ERROR)
+    if scss_compiler() == nil then
+        vim.notify("sass or sassc is required for SCSS compilation", vim.log.levels.ERROR)
         return
     end
 
-    local result = vim.system({ "sassc", target.input, target.output }):wait()
-    if result.code == 0 then
-        vim.notify(("Compiled %s"):format(target.output), vim.log.levels.INFO)
-        return
-    end
-
-    local message = result.stderr ~= "" and result.stderr or "SCSS compile failed"
-    vim.notify(message, vim.log.levels.ERROR)
+    compile_scss_target(target)
 end
 
 local function stop_scss_watch()
@@ -182,6 +264,8 @@ local function stop_scss_watch()
         vim.fn.jobstop(scss_watch_job_id)
     end
     scss_watch_job_id = nil
+    scss_watch_target = nil
+    vim.api.nvim_clear_autocmds({ group = scss_watch_group })
 end
 
 local function start_scss_watch(opts)
@@ -199,12 +283,29 @@ local function start_scss_watch(opts)
         return
     end
 
-    if vim.fn.executable("sassc") ~= 1 then
-        vim.notify("sassc is required for SCSS watch", vim.log.levels.ERROR)
+    local compiler = scss_compiler()
+    if compiler == nil then
+        vim.notify("sass or sassc is required for SCSS watch", vim.log.levels.ERROR)
         return
     end
 
     stop_scss_watch()
+    scss_watch_target = target
+    vim.api.nvim_create_autocmd("BufWritePost", {
+        group = scss_watch_group,
+        pattern = { "*.scss", "*.sass" },
+        callback = function(args)
+            if scss_watch_target == nil then
+                return
+            end
+
+            local saved = vim.fs.normalize(args.file)
+            if path_is_within(scss_watch_target.root, saved) then
+                compile_scss_target(scss_watch_target)
+            end
+        end,
+    })
+
     scss_watch_job_id = vim.fn.jobstart({
         "python3",
         scss_watch_script,
@@ -212,6 +313,8 @@ local function start_scss_watch(opts)
         target.input,
         "--output",
         target.output,
+        "--compiler",
+        compiler,
         "--root",
         target.root,
     })
@@ -222,6 +325,7 @@ local function start_scss_watch(opts)
         return
     end
 
+    compile_scss_target(target)
     vim.notify(("Watching %s -> %s"):format(target.input, target.output), vim.log.levels.INFO)
 end
 
