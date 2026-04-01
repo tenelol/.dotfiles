@@ -111,7 +111,7 @@ delib.module {
         prettierd
         prettier
         ripgrep
-        sassc
+        dart-sass
         stylua
         nixfmt
         gofumpt
