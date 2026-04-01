@@ -2,6 +2,7 @@ if vim.env.NVIM_WEB_WORKFLOW == "0" then
     return
 end
 
+local project = require("core.project")
 local autosave_group = vim.api.nvim_create_augroup("WebAutoSave", { clear = true })
 local scss_watch_group = vim.api.nvim_create_augroup("ScssWatch", { clear = true })
 local preview_job_id
@@ -72,7 +73,7 @@ local function infer_scss_entrypoint(filepath)
         return normalized
     end
 
-    local cwd = vim.fs.normalize(vim.fn.getcwd())
+    local root_limit = project.root(normalized)
     local search_dir = vim.fs.dirname(normalized)
     local candidates = {
         "style.scss",
@@ -91,7 +92,7 @@ local function infer_scss_entrypoint(filepath)
             end
         end
 
-        if search_dir == cwd then
+        if search_dir == root_limit then
             break
         end
 
@@ -123,10 +124,8 @@ local function preview_target()
         return nil
     end
 
-    local cwd = vim.fs.normalize(vim.fn.getcwd())
-    local root = cwd
-
-    if filepath:sub(1, #cwd) ~= cwd then
+    local root = project.root(filepath)
+    if not path_is_within(root, filepath) then
         root = vim.fs.dirname(filepath)
     end
 

@@ -76,7 +76,9 @@ local function setup_lualine()
         return '󰄛'
     end
 
-    local win_width = vim.api.nvim_win_get_width(0) -- ウィンドウ幅
+    local function win_width()
+        return vim.api.nvim_win_get_width(0)
+    end
 
     require('lualine').setup {
         options = {
@@ -84,14 +86,9 @@ local function setup_lualine()
             -- component_separators = { left = '', right = '' },
             -- component_separators = { left = '|', right = '|' },
             component_separators = { left = '', right = '' },
-            -- section_separators = { left = '', right = '' },
-            -- section_separators = { left = '', right = '' },
-            section_separators = win_width > 80 and {
+            section_separators = {
                 left = '',
                 right = '',
-            } or {
-                left = '',
-                right = '',
             },
             globalstatus = false, -- ウィンドウごとに異なるステータスライン
         },
@@ -102,7 +99,7 @@ local function setup_lualine()
                     padding = { left = 1, right = 0 },
                     color = { fg = colors.darkbrown },
                     cond = function()
-                        return win_width > 80
+                        return win_width() > 80
                     end,
                 },
                 {
@@ -119,7 +116,7 @@ local function setup_lualine()
                             return '' -- Git管理外の場合は空文字列を返す
                         end
 
-                        if win_width > 100 then
+                        if win_width() > 100 then
                             return ' ' .. branch_name -- アイコン＋テキスト
                         else
                             return '' -- アイコンのみ
@@ -132,7 +129,7 @@ local function setup_lualine()
                     -- symbols = { added = '➕ ', modified = '✏️ ', removed = '❌ ' }
                     padding = { left = 0, right = 1 },
                     fmt = function(str)
-                        if win_width > 90 then
+                        if win_width() > 90 then
                             return str
                         else
                             return str:gsub('%d+', '') -- 数字を削除してアイコンのみを返す
@@ -161,7 +158,7 @@ local function setup_lualine()
                         hint = { fg = colors.cyan },
                     },
                     fmt = function(str)
-                        if win_width > 80 then
+                        if win_width() > 80 then
                             return str
                         else
                             return str:gsub('%d+', '') -- 数字を削除してアイコンのみを返す
@@ -172,7 +169,13 @@ local function setup_lualine()
             lualine_x = {
                 {
                     'filetype',
-                    icon_only = win_width <= 90,
+                    icon_only = false,
+                    fmt = function(filetype)
+                        if win_width() <= 90 then
+                            return ''
+                        end
+                        return filetype
+                    end,
                 },
                 {
                     'fileformat',
@@ -184,7 +187,7 @@ local function setup_lualine()
                     'encoding',
                     padding = { left = 0, right = 1 },
                     cond = function()
-                        return win_width > 70
+                        return win_width() > 70
                     end,
                 },
             },
@@ -192,7 +195,7 @@ local function setup_lualine()
                 {
                     'progress',
                     cond = function()
-                        return win_width > 80
+                        return win_width() > 80
                     end,
                 },
             },
@@ -201,7 +204,7 @@ local function setup_lualine()
                     'location',
                     padding = 1,
                     cond = function()
-                        return win_width > 70
+                        return win_width() > 70
                     end,
                 },
             },
@@ -260,15 +263,7 @@ return {
     plugin.spec("lualine-nvim", {
         dependencies = { plugin.dep("nvim-web-devicons") },
         config = function()
-            -- 上記の設定を適用
             setup_lualine()
-
-            -- アクティブウィンドウ切り替えやサイズ変更時に再設定
-            vim.api.nvim_create_autocmd({ 'WinEnter', 'WinResized' }, {
-                callback = function()
-                    setup_lualine()
-                end,
-            })
         end,
         event = 'VeryLazy',
     }),

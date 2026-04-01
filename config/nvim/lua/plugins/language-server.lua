@@ -11,12 +11,17 @@ return {
             local capabilities = require("cmp_nvim_lsp").default_capabilities()
             local navic = require("nvim-navic")
             local builtin = require("telescope.builtin")
+            local lsp_augroup = vim.api.nvim_create_augroup("UserLspConfig", { clear = true })
 
             navic.setup({
                 highlight = true,
                 separator = " > ",
                 depth_limit = 5,
             })
+
+            local function supports_inlay_hints(client)
+                return vim.lsp.inlay_hint ~= nil and client:supports_method("textDocument/inlayHint")
+            end
 
             local on_attach = function(client, bufnr)
                 if client:supports_method("textDocument/documentSymbol") then
@@ -31,9 +36,18 @@ return {
                 map("n", "gd", builtin.lsp_definitions, "Go to definition")
                 map("n", "gD", vim.lsp.buf.declaration, "Go to declaration")
                 map("n", "gi", builtin.lsp_implementations, "Go to implementation")
+                map("n", "gK", vim.lsp.buf.signature_help, "Signature help")
                 map("n", "gr", builtin.lsp_references, "Go to references")
                 map("n", "<F2>", vim.lsp.buf.rename, "Rename symbol")
                 map("n", "<leader>la", vim.lsp.buf.code_action, "Code action")
+                map("n", "<leader>ld", function()
+                    vim.diagnostic.open_float(nil, {
+                        border = "rounded",
+                        focusable = false,
+                        scope = "cursor",
+                        source = "if_many",
+                    })
+                end, "Line diagnostics")
                 map("n", "<leader>lr", vim.lsp.buf.rename, "Rename symbol")
                 map("n", "<leader>ls", builtin.lsp_document_symbols, "Document symbols")
                 map("n", "<leader>lS", builtin.lsp_dynamic_workspace_symbols, "Workspace symbols")
@@ -42,6 +56,45 @@ return {
                 end, "Format buffer")
                 map("n", "[d", vim.diagnostic.goto_prev, "Previous diagnostic")
                 map("n", "]d", vim.diagnostic.goto_next, "Next diagnostic")
+
+                if client:supports_method("textDocument/documentHighlight") then
+                    vim.api.nvim_create_autocmd({ "CursorHold", "CursorHoldI" }, {
+                        group = lsp_augroup,
+                        buffer = bufnr,
+                        callback = vim.lsp.buf.document_highlight,
+                    })
+
+                    vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI", "BufLeave" }, {
+                        group = lsp_augroup,
+                        buffer = bufnr,
+                        callback = vim.lsp.buf.clear_references,
+                    })
+                end
+
+                vim.api.nvim_create_autocmd("CursorHold", {
+                    group = lsp_augroup,
+                    buffer = bufnr,
+                    callback = function()
+                        if vim.api.nvim_get_mode().mode ~= "n" then
+                            return
+                        end
+
+                        vim.diagnostic.open_float(nil, {
+                            border = "rounded",
+                            focusable = false,
+                            scope = "cursor",
+                            source = "if_many",
+                        })
+                    end,
+                })
+
+                if supports_inlay_hints(client) then
+                    vim.lsp.inlay_hint.enable(true, { bufnr = bufnr })
+                    map("n", "<leader>lh", function()
+                        local enabled = vim.lsp.inlay_hint.is_enabled({ bufnr = bufnr })
+                        vim.lsp.inlay_hint.enable(not enabled, { bufnr = bufnr })
+                    end, "Toggle inlay hints")
+                end
             end
 
             local servers = {

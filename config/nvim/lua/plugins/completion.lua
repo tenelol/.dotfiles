@@ -17,6 +17,10 @@ return {
                 },
                 mapping = cmp.mapping.preset.insert({
                     ["<C-Space>"] = cmp.mapping.complete(),
+                    ["<C-b>"] = cmp.mapping.scroll_docs(-4),
+                    ["<C-f>"] = cmp.mapping.scroll_docs(4),
+                    ["<C-n>"] = cmp.mapping.select_next_item({ behavior = cmp.SelectBehavior.Select }),
+                    ["<C-p>"] = cmp.mapping.select_prev_item({ behavior = cmp.SelectBehavior.Select }),
                     ["<CR>"] = cmp.mapping.confirm({ select = true }),
                     ["<C-j>"] = cmp.mapping(function(fallback)
                         if luasnip.expand_or_jumpable() then
@@ -40,6 +44,31 @@ return {
                     { name = "buffer" },
                     { name = "path" },
                 }),
+                preselect = cmp.PreselectMode.None,
+                completion = {
+                    completeopt = "menu,menuone,noselect",
+                },
+                window = {
+                    completion = cmp.config.window.bordered(),
+                    documentation = cmp.config.window.bordered(),
+                },
+                formatting = {
+                    format = function(entry, vim_item)
+                        local labels = {
+                            nvim_lsp = "[LSP]",
+                            luasnip = "[Snip]",
+                            buffer = "[Buf]",
+                            path = "[Path]",
+                            cmdline = "[Cmd]",
+                        }
+
+                        vim_item.menu = labels[entry.source.name] or ("[" .. entry.source.name .. "]")
+                        return vim_item
+                    end,
+                },
+                experimental = {
+                    ghost_text = false,
+                },
             })
 
             cmp.setup.cmdline({ "/", "?" }, {
