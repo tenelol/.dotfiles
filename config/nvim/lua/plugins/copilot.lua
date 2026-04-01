@@ -5,9 +5,14 @@ return {
   lazy = false,  -- ← ここ
   config = function()
     vim.g.copilot_no_tab_map = true
-    vim.api.nvim_set_keymap("i", "<C-l>", 'copilot#Accept("<CR>")', {
+
+    vim.keymap.set("i", "<C-l>", function()
+      return vim.fn["copilot#Accept"]("<CR>")
+    end, {
       silent = true,
       expr = true,
+      replace_keycodes = false,
+      desc = "Accept Copilot suggestion",
     })
   end,
   }),
