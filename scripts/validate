@@ -14,6 +14,12 @@ Usage: ./scripts/validate <eval|linux|darwin>
 EOF
 }
 
+list_configurations() {
+  local config_attr="$1"
+
+  nix eval --raw ".#${config_attr}" --apply 'configs: builtins.concatStringsSep "\n" (builtins.attrNames configs)'
+}
+
 eval_configuration() {
   local config_attr="$1"
   local config_name="$2"
@@ -25,36 +31,12 @@ eval_configuration() {
 
 eval_configurations() {
   local config_attr="$1"
-  local system_suffix="$2"
-  local host_dir
-  local host_name
-  local host_system
-  local rice_file
-  local rice_name
+  local config_name
 
-  shopt -s nullglob
-
-  for host_dir in hosts/*; do
-    [ -d "$host_dir" ] || continue
-    [ -f "$host_dir/default.nix" ] || continue
-
-    host_name="$(basename "$host_dir")"
-    host_system="$(sed -n 's/^[[:space:]]*system = "\(.*\)";/\1/p' "$host_dir/default.nix")"
-
-    case "$host_system" in
-      *"$system_suffix")
-        eval_configuration "$config_attr" "$host_name"
-
-        for rice_file in rices/*.nix; do
-          rice_name="${rice_file##*/}"
-          rice_name="${rice_name%.nix}"
-          eval_configuration "$config_attr" "${host_name}-${rice_name}"
-        done
-        ;;
-    esac
-  done
-
-  shopt -u nullglob
+  while IFS= read -r config_name; do
+    [ -n "$config_name" ] || continue
+    eval_configuration "$config_attr" "$config_name"
+  done < <(list_configurations "$config_attr")
 }
 
 mode="${1:-linux}"
@@ -72,8 +54,8 @@ case "$mode" in
     ;;
 esac
 
-eval_configurations "nixosConfigurations" "-linux"
-eval_configurations "darwinConfigurations" "-darwin"
+eval_configurations "nixosConfigurations"
+eval_configurations "darwinConfigurations"
 
 case "$mode" in
   eval)
