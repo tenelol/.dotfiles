@@ -15,10 +15,6 @@ delib.module {
       enable = true;
       enableFishIntegration = true;
 
-      taps = [
-        "steipete/tap"
-      ];
-
       brews = [
         "mas"
       ];
