@@ -2,63 +2,55 @@
 
 # Required parameters:
 # @raycast.schemaVersion 1
-# @raycast.title Dotfiles: Rebuild macbook
-# @raycast.mode compact
+# @raycast.title Dotfiles Rebuild Macbook
+# @raycast.mode silent
 
 # Optional parameters:
 # @raycast.packageName Dotfiles
-# @raycast.icon laptop
-# @raycast.description Run nh darwin switch in Terminal.app and close it on success
+# @raycast.needsConfirmation false
 
 set -euo pipefail
 
-tmp_script="$(mktemp /tmp/raycast-rebuild-macbook.XXXXXX.sh)"
+repo_root="/Users/tener/.dotfiles"
+status_file="$(mktemp /tmp/dotfiles-rebuild-status.XXXXXX)"
 
-cat >"$tmp_script" <<'SHELL'
-#!/usr/bin/env bash
-set -euo pipefail
-
-cd ~/.dotfiles || exit 1
-
-if nh darwin switch . -H macbook; then
-  tab_tty="$(tty)"
-
-  /usr/bin/osascript - "$tab_tty" <<'APPLESCRIPT'
+osascript - "$repo_root" "$status_file" <<'APPLESCRIPT'
 on run argv
-  set targetTty to item 1 of argv
+  set repoRoot to item 1 of argv
+  set statusFile to item 2 of argv
+  set rebuildCommand to "cd " & quoted form of repoRoot & " && nh darwin switch . -H macbook; printf '%s' $? > " & quoted form of statusFile
 
   tell application "Terminal"
-    repeat with w in windows
-      repeat with t in tabs of w
-        if tty of t is targetTty then
-          if (count of tabs of w) is 1 then
-            close w saving no
-          else
-            close t saving no
-          end if
-          return
-        end if
-      end repeat
+    do script ""
+    delay 0.2
+    set rebuildWindow to front window
+    do script rebuildCommand in selected tab of rebuildWindow
+    set rebuildTab to selected tab of rebuildWindow
+
+    repeat while busy of rebuildTab
+      delay 1
     end repeat
+
+    delay 1
   end tell
+
+  repeat until (do shell script "test -f " & quoted form of statusFile & " && cat " & quoted form of statusFile) is not ""
+    delay 0.2
+  end repeat
+
+  set exitCode to do shell script "cat " & quoted form of statusFile
+
+  if exitCode is "0" then
+    tell application "Terminal"
+      close rebuildWindow saving no
+    end tell
+  else
+    tell application "Terminal"
+      activate
+      set index of rebuildWindow to 1
+    end tell
+  end if
+
+  do shell script "rm -f " & quoted form of statusFile
 end run
 APPLESCRIPT
-fi
-
-rm -f "$0"
-SHELL
-
-chmod +x "$tmp_script"
-
-osascript - "$tmp_script" <<'APPLESCRIPT'
-on run argv
-  set rebuildScript to item 1 of argv
-
-  tell application "Terminal"
-    do script "/bin/bash " & quoted form of rebuildScript
-    activate
-  end tell
-end run
-APPLESCRIPT
-
-printf 'Opened Terminal and started nh darwin switch . -H macbook; it will close on success\n'
