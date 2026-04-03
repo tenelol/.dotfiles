@@ -37,10 +37,12 @@ delib.module {
         "chatgpt-atlas"
         "codexbar"
         "codex-app"
+        "discord"
         "ghostty"
         "raycast"
         "spotify"
         "slack"
+        "tailscale"
       ];
     };
   };
