@@ -33,6 +33,7 @@ delib.module {
       # Keep cross-platform GUI tools in Nix where possible, and reserve
       # Homebrew for cask-first macOS apps or App Store installs.
       casks = [
+        "claude"
         "chatgpt"
         "chatgpt-atlas"
         "codexbar"
