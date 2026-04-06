@@ -25,11 +25,8 @@ return {
         },
         opts = {
           log_level = "ERROR",
-          system_prompt = function(_)
-            return "あなたは優秀なプログラミングアシスタントです。常に日本語で回答してください。最新情報や不確かな情報が必要な場合は、積極的に web_search ツールを使って検索してください。"
-          end,
         },
-        strategies = {
+        interactions = {
           chat = {
             adapter = "copilot",
             keymaps = {
@@ -38,13 +35,34 @@ return {
                 description = "Send",
               },
             },
-          },
-          inline = { adapter = "copilot" },
-          agent  = { adapter = "copilot" },
-        },
-        interactions = {
-          chat = {
+            opts = {
+              system_prompt = function(ctx)
+                return ctx.default_system_prompt
+                  .. "\n\n追加指示:\n"
+                  .. "- 常に日本語で回答してください。\n"
+                  .. "- ローカルのコードやファイルに関する相談では、まずワークスペース内のファイルや変更を確認してから回答してください。\n"
+                  .. "- 最新情報や外部情報が必要な場合にのみ web_search ツールを使ってください。"
+              end,
+            },
             tools = {
+              opts = {
+                default_tools = { "agent" },
+              },
+              read_file = {
+                opts = {
+                  require_approval_before = false,
+                },
+              },
+              grep_search = {
+                opts = {
+                  require_approval_before = false,
+                },
+              },
+              get_diagnostics = {
+                opts = {
+                  require_approval_before = false,
+                },
+              },
               web_search = {
                 opts = {
                   adapter = "tavily",
@@ -52,6 +70,8 @@ return {
               },
             },
           },
+          inline = { adapter = "copilot" },
+          agent = { adapter = "copilot" },
         },
         display = {
           chat = {
