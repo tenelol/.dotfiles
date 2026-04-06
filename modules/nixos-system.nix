@@ -174,7 +174,7 @@ delib.module {
         iwd
         clang
         cl
-        nodePackages.npm
+        nodejs
       ];
     };
 }

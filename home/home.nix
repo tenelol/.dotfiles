@@ -25,9 +25,8 @@ let
     bat
     tre-command
     ripgrep
-    jdk
     prettierd
-    nodePackages.prettier
+    prettier
     go
     nodejs
     python3
@@ -89,7 +88,6 @@ let
   # Prefer Nix here when the package is cross-platform or when keeping the
   # same binary/toolchain as Linux is useful.
   darwinDesktopPackages = with pkgs; [
-    floorp-bin
     google-chrome
     sqlitebrowser
     unicode-emoji
@@ -149,7 +147,6 @@ in
 
   home.sessionVariables = {
     EDITOR = "nvim";
-    JAVA_HOME = pkgs.jdk.home;
   };
 
   home.packages =
