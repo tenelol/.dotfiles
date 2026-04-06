@@ -2,6 +2,7 @@ vim.g.mapleader = " "
 vim.g.maplocalleader = " "
 
 local map = vim.keymap.set
+local cmd = vim.cmd
 
 map("i", "kj", "<Esc>", { silent = true })
 map("t", "<C-s>", [[<C-\><C-n>]], { noremap = true, silent = true })
@@ -18,3 +19,7 @@ map("t", "<C-l>", "<Cmd>wincmd l<CR>", { noremap = true, silent = true })
 
 map("n", "<C-Tab>", "<Cmd>BufferNext<CR>", { silent = true, desc = "Next buffer" })
 map("n", "<C-S-Tab>", "<Cmd>BufferPrevious<CR>", { silent = true, desc = "Previous buffer" })
+map("t", "<C-Tab>", function() cmd("BufferNext") end, { silent = true, desc = "Next buffer" })
+map("t", "<C-S-Tab>", function() cmd("BufferPrevious") end, { silent = true, desc = "Previous buffer" })
+map("t", "]b", function() cmd("BufferNext") end, { silent = true, desc = "Next buffer" })
+map("t", "[b", function() cmd("BufferPrevious") end, { silent = true, desc = "Previous buffer" })

@@ -2,6 +2,7 @@ local plugin = require("nix-plugin")
 
 return {
     plugin.spec("emmet-vim", {
+        enabled = vim.env.NVIM_WEB_WORKFLOW == "1",
         ft = {
             "html",
             "css",

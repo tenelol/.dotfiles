@@ -2,6 +2,20 @@ local plugin = require("nix-plugin")
 
 return {
   plugin.spec("vim-test", {
+    cmd = {
+      "TestNearest",
+      "TestFile",
+      "TestSuite",
+      "TestLast",
+      "TestVisit",
+    },
+    keys = {
+      { "<leader>tn", desc = "Run nearest test" },
+      { "<leader>tf", desc = "Run file tests" },
+      { "<leader>ts", desc = "Run test suite" },
+      { "<leader>tl", desc = "Run last test" },
+      { "<leader>tv", desc = "Visit last test" },
+    },
     config = function()
       _G.toggleterm_test_strategy = function(cmd)
         require("core.test-terminal").run(cmd)

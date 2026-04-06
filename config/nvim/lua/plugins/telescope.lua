@@ -3,6 +3,18 @@ local plugin = require("nix-plugin")
 return {
     plugin.spec("telescope-nvim", {
         dependencies = { plugin.dep("plenary-nvim") },
+        cmd = "Telescope",
+        keys = {
+            { "<C-p>", desc = "Quick open" },
+            { "<leader>ff", desc = "Find files" },
+            { "<leader>fF", desc = "Find git files" },
+            { "<leader>fg", desc = "Search in files" },
+            { "<leader>fc", desc = "Search word under cursor" },
+            { "<leader>fb", desc = "Find buffers" },
+            { "<leader>f/", desc = "Search current buffer" },
+            { "<leader>fr", desc = "Recent files" },
+            { "<leader>fR", desc = "Resume last picker" },
+        },
         config = function()
             local project = require("core.project")
             local telescope = require("telescope")
@@ -51,24 +63,26 @@ return {
                 },
             })
 
-            vim.keymap.set("n", "<C-p>", project_find_files, { desc = "Quick open" })
-            vim.keymap.set("n", "<leader>ff", project_find_files, { desc = "Find files" })
-            vim.keymap.set("n", "<leader>fF", project_git_files, { desc = "Find git files" })
-            vim.keymap.set("n", "<leader>fg", function()
+            local map = vim.keymap.set
+
+            map("n", "<C-p>", project_find_files, { desc = "Quick open" })
+            map("n", "<leader>ff", project_find_files, { desc = "Find files" })
+            map("n", "<leader>fF", project_git_files, { desc = "Find git files" })
+            map("n", "<leader>fg", function()
                 builtin.live_grep(project_opts())
             end, { desc = "Search in files" })
-            vim.keymap.set("n", "<leader>fc", function()
+            map("n", "<leader>fc", function()
                 builtin.grep_string(project_opts())
             end, { desc = "Search word under cursor" })
-            vim.keymap.set("n", "<leader>fb", builtin.buffers, { desc = "Find buffers" })
-            vim.keymap.set("n", "<leader>f/", function()
+            map("n", "<leader>fb", builtin.buffers, { desc = "Find buffers" })
+            map("n", "<leader>f/", function()
                 builtin.current_buffer_fuzzy_find(themes.get_dropdown({
                     previewer = false,
                     winblend = 10,
                 }))
             end, { desc = "Search current buffer" })
-            vim.keymap.set("n", "<leader>fr", builtin.oldfiles, { desc = "Recent files" })
-            vim.keymap.set("n", "<leader>fR", builtin.resume, { desc = "Resume last picker" })
+            map("n", "<leader>fr", builtin.oldfiles, { desc = "Recent files" })
+            map("n", "<leader>fR", builtin.resume, { desc = "Resume last picker" })
         end,
     }),
 }

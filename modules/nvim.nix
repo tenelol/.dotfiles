@@ -61,6 +61,7 @@ let
         tsx
         python
         json
+        yaml
         html
         markdown
         css
@@ -104,18 +105,10 @@ delib.module {
         nil
         python3Packages.debugpy
         python3
-        typescript-language-server
-        eslint
-        typescript
-        tailwindcss-language-server
         vscode-langservers-extracted
-        astro-language-server
         fd
         lazygit
-        prettierd
-        prettier
         ripgrep
-        dart-sass
         stylua
         nixfmt
         gofumpt
