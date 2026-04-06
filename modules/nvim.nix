@@ -105,8 +105,8 @@ delib.module {
         python3Packages.debugpy
         python3
         typescript-language-server
-        nodePackages.eslint
-        nodePackages.typescript
+        eslint
+        typescript
         tailwindcss-language-server
         vscode-langservers-extracted
         astro-language-server
