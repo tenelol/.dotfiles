@@ -69,6 +69,9 @@ let
       ]
     );
     vim-test = pkgs.vimPlugins.vim-test;
+    lazygit-nvim = pkgs.vimPlugins.lazygit-nvim;
+    codecompanion-nvim = pkgs.vimPlugins.codecompanion-nvim;
+    yazi-nvim = pkgs.vimPlugins.yazi-nvim;
     inherit winresizer;
   };
   nixManagedPluginPaths = builtins.mapAttrs (_: plugin: toString plugin) nixManagedPlugins;
@@ -108,6 +111,7 @@ delib.module {
         vscode-langservers-extracted
         astro-language-server
         fd
+        lazygit
         prettierd
         prettier
         ripgrep
