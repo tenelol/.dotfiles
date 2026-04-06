@@ -3,6 +3,18 @@ local plugin = require("nix-plugin")
 return {
   plugin.spec("conform-nvim", {
     event = { "BufWritePre" },
+    keys = {
+      {
+        "<leader>lf",
+        function()
+          require("conform").format({
+            async = true,
+            lsp_format = "fallback",
+          })
+        end,
+        desc = "Format buffer",
+      },
+    },
     config = function()
       require("conform").setup({
         formatters_by_ft = {

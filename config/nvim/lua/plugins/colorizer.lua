@@ -2,7 +2,17 @@ local plugin = require("nix-plugin")
 
 return {
     plugin.spec("nvim-colorizer-lua", {
-        event = { "BufReadPre", "BufNewFile" },
+        enabled = vim.env.NVIM_WEB_WORKFLOW == "1",
+        ft = {
+            "css",
+            "scss",
+            "sass",
+            "html",
+            "javascript",
+            "javascriptreact",
+            "typescriptreact",
+            "astro",
+        },
         config = function()
             require("colorizer").setup({
                 css = { mode = "background" },

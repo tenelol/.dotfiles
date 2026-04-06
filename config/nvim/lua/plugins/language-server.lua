@@ -5,13 +5,19 @@ return {
         event = { "BufReadPre", "BufNewFile" },
         dependencies = {
             plugin.dep("nvim-navic"),
-            plugin.dep("telescope-nvim"),
         },
         config = function()
+            local function telescope_picker(name, opts)
+                return function()
+                    require("lazy").load({ plugins = { "telescope-nvim" } })
+                    require("telescope.builtin")[name](opts or {})
+                end
+            end
+
             local capabilities = require("cmp_nvim_lsp").default_capabilities()
             local navic = require("nvim-navic")
-            local builtin = require("telescope.builtin")
             local lsp_augroup = vim.api.nvim_create_augroup("UserLspConfig", { clear = true })
+            local web_lsp_enabled = vim.env.NVIM_WEB_WORKFLOW == "1"
 
             navic.setup({
                 highlight = true,
@@ -33,11 +39,11 @@ return {
                 end
 
                 map("n", "K", vim.lsp.buf.hover, "Hover")
-                map("n", "gd", builtin.lsp_definitions, "Go to definition")
+                map("n", "gd", telescope_picker("lsp_definitions"), "Go to definition")
                 map("n", "gD", vim.lsp.buf.declaration, "Go to declaration")
-                map("n", "gi", builtin.lsp_implementations, "Go to implementation")
+                map("n", "gi", telescope_picker("lsp_implementations"), "Go to implementation")
                 map("n", "gK", vim.lsp.buf.signature_help, "Signature help")
-                map("n", "gr", builtin.lsp_references, "Go to references")
+                map("n", "gr", telescope_picker("lsp_references"), "Go to references")
                 map("n", "<F2>", vim.lsp.buf.rename, "Rename symbol")
                 map("n", "<leader>la", vim.lsp.buf.code_action, "Code action")
                 map("n", "<leader>ld", function()
@@ -49,10 +55,14 @@ return {
                     })
                 end, "Line diagnostics")
                 map("n", "<leader>lr", vim.lsp.buf.rename, "Rename symbol")
-                map("n", "<leader>ls", builtin.lsp_document_symbols, "Document symbols")
-                map("n", "<leader>lS", builtin.lsp_dynamic_workspace_symbols, "Workspace symbols")
+                map("n", "<leader>ls", telescope_picker("lsp_document_symbols"), "Document symbols")
+                map("n", "<leader>lS", telescope_picker("lsp_dynamic_workspace_symbols"), "Workspace symbols")
                 map("n", "<leader>lf", function()
-                    vim.lsp.buf.format({ async = true })
+                    require("lazy").load({ plugins = { "conform-nvim" } })
+                    require("conform").format({
+                        async = true,
+                        lsp_format = "fallback",
+                    })
                 end, "Format buffer")
                 map("n", "[d", vim.diagnostic.goto_prev, "Previous diagnostic")
                 map("n", "]d", vim.diagnostic.goto_next, "Next diagnostic")
@@ -102,14 +112,19 @@ return {
                 "pyright",
                 "gopls",
                 "nil_ls",
-                "eslint",
-                "html",
-                "cssls",
-                "tailwindcss",
-                "ts_ls",
                 "jsonls",
-                "astro",
             }
+
+            if web_lsp_enabled then
+                vim.list_extend(servers, {
+                    "eslint",
+                    "html",
+                    "cssls",
+                    "tailwindcss",
+                    "ts_ls",
+                    "astro",
+                })
+            end
 
             vim.lsp.config("ts_ls", {
                 capabilities = capabilities,

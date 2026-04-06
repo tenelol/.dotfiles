@@ -2,7 +2,7 @@ local plugin = require("nix-plugin")
 
 return {
   plugin.spec("copilot-vim", {
-  lazy = false,  -- ← ここ
+  event = "InsertEnter",
   config = function()
     vim.g.copilot_no_tab_map = true
 

@@ -7,6 +7,13 @@ return {
       plugin.dep("nvim-web-devicons"),
       plugin.dep("nui-nvim"),
     },
+    cmd = "Neotree",
+    keys = {
+      { "<C-n>", desc = "Toggle file tree" },
+      { "<leader>ef", desc = "Explorer filesystem" },
+      { "<leader>eb", desc = "Explorer buffers" },
+      { "<leader>eg", desc = "Explorer git status" },
+    },
     config = function()
       local project = require("core.project")
       local command = require("neo-tree.command")
@@ -50,16 +57,18 @@ return {
         })
       end
 
-      vim.keymap.set("n", "<C-n>", open_filesystem_tree, { desc = "Toggle file tree" })
-      vim.keymap.set("n", "<leader>ef", open_filesystem_tree, { desc = "Explorer filesystem" })
-      vim.keymap.set("n", "<leader>eb", function()
+      local map = vim.keymap.set
+
+      map("n", "<C-n>", open_filesystem_tree, { desc = "Toggle file tree" })
+      map("n", "<leader>ef", open_filesystem_tree, { desc = "Explorer filesystem" })
+      map("n", "<leader>eb", function()
         command.execute({
           source = "buffers",
           toggle = true,
           position = "right",
         })
       end, { desc = "Explorer buffers" })
-      vim.keymap.set("n", "<leader>eg", function()
+      map("n", "<leader>eg", function()
         command.execute({
           source = "git_status",
           toggle = true,
