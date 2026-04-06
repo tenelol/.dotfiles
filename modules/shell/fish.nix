@@ -23,6 +23,10 @@ delib.module {
 
         fish_add_path ~/.opencode/bin
 
+        if test -f ~/.config/fish/secrets.fish
+          source ~/.config/fish/secrets.fish
+        end
+
       '';
 
       shellAliases = {

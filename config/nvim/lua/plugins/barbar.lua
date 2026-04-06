@@ -25,6 +25,11 @@ return {
       map("n", "<leader>bp", "<Cmd>BufferPin<CR>", { silent = true, desc = "Toggle pin" })
       map("n", "<leader>bH", "<Cmd>BufferMovePrevious<CR>", { silent = true, desc = "Move buffer left" })
       map("n", "<leader>bL", "<Cmd>BufferMoveNext<CR>", { silent = true, desc = "Move buffer right" })
+
+      for i = 1, 9 do
+        map("n", "<A-" .. i .. ">", "<Cmd>BufferGoto " .. i .. "<CR>", { silent = true, desc = "Go to buffer " .. i })
+      end
+      map("n", "<A-0>", "<Cmd>BufferLast<CR>", { silent = true, desc = "Go to last buffer" })
     end,
   }),
 }

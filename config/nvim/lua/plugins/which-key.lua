@@ -11,7 +11,10 @@ return {
             })
 
             wk.add({
+                { "<leader>i", group = "ai" },
                 { "<leader>b", group = "buffer" },
+                { "<leader>ey", desc = "Yazi (current file)" },
+                { "<leader>eY", desc = "Yazi (cwd)" },
                 { "<leader>c", group = "color" },
                 { "<leader>e", group = "explorer" },
                 { "<leader>f", group = "find" },

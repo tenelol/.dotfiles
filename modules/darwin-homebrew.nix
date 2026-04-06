@@ -43,7 +43,7 @@ delib.module {
         "raycast"
         "spotify"
         "slack"
-        "tailscale"
+        "tailscale-app"
       ];
     };
   };
