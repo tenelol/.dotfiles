@@ -36,6 +36,7 @@ delib.module {
         "claude"
         "chatgpt"
         "chatgpt-atlas"
+        "cmux"
         "codexbar"
         "codex-app"
         "discord"
