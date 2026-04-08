@@ -11,7 +11,14 @@ return {
             "astro",
         },
         config = function()
-            require("nvim-ts-autotag").setup()
+            require("nvim-ts-autotag").setup({
+                opts = {
+                    enable_close = true,
+                    -- Work around a nil parser bug in the current plugin build.
+                    enable_rename = false,
+                    enable_close_on_slash = false,
+                },
+            })
         end,
     }),
 }
