@@ -9,6 +9,8 @@ local preview_job_id
 local preview_port = 5500
 local scss_watch_job_id
 local scss_watch_target
+local tsc_watch_terminal
+local tsc_watch_root
 local uv = vim.uv or vim.loop
 local web_filetypes = {
     "html",
@@ -51,6 +53,20 @@ local function path_is_within(root, filepath)
     local root_with_sep = normalized_root:sub(-1) == "/" and normalized_root or (normalized_root .. "/")
 
     return normalized_path == normalized_root or normalized_path:sub(1, #root_with_sep) == root_with_sep
+end
+
+local function path_exists(path)
+    return uv.fs_stat(vim.fs.normalize(path)) ~= nil
+end
+
+local function shell_join(parts)
+    local escaped = {}
+
+    for _, part in ipairs(parts) do
+        table.insert(escaped, vim.fn.shellescape(part))
+    end
+
+    return table.concat(escaped, " ")
 end
 
 local function scss_compiler()
@@ -267,6 +283,106 @@ local function stop_scss_watch()
     vim.api.nvim_clear_autocmds({ group = scss_watch_group })
 end
 
+local function tsc_watch_command(root)
+    if path_exists(vim.fs.joinpath(root, "package.json")) then
+        if path_exists(vim.fs.joinpath(root, "pnpm-lock.yaml")) and vim.fn.executable("pnpm") == 1 then
+            return { "pnpm", "exec", "tsc", "--watch", "--preserveWatchOutput" }
+        end
+
+        if path_exists(vim.fs.joinpath(root, "yarn.lock")) and vim.fn.executable("yarn") == 1 then
+            return { "yarn", "exec", "tsc", "--watch", "--preserveWatchOutput" }
+        end
+
+        if path_exists(vim.fs.joinpath(root, "package-lock.json")) and vim.fn.executable("npm") == 1 then
+            return { "npm", "exec", "tsc", "--", "--watch", "--preserveWatchOutput" }
+        end
+    end
+
+    if vim.fn.executable("tsc") == 1 then
+        return { "tsc", "--watch", "--preserveWatchOutput" }
+    end
+
+    return nil
+end
+
+local function get_tsc_watch_terminal()
+    if tsc_watch_terminal ~= nil then
+        return tsc_watch_terminal
+    end
+
+    local Terminal = require("toggleterm.terminal").Terminal
+
+    tsc_watch_terminal = Terminal:new({
+        id = 92,
+        hidden = true,
+        direction = "horizontal",
+        size = 10,
+        close_on_exit = false,
+        dir = project.buffer_root(0),
+        display_name = "TypeScript watch",
+        on_exit = function()
+            vim.schedule(function()
+                tsc_watch_terminal = nil
+                tsc_watch_root = nil
+            end)
+        end,
+    })
+
+    return tsc_watch_terminal
+end
+
+local function stop_tsc_watch()
+    if tsc_watch_terminal == nil then
+        return
+    end
+
+    local term = tsc_watch_terminal
+    tsc_watch_terminal = nil
+    tsc_watch_root = nil
+
+    local ok, err = pcall(function()
+        term:shutdown()
+    end)
+
+    if not ok then
+        vim.notify(("Failed to stop TypeScript watch: %s"):format(err), vim.log.levels.WARN)
+    end
+end
+
+local function start_tsc_watch()
+    local root = project.buffer_root(0)
+    local cmd = tsc_watch_command(root)
+
+    if cmd == nil then
+        vim.notify("tsc watch requires TypeScript or a supported package manager", vim.log.levels.ERROR)
+        return
+    end
+
+    if tsc_watch_terminal ~= nil then
+        tsc_watch_terminal.dir = root
+        tsc_watch_terminal:open(10, "horizontal")
+
+        if tsc_watch_root == root then
+            vim.notify(("TypeScript watch is already running in %s"):format(root), vim.log.levels.INFO)
+            return
+        end
+
+        stop_tsc_watch()
+    end
+
+    local term = get_tsc_watch_terminal()
+    tsc_watch_root = root
+    term.dir = root
+    term:open(10, "horizontal")
+    term:send({
+        "cd " .. vim.fn.shellescape(root),
+        "clear",
+        shell_join(cmd),
+    }, true)
+
+    vim.notify(("Watching TypeScript in %s"):format(root), vim.log.levels.INFO)
+end
+
 local function start_scss_watch(opts)
     local target = current_scss_target(opts)
     if target == nil then
@@ -346,6 +462,7 @@ vim.api.nvim_create_autocmd("VimLeavePre", {
     callback = function()
         stop_live_server()
         stop_scss_watch()
+        stop_tsc_watch()
     end,
 })
 
@@ -393,6 +510,12 @@ end, {
 vim.api.nvim_create_user_command("ScssWatchStop", stop_scss_watch, {
     desc = "Stop SCSS watch",
 })
+vim.api.nvim_create_user_command("TscWatchStart", start_tsc_watch, {
+    desc = "Start TypeScript watch in the current project",
+})
+vim.api.nvim_create_user_command("TscWatchStop", stop_tsc_watch, {
+    desc = "Stop TypeScript watch",
+})
 vim.api.nvim_create_user_command("LiveServerStart", start_live_server, {
     desc = "Start local preview server for current file",
 })
@@ -429,4 +552,14 @@ vim.keymap.set("n", "<leader>lW", stop_scss_watch, {
     noremap = true,
     silent = true,
     desc = "Stop SCSS watch",
+})
+vim.keymap.set("n", "<leader>tw", start_tsc_watch, {
+    noremap = true,
+    silent = true,
+    desc = "Watch TypeScript",
+})
+vim.keymap.set("n", "<leader>tW", stop_tsc_watch, {
+    noremap = true,
+    silent = true,
+    desc = "Stop TypeScript watch",
 })
