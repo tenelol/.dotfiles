@@ -37,13 +37,34 @@ local function terminal_index(terms, terminal_id)
     return nil
 end
 
-local function focus_or_open(term)
-    if term:is_open() then
+local function close_other_terminals(excluded_id)
+    local _, terms = sorted_terminals()
+
+    for _, term in ipairs(terms) do
+        if term.id ~= excluded_id and term:is_open() and not term:is_float() then
+            term:close()
+        end
+    end
+end
+
+function M.show(term, opts)
+    opts = opts or {}
+    local direction = opts.direction or term.direction or "horizontal"
+    local size = opts.size or 10
+
+    close_other_terminals(term.id)
+
+    if term:is_open() and term.direction == direction then
         term:focus()
-        return
+        return term
     end
 
-    term:open(10, term.direction)
+    if term:is_open() then
+        term:close()
+    end
+
+    term:open(size, direction)
+    return term
 end
 
 function M.new(opts)
@@ -60,7 +81,7 @@ function M.new(opts)
         display_name = opts.display_name or ("Shell " .. id),
     })
 
-    term:toggle(opts.size or 10, direction)
+    M.show(term, { size = opts.size or 10, direction = direction })
     return term
 end
 
@@ -83,7 +104,25 @@ function M.toggle_float()
 end
 
 function M.select()
-    vim.cmd("TermSelect")
+    local _, terms = sorted_terminals()
+
+    if #terms == 0 then
+        M.new()
+        return
+    end
+
+    vim.ui.select(terms, {
+        prompt = "Select terminal",
+        format_item = function(term)
+            return term.display_name or ("Terminal " .. term.id)
+        end,
+    }, function(choice)
+        if choice == nil then
+            return
+        end
+
+        M.show(choice, { size = 10, direction = "horizontal" })
+    end)
 end
 
 function M.toggle_all()
@@ -103,7 +142,7 @@ function M.cycle(step)
         or 1
     local target_index = ((current_index - 1 + step) % #terms) + 1
 
-    focus_or_open(terms[target_index])
+    M.show(terms[target_index], { size = 10, direction = "horizontal" })
 end
 
 function M.next()

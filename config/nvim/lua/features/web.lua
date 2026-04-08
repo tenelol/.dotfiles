@@ -3,6 +3,7 @@ if vim.env.NVIM_WEB_WORKFLOW ~= "1" then
 end
 
 local project = require("core.project")
+local terminal = require("core.terminal")
 local autosave_group = vim.api.nvim_create_augroup("WebAutoSave", { clear = true })
 local scss_watch_group = vim.api.nvim_create_augroup("ScssWatch", { clear = true })
 local preview_job_id
@@ -359,7 +360,7 @@ local function start_tsc_watch()
 
     if tsc_watch_terminal ~= nil then
         tsc_watch_terminal.dir = root
-        tsc_watch_terminal:open(10, "horizontal")
+        terminal.show(tsc_watch_terminal, { size = 10, direction = "horizontal" })
 
         if tsc_watch_root == root then
             vim.notify(("TypeScript watch is already running in %s"):format(root), vim.log.levels.INFO)
@@ -372,7 +373,7 @@ local function start_tsc_watch()
     local term = get_tsc_watch_terminal()
     tsc_watch_root = root
     term.dir = root
-    term:open(10, "horizontal")
+    terminal.show(term, { size = 10, direction = "horizontal" })
     term:send({
         "cd " .. vim.fn.shellescape(root),
         "clear",
