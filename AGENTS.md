@@ -15,6 +15,7 @@
 - Preferred Darwin build command:
   - `nh darwin build . -H macbook`
 - Preferred switch commands mirror the build commands with `switch` instead of `build`.
+- If a host-specific `nh ... build` succeeds and the user has not asked to avoid activation, follow it with the matching `nh ... switch` in the same turn.
 
 ## denix structure
 - `hosts/<name>/default.nix` should stay thin: host metadata plus hardware imports.
