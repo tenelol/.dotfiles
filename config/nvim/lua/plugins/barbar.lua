@@ -15,6 +15,7 @@ return {
         tabpages = true,
         clickable = true,
         focus_on_close = "left",
+        exclude_ft = { "toggleterm" },
       })
 
       map("n", "[b", "<Cmd>BufferPrevious<CR>", { silent = true, desc = "Previous buffer" })

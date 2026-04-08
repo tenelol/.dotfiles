@@ -24,6 +24,12 @@ return {
         direction = "horizontal",
         persist_mode = true,
         start_in_insert = true,
+        winbar = {
+          enabled = true,
+          name_formatter = function(term)
+            return term.display_name or ("Terminal " .. term.id)
+          end,
+        },
       })
 
       map("n", "<C-t>", function()
