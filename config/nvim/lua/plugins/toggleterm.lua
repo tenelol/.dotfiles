@@ -16,6 +16,38 @@ return {
     config = function()
       local terminal = require("core.terminal")
       local map = vim.keymap.set
+      local augroup = vim.api.nvim_create_augroup("ToggleTermWinbarStyle", { clear = true })
+
+      local function terminal_label(term)
+        local name = term.display_name or ""
+
+        if name == "TypeScript watch" then
+          return (" TSC %d "):format(term.id)
+        end
+
+        if name == "Tests" then
+          return (" TEST %d "):format(term.id)
+        end
+
+        if name == "" or name:match("^Shell %d+$") then
+          return (" TERM %d "):format(term.id)
+        end
+
+        return (" %d %s "):format(term.id, name:upper())
+      end
+
+      local function apply_winbar_highlights()
+        vim.api.nvim_set_hl(0, "WinBarActive", {
+          fg = "#0A111D",
+          bg = "#7CC6FF",
+          bold = true,
+        })
+        vim.api.nvim_set_hl(0, "WinBarInactive", {
+          fg = "#E9F2FF",
+          bg = "#2F3F5E",
+          bold = true,
+        })
+      end
 
       require("toggleterm").setup({
         size = 10,
@@ -26,10 +58,15 @@ return {
         start_in_insert = true,
         winbar = {
           enabled = true,
-          name_formatter = function(term)
-            return term.display_name or ("Terminal " .. term.id)
-          end,
+          name_formatter = terminal_label,
         },
+      })
+
+      apply_winbar_highlights()
+
+      vim.api.nvim_create_autocmd("ColorScheme", {
+        group = augroup,
+        callback = apply_winbar_highlights,
       })
 
       map("n", "<C-t>", function()
