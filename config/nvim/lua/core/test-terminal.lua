@@ -2,6 +2,7 @@ local M = {}
 
 local test_terminal
 local project = require("core.project")
+local terminal = require("core.terminal")
 
 local function get_terminal()
     if test_terminal ~= nil then
@@ -37,7 +38,7 @@ function M.run(cmd)
     local root = project.buffer_root(0)
 
     term.dir = root
-    term:open(10, "horizontal")
+    terminal.show(term, { size = 10, direction = "horizontal" })
     term:send({
         "cd " .. vim.fn.shellescape(root),
         "clear",
@@ -49,7 +50,12 @@ function M.toggle()
     local term = get_terminal()
 
     term.dir = project.buffer_root(0)
-    term:toggle(10, "horizontal")
+    if term:is_open() then
+        term:close()
+        return
+    end
+
+    terminal.show(term, { size = 10, direction = "horizontal" })
 end
 
 return M
