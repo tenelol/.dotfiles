@@ -314,7 +314,6 @@ local function get_tsc_watch_terminal()
 
     tsc_watch_terminal = Terminal:new({
         id = 92,
-        hidden = true,
         direction = "horizontal",
         size = 10,
         close_on_exit = false,
