@@ -1,18 +1,24 @@
-{ delib, ... }:
+{ delib, pkgs, ... }:
+let
+  fishLogoPlugin = {
+    name = "fish_logo";
+    src = pkgs.fetchFromGitHub {
+      owner = "laughedelic";
+      repo = "fish_logo";
+      rev = "dc6a40836de8c24c62ad7c4365aa9f21292c3e6e";
+      hash = "sha256-DZXQt0fa5LdbJ4vPZFyJf5FWB46Dbk58adpHqbiUmyY=";
+    };
+  };
+in
 delib.module {
   name = "shell.fish";
 
   home.always = {
     programs.fish = {
       enable = true;
+      plugins = [ fishLogoPlugin ];
 
       interactiveShellInit = ''
-        set -g greetings "🥳Hollow World!🥳" "👏Welcome back!👏" "🚀Ready to code?🚀" "💡Let's be productive!💡" "💰Time is money!💰" "🔥Stay Hungry!🔥"
-        set -l count (count $greetings)
-        set -l r (random)
-        set -l idx (math "$r % $count + 1")
-        set fish_greeting $greetings[$idx]
-
         if test -d /run/wrappers/bin
           if not contains /run/wrappers/bin $PATH
             set -gx PATH /run/wrappers/bin $PATH
@@ -36,6 +42,9 @@ delib.module {
 
     xdg.configFile."fish/functions/fish_prompt.fish".source =
       ../../config/fish/functions/fish_prompt.fish;
+
+    xdg.configFile."fish/functions/fish_greeting.fish".source =
+      ../../config/fish/functions/fish_greeting.fish;
 
     xdg.configFile."fish/functions/fish_right_prompt.fish".source =
       ../../config/fish/functions/fish_right_prompt.fish;

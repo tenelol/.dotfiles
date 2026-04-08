@@ -63,6 +63,7 @@ let
         json
         yaml
         html
+        xml
         markdown
         css
         scss
