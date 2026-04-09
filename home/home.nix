@@ -15,6 +15,9 @@ let
   codexBarPackage = import ../packages/codexbar.nix {
     inherit pkgs lib;
   };
+  moocsCollectPackage = import ../packages/moocs-collect.nix {
+    inherit pkgs lib;
+  };
 
   # User-facing CLI and dev tools live in Home Manager so they stay aligned
   # across Linux and Darwin without bloating system-level package sets.
@@ -89,6 +92,7 @@ let
   # same binary/toolchain as Linux is useful.
   darwinDesktopPackages = with pkgs; [
     google-chrome
+    moocsCollectPackage
     sqlitebrowser
     unicode-emoji
     obsidian
