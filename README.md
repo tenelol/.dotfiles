@@ -28,6 +28,23 @@ NixOS host の `hosts/*/hardware-configuration.nix` は `flake.nix` 側で自動
 Darwin の共通土台は [modules/darwin-base.nix](./modules/darwin-base.nix)、`macbook` 固有の UX 調整は [modules/darwin-host-macbook.nix](./modules/darwin-host-macbook.nix) に寄せています。
 macOS の GUI アプリは「cross-platform なものは Nix、App Store / cask-first なものは Homebrew」を目安に分けています。
 
+## Codex
+
+`macbook` では Homebrew cask で `codex-app` に加えて `codex` CLI も入れる運用です。
+`nh darwin switch . -H macbook` 後は terminal から `codex` をそのまま叩けます。
+
+初回ログインだけは別途必要です。ブラウザ認証を使うなら:
+
+```sh
+codex login
+```
+
+`OPENAI_API_KEY` を使うなら、普段どおり `~/.config/fish/secrets.fish` などで環境変数を読み込んだうえで:
+
+```sh
+printenv OPENAI_API_KEY | codex login --with-api-key
+```
+
 ## Raycast
 
 `macbook` では Raycast を Homebrew cask で入れています。Window Management は Raycast 側で hotkey を割り当て、Script Commands はこの repo から配る前提です。
