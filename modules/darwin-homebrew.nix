@@ -34,6 +34,7 @@ delib.module {
       # Homebrew for cask-first macOS apps or App Store installs.
       casks = [
         "claude"
+        "codex"
         "chatgpt"
         "chatgpt-atlas"
         "cmux"
