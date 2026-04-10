@@ -114,6 +114,7 @@ let
     gnutar
     nil
     pkg-config
+    wget
     yazi
   ];
 
