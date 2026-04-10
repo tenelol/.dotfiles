@@ -15,6 +15,9 @@ let
   codexBarPackage = import ../packages/codexbar.nix {
     inherit pkgs lib;
   };
+  mygdrivePackage = import ../packages/mygdrive.nix {
+    inherit pkgs lib;
+  };
   moocsCollectPackage = import ../packages/moocs-collect.nix {
     inherit pkgs lib;
   };
@@ -23,9 +26,11 @@ let
   # across Linux and Darwin without bloating system-level package sets.
   commonPackages = with pkgs; [
     gh
+    gdrive
     zellij
     eza
     bat
+    mygdrivePackage
     tre-command
     ripgrep
     prettierd
