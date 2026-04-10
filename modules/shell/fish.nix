@@ -29,6 +29,12 @@ delib.module {
 
         fish_add_path ~/.opencode/bin
 
+        if test -f ~/miniconda3/etc/fish/conf.d/conda.fish
+          source ~/miniconda3/etc/fish/conf.d/conda.fish
+        else if test -x ~/miniconda3/bin/conda
+          eval (~/miniconda3/bin/conda shell.fish hook)
+        end
+
         if test -f ~/.config/fish/secrets.fish
           source ~/.config/fish/secrets.fish
         end
