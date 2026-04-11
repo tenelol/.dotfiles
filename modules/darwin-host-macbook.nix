@@ -33,6 +33,7 @@ delib.module {
         NSNavPanelExpandedStateForSaveMode2 = true;
         PMPrintingExpandedStateForPrint = true;
         PMPrintingExpandedStateForPrint2 = true;
+        _HIHideMenuBar = true;
       };
 
       dock = {
