@@ -2,8 +2,16 @@
 # file there on macOS hosts.
 config-version = 2
 
-after-startup-command = []
+after-startup-command = [
+    'exec-and-forget /opt/homebrew/bin/sketchybar',
+]
 start-at-login = true
+
+exec-on-workspace-change = [
+    '/bin/bash',
+    '-lc',
+    '/opt/homebrew/bin/sketchybar --trigger aerospace_workspace_change FOCUSED=$AEROSPACE_FOCUSED_WORKSPACE',
+]
 
 enable-normalization-flatten-containers = true
 enable-normalization-opposite-orientation-for-nested-containers = true
