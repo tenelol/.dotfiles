@@ -20,9 +20,10 @@ delib.module {
       enable = true;
       package = pkgs.yabai;
 
-      # Keep SIP-dependent features opt-in. Space switching and moving windows
-      # between spaces may need the scripting addition on recent macOS versions.
-      enableScriptingAddition = false;
+      # Space focus and moving windows between spaces require yabai's scripting
+      # addition on recent macOS versions. This also installs the matching
+      # sudoers rule for loading it without a password.
+      enableScriptingAddition = true;
 
       config = {
         layout = "bsp";
@@ -49,6 +50,10 @@ delib.module {
       };
 
       extraConfig = ''
+        yabai -m signal --remove yabai_load_sa 2>/dev/null || true
+        yabai -m signal --add label=yabai_load_sa event=dock_did_restart action='sudo ${pkgs.yabai}/bin/yabai --load-sa'
+        sudo ${pkgs.yabai}/bin/yabai --load-sa 2>/dev/null || true
+
         for sid in 1 2 3 4 5 6 7 8 9; do
           yabai -m space "$sid" --label "$sid" 2>/dev/null || true
         done
@@ -93,9 +98,8 @@ delib.module {
     };
 
     system.defaults.CustomUserPreferences."com.apple.symbolichotkeys".AppleSymbolicHotKeys = {
-      # Enable Mission Control's Ctrl+1..9 desktop shortcuts. skhd maps the
-      # Option workspace bindings to these native shortcuts so space switching
-      # keeps working without yabai's SIP-dependent scripting addition.
+      # Keep Mission Control's Ctrl+1..9 desktop shortcuts enabled as a native
+      # fallback for manual space switching.
       "118" = {
         enabled = true;
         value = {
