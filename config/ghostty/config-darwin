@@ -10,10 +10,10 @@ window-title-font-family = "SF Pro Text"
 # Visual style
 theme = "light:Rose Pine Dawn,dark:TokyoNight Storm"
 window-colorspace = "display-p3"
-background-opacity = 0.74
+background-opacity = 0
 background-opacity-cells = true
-background-blur = 56
-unfocused-split-opacity = 0.78
+background-blur = 96
+unfocused-split-opacity = 0.72
 window-padding-x = 18
 window-padding-y = 15
 window-padding-balance = true
