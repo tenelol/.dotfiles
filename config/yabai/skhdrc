@@ -21,15 +21,15 @@ alt + shift - 0x25 : yabai -m window --warp east
 alt - 0x1B : yabai -m window --ratio rel:-0.05
 alt - 0x18 : yabai -m window --ratio rel:0.05
 
-alt - 0x12 : skhd -k "ctrl - 0x12"
-alt - 0x13 : skhd -k "ctrl - 0x13"
-alt - 0x14 : skhd -k "ctrl - 0x14"
-alt - 0x15 : skhd -k "ctrl - 0x15"
-alt - 0x17 : skhd -k "ctrl - 0x17"
-alt - 0x16 : skhd -k "ctrl - 0x16"
-alt - 0x1A : skhd -k "ctrl - 0x1A"
-alt - 0x1C : skhd -k "ctrl - 0x1C"
-alt - 0x19 : skhd -k "ctrl - 0x19"
+alt - 0x12 : osascript -e 'tell application "System Events" to key code 18 using control down'
+alt - 0x13 : osascript -e 'tell application "System Events" to key code 19 using control down'
+alt - 0x14 : osascript -e 'tell application "System Events" to key code 20 using control down'
+alt - 0x15 : osascript -e 'tell application "System Events" to key code 21 using control down'
+alt - 0x17 : osascript -e 'tell application "System Events" to key code 23 using control down'
+alt - 0x16 : osascript -e 'tell application "System Events" to key code 22 using control down'
+alt - 0x1A : osascript -e 'tell application "System Events" to key code 26 using control down'
+alt - 0x1C : osascript -e 'tell application "System Events" to key code 28 using control down'
+alt - 0x19 : osascript -e 'tell application "System Events" to key code 25 using control down'
 
 alt + shift - 0x12 : yabai -m window --space 1; yabai -m space --focus 1
 alt + shift - 0x13 : yabai -m window --space 2; yabai -m space --focus 2
@@ -41,9 +41,15 @@ alt + shift - 0x1A : yabai -m window --space 7; yabai -m space --focus 7
 alt + shift - 0x1C : yabai -m window --space 8; yabai -m space --focus 8
 alt + shift - 0x19 : yabai -m window --space 9; yabai -m space --focus 9
 
-alt - 0x30 : skhd -k "ctrl - left"
-alt + shift - 0x30 : skhd -k "ctrl - right"
+alt - 0x30 : osascript -e 'tell application "System Events" to key code 123 using control down'
+alt + shift - 0x30 : osascript -e 'tell application "System Events" to key code 124 using control down'
 alt + shift - 0x29 ; service
+
+alt + ctrl - 0x04 : yabai -m display --focus prev
+alt + ctrl - 0x25 : yabai -m display --focus next
+
+alt + ctrl + shift - 0x04 : yabai -m window --display prev; yabai -m display --focus prev
+alt + ctrl + shift - 0x25 : yabai -m window --display next; yabai -m display --focus next
 
 service < escape ; default
 service < r : yabai -m space --balance; skhd -k "escape"
