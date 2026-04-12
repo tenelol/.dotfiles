@@ -36,10 +36,16 @@ delib.module {
         _HIHideMenuBar = true;
       };
 
+      CustomUserPreferences = {
+        ".GlobalPreferences" = {
+          AppleMenuBarVisibleInFullscreen = false;
+        };
+      };
+
       dock = {
         autohide = true;
-        autohide-delay = 0.0;
-        autohide-time-modifier = 0.15;
+        autohide-delay = 1000.0;
+        autohide-time-modifier = 0.0;
         launchanim = false;
         mineffect = "scale";
         mru-spaces = false;
@@ -86,6 +92,11 @@ delib.module {
     system.activationScripts.ensureScreenshotDirectory.text = ''
       mkdir -p /Users/${profile.username}/Pictures/Screenshots
       chown ${profile.username} /Users/${profile.username}/Pictures/Screenshots
+    '';
+
+    system.activationScripts.reloadNativeBars.text = ''
+      killall Dock >/dev/null 2>&1 || true
+      killall SystemUIServer >/dev/null 2>&1 || true
     '';
   };
 }
