@@ -10,11 +10,13 @@ window-title-font-family = "SF Pro Text"
 # Visual style
 theme = "light:Rose Pine Dawn,dark:TokyoNight Storm"
 window-colorspace = "display-p3"
-background-opacity = 0.94
+background-opacity = 0.82
 background-opacity-cells = true
-background-blur = true
-window-padding-x = 16
-window-padding-y = 14
+background-blur = 32
+unfocused-split-opacity = 0.86
+window-padding-x = 18
+window-padding-y = 15
+window-padding-balance = true
 window-save-state = "always"
 
 # macOS window behavior
@@ -28,6 +30,7 @@ window-show-tab-bar = "always"
 cursor-style = "bar"
 cursor-style-blink = false
 cursor-click-to-move = true
+mouse-hide-while-typing = true
 copy-on-select = false
 right-click-action = "context-menu"
 
@@ -40,4 +43,12 @@ quick-terminal-size = "34%"
 keybind = "super+c=copy_to_clipboard"
 keybind = "super+v=paste_from_clipboard"
 keybind = "super+w=close_surface"
+keybind = "super+n=new_window"
 keybind = "super+t=new_tab"
+keybind = "super+d=new_split:right"
+keybind = "super+shift+d=new_split:down"
+keybind = "super+alt+left=goto_split:left"
+keybind = "super+alt+right=goto_split:right"
+keybind = "super+alt+up=goto_split:top"
+keybind = "super+alt+down=goto_split:bottom"
+keybind = "super+shift+,=reload_config"
