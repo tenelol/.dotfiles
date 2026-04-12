@@ -95,6 +95,14 @@ delib.module {
     '';
 
     system.activationScripts.reloadNativeBars.text = ''
+      uid="$(id -u ${profile.username})"
+
+      launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/osascript \
+        -e 'tell application "System Events" to tell dock preferences to set autohide menu bar to false' \
+        -e 'delay 0.2' \
+        -e 'tell application "System Events" to tell dock preferences to set autohide menu bar to true' \
+        >/dev/null 2>&1 || true
+
       killall Dock >/dev/null 2>&1 || true
       killall SystemUIServer >/dev/null 2>&1 || true
     '';
