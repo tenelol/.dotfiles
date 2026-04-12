@@ -13,10 +13,10 @@ alt - 0x26 : yabai -m window --focus south
 alt - 0x28 : yabai -m window --focus north
 alt - 0x25 : yabai -m window --focus east
 
-alt + shift - 0x04 : yabai -m window --warp west
+alt + shift - 0x04 : yabai -m display --focus prev
 alt + shift - 0x26 : yabai -m window --warp south
 alt + shift - 0x28 : yabai -m window --warp north
-alt + shift - 0x25 : yabai -m window --warp east
+alt + shift - 0x25 : yabai -m display --focus next
 
 alt - 0x1B : yabai -m window --ratio rel:-0.05
 alt - 0x18 : yabai -m window --ratio rel:0.05
@@ -45,11 +45,8 @@ alt - 0x30 : osascript -e 'tell application "System Events" to key code 123 usin
 alt + shift - 0x30 : osascript -e 'tell application "System Events" to key code 124 using control down'
 alt + shift - 0x29 ; service
 
-alt + ctrl - 0x04 : yabai -m display --focus prev
-alt + ctrl - 0x25 : yabai -m display --focus next
-
-alt + ctrl + shift - 0x04 : yabai -m window --display prev; yabai -m display --focus prev
-alt + ctrl + shift - 0x25 : yabai -m window --display next; yabai -m display --focus next
+alt + shift + ctrl - 0x04 : yabai -m window --display prev; yabai -m display --focus prev
+alt + shift + ctrl - 0x25 : yabai -m window --display next; yabai -m display --focus next
 
 service < escape ; default
 service < r : yabai -m space --balance; skhd -k "escape"
