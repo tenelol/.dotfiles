@@ -60,15 +60,15 @@ for sid in $("$AEROSPACE_BIN" list-workspaces --all --format '%{workspace}'); do
 done
 
 front_app=(
-  width=300
-  label.max_chars=32
-  label.align=center
+  width=220
+  label.max_chars=24
+  label.align=left
   label.color=0xfff5f7fa
   background.color=0x14121418
   background.border_color=0x20ffffff
   script="$PLUGIN_DIR/front_app.sh"
 )
-"$SKETCHYBAR_BIN" --add item front_app center \
+"$SKETCHYBAR_BIN" --add item front_app left \
                   --set front_app "${front_app[@]}" \
                   --subscribe front_app front_app_switched
 
