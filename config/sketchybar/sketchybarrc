@@ -7,16 +7,16 @@ PLUGIN_DIR="$CONFIG_DIR/plugins"
 bar=(
   position=top
   display=all
-  height=34
-  margin=8
-  y_offset=4
+  height=36
+  margin=10
+  y_offset=6
   corner_radius=8
-  blur_radius=28
-  color=0x6bf8f7f2
+  blur_radius=36
+  color=0xd8181a20
   border_width=1
-  border_color=0x42ffffff
-  padding_left=10
-  padding_right=10
+  border_color=0x30d7f7ff
+  padding_left=12
+  padding_right=12
   sticky=on
   topmost=window
   shadow=on
@@ -28,16 +28,17 @@ default=(
   updates=when_shown
   drawing=on
   icon.drawing=off
-  label.color=0xff1d1d1f
-  label.highlight_color=0xff1d1d1f
+  label.color=0xfff5f7fa
+  label.highlight_color=0xffffffff
   label.font="CaskaydiaCove Nerd Font:SemiBold:12.0"
   label.padding_left=10
   label.padding_right=10
   background.drawing=on
-  background.height=24
+  background.height=26
   background.corner_radius=6
-  background.color=0x24ffffff
-  background.border_width=0
+  background.color=0x1affffff
+  background.border_width=1
+  background.border_color=0x14ffffff
   blur_radius=0
   padding_left=3
   padding_right=3
@@ -59,10 +60,12 @@ for sid in $("$AEROSPACE_BIN" list-workspaces --all --format '%{workspace}'); do
 done
 
 front_app=(
-  width=260
-  label.max_chars=28
+  width=300
+  label.max_chars=32
   label.align=center
-  background.color=0x18ffffff
+  label.color=0xfff5f7fa
+  background.color=0x14121418
+  background.border_color=0x20ffffff
   script="$PLUGIN_DIR/front_app.sh"
 )
 "$SKETCHYBAR_BIN" --add item front_app center \
@@ -71,6 +74,8 @@ front_app=(
 
 battery=(
   update_freq=60
+  background.color=0x15121418
+  background.border_color=0x18ffffff
   label.padding_left=0
   script="$PLUGIN_DIR/battery.sh"
 )
@@ -80,6 +85,9 @@ battery=(
 
 clock=(
   update_freq=30
+  background.color=0x15121418
+  background.border_color=0x18ffffff
+  label.color=0xfff5f7fa
   label.padding_left=0
   script="$PLUGIN_DIR/clock.sh"
 )

@@ -10,29 +10,29 @@ charging="$(/usr/bin/pmset -g batt | /usr/bin/grep 'AC Power')"
 case "$percentage" in
   9[0-9]|100)
     icon=""
-    color="0xff297e53"
+    color="0xff79f2c0"
     ;;
   [6-8][0-9])
     icon=""
-    color="0xff1d1d1f"
+    color="0xfff5f7fa"
     ;;
   [3-5][0-9])
     icon=""
-    color="0xff1d1d1f"
+    color="0xffffd166"
     ;;
   [1-2][0-9])
     icon=""
-    color="0xffa05d10"
+    color="0xffff9f43"
     ;;
   *)
     icon=""
-    color="0xffb42318"
+    color="0xffff6b6b"
     ;;
 esac
 
 if [ -n "$charging" ]; then
   icon=""
-  color="0xff297e53"
+  color="0xff79f2c0"
 fi
 
 "$SKETCHYBAR_BIN" --set "$NAME" \
@@ -41,4 +41,4 @@ fi
   icon.font="CaskaydiaCove Nerd Font:Regular:13.0" \
   icon.color="$color" \
   label="${percentage}%" \
-  label.color=0xff1d1d1f
+  label.color=0xfff5f7fa
