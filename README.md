@@ -54,6 +54,7 @@ Script Commands は `~/.config/raycast/scripts` に展開されるので、Rayca
 最初に入れてある個人用コマンド:
 
 - `Dotfiles: Rebuild macbook`: Terminal.app を開いて `nh darwin switch . -H macbook` を実行
+- `Apps: Open Ghostty`: Ghostty を新しく開く。Raycast の `Extensions` → `Script Commands` → `Open Ghostty` で hotkey を割り当てる
 
 Raycast の Script Command 自体は対話的な `sudo` に弱いので、リビルドは Raycast 内で直接完結させず、Terminal.app を開いてそこで `nh darwin switch` を走らせる形にしています。
 
