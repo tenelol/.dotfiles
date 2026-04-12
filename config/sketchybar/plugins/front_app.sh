@@ -1,11 +1,12 @@
 #!/bin/sh
 
 SKETCHYBAR_BIN="/opt/homebrew/bin/sketchybar"
+AEROSPACE_BIN="/opt/homebrew/bin/aerospace"
 
 if [ "$SENDER" = "front_app_switched" ] && [ -n "$INFO" ]; then
   app_name="$INFO"
 else
-  app_name="$(/usr/bin/osascript -e 'tell application "System Events" to get name of first application process whose frontmost is true' 2>/dev/null)"
+  app_name="$("$AEROSPACE_BIN" list-windows --focused --format '%{app-name}' 2>/dev/null)"
 fi
 
 [ -n "$app_name" ] || exit 0
