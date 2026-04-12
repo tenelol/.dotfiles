@@ -2,8 +2,12 @@
   delib,
   host,
   pkgs,
+  profile,
   ...
 }:
+let
+  homeDir = "/Users/${profile.username}";
+in
 delib.module {
   name = "yabai";
 
@@ -76,6 +80,121 @@ delib.module {
       enable = true;
       package = pkgs.skhd;
       skhdConfig = builtins.readFile ../config/yabai/skhdrc;
+    };
+
+    launchd.user.agents.yabai.serviceConfig.EnvironmentVariables = {
+      USER = profile.username;
+      HOME = homeDir;
+    };
+
+    launchd.user.agents.skhd.serviceConfig.EnvironmentVariables = {
+      USER = profile.username;
+      HOME = homeDir;
+    };
+
+    system.defaults.CustomUserPreferences."com.apple.symbolichotkeys".AppleSymbolicHotKeys = {
+      # Enable Mission Control's Ctrl+1..9 desktop shortcuts. skhd maps the
+      # Option workspace bindings to these native shortcuts so space switching
+      # keeps working without yabai's SIP-dependent scripting addition.
+      "118" = {
+        enabled = true;
+        value = {
+          type = "standard";
+          parameters = [
+            49
+            18
+            262144
+          ];
+        };
+      };
+      "119" = {
+        enabled = true;
+        value = {
+          type = "standard";
+          parameters = [
+            50
+            19
+            262144
+          ];
+        };
+      };
+      "120" = {
+        enabled = true;
+        value = {
+          type = "standard";
+          parameters = [
+            51
+            20
+            262144
+          ];
+        };
+      };
+      "121" = {
+        enabled = true;
+        value = {
+          type = "standard";
+          parameters = [
+            52
+            21
+            262144
+          ];
+        };
+      };
+      "122" = {
+        enabled = true;
+        value = {
+          type = "standard";
+          parameters = [
+            53
+            23
+            262144
+          ];
+        };
+      };
+      "123" = {
+        enabled = true;
+        value = {
+          type = "standard";
+          parameters = [
+            54
+            22
+            262144
+          ];
+        };
+      };
+      "124" = {
+        enabled = true;
+        value = {
+          type = "standard";
+          parameters = [
+            55
+            26
+            262144
+          ];
+        };
+      };
+      "125" = {
+        enabled = true;
+        value = {
+          type = "standard";
+          parameters = [
+            56
+            28
+            262144
+          ];
+        };
+      };
+      "126" = {
+        enabled = true;
+        value = {
+          type = "standard";
+          parameters = [
+            57
+            25
+            262144
+          ];
+        };
+      };
     };
   };
 
