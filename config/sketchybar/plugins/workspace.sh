@@ -1,10 +1,18 @@
 #!/bin/sh
 
 SKETCHYBAR_BIN="/opt/homebrew/bin/sketchybar"
-AEROSPACE_BIN="/opt/homebrew/bin/aerospace"
+YABAI_BIN="/run/current-system/sw/bin/yabai"
 SID="${NAME#space.}"
 
-focused_workspace="${FOCUSED:-$("$AEROSPACE_BIN" list-workspaces --focused --format '%{workspace}' 2>/dev/null)}"
+focused_workspace="$FOCUSED"
+
+if [ -z "$focused_workspace" ]; then
+  focused_workspace="$(
+    "$YABAI_BIN" -m query --spaces --space 2>/dev/null \
+      | sed -nE 's/.*"index"[[:space:]]*:[[:space:]]*([0-9]+).*/\1/p' \
+      | head -n 1
+  )"
+fi
 
 if [ "$SENDER" = "mouse.entered" ] && [ "$SID" != "$focused_workspace" ]; then
   "$SKETCHYBAR_BIN" --set "$NAME" \

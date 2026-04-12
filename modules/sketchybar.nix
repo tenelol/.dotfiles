@@ -17,6 +17,21 @@ delib.module {
       taps = [ "FelixKratz/formulae" ];
       brews = [ "FelixKratz/formulae/sketchybar" ];
     };
+
+    launchd.user.agents.sketchybar = {
+      serviceConfig = {
+        ProgramArguments = [
+          "/bin/sh"
+          "-lc"
+          "/opt/homebrew/bin/sketchybar"
+        ];
+        KeepAlive = true;
+        RunAtLoad = true;
+        ProcessType = "Interactive";
+      };
+
+      managedBy = "sketchybar";
+    };
   };
 
   home.ifEnabled = {
