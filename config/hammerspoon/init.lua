@@ -1,6 +1,7 @@
 local eventTypes = hs.eventtap.event.types
 local pressureEvent = eventTypes.pressure
 local forcePressActive = false
+local zoomToggledForPress = false
 local lastZoomToggleAt = 0
 local debounceSeconds = 0.5
 
@@ -19,10 +20,11 @@ local function toggleSystemZoom()
   if not systemZoomHotkeysEnabled() then
     hs.alert.show("Enable Accessibility > Zoom > keyboard shortcuts for global zoom.", 5)
     hs.urlevent.openURL("x-apple.systempreferences:com.apple.Accessibility-Settings.extension")
-    return
+    return false
   end
 
   hs.eventtap.keyStroke({ "cmd", "alt" }, "8", 0)
+  return true
 end
 
 -- Keep the eventtap in a global so Hammerspoon does not collect it.
@@ -43,13 +45,18 @@ _G.forcePressZoomTap = hs.eventtap.new({ eventTypes.gesture }, function(event)
     if not forcePressActive and now - lastZoomToggleAt > debounceSeconds then
       forcePressActive = true
       lastZoomToggleAt = now
-      toggleSystemZoom()
+      zoomToggledForPress = toggleSystemZoom()
     end
 
     return true
   end
 
   if stage == 0 then
+    if forcePressActive and zoomToggledForPress then
+      toggleSystemZoom()
+      zoomToggledForPress = false
+    end
+
     forcePressActive = false
   end
 
