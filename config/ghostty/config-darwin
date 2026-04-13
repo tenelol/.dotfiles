@@ -24,7 +24,7 @@ macos-titlebar-style = "transparent"
 macos-window-buttons = "visible"
 macos-window-shadow = true
 macos-option-as-alt = "left"
-window-show-tab-bar = "always"
+window-show-tab-bar = "never"
 
 # Cursor and selection
 cursor-style = "bar"
