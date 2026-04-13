@@ -18,7 +18,6 @@ delib.module {
 
     system.defaults.trackpad = {
       ForceSuppressed = false;
-      TrackpadTwoFingerDoubleTapGesture = true;
     };
 
     launchd.user.agents.hammerspoon = {
