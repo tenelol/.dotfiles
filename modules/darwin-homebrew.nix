@@ -46,6 +46,7 @@ delib.module {
         "spotify"
         "slack"
         "tailscale-app"
+        "zen"
       ];
     };
   };
