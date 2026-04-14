@@ -5,6 +5,7 @@ vim.filetype.add({
         cjs = "javascript",
         jsx = "javascriptreact",
         tsx = "typescriptreact",
+        ino = "cpp",
     },
 })
 

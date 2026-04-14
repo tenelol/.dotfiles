@@ -3,6 +3,7 @@ local M = {}
 local markers = {
     ".git",
     "flake.nix",
+    "platformio.ini",
     "package.json",
     "pyproject.toml",
     "go.mod",
