@@ -169,8 +169,17 @@ return {
                 },
             })
 
+            vim.lsp.config("clangd", {
+                cmd = {
+                    "clangd",
+                    "--query-driver=" .. vim.fn.expand("~/.platformio/packages") .. "/toolchain-*/bin/*",
+                },
+                capabilities = capabilities,
+                on_attach = on_attach,
+            })
+
             for _, server in ipairs(servers) do
-                if server ~= "ts_ls" and server ~= "eslint" then
+                if server ~= "ts_ls" and server ~= "eslint" and server ~= "clangd" then
                     vim.lsp.config(server, {
                         capabilities = capabilities,
                         on_attach = on_attach,
