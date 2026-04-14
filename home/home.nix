@@ -67,7 +67,7 @@ let
     iputils
     libnotify
     slurp
-    swww
+    awww
     wofi
     fuzzel
     floorp-bin

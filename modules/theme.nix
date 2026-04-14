@@ -62,20 +62,20 @@ delib.module {
               export WAYLAND_DISPLAY="$wayland_display"
               wallpaper="$(${pkgs.coreutils}/bin/readlink -f "$HOME/.config/theme/wallpaper.png")"
 
-              if ! ${pkgs.procps}/bin/pgrep -x swww-daemon >/dev/null 2>&1; then
-                ${pkgs.swww}/bin/swww-daemon >/dev/null 2>&1 &
+              if ! ${pkgs.procps}/bin/pgrep -x awww-daemon >/dev/null 2>&1; then
+                ${pkgs.awww}/bin/awww-daemon >/dev/null 2>&1 &
               fi
 
               i=0
               while [ "$i" -lt 20 ]; do
-                if ${pkgs.swww}/bin/swww query >/dev/null 2>&1; then
+                if ${pkgs.awww}/bin/awww query >/dev/null 2>&1; then
                   break
                 fi
                 i=$((i + 1))
                 ${pkgs.coreutils}/bin/sleep 0.1
               done
 
-              exec ${pkgs.swww}/bin/swww img "$wallpaper" --transition-type none
+              exec ${pkgs.awww}/bin/awww img "$wallpaper" --transition-type none
             '';
           };
 
