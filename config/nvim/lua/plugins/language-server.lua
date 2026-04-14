@@ -109,6 +109,7 @@ return {
 
             local servers = {
                 "lua_ls",
+                "clangd",
                 "pyright",
                 "gopls",
                 "nil_ls",
