@@ -46,6 +46,7 @@ let
 
   nonServerPackages = with pkgs; [
     cargo
+    platformio
     pnpm
     zig
   ];
