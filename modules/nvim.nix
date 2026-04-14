@@ -56,6 +56,8 @@ let
     nvim-treesitter = pkgs.vimPlugins.nvim-treesitter.withPlugins (
       parsers: with parsers; [
         lua
+        c
+        cpp
         javascript
         typescript
         tsx
@@ -101,6 +103,7 @@ delib.module {
 
       extraPackages = with pkgs; [
         lua-language-server
+        clang-tools
         pyright
         gopls
         nil
