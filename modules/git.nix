@@ -13,10 +13,7 @@ delib.module {
       enable = true;
       includes = [
         {
-          path = "~/.config/git/config.local";
-        }
-        {
-          condition = "gitdir:~/Documents/SW-exercise1/";
+          condition = "gitdir:~/iniad/";
           path = "~/.config/git/school";
         }
       ];
