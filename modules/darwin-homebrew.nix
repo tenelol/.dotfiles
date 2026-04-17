@@ -42,6 +42,7 @@ delib.module {
         "codex-app"
         "discord"
         "ghostty"
+        "microsoft-office"
         "raycast"
         "spotify"
         "slack"
