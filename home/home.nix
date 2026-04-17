@@ -85,7 +85,6 @@ let
     waybar
     wl-clipboard
     xwayland-satellite
-    zed-editor
     zathura
     antigravity-fhs
     noto-fonts
@@ -103,7 +102,6 @@ let
     unicode-emoji
     obsidian
     vesktop
-    zed-editor
     zathura
   ];
 
@@ -178,9 +176,6 @@ in
         source = ../config/scripts/niri-screenshot;
         executable = true;
       };
-    }
-    // lib.optionalAttrs (!isServer) {
-      ".local/bin/zed".source = "${pkgs.zed-editor}/bin/zeditor";
     }
     // lib.optionalAttrs (!isServer) {
       ".config/fontconfig/fonts.conf".source = ../config/fontconfig/fonts.conf;
