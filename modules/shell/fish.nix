@@ -14,6 +14,11 @@ delib.module {
   name = "shell.fish";
 
   home.always = {
+    programs.zoxide = {
+      enable = true;
+      enableFishIntegration = true;
+    };
+
     programs.fish = {
       enable = true;
       plugins = [ fishLogoPlugin ];
