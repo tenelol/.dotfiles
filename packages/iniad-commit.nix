@@ -4,13 +4,13 @@
 }:
 pkgs.stdenvNoCC.mkDerivation {
   pname = "iniad-commit";
-  version = "0.2.0";
+  version = "0.2.1";
 
   src = pkgs.fetchFromGitHub {
     owner = "tenelol";
     repo = "iniad-commit";
-    rev = "v0.2.0";
-    hash = "sha256-4OzY3C8IjMTqhYDtkdPWpxGq0JINOZHJTUyvXPUOZdk=";
+    rev = "v0.2.1";
+    hash = "sha256-DPl4NInPOFj0gy3QZZC64QfWSv31/JiTMt25UrCjpJ8=";
   };
 
   nativeBuildInputs = [
