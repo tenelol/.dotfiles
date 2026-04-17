@@ -21,6 +21,9 @@ let
   moocsCollectPackage = import ../packages/moocs-collect.nix {
     inherit pkgs lib;
   };
+  iniadCommitPackage = import ../packages/iniad-commit.nix {
+    inherit pkgs lib;
+  };
 
   # User-facing CLI and dev tools live in Home Manager so they stay aligned
   # across Linux and Darwin without bloating system-level package sets.
@@ -36,6 +39,7 @@ let
     prettierd
     prettier
     go
+    iniadCommitPackage
     nodejs
     python3
   ];
