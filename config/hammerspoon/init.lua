@@ -15,8 +15,8 @@ end)
 local accessibilityEnabled = hs.accessibilityState(true)
 
 local imeConfig = {
-  englishLayout = "ABC",
-  japaneseMethod = "Japanese",
+  englishSourceID = "com.apple.keylayout.ABC",
+  japaneseSourceID = "com.apple.inputmethod.Kotoeri.RomajiTyping.Japanese",
   tapThresholdSeconds = 0.2,
 }
 
@@ -24,14 +24,14 @@ local leftCommandKeyCode = keycodes.map.cmd
 local rightCommandKeyCode = keycodes.map.rightcmd
 
 local function switchToEnglish()
-  if not keycodes.setLayout(imeConfig.englishLayout) then
-    hs.alert.show(("Failed to switch to %s"):format(imeConfig.englishLayout), 2)
+  if not keycodes.currentSourceID(imeConfig.englishSourceID) then
+    hs.alert.show(("Failed to switch to %s"):format(imeConfig.englishSourceID), 2)
   end
 end
 
 local function switchToJapanese()
-  if not keycodes.setMethod(imeConfig.japaneseMethod) then
-    hs.alert.show(("Failed to switch to %s"):format(imeConfig.japaneseMethod), 2)
+  if not keycodes.currentSourceID(imeConfig.japaneseSourceID) then
+    hs.alert.show(("Failed to switch to %s"):format(imeConfig.japaneseSourceID), 2)
   end
 end
 
