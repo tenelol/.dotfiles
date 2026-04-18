@@ -21,8 +21,6 @@ local imeConfig = {
 }
 
 local leftCommandKeyCode = keycodes.map.cmd
-local rightCommandKeyCode = keycodes.map.rightcmd
-
 local function switchToEnglish()
   if not keycodes.currentSourceID(imeConfig.englishSourceID) then
     hs.alert.show(("Failed to switch to %s"):format(imeConfig.englishSourceID), 2)
@@ -35,19 +33,19 @@ local function switchToJapanese()
   end
 end
 
-local imeTapStates = {
-  [leftCommandKeyCode] = {
-    active = false,
-    pressedAt = 0,
-    usedAsModifier = false,
-    onTap = switchToJapanese,
-  },
-  [rightCommandKeyCode] = {
-    active = false,
-    pressedAt = 0,
-    usedAsModifier = false,
-    onTap = switchToEnglish,
-  },
+local function toggleIme()
+  local currentSourceID = keycodes.currentSourceID()
+  if currentSourceID == imeConfig.japaneseSourceID then
+    switchToEnglish()
+  else
+    switchToJapanese()
+  end
+end
+
+local leftCommandTapState = {
+  active = false,
+  pressedAt = 0,
+  usedAsModifier = false,
 }
 
 local function resetImeTapState(state)
@@ -56,42 +54,42 @@ local function resetImeTapState(state)
   state.usedAsModifier = false
 end
 
--- Tap left/right Command for explicit Eisu/Kana switching.
+-- Tap left Command to toggle between ABC and Japanese input sources.
 _G.commandTapImeSwitch = hs.eventtap.new({ flagsChangedEvent, keyDownEvent }, function(event)
   local eventType = event:getType()
 
   if eventType == keyDownEvent then
-    for _, state in pairs(imeTapStates) do
-      if state.active then
-        state.usedAsModifier = true
-      end
+    if leftCommandTapState.active then
+      leftCommandTapState.usedAsModifier = true
     end
 
     return false
   end
 
-  local state = imeTapStates[event:getKeyCode()]
-  if not state then
+  if event:getKeyCode() ~= leftCommandKeyCode then
+    if leftCommandTapState.active then
+      leftCommandTapState.usedAsModifier = true
+    end
+
     return false
   end
 
   local commandPressed = event:getFlags().cmd
 
-  if commandPressed and not state.active then
-    state.active = true
-    state.usedAsModifier = false
-    state.pressedAt = hs.timer.secondsSinceEpoch()
+  if commandPressed and not leftCommandTapState.active then
+    leftCommandTapState.active = true
+    leftCommandTapState.usedAsModifier = false
+    leftCommandTapState.pressedAt = hs.timer.secondsSinceEpoch()
     return false
   end
 
-  if (not commandPressed) and state.active then
-    local tapped = not state.usedAsModifier
-      and (hs.timer.secondsSinceEpoch() - state.pressedAt) <= imeConfig.tapThresholdSeconds
-    local onTap = state.onTap
-    resetImeTapState(state)
+  if (not commandPressed) and leftCommandTapState.active then
+    local tapped = not leftCommandTapState.usedAsModifier
+      and (hs.timer.secondsSinceEpoch() - leftCommandTapState.pressedAt) <= imeConfig.tapThresholdSeconds
+    resetImeTapState(leftCommandTapState)
 
     if tapped then
-      onTap()
+      toggleIme()
     end
   end
 
