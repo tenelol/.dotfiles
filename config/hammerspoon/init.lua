@@ -40,13 +40,13 @@ local imeTapStates = {
     active = false,
     pressedAt = 0,
     usedAsModifier = false,
-    onTap = switchToEnglish,
+    onTap = switchToJapanese,
   },
   [rightCommandKeyCode] = {
     active = false,
     pressedAt = 0,
     usedAsModifier = false,
-    onTap = switchToJapanese,
+    onTap = switchToEnglish,
   },
 }
 
