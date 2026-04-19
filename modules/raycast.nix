@@ -27,7 +27,7 @@ delib.module {
   darwin.ifEnabled = {
     system.defaults.CustomUserPreferences."com.raycast.macos" = {
       mainWindow_isMonitoringGlobalHotkeys = true;
-      raycastGlobalHotkey = "Option-49";
+      raycastGlobalHotkey = "Command-49";
     };
   };
 }
