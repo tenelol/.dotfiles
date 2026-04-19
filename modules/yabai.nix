@@ -98,20 +98,6 @@ delib.module {
     };
 
     system.defaults.CustomUserPreferences."com.apple.symbolichotkeys".AppleSymbolicHotKeys = {
-      # Disable Spotlight's default Cmd+Space shortcut so it does not
-      # conflict with launcher bindings managed elsewhere.
-      "64" = {
-        enabled = false;
-        value = {
-          type = "standard";
-          parameters = [
-            32
-            49
-            1048576
-          ];
-        };
-      };
-
       # Keep Mission Control's Ctrl+1..9 desktop shortcuts enabled as a native
       # fallback for manual space switching.
       "118" = {
