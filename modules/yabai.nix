@@ -105,7 +105,7 @@ delib.module {
         value = {
           type = "standard";
           parameters = [
-            32
+            65535
             49
             1048576
           ];
@@ -116,7 +116,7 @@ delib.module {
         value = {
           type = "standard";
           parameters = [
-            32
+            65535
             49
             1572864
           ];
@@ -131,7 +131,7 @@ delib.module {
           parameters = [
             32
             49
-            1572864
+            262144
           ];
         };
       };
@@ -142,7 +142,7 @@ delib.module {
           parameters = [
             32
             49
-            1703936
+            786432
           ];
         };
       };
