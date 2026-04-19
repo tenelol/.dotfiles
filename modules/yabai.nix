@@ -98,6 +98,31 @@ delib.module {
     };
 
     system.defaults.CustomUserPreferences."com.apple.symbolichotkeys".AppleSymbolicHotKeys = {
+      # macOS rewrites these UI checkboxes back to their defaults unless the
+      # Spotlight shortcuts are also declared in the managed plist.
+      "64" = {
+        enabled = false;
+        value = {
+          type = "standard";
+          parameters = [
+            65535
+            49
+            1048576
+          ];
+        };
+      };
+      "65" = {
+        enabled = false;
+        value = {
+          type = "standard";
+          parameters = [
+            65535
+            49
+            1572864
+          ];
+        };
+      };
+
       # Keep Mission Control's Ctrl+1..9 desktop shortcuts enabled as a native
       # fallback for manual space switching.
       "118" = {
