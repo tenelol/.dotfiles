@@ -23,4 +23,11 @@ delib.module {
       };
     };
   };
+
+  darwin.ifEnabled = {
+    system.defaults.CustomUserPreferences."com.raycast.macos" = {
+      mainWindow_isMonitoringGlobalHotkeys = false;
+      raycastGlobalHotkey = "";
+    };
+  };
 }
