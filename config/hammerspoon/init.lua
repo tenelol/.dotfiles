@@ -47,6 +47,7 @@ local leftCommandTapState = {
   pressedAt = 0,
   usedAsModifier = false,
 }
+local spaceKeyCode = keycodes.map.space
 
 local function resetImeTapState(state)
   state.active = false
@@ -94,6 +95,23 @@ _G.commandTapImeSwitch = hs.eventtap.new({ flagsChangedEvent, keyDownEvent }, fu
   end
 
   return false
+end)
+
+-- Route Cmd+Space to Raycast via Option+Space so the launcher remains stable
+-- even when macOS Spotlight replacement is unreliable.
+_G.commandSpaceToRaycast = hs.eventtap.new({ keyDownEvent }, function(event)
+  local flags = event:getFlags()
+
+  if event:getKeyCode() ~= spaceKeyCode then
+    return false
+  end
+
+  if not flags.cmd or flags.shift or flags.ctrl or flags.alt or flags.fn then
+    return false
+  end
+
+  hs.eventtap.keyStroke({ "alt" }, "space", 0)
+  return true
 end)
 
 local function systemZoomHotkeysEnabled()
@@ -150,6 +168,7 @@ end)
 
 if accessibilityEnabled then
   _G.commandTapImeSwitch:start()
+  _G.commandSpaceToRaycast:start()
   _G.forcePressZoomTap:start()
 else
   hs.alert.show("Enable Accessibility for Hammerspoon, then reopen it.", 5)
