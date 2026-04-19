@@ -122,30 +122,6 @@ delib.module {
           ];
         };
       };
-      # Disable macOS input source switching shortcuts that can also consume
-      # Cmd+Space before Raycast sees it on multilingual setups.
-      "60" = {
-        enabled = false;
-        value = {
-          type = "standard";
-          parameters = [
-            32
-            49
-            1572864
-          ];
-        };
-      };
-      "61" = {
-        enabled = false;
-        value = {
-          type = "standard";
-          parameters = [
-            32
-            49
-            1703936
-          ];
-        };
-      };
 
       # Keep Mission Control's Ctrl+1..9 desktop shortcuts enabled as a native
       # fallback for manual space switching.
