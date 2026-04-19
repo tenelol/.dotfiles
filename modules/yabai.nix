@@ -98,8 +98,8 @@ delib.module {
     };
 
     system.defaults.CustomUserPreferences."com.apple.symbolichotkeys".AppleSymbolicHotKeys = {
-      # Disable Spotlight's default Cmd+Space shortcut so it does not
-      # conflict with launcher bindings managed elsewhere.
+      # Disable Spotlight's native shortcuts so they do not conflict with
+      # launcher bindings managed elsewhere.
       "64" = {
         enabled = false;
         value = {
@@ -108,6 +108,17 @@ delib.module {
             32
             49
             1048576
+          ];
+        };
+      };
+      "65" = {
+        enabled = false;
+        value = {
+          type = "standard";
+          parameters = [
+            32
+            49
+            1572864
           ];
         };
       };
