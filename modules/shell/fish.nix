@@ -53,6 +53,7 @@ delib.module {
 
       shellAliases = {
         ls = "eza --icons";
+        rm = "gomi";
       };
     };
 

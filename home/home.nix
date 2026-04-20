@@ -33,6 +33,7 @@ let
     zellij
     eza
     bat
+    gomi
     mygdrivePackage
     tre-command
     ripgrep
