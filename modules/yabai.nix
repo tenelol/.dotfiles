@@ -30,10 +30,11 @@ delib.module {
         split_type = "auto";
         window_placement = "second_child";
         window_insertion_point = "focused";
+        display_arrangement_order = "horizontal";
 
         mouse_follows_focus = "off";
         focus_follows_mouse = "off";
-        window_origin_display = "default";
+        window_origin_display = "focused";
         window_zoom_persist = "on";
 
         top_padding = 0;
