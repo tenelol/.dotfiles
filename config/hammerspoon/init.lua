@@ -2,6 +2,7 @@ local eventTypes = hs.eventtap.event.types
 local keycodes = hs.keycodes
 local keyDownEvent = eventTypes.keyDown
 local flagsChangedEvent = eventTypes.flagsChanged
+local leftMouseDraggedEvent = eventTypes.leftMouseDragged
 local pressureEvent = eventTypes.pressure
 local forcePressActive = false
 local zoomToggledForPress = false
@@ -148,9 +149,16 @@ _G.forcePressZoomTap = hs.eventtap.new({ eventTypes.gesture }, function(event)
   return false
 end)
 
+-- Ignore drag motion while a force press is active so zooming does not also
+-- move the pointer selection/window under the cursor.
+_G.forcePressDragSuppressor = hs.eventtap.new({ leftMouseDraggedEvent }, function(_)
+  return forcePressActive
+end)
+
 if accessibilityEnabled then
   _G.commandTapImeSwitch:start()
   _G.forcePressZoomTap:start()
+  _G.forcePressDragSuppressor:start()
 else
   hs.alert.show("Enable Accessibility for Hammerspoon, then reopen it.", 5)
 end
