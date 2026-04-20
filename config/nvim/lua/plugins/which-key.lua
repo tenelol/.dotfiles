@@ -38,6 +38,7 @@ return {
                 { "<leader>fF", desc = "Find git files" },
                 { "<leader>fR", desc = "Resume last picker" },
                 { "<leader>fc", desc = "Search word under cursor" },
+                { "<leader>va", desc = "Select all" },
                 { "<leader>eb", desc = "Explorer buffers" },
                 { "<leader>ef", desc = "Explorer filesystem" },
                 { "<leader>eg", desc = "Explorer git status" },

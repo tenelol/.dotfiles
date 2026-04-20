@@ -3,9 +3,15 @@ vim.g.maplocalleader = " "
 
 local map = vim.keymap.set
 local cmd = vim.cmd
+local select_all = "<Esc>ggVG"
 
 map("i", "kj", "<Esc>", { silent = true })
 map("t", "<C-s>", [[<C-\><C-n>]], { noremap = true, silent = true })
+map({ "n", "i", "v" }, "<leader>va", select_all, { silent = true, desc = "Select all" })
+
+if vim.fn.has("mac") == 1 then
+  map({ "n", "i", "v" }, "<D-a>", select_all, { silent = true, desc = "Select all" })
+end
 
 map("n", "<C-h>", "<C-w>h", { noremap = true, silent = true })
 map("n", "<C-j>", "<C-w>j", { noremap = true, silent = true })
