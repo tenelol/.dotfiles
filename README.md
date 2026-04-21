@@ -55,12 +55,8 @@ Script Commands は `~/.config/raycast/scripts` に展開されるので、Rayca
 
 - `Dotfiles: Rebuild macbook`: Terminal.app を開かずに `nh darwin switch . -H macbook` を裏で実行する。管理者権限が必要なときだけ macOS の認証ダイアログを出し、結果は通知で返す
 - `Apps: Open Ghostty`: Ghostty を新しく開く。Raycast の `Extensions` → `Script Commands` → `Open Ghostty` で hotkey を割り当てる
-- `Workspace: Coding`: space 1 を coding 用に寄せ、`Ghostty` / `Zen` を揃える
-- `Workspace: Communication`: space 2 を chat 用に寄せ、`Slack` / `LINE` / `Discord` を揃える
-- `Workspace: Assistants`: space 3 を assistant 用に寄せ、`ChatGPT` / `Claude` / `Codex` を揃える
 
 `Dotfiles: Rebuild macbook` の実行ログは `~/Library/Logs/dotfiles/macbook-switch-latest.log` に置き、重複起動は lock で防いでいます。
-workspace 系 script は space 1-3 にフォーカスして必要なアプリだけ起動し、`yabai` の rule でその後の新規 window も同じ役割 space に寄せる前提です。
 
 ## Workflow
 
