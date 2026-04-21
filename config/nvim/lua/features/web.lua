@@ -60,6 +60,57 @@ local function path_exists(path)
     return uv.fs_stat(vim.fs.normalize(path)) ~= nil
 end
 
+local function find_typescript_config(filepath)
+    local search_dir = filepath and vim.fs.dirname(vim.fs.normalize(filepath)) or project.buffer_root(0)
+    local root_limit = project.root(search_dir)
+    local preferred = {
+        "tsconfig.json",
+        "jsconfig.json",
+    }
+
+    while search_dir ~= nil do
+        for _, candidate in ipairs(preferred) do
+            local candidate_path = vim.fs.joinpath(search_dir, candidate)
+            if path_exists(candidate_path) then
+                return vim.fs.normalize(candidate_path)
+            end
+        end
+
+        local handle = uv.fs_scandir(search_dir)
+        if handle ~= nil then
+            local fallback = {}
+
+            while true do
+                local name = uv.fs_scandir_next(handle)
+                if name == nil then
+                    break
+                end
+
+                if name:match("^tsconfig%..+%.json$") then
+                    table.insert(fallback, name)
+                end
+            end
+
+            table.sort(fallback)
+            if #fallback > 0 then
+                return vim.fs.joinpath(search_dir, fallback[1])
+            end
+        end
+
+        if search_dir == root_limit then
+            break
+        end
+
+        local parent = vim.fs.dirname(search_dir)
+        if parent == nil or parent == search_dir then
+            break
+        end
+        search_dir = parent
+    end
+
+    return nil
+end
+
 local function shell_join(parts)
     local escaped = {}
 
@@ -284,23 +335,32 @@ local function stop_scss_watch()
     vim.api.nvim_clear_autocmds({ group = scss_watch_group })
 end
 
-local function tsc_watch_command(root)
+local function tsc_watch_command(root, config_path)
+    local command_suffix = {
+        "--watch",
+        "--preserveWatchOutput",
+    }
+
+    if config_path ~= nil then
+        vim.list_extend(command_suffix, { "-p", config_path })
+    end
+
     if path_exists(vim.fs.joinpath(root, "package.json")) then
         if path_exists(vim.fs.joinpath(root, "pnpm-lock.yaml")) and vim.fn.executable("pnpm") == 1 then
-            return { "pnpm", "exec", "tsc", "--watch", "--preserveWatchOutput" }
+            return vim.list_extend({ "pnpm", "exec", "tsc" }, command_suffix)
         end
 
         if path_exists(vim.fs.joinpath(root, "yarn.lock")) and vim.fn.executable("yarn") == 1 then
-            return { "yarn", "exec", "tsc", "--watch", "--preserveWatchOutput" }
+            return vim.list_extend({ "yarn", "exec", "tsc" }, command_suffix)
         end
 
         if path_exists(vim.fs.joinpath(root, "package-lock.json")) and vim.fn.executable("npm") == 1 then
-            return { "npm", "exec", "tsc", "--", "--watch", "--preserveWatchOutput" }
+            return vim.list_extend({ "npm", "exec", "tsc", "--" }, command_suffix)
         end
     end
 
     if vim.fn.executable("tsc") == 1 then
-        return { "tsc", "--watch", "--preserveWatchOutput" }
+        return vim.list_extend({ "tsc" }, command_suffix)
     end
 
     return nil
@@ -350,8 +410,10 @@ local function stop_tsc_watch()
 end
 
 local function start_tsc_watch()
-    local root = project.buffer_root(0)
-    local cmd = tsc_watch_command(root)
+    local filepath = project.buffer_path(0)
+    local config_path = find_typescript_config(filepath)
+    local root = config_path and vim.fs.dirname(config_path) or project.buffer_root(0)
+    local cmd = tsc_watch_command(root, config_path)
 
     if cmd == nil then
         vim.notify("tsc watch requires TypeScript or a supported package manager", vim.log.levels.ERROR)
@@ -380,7 +442,8 @@ local function start_tsc_watch()
         shell_join(cmd),
     }, true)
 
-    vim.notify(("Watching TypeScript in %s"):format(root), vim.log.levels.INFO)
+    local target = config_path or root
+    vim.notify(("Watching TypeScript in %s"):format(target), vim.log.levels.INFO)
 end
 
 local function start_scss_watch(opts)
