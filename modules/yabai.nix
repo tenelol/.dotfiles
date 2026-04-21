@@ -59,7 +59,7 @@ delib.module {
           yabai -m space "$sid" --label "$sid" 2>/dev/null || true
         done
 
-        for rule in system_settings system_preferences app_store calculator finder_dialogs; do
+        for rule in system_settings system_preferences app_store calculator finder_dialogs workspace_ghostty workspace_zen workspace_codex workspace_slack workspace_line workspace_discord workspace_chatgpt workspace_claude; do
           yabai -m rule --remove "$rule" 2>/dev/null || true
         done
 
@@ -68,6 +68,17 @@ delib.module {
         yabai -m rule --add label=app_store app='App Store' manage=off
         yabai -m rule --add label=calculator app='Calculator' manage=off
         yabai -m rule --add label=finder_dialogs app='Finder' title='^(Copy|Move|Info|Preferences)' manage=off
+
+        # Keep the first three macbook spaces role-oriented without relying on
+        # moving existing windows around after launch.
+        yabai -m rule --add label=workspace_ghostty app='^Ghostty$' space=1
+        yabai -m rule --add label=workspace_zen app='^Zen$' space=1
+        yabai -m rule --add label=workspace_codex app='^Codex$' space=3
+        yabai -m rule --add label=workspace_slack app='^Slack$' space=2
+        yabai -m rule --add label=workspace_line app='^LINE$' space=2
+        yabai -m rule --add label=workspace_discord app='^Discord$' space=2
+        yabai -m rule --add label=workspace_chatgpt app='^ChatGPT$' space=3
+        yabai -m rule --add label=workspace_claude app='^Claude$' space=3
 
         for signal in sketchybar_space_changed sketchybar_display_changed sketchybar_space_created sketchybar_space_destroyed; do
           yabai -m signal --remove "$signal" 2>/dev/null || true
