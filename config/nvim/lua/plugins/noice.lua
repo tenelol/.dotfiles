@@ -10,6 +10,7 @@ return {
         background_colour = "#000000",
         render = "compact",
         stages = "fade",
+        timeout = 2000,
       })
 
       vim.notify = notify
@@ -39,6 +40,13 @@ return {
           lsp_doc_border = true,
         },
         routes = {
+          {
+            filter = {
+              event = "notify",
+              kind = "info",
+            },
+            view = "mini",
+          },
           {
             filter = {
               event = "notify",
