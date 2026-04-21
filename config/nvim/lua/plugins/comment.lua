@@ -7,13 +7,6 @@ return {
       local comment_ft = require("Comment.ft")
       local comment_utils = require("Comment.utils")
       local unpack_fn = table.unpack or unpack
-      local ts_like_filetypes = {
-        javascript = true,
-        javascriptreact = true,
-        typescript = true,
-        typescriptreact = true,
-      }
-
       comment_utils.catch = function(fn, ...)
         local args = { ... }
         xpcall(fn, function(err)
@@ -29,11 +22,14 @@ return {
       vim.g.comment_nvim_catch_patched = true
 
       require("Comment").setup({
-        -- Prefer the filetype table for JS/TS buffers to avoid treesitter lookup issues.
+        -- Prefer filetype/native commentstring over treesitter to avoid crashes in
+        -- Comment.ft.contains() on some buffers/parsers.
         pre_hook = function(ctx)
           local filetype = vim.bo.filetype
-          if ts_like_filetypes[filetype] then
-            return comment_ft.get(filetype, ctx.ctype) or vim.bo.commentstring
+          local commentstring = comment_ft.get(filetype, ctx.ctype) or vim.bo.commentstring
+
+          if type(commentstring) == "string" and commentstring ~= "" then
+            return commentstring
           end
         end,
       })
