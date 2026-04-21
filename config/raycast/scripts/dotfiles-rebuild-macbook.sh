@@ -12,45 +12,119 @@
 set -euo pipefail
 
 repo_root="/Users/tener/.dotfiles"
-status_file="$(mktemp /tmp/dotfiles-rebuild-status.XXXXXX)"
+state_dir="${HOME}/Library/Application Support/dotfiles/raycast"
+log_dir="${HOME}/Library/Logs/dotfiles"
+lock_dir="${state_dir}/macbook-switch.lock"
+pid_file="${state_dir}/macbook-switch.pid"
+timestamp="$(/bin/date '+%Y%m%d-%H%M%S')"
+job_label="dev.tenelol.dotfiles.macbook-switch.${timestamp}"
+log_file="${log_dir}/macbook-switch-${timestamp}.log"
+latest_log="${log_dir}/macbook-switch-latest.log"
+runner_script="$(/usr/bin/mktemp "${TMPDIR:-/tmp}/dotfiles-rebuild-runner.XXXXXX")"
 
-osascript - "$repo_root" "$status_file" <<'APPLESCRIPT'
+notify() {
+  /usr/bin/osascript - "$1" "$2" "$3" <<'APPLESCRIPT' >/dev/null 2>&1 || true
 on run argv
-  set repoRoot to item 1 of argv
-  set statusFile to item 2 of argv
-  set rebuildCommand to "cd " & quoted form of repoRoot & " && nh darwin switch . -H macbook; printf '%s' $? > " & quoted form of statusFile
-
-  tell application "Terminal"
-    do script ""
-    delay 0.2
-    set rebuildWindow to front window
-    do script rebuildCommand in selected tab of rebuildWindow
-    set rebuildTab to selected tab of rebuildWindow
-
-    repeat while busy of rebuildTab
-      delay 1
-    end repeat
-
-    delay 1
-  end tell
-
-  repeat until (do shell script "test -f " & quoted form of statusFile & " && cat " & quoted form of statusFile) is not ""
-    delay 0.2
-  end repeat
-
-  set exitCode to do shell script "cat " & quoted form of statusFile
-
-  if exitCode is "0" then
-    tell application "Terminal"
-      close rebuildWindow saving no
-    end tell
-  else
-    tell application "Terminal"
-      activate
-      set index of rebuildWindow to 1
-    end tell
-  end if
-
-  do shell script "rm -f " & quoted form of statusFile
+  display notification (item 3 of argv) with title (item 1 of argv) subtitle (item 2 of argv)
 end run
 APPLESCRIPT
+}
+
+/bin/mkdir -p "$state_dir" "$log_dir"
+
+if [ -f "$pid_file" ]; then
+  existing_pid="$(<"$pid_file")"
+  if [ -n "$existing_pid" ] && /bin/kill -0 "$existing_pid" 2>/dev/null; then
+    notify "Dotfiles Rebuild" "Already running" "Another macbook switch is still in progress."
+    exit 0
+  fi
+
+  /bin/rm -f "$pid_file"
+  /bin/rmdir "$lock_dir" 2>/dev/null || true
+fi
+
+if ! /bin/mkdir "$lock_dir" 2>/dev/null; then
+  notify "Dotfiles Rebuild" "Already running" "Another macbook switch is still in progress."
+  exit 0
+fi
+
+cat >"$runner_script" <<EOF
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root=$(printf '%q' "$repo_root")
+lock_dir=$(printf '%q' "$lock_dir")
+pid_file=$(printf '%q' "$pid_file")
+log_file=$(printf '%q' "$log_file")
+latest_log=$(printf '%q' "$latest_log")
+
+askpass_script="\$(/usr/bin/mktemp "\${TMPDIR:-/tmp}/dotfiles-askpass.XXXXXX")"
+elevation_script="\$(/usr/bin/mktemp "\${TMPDIR:-/tmp}/dotfiles-sudo-wrapper.XXXXXX")"
+
+cleanup() {
+  /bin/rm -f "\$askpass_script" "\$elevation_script" "$runner_script"
+  /bin/rm -f "\$pid_file"
+  /bin/rmdir "\$lock_dir" 2>/dev/null || true
+}
+
+notify() {
+  /usr/bin/osascript - "\$1" "\$2" "\$3" <<'APPLESCRIPT' >/dev/null 2>&1 || true
+on run argv
+  display notification (item 3 of argv) with title (item 1 of argv) subtitle (item 2 of argv)
+end run
+APPLESCRIPT
+}
+
+trap cleanup EXIT
+
+printf '%s\n' "\$$" >"\$pid_file"
+
+cat >"\$askpass_script" <<'ASKPASS'
+#!/usr/bin/env bash
+set -euo pipefail
+
+/usr/bin/osascript <<'APPLESCRIPT'
+set promptText to "nh darwin switch . -H macbook を実行するために管理者認証が必要です。"
+return text returned of (display dialog promptText with title "Dotfiles Rebuild" default answer "" with hidden answer buttons {"Cancel", "OK"} default button "OK" cancel button "Cancel")
+APPLESCRIPT
+ASKPASS
+/bin/chmod 700 "\$askpass_script"
+
+cat >"\$elevation_script" <<'ELEVATION'
+#!/usr/bin/env bash
+exec /usr/bin/sudo -A "\$@"
+ELEVATION
+/bin/chmod 700 "\$elevation_script"
+
+{
+  printf '[%s] Starting Raycast-driven macbook switch\n' "\$(/bin/date '+%Y-%m-%d %H:%M:%S')"
+  printf '[%s] Repo: %s\n' "\$(/bin/date '+%Y-%m-%d %H:%M:%S')" "\$repo_root"
+} >"\$log_file"
+
+/bin/ln -snf "\$log_file" "\$latest_log"
+
+export PATH="/run/current-system/sw/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+export SUDO_ASKPASS="\$askpass_script"
+
+if /usr/bin/env HOME="$HOME" USER="$USER" /bin/bash -lc "cd \$repo_root && /run/current-system/sw/bin/nh darwin switch . -H macbook -e \$elevation_script" >>"\$log_file" 2>&1; then
+  printf '[%s] Switch completed successfully\n' "\$(/bin/date '+%Y-%m-%d %H:%M:%S')" >>"\$log_file"
+  notify "Dotfiles Rebuild" "Switch completed" "macbook rebuild finished successfully."
+else
+  status=\$?
+  printf '[%s] Switch failed with exit code %s\n' "\$(/bin/date '+%Y-%m-%d %H:%M:%S')" "\$status" >>"\$log_file"
+  notify "Dotfiles Rebuild" "Switch failed" "Review \$latest_log for details."
+  exit "\$status"
+fi
+EOF
+
+/bin/chmod 700 "$runner_script"
+
+if /bin/launchctl submit -l "$job_label" -- "$runner_script"; then
+  notify "Dotfiles Rebuild" "Started in background" "Running nh darwin switch . -H macbook without opening Terminal."
+else
+  /bin/rm -f "$pid_file"
+  /bin/rmdir "$lock_dir" 2>/dev/null || true
+  /bin/rm -f "$runner_script"
+  notify "Dotfiles Rebuild" "Launch failed" "Could not start the background macbook switch."
+  exit 1
+fi
