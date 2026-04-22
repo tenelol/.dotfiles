@@ -175,6 +175,18 @@ local function updateHoverFocus()
     return
   end
 
+  local targetApp = window:application()
+  if not targetApp then
+    return
+  end
+
+  local frontmostApp = hs.application.frontmostApplication()
+  if not frontmostApp or frontmostApp:pid() ~= targetApp:pid() then
+    hoverFocusState.windowID = nil
+    targetApp:setFrontmost()
+    return
+  end
+
   hoverFocusState.windowID = windowID
   window:focus()
 end
