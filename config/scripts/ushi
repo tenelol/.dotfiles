@@ -3,6 +3,7 @@
 set -euo pipefail
 
 random_face=false
+use_lolcat=false
 
 print_help() {
   cat <<'EOF'
@@ -13,6 +14,7 @@ Usage:
 
 Options:
   -r, --random-f  cowsay の -f を毎回ランダムに選ぶ
+  -L, --lolcat    出力を lolcat で色付けする
   -h, --help      このヘルプを表示
 EOF
 }
@@ -20,6 +22,13 @@ EOF
 require_cowsay() {
   if ! command -v cowsay >/dev/null 2>&1; then
     echo "cowsay command not found" >&2
+    exit 1
+  fi
+}
+
+require_lolcat() {
+  if [[ "$use_lolcat" == true ]] && ! command -v lolcat >/dev/null 2>&1; then
+    echo "lolcat command not found" >&2
     exit 1
   fi
 }
@@ -34,17 +43,26 @@ pick_random_face() {
 
 run_cowsay() {
   local text="$1"
+  local output
 
   if [[ "$random_face" == true ]]; then
     local face
     face="$(pick_random_face)"
     if [[ -n "$face" ]]; then
-      cowsay -f "$face" "$text"
-      return
+      output="$(cowsay -f "$face" "$text")"
+    else
+      output="$(cowsay "$text")"
     fi
+  else
+    output="$(cowsay "$text")"
   fi
 
-  cowsay "$text"
+  if [[ "$use_lolcat" == true ]]; then
+    printf '%s\n' "$output" | lolcat
+    return
+  fi
+
+  printf '%s\n' "$output"
 }
 
 run_repl() {
@@ -54,6 +72,9 @@ run_repl() {
   echo "文字列を入力すると cowsay で返します。Ctrl+C または Ctrl+D で終了。"
   if [[ "$random_face" == true ]]; then
     echo "random-f: ON"
+  fi
+  if [[ "$use_lolcat" == true ]]; then
+    echo "lolcat: ON"
   fi
 
   while true; do
@@ -84,6 +105,31 @@ main() {
       -r|--random-f)
         random_face=true
         ;;
+      -L|--lolcat)
+        use_lolcat=true
+        ;;
+      -[!-]?*)
+        local short_flags="${1#-}"
+        local i
+        for ((i = 0; i < ${#short_flags}; i++)); do
+          case "${short_flags:i:1}" in
+            r)
+              random_face=true
+              ;;
+            L)
+              use_lolcat=true
+              ;;
+            h)
+              print_help
+              exit 0
+              ;;
+            *)
+              echo "Unknown option: -${short_flags:i:1}" >&2
+              exit 1
+              ;;
+          esac
+        done
+        ;;
       -h|--help)
         print_help
         exit 0
@@ -95,6 +141,8 @@ main() {
     esac
     shift
   done
+
+  require_lolcat
 
   if [[ -t 0 ]]; then
     run_repl

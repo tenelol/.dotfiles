@@ -31,6 +31,7 @@ let
     gh
     gdrive
     cowsay
+    lolcat
     zellij
     eza
     bat
