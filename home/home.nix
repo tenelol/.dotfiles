@@ -30,6 +30,7 @@ let
   commonPackages = with pkgs; [
     gh
     gdrive
+    cowsay
     zellij
     eza
     bat
@@ -172,7 +173,13 @@ in
     ++ lib.optionals (isServer && isLinux) linuxServerPackages;
 
   home.file =
-    lib.optionalAttrs (!isServer && isLinux) {
+    lib.optionalAttrs (!isServer) {
+      ".local/bin/ushi" = {
+        source = ../config/scripts/ushi;
+        executable = true;
+      };
+    }
+    // lib.optionalAttrs (!isServer && isLinux) {
       ".local/bin/emoji-fuzzel" = {
         source = ../config/scripts/emoji-fuzzel;
         executable = true;
