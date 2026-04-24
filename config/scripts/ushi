@@ -4,17 +4,23 @@ set -euo pipefail
 
 random_face=false
 use_lolcat=false
+use_think=false
+list_faces=false
+selected_face=""
 
 print_help() {
   cat <<'EOF'
 ushiCLI
 
 Usage:
-  ushi [options]
+  ushi [options] [message...]
 
 Options:
   -r, --random-f  cowsay の -f を毎回ランダムに選ぶ
+  -f, --face      cowsay の -f を明示指定する
+  -l, --list-faces  利用可能な face 一覧を表示して終了
   -L, --lolcat    出力を lolcat で色付けする
+      --think     cowthink で表示する
   -h, --help      このヘルプを表示
 EOF
 }
@@ -26,6 +32,13 @@ require_cowsay() {
   fi
 }
 
+require_cowthink() {
+  if [[ "$use_think" == true ]] && ! command -v cowthink >/dev/null 2>&1; then
+    echo "cowthink command not found" >&2
+    exit 1
+  fi
+}
+
 require_lolcat() {
   if [[ "$use_lolcat" == true ]] && ! command -v lolcat >/dev/null 2>&1; then
     echo "lolcat command not found" >&2
@@ -33,29 +46,33 @@ require_lolcat() {
   fi
 }
 
-pick_random_face() {
-  cowsay -l \
-    | tail -n +2 \
-    | tr '[:space:]' '\n' \
-    | sed '/^$/d' \
-    | awk 'BEGIN { srand() } { faces[++n] = $0 } END { if (n > 0) print faces[int(rand() * n) + 1] }'
+list_available_faces() {
+  cowsay -l
+}
+
+build_cow_command() {
+  if [[ "$use_think" == true ]]; then
+    cow_command=(cowthink)
+  else
+    cow_command=(cowsay)
+  fi
+
+  if [[ "$random_face" == true ]]; then
+    cow_command+=(-r)
+  fi
+
+  if [[ -n "$selected_face" ]]; then
+    cow_command+=(-f "$selected_face")
+  fi
 }
 
 run_cowsay() {
   local text="$1"
   local output
+  local cow_command=()
 
-  if [[ "$random_face" == true ]]; then
-    local face
-    face="$(pick_random_face)"
-    if [[ -n "$face" ]]; then
-      output="$(cowsay -f "$face" "$text")"
-    else
-      output="$(cowsay "$text")"
-    fi
-  else
-    output="$(cowsay "$text")"
-  fi
+  build_cow_command
+  output="$("${cow_command[@]}" "$text")"
 
   if [[ "$use_lolcat" == true ]]; then
     printf '%s\n' "$output" | lolcat
@@ -72,6 +89,12 @@ run_repl() {
   echo "文字列を入力すると cowsay で返します。Ctrl+C または Ctrl+D で終了。"
   if [[ "$random_face" == true ]]; then
     echo "random-f: ON"
+  fi
+  if [[ -n "$selected_face" ]]; then
+    echo "face: $selected_face"
+  fi
+  if [[ "$use_think" == true ]]; then
+    echo "think: ON"
   fi
   if [[ "$use_lolcat" == true ]]; then
     echo "lolcat: ON"
@@ -97,52 +120,118 @@ run_repl() {
   done
 }
 
-main() {
-  require_cowsay
+parse_short_flags() {
+  local flags="$1"
+  local i=0
+  local flag=""
+  local rest=""
 
-  while (($# > 0)); do
-    case "$1" in
+  while ((i < ${#flags})); do
+    flag="${flags:i:1}"
+    case "$flag" in
+      r)
+        random_face=true
+        ;;
+      L)
+        use_lolcat=true
+        ;;
+      l)
+        list_faces=true
+        ;;
+      h)
+        print_help
+        exit 0
+        ;;
+      f)
+        rest="${flags:i+1}"
+        if [[ -n "$rest" ]]; then
+          selected_face="$rest"
+          return
+        fi
+        if ((${#args[@]} == 0)); then
+          echo "Missing value for -f" >&2
+          exit 1
+        fi
+        selected_face="${args[0]}"
+        args=("${args[@]:1}")
+        return
+        ;;
+      *)
+        echo "Unknown option: -$flag" >&2
+        exit 1
+        ;;
+    esac
+    ((i += 1))
+  done
+}
+
+main() {
+  local args=("$@")
+  local positional=()
+  local arg=""
+
+  require_cowsay
+  while ((${#args[@]} > 0)); do
+    arg="${args[0]}"
+    args=("${args[@]:1}")
+    case "$arg" in
       -r|--random-f)
         random_face=true
+        ;;
+      -f|--face)
+        if ((${#args[@]} == 0)); then
+          echo "Missing value for $arg" >&2
+          exit 1
+        fi
+        selected_face="${args[0]}"
+        args=("${args[@]:1}")
+        ;;
+      --face=*)
+        selected_face="${arg#--face=}"
+        ;;
+      -l|--list-faces)
+        list_faces=true
         ;;
       -L|--lolcat)
         use_lolcat=true
         ;;
+      --think)
+        use_think=true
+        ;;
+      --)
+        positional+=("${args[@]}")
+        args=()
+        ;;
       -[!-]?*)
-        local short_flags="${1#-}"
-        local i
-        for ((i = 0; i < ${#short_flags}; i++)); do
-          case "${short_flags:i:1}" in
-            r)
-              random_face=true
-              ;;
-            L)
-              use_lolcat=true
-              ;;
-            h)
-              print_help
-              exit 0
-              ;;
-            *)
-              echo "Unknown option: -${short_flags:i:1}" >&2
-              exit 1
-              ;;
-          esac
-        done
+        parse_short_flags "${arg#-}"
         ;;
       -h|--help)
         print_help
         exit 0
         ;;
       *)
-        echo "Unknown option: $1" >&2
-        exit 1
+        positional+=("$arg")
         ;;
     esac
-    shift
   done
 
+  if [[ "$random_face" == true && -n "$selected_face" ]]; then
+    echo "--random-f and --face cannot be used together" >&2
+    exit 1
+  fi
+
+  require_cowthink
   require_lolcat
+
+  if [[ "$list_faces" == true ]]; then
+    list_available_faces
+    exit 0
+  fi
+
+  if ((${#positional[@]} > 0)); then
+    run_cowsay "${positional[*]}"
+    exit 0
+  fi
 
   if [[ -t 0 ]]; then
     run_repl
