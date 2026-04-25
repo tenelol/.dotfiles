@@ -17,6 +17,7 @@ delib.module {
 
       brews = [
         "mas"
+        "openclaw-cli"
       ];
 
       onActivation = {
