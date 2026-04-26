@@ -3,6 +3,7 @@ local project = require("core.project")
 local M = {}
 
 local float_term
+local codex_term
 
 local function project_root()
     return project.buffer_root(0)
@@ -10,6 +11,14 @@ end
 
 local function terminal_module()
     return require("toggleterm.terminal")
+end
+
+local function vertical_size(ratio)
+    local columns = vim.o.columns
+    local preferred = math.floor(columns * ratio)
+    local maximum = math.max(20, columns - 20)
+
+    return math.min(math.max(40, preferred), maximum)
 end
 
 local function sorted_terminals()
@@ -101,6 +110,35 @@ function M.toggle_float()
 
     float_term:toggle()
     return float_term
+end
+
+function M.codex()
+    if vim.fn.executable("codex") ~= 1 then
+        vim.notify("codex executable is not available in Neovim PATH", vim.log.levels.ERROR)
+        return nil
+    end
+
+    local terminal = terminal_module()
+
+    if codex_term == nil then
+        local id = terminal.next_id()
+
+        codex_term = terminal.Terminal:new({
+            id = id,
+            count = id,
+            cmd = "codex",
+            dir = project_root(),
+            direction = "vertical",
+            display_name = "Codex",
+            on_exit = function()
+                codex_term = nil
+            end,
+        })
+    else
+        codex_term.dir = project_root()
+    end
+
+    return M.show(codex_term, { size = vertical_size(0.4), direction = "vertical" })
 end
 
 function M.select()
