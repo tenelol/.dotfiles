@@ -12,6 +12,7 @@ return {
 
             wk.add({
                 { "<leader>i", group = "ai" },
+                { "<leader>iC", desc = "Open Claude Code" },
                 { "<leader>ix", desc = "Open Codex CLI" },
                 { "<leader>b", group = "buffer" },
                 { "<leader>ey", desc = "Yazi (current file)" },
