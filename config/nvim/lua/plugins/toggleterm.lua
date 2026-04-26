@@ -2,10 +2,11 @@ local plugin = require("nix-plugin")
 
 return {
   plugin.spec("toggleterm-nvim", {
-    cmd = { "ToggleTerm", "TermExec", "TermNew", "TermSelect", "ToggleTermToggleAll" },
+    cmd = { "Codex", "ToggleTerm", "TermExec", "TermNew", "TermSelect", "ToggleTermToggleAll" },
     keys = {
       { "<C-\\>", desc = "Toggle terminal" },
       { "<C-t>", desc = "Toggle floating terminal" },
+      { "<leader>ix", desc = "Open Codex CLI" },
       { "<leader>ot", desc = "New terminal" },
       { "<leader>oT", desc = "Select terminal" },
       { "<leader>oa", desc = "Toggle all terminals" },
@@ -64,6 +65,10 @@ return {
 
       apply_winbar_highlights()
 
+      vim.api.nvim_create_user_command("Codex", function()
+        terminal.codex()
+      end, { desc = "Open Codex CLI" })
+
       vim.api.nvim_create_autocmd("ColorScheme", {
         group = augroup,
         callback = apply_winbar_highlights,
@@ -72,6 +77,10 @@ return {
       map("n", "<C-t>", function()
         terminal.toggle_float()
       end, { silent = true, desc = "Toggle floating terminal" })
+
+      map("n", "<leader>ix", function()
+        terminal.codex()
+      end, { silent = true, desc = "Open Codex CLI" })
 
       map("t", "<C-t>", function()
         terminal.toggle_float()
