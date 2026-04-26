@@ -3,7 +3,7 @@ local project = require("core.project")
 local M = {}
 
 local float_term
-local codex_term
+local cli_terms = {}
 
 local function project_root()
     return project.buffer_root(0)
@@ -112,33 +112,52 @@ function M.toggle_float()
     return float_term
 end
 
-function M.codex()
-    if vim.fn.executable("codex") ~= 1 then
-        vim.notify("codex executable is not available in Neovim PATH", vim.log.levels.ERROR)
+local function open_cli(opts)
+    local cmd = opts.cmd
+
+    if vim.fn.executable(cmd) ~= 1 then
+        vim.notify(("%s executable is not available in Neovim PATH"):format(cmd), vim.log.levels.ERROR)
         return nil
     end
 
     local terminal = terminal_module()
+    local term = cli_terms[cmd]
 
-    if codex_term == nil then
+    if term == nil then
         local id = terminal.next_id()
 
-        codex_term = terminal.Terminal:new({
+        term = terminal.Terminal:new({
             id = id,
             count = id,
-            cmd = "codex",
+            cmd = cmd,
             dir = project_root(),
             direction = "vertical",
-            display_name = "Codex",
+            display_name = opts.display_name,
             on_exit = function()
-                codex_term = nil
+                cli_terms[cmd] = nil
             end,
         })
+
+        cli_terms[cmd] = term
     else
-        codex_term.dir = project_root()
+        term.dir = project_root()
     end
 
-    return M.show(codex_term, { size = vertical_size(0.4), direction = "vertical" })
+    return M.show(term, { size = vertical_size(0.4), direction = "vertical" })
+end
+
+function M.codex()
+    return open_cli({
+        cmd = "codex",
+        display_name = "Codex",
+    })
+end
+
+function M.claude()
+    return open_cli({
+        cmd = "claude",
+        display_name = "Claude Code",
+    })
 end
 
 function M.select()

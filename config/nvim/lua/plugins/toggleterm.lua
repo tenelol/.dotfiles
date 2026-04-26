@@ -2,10 +2,11 @@ local plugin = require("nix-plugin")
 
 return {
   plugin.spec("toggleterm-nvim", {
-    cmd = { "Codex", "ToggleTerm", "TermExec", "TermNew", "TermSelect", "ToggleTermToggleAll" },
+    cmd = { "ClaudeCode", "Codex", "ToggleTerm", "TermExec", "TermNew", "TermSelect", "ToggleTermToggleAll" },
     keys = {
       { "<C-\\>", desc = "Toggle terminal" },
       { "<C-t>", desc = "Toggle floating terminal" },
+      { "<leader>iC", desc = "Open Claude Code" },
       { "<leader>ix", desc = "Open Codex CLI" },
       { "<leader>ot", desc = "New terminal" },
       { "<leader>oT", desc = "Select terminal" },
@@ -65,6 +66,10 @@ return {
 
       apply_winbar_highlights()
 
+      vim.api.nvim_create_user_command("ClaudeCode", function()
+        terminal.claude()
+      end, { desc = "Open Claude Code" })
+
       vim.api.nvim_create_user_command("Codex", function()
         terminal.codex()
       end, { desc = "Open Codex CLI" })
@@ -77,6 +82,10 @@ return {
       map("n", "<C-t>", function()
         terminal.toggle_float()
       end, { silent = true, desc = "Toggle floating terminal" })
+
+      map("n", "<leader>iC", function()
+        terminal.claude()
+      end, { silent = true, desc = "Open Claude Code" })
 
       map("n", "<leader>ix", function()
         terminal.codex()
