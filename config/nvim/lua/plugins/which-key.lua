@@ -48,6 +48,7 @@ return {
                 { "<leader>gh", desc = "File history" },
                 { "<leader>gq", desc = "Close diff view" },
                 { "<leader>gs", desc = "Git status" },
+                { "<leader>gt", desc = "Git tree" },
                 { "<leader>va", desc = "Select all" },
                 { "<leader>eb", desc = "Explorer buffers" },
                 { "<leader>ef", desc = "Explorer filesystem" },

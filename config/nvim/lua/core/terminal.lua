@@ -3,6 +3,7 @@ local project = require("core.project")
 local M = {}
 
 local float_term
+local shell_term
 local cli_terms = {}
 
 local function project_root()
@@ -61,7 +62,9 @@ function M.show(term, opts)
     local direction = opts.direction or term.direction or "horizontal"
     local size = opts.size or 10
 
-    close_other_terminals(term.id)
+    if opts.close_others ~= false then
+        close_other_terminals(term.id)
+    end
 
     if term:is_open() and term.direction == direction then
         term:focus()
@@ -92,6 +95,42 @@ function M.new(opts)
 
     M.show(term, { size = opts.size or 10, direction = direction })
     return term
+end
+
+function M.toggle_shell(opts)
+    opts = opts or {}
+
+    local terminal = terminal_module()
+    local direction = opts.direction or "horizontal"
+    local size = opts.size or 10
+
+    if shell_term == nil then
+        local id = terminal.next_id()
+
+        shell_term = terminal.Terminal:new({
+            id = id,
+            count = id,
+            dir = project_root(),
+            direction = direction,
+            display_name = "Shell",
+            on_exit = function()
+                shell_term = nil
+            end,
+        })
+    else
+        shell_term.dir = project_root()
+    end
+
+    if shell_term:is_open() then
+        shell_term:close()
+        return shell_term
+    end
+
+    return M.show(shell_term, {
+        size = size,
+        direction = direction,
+        close_others = false,
+    })
 end
 
 function M.toggle_float()
