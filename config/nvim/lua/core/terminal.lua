@@ -62,9 +62,7 @@ function M.show(term, opts)
     local direction = opts.direction or term.direction or "horizontal"
     local size = opts.size or 10
 
-    if opts.close_others ~= false then
-        close_other_terminals(term.id)
-    end
+    close_other_terminals(term.id)
 
     if term:is_open() and term.direction == direction then
         term:focus()
@@ -129,7 +127,6 @@ function M.toggle_shell(opts)
     return M.show(shell_term, {
         size = size,
         direction = direction,
-        close_others = false,
     })
 end
 
