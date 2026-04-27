@@ -7,12 +7,13 @@ return {
       plugin.dep("nvim-web-devicons"),
       plugin.dep("nui-nvim"),
     },
-    cmd = "Neotree",
+    cmd = { "Neotree", "GitTree" },
     keys = {
       { "<C-n>", desc = "Toggle file tree" },
       { "<leader>ef", desc = "Explorer filesystem" },
       { "<leader>eb", desc = "Explorer buffers" },
       { "<leader>eg", desc = "Explorer git status" },
+      { "<leader>gt", desc = "Git tree" },
     },
     config = function()
       local project = require("core.project")
@@ -57,6 +58,18 @@ return {
         })
       end
 
+      local function open_git_status_tree()
+        command.execute({
+          source = "git_status",
+          toggle = true,
+          position = "right",
+        })
+      end
+
+      vim.api.nvim_create_user_command("GitTree", open_git_status_tree, {
+        desc = "Open git status tree",
+      })
+
       local map = vim.keymap.set
 
       map("n", "<C-n>", open_filesystem_tree, { desc = "Toggle file tree" })
@@ -68,13 +81,8 @@ return {
           position = "right",
         })
       end, { desc = "Explorer buffers" })
-      map("n", "<leader>eg", function()
-        command.execute({
-          source = "git_status",
-          toggle = true,
-          position = "right",
-        })
-      end, { desc = "Explorer git status" })
+      map("n", "<leader>eg", open_git_status_tree, { desc = "Explorer git status" })
+      map("n", "<leader>gt", open_git_status_tree, { desc = "Git tree" })
     end,
   }),
 }

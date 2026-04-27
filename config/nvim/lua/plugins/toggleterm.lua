@@ -53,7 +53,6 @@ return {
 
       require("toggleterm").setup({
         size = 10,
-        open_mapping = [[<C-\>]],
         shade_terminals = true,
         direction = "horizontal",
         persist_mode = true,
@@ -65,6 +64,10 @@ return {
       })
 
       apply_winbar_highlights()
+
+      map("n", "<C-\\>", function()
+        terminal.toggle_shell()
+      end, { silent = true, desc = "Toggle terminal" })
 
       vim.api.nvim_create_user_command("ClaudeCode", function()
         terminal.claude()
