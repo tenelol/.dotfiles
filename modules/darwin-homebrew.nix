@@ -43,6 +43,7 @@ delib.module {
         "discord"
         "ghostty"
         "microsoft-office"
+        "notion"
         "raycast"
         "spotify"
         "slack"
