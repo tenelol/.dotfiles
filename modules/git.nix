@@ -100,24 +100,19 @@ delib.module {
         chmod 700 "$HOME/.ssh"
         mkdir -p "$gh_config_dir"
 
+        if ! GH_CONFIG_DIR="$gh_config_dir" "$real_gh" auth token --hostname github.com --user "$iniad_github_user" >/dev/null 2>&1; then
+          echo "Opening browser login for the INIAD GitHub account: $iniad_github_user" >&2
+          GH_CONFIG_DIR="$gh_config_dir" "$real_gh" auth login --web --hostname github.com --git-protocol ssh --skip-ssh-key
+        fi
+
+        if ! GH_CONFIG_DIR="$gh_config_dir" "$real_gh" auth switch --hostname github.com --user "$iniad_github_user"; then
+          echo "gh is not authenticated as the INIAD account: $iniad_github_user" >&2
+          echo "Run this again and choose the INIAD account in the browser login." >&2
+          exit 1
+        fi
+
         if [ ! -f "$key_path" ]; then
           ssh-keygen -t ed25519 -f "$key_path" -C "$key_comment"
-        fi
-
-        if ! GH_CONFIG_DIR="$gh_config_dir" "$real_gh" auth token --hostname github.com --user "$iniad_github_user" >/dev/null 2>&1; then
-          existing_token="$("$real_gh" auth token --hostname github.com --user "$iniad_github_user" 2>/dev/null || true)"
-          if [ -n "$existing_token" ]; then
-            printf '%s\n' "$existing_token" | GH_CONFIG_DIR="$gh_config_dir" "$real_gh" auth login --hostname github.com --git-protocol ssh --with-token
-          else
-            echo "Log in with the INIAD GitHub account: $iniad_github_user" >&2
-            GH_CONFIG_DIR="$gh_config_dir" "$real_gh" auth login --hostname github.com --git-protocol ssh --skip-ssh-key
-          fi
-        fi
-
-        if ! GH_CONFIG_DIR="$gh_config_dir" "$real_gh" auth switch --hostname github.com --user "$iniad_github_user" >/dev/null 2>&1; then
-          echo "Log in with the INIAD GitHub account: $iniad_github_user" >&2
-          GH_CONFIG_DIR="$gh_config_dir" "$real_gh" auth login --hostname github.com --git-protocol ssh --skip-ssh-key
-          GH_CONFIG_DIR="$gh_config_dir" "$real_gh" auth switch --hostname github.com --user "$iniad_github_user"
         fi
 
         read -r key_type key_body _ < "$key_path.pub"
