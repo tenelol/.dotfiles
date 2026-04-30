@@ -67,8 +67,8 @@ delib.module {
         set -eo pipefail
 
         real_gh=${lib.escapeShellArg realGh}
-        iniad_github_user=${lib.escapeShellArg iniadGithubUser}
         iniad_root="$HOME/iniad"
+        iniad_gh_config_dir="$HOME/.config/gh-iniad"
 
         cwd="$(pwd -P 2>/dev/null || pwd)"
         in_iniad=0
@@ -76,29 +76,8 @@ delib.module {
           "$iniad_root/"*) in_iniad=1 ;;
         esac
 
-        if [ "$in_iniad" = 1 ] && [ -z "$GH_TOKEN" ] && [ -z "$GITHUB_TOKEN" ]; then
-          case "''${1-}" in
-            "" | "-h" | "--help" | "--version" | "help" | "version" | "completion" | "config")
-              exec "$real_gh" "$@"
-              ;;
-          esac
-
-          if [ "$1" = "auth" ] && [ "''${2-}" != "status" ] && [ "''${2-}" != "token" ]; then
-            exec "$real_gh" "$@"
-          fi
-
-          token="$("$real_gh" auth token --hostname github.com --user "$iniad_github_user" 2>/dev/null || true)"
-          if [ -z "$token" ]; then
-            cat >&2 <<EOF
-        gh: INIAD GitHub account '$iniad_github_user' is not authenticated.
-        Run one of:
-          $real_gh auth login --hostname github.com --git-protocol ssh --skip-ssh-key
-          iniad-github-setup
-        EOF
-            exit 1
-          fi
-
-          export GH_TOKEN="$token"
+        if [ "$in_iniad" = 1 ] && [ -z "''${GH_CONFIG_DIR-}" ]; then
+          export GH_CONFIG_DIR="$iniad_gh_config_dir"
         fi
 
         exec "$real_gh" "$@"
@@ -113,29 +92,41 @@ delib.module {
 
         real_gh=${lib.escapeShellArg realGh}
         iniad_github_user=${lib.escapeShellArg iniadGithubUser}
+        gh_config_dir="$HOME/.config/gh-iniad"
         key_path="$HOME/.ssh/id_ed25519_iniad"
         key_comment=${lib.escapeShellArg iniadGitEmail}
 
         mkdir -p "$HOME/.ssh"
         chmod 700 "$HOME/.ssh"
+        mkdir -p "$gh_config_dir"
 
         if [ ! -f "$key_path" ]; then
           ssh-keygen -t ed25519 -f "$key_path" -C "$key_comment"
         fi
 
-        if ! "$real_gh" auth token --hostname github.com --user "$iniad_github_user" >/dev/null 2>&1; then
-          echo "Log in with the INIAD GitHub account: $iniad_github_user" >&2
-          "$real_gh" auth login --hostname github.com --git-protocol ssh --skip-ssh-key
+        if ! GH_CONFIG_DIR="$gh_config_dir" "$real_gh" auth token --hostname github.com --user "$iniad_github_user" >/dev/null 2>&1; then
+          existing_token="$("$real_gh" auth token --hostname github.com --user "$iniad_github_user" 2>/dev/null || true)"
+          if [ -n "$existing_token" ]; then
+            printf '%s\n' "$existing_token" | GH_CONFIG_DIR="$gh_config_dir" "$real_gh" auth login --hostname github.com --git-protocol ssh --with-token
+          else
+            echo "Log in with the INIAD GitHub account: $iniad_github_user" >&2
+            GH_CONFIG_DIR="$gh_config_dir" "$real_gh" auth login --hostname github.com --git-protocol ssh --skip-ssh-key
+          fi
         fi
 
-        token="$("$real_gh" auth token --hostname github.com --user "$iniad_github_user")"
+        if ! GH_CONFIG_DIR="$gh_config_dir" "$real_gh" auth switch --hostname github.com --user "$iniad_github_user" >/dev/null 2>&1; then
+          echo "Log in with the INIAD GitHub account: $iniad_github_user" >&2
+          GH_CONFIG_DIR="$gh_config_dir" "$real_gh" auth login --hostname github.com --git-protocol ssh --skip-ssh-key
+          GH_CONFIG_DIR="$gh_config_dir" "$real_gh" auth switch --hostname github.com --user "$iniad_github_user"
+        fi
+
         read -r key_type key_body _ < "$key_path.pub"
         public_key="$key_type $key_body"
 
-        if GH_TOKEN="$token" "$real_gh" api user/keys --jq '.[].key' | grep -Fxq "$public_key"; then
+        if GH_CONFIG_DIR="$gh_config_dir" "$real_gh" api user/keys --jq '.[].key' | grep -Fxq "$public_key"; then
           echo "SSH key is already registered on GitHub."
         else
-          GH_TOKEN="$token" "$real_gh" ssh-key add "$key_path.pub" --title "$(hostname)-iniad"
+          GH_CONFIG_DIR="$gh_config_dir" "$real_gh" ssh-key add "$key_path.pub" --title "$(hostname)-iniad"
         fi
 
         echo "Testing github.com-iniad SSH alias..."
