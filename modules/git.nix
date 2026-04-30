@@ -102,13 +102,17 @@ delib.module {
 
         if ! GH_CONFIG_DIR="$gh_config_dir" "$real_gh" auth token --hostname github.com --user "$iniad_github_user" >/dev/null 2>&1; then
           echo "Opening browser login for the INIAD GitHub account: $iniad_github_user" >&2
-          GH_CONFIG_DIR="$gh_config_dir" "$real_gh" auth login --web --hostname github.com --git-protocol ssh --skip-ssh-key
+          GH_CONFIG_DIR="$gh_config_dir" "$real_gh" auth login --web --hostname github.com --git-protocol ssh --skip-ssh-key --scopes admin:public_key
         fi
 
         if ! GH_CONFIG_DIR="$gh_config_dir" "$real_gh" auth switch --hostname github.com --user "$iniad_github_user"; then
           echo "gh is not authenticated as the INIAD account: $iniad_github_user" >&2
           echo "Run this again and choose the INIAD account in the browser login." >&2
           exit 1
+        fi
+
+        if ! GH_CONFIG_DIR="$gh_config_dir" "$real_gh" auth status --hostname github.com --json hosts --jq '.hosts."github.com"[] | select(.active).scopes' | grep -q 'admin:public_key'; then
+          GH_CONFIG_DIR="$gh_config_dir" "$real_gh" auth refresh --hostname github.com --scopes admin:public_key
         fi
 
         if [ ! -f "$key_path" ]; then
