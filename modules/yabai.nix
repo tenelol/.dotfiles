@@ -20,10 +20,10 @@ delib.module {
       enable = true;
       package = pkgs.yabai;
 
-      # Space focus and moving windows between spaces require yabai's scripting
-      # addition on recent macOS versions. This also installs the matching
-      # sudoers rule for loading it without a password.
-      enableScriptingAddition = true;
+      # Keep yabai usable with SIP fully enabled. Space switching falls back to
+      # native Mission Control shortcuts, and window-to-space movement is
+      # handled by Hammerspoon's Accessibility-based Spaces bridge.
+      enableScriptingAddition = false;
 
       config = {
         layout = "bsp";
@@ -51,10 +51,6 @@ delib.module {
       };
 
       extraConfig = ''
-        yabai -m signal --remove yabai_load_sa 2>/dev/null || true
-        yabai -m signal --add label=yabai_load_sa event=dock_did_restart action='sudo ${pkgs.yabai}/bin/yabai --load-sa'
-        sudo ${pkgs.yabai}/bin/yabai --load-sa 2>/dev/null || true
-
         for sid in 1 2 3 4 5 6 7 8 9; do
           yabai -m space "$sid" --label "$sid" 2>/dev/null || true
         done
@@ -124,8 +120,30 @@ delib.module {
         };
       };
 
-      # Keep Mission Control's Ctrl+1..9 desktop shortcuts enabled as a native
-      # fallback for manual space switching.
+      # Keep Mission Control's Ctrl+Left/Right and Ctrl+1..9 desktop shortcuts
+      # enabled as native fallbacks for manual space switching.
+      "79" = {
+        enabled = true;
+        value = {
+          type = "standard";
+          parameters = [
+            65535
+            123
+            262144
+          ];
+        };
+      };
+      "81" = {
+        enabled = true;
+        value = {
+          type = "standard";
+          parameters = [
+            65535
+            124
+            262144
+          ];
+        };
+      };
       "118" = {
         enabled = true;
         value = {
