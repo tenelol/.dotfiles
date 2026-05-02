@@ -1,8 +1,21 @@
 #!/bin/bash
 
 SKETCHYBAR_BIN="/opt/homebrew/bin/sketchybar"
-YABAI_BIN="/run/current-system/sw/bin/yabai"
 PLUGIN_DIR="$CONFIG_DIR/plugins"
+
+space_key_code() {
+  case "$1" in
+    1) printf 18 ;;
+    2) printf 19 ;;
+    3) printf 20 ;;
+    4) printf 21 ;;
+    5) printf 23 ;;
+    6) printf 22 ;;
+    7) printf 26 ;;
+    8) printf 28 ;;
+    9) printf 25 ;;
+  esac
+}
 
 bar=(
   position=top
@@ -48,10 +61,11 @@ default=(
 "$SKETCHYBAR_BIN" --add event yabai_space_change
 
 for sid in 1 2 3 4 5 6 7 8 9; do
+  key_code="$(space_key_code "$sid")"
   item=(
     label="$sid"
     script="$PLUGIN_DIR/workspace.sh"
-    click_script="$YABAI_BIN -m space --focus $sid"
+    click_script="osascript -e 'tell application \"System Events\" to key code $key_code using control down'"
   )
 
   "$SKETCHYBAR_BIN" --add item "space.$sid" left \
