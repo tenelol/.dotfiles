@@ -40,6 +40,7 @@ delib.module {
         "cmux"
         "codexbar"
         "codex-app"
+        "cursor"
         "discord"
         "ghostty"
         "microsoft-office"
@@ -48,6 +49,7 @@ delib.module {
         "spotify"
         "slack"
         "tailscale-app"
+        "zed"
         "zen"
       ];
     };
