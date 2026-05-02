@@ -99,11 +99,6 @@ function _G.yabaiMoveFocusedWindowToSpace(index)
 
   hs.timer.doAfter(0.05, function()
     focusSpaceByNativeShortcut(index)
-    hs.timer.doAfter(0.35, function()
-      if win:isStandard() then
-        win:focus()
-      end
-    end)
   end)
 
   return true
