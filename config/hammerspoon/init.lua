@@ -1,4 +1,5 @@
 local eventTypes = hs.eventtap.event.types
+local json = hs.json
 local keycodes = hs.keycodes
 local keyDownEvent = eventTypes.keyDown
 local flagsChangedEvent = eventTypes.flagsChanged
@@ -41,6 +42,67 @@ local function toggleIme()
   else
     switchToJapanese()
   end
+end
+
+local function yabaiSpaces()
+  local output, ok = hs.execute("/run/current-system/sw/bin/yabai -m query --spaces 2>/dev/null", true)
+  if not ok or not output or output == "" then
+    return nil, "failed to query yabai spaces"
+  end
+
+  local decodeOk, spaces = pcall(json.decode, output)
+  if not decodeOk or type(spaces) ~= "table" then
+    return nil, "failed to parse yabai spaces"
+  end
+
+  return spaces
+end
+
+local function spaceIDForIndex(index)
+  local spaces, err = yabaiSpaces()
+  if not spaces then
+    return nil, err
+  end
+
+  local targetIndex = tonumber(index)
+  for _, space in ipairs(spaces) do
+    if tonumber(space.index) == targetIndex then
+      return space.id
+    end
+  end
+
+  return nil, ("space %s was not found"):format(tostring(index))
+end
+
+function _G.yabaiMoveFocusedWindowToSpace(index)
+  local win = hs.window.focusedWindow()
+  if not win then
+    hs.alert.show("No focused window", 2)
+    return false
+  end
+
+  local spaceID, err = spaceIDForIndex(index)
+  if not spaceID then
+    hs.alert.show(err, 2)
+    return false
+  end
+
+  local ok, moveErr = hs.spaces.moveWindowToSpace(win, spaceID)
+  if not ok then
+    hs.alert.show(moveErr or ("Failed to move window to space " .. tostring(index)), 2)
+    return false
+  end
+
+  hs.timer.doAfter(0.05, function()
+    hs.spaces.gotoSpace(spaceID)
+    hs.timer.doAfter(0.2, function()
+      if win:isStandard() then
+        win:focus()
+      end
+    end)
+  end)
+
+  return true
 end
 
 local leftCommandTapState = {
