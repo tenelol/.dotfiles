@@ -25,15 +25,15 @@ alt + ctrl - 0x25 : yabai -m window --swap east
 alt - 0x1B : yabai -m window --ratio rel:-0.05
 alt - 0x18 : yabai -m window --ratio rel:0.05
 
-alt - 0x12 : yabai -m space --focus 1 || osascript -e 'tell application "System Events" to key code 18 using control down'
-alt - 0x13 : yabai -m space --focus 2 || osascript -e 'tell application "System Events" to key code 19 using control down'
-alt - 0x14 : yabai -m space --focus 3 || osascript -e 'tell application "System Events" to key code 20 using control down'
-alt - 0x15 : yabai -m space --focus 4 || osascript -e 'tell application "System Events" to key code 21 using control down'
-alt - 0x17 : yabai -m space --focus 5 || osascript -e 'tell application "System Events" to key code 23 using control down'
-alt - 0x16 : yabai -m space --focus 6 || osascript -e 'tell application "System Events" to key code 22 using control down'
-alt - 0x1A : yabai -m space --focus 7 || osascript -e 'tell application "System Events" to key code 26 using control down'
-alt - 0x1C : yabai -m space --focus 8 || osascript -e 'tell application "System Events" to key code 28 using control down'
-alt - 0x19 : yabai -m space --focus 9 || osascript -e 'tell application "System Events" to key code 25 using control down'
+alt - 0x12 : osascript -e 'tell application "System Events" to key code 18 using control down'
+alt - 0x13 : osascript -e 'tell application "System Events" to key code 19 using control down'
+alt - 0x14 : osascript -e 'tell application "System Events" to key code 20 using control down'
+alt - 0x15 : osascript -e 'tell application "System Events" to key code 21 using control down'
+alt - 0x17 : osascript -e 'tell application "System Events" to key code 23 using control down'
+alt - 0x16 : osascript -e 'tell application "System Events" to key code 22 using control down'
+alt - 0x1A : osascript -e 'tell application "System Events" to key code 26 using control down'
+alt - 0x1C : osascript -e 'tell application "System Events" to key code 28 using control down'
+alt - 0x19 : osascript -e 'tell application "System Events" to key code 25 using control down'
 
 alt + shift - 0x12 : /opt/homebrew/bin/hs -q -c 'yabaiMoveFocusedWindowToSpace(1)'
 alt + shift - 0x13 : /opt/homebrew/bin/hs -q -c 'yabaiMoveFocusedWindowToSpace(2)'
@@ -45,8 +45,8 @@ alt + shift - 0x1A : /opt/homebrew/bin/hs -q -c 'yabaiMoveFocusedWindowToSpace(7
 alt + shift - 0x1C : /opt/homebrew/bin/hs -q -c 'yabaiMoveFocusedWindowToSpace(8)'
 alt + shift - 0x19 : /opt/homebrew/bin/hs -q -c 'yabaiMoveFocusedWindowToSpace(9)'
 
-alt - 0x30 : yabai -m space --focus prev || osascript -e 'tell application "System Events" to key code 123 using control down'
-alt + shift - 0x30 : yabai -m space --focus next || osascript -e 'tell application "System Events" to key code 124 using control down'
+alt - 0x30 : osascript -e 'tell application "System Events" to key code 123 using control down'
+alt + shift - 0x30 : osascript -e 'tell application "System Events" to key code 124 using control down'
 alt + shift - 0x29 ; service
 
 alt + shift + ctrl - 0x04 : yabai -m window --display prev; yabai -m display --focus prev
