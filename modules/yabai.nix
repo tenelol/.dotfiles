@@ -55,11 +55,10 @@ delib.module {
           yabai -m space "$sid" --label "$sid" 2>/dev/null || true
         done
 
-        for rule in system_settings system_preferences app_store calculator finder_dialogs codex_pet; do
+        for rule in system_settings system_preferences app_store calculator finder_dialogs; do
           yabai -m rule --remove "$rule" 2>/dev/null || true
         done
 
-        yabai -m rule --add label=codex_pet app='Codex' subrole='AXDialog' manage=off
         yabai -m rule --add label=system_settings app='System Settings' manage=off
         yabai -m rule --add label=system_preferences app='System Preferences' manage=off
         yabai -m rule --add label=app_store app='App Store' manage=off
