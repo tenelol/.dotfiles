@@ -51,8 +51,17 @@ delib.module {
       };
 
       extraConfig = ''
-        for sid in 1 2 3 4 5 6 7 8 9; do
-          yabai -m space "$sid" --label "$sid" 2>/dev/null || true
+        spaces="$(
+          yabai -m query --spaces 2>/dev/null \
+            | tr '{' '\n' \
+            | sed -nE 's/.*"index"[[:space:]]*:[[:space:]]*([0-9]+).*/\1/p'
+        )"
+        if [ -z "$spaces" ]; then
+          spaces="1 2 3 4 5 6 7 8 9"
+        fi
+
+        for sid in $spaces; do
+          yabai -m space "$sid" --label "space-$sid" 2>/dev/null || true
         done
 
         for rule in system_settings system_preferences app_store calculator finder_dialogs; do

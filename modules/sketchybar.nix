@@ -49,6 +49,11 @@ delib.module {
       fi
     '';
 
-    xdg.configFile."sketchybar".source = ../config/sketchybar;
+    xdg.configFile."sketchybar" = {
+      source = ../config/sketchybar;
+      onChange = ''
+        /opt/homebrew/bin/sketchybar --reload >/dev/null 2>&1 || true
+      '';
+    };
   };
 }
