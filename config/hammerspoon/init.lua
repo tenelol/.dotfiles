@@ -74,53 +74,8 @@ local function spaceIDForIndex(index)
   return nil, ("space %s was not found"):format(tostring(index))
 end
 
-local nativeSpaceShortcutKeys = {
-  [1] = "1",
-  [2] = "2",
-  [3] = "3",
-  [4] = "4",
-  [5] = "5",
-  [6] = "6",
-  [7] = "7",
-  [8] = "8",
-  [9] = "9",
-  [10] = "0",
-}
-
 local function focusSpaceByNativeShortcut(index)
-  local key = nativeSpaceShortcutKeys[tonumber(index)]
-  if not key then
-    return false
-  end
-
-  hs.eventtap.keyStroke({ "ctrl" }, key, 0)
-  return true
-end
-
-local function focusSpaceByID(spaceID, index)
-  if type(hs.spaces.gotoSpace) == "function" then
-    local ok, result = pcall(hs.spaces.gotoSpace, spaceID)
-    if ok and result ~= false then
-      return true
-    end
-  end
-
-  if focusSpaceByNativeShortcut(index) then
-    return true
-  end
-
-  hs.alert.show("Failed to focus space " .. tostring(index), 2)
-  return false
-end
-
-function _G.yabaiFocusSpace(index)
-  local spaceID, err = spaceIDForIndex(index)
-  if not spaceID then
-    hs.alert.show(err, 2)
-    return false
-  end
-
-  return focusSpaceByID(spaceID, index)
+  hs.eventtap.keyStroke({ "ctrl" }, tostring(index), 0)
 end
 
 function _G.yabaiMoveFocusedWindowToSpace(index)
@@ -143,7 +98,7 @@ function _G.yabaiMoveFocusedWindowToSpace(index)
   end
 
   hs.timer.doAfter(0.05, function()
-    focusSpaceByID(spaceID, index)
+    focusSpaceByNativeShortcut(index)
   end)
 
   return true
