@@ -33,7 +33,7 @@ delib.module {
         display_arrangement_order = "horizontal";
 
         mouse_follows_focus = "off";
-        focus_follows_mouse = "off";
+        focus_follows_mouse = "autofocus";
         window_origin_display = "focused";
         window_zoom_persist = "on";
 
@@ -59,6 +59,7 @@ delib.module {
           yabai -m rule --remove "$rule" 2>/dev/null || true
         done
 
+        yabai -m rule --add label=codex_pet app='Codex' subrole='AXDialog' manage=off
         yabai -m rule --add label=system_settings app='System Settings' manage=off
         yabai -m rule --add label=system_preferences app='System Preferences' manage=off
         yabai -m rule --add label=app_store app='App Store' manage=off
