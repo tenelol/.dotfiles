@@ -21,6 +21,6 @@
     <key>NSAppleMusicUsageDescription</key>
     <string>NotchMusic displays the currently playing track in the notch area.</string>
     <key>NSAppleEventsUsageDescription</key>
-    <string>NotchMusic reads the currently playing track from Apple Music.</string>
+	<string>NotchMusic reads the currently playing track from Apple Music or Spotify.</string>
 </dict>
 </plist>
