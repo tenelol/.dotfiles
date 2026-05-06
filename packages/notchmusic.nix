@@ -24,7 +24,7 @@ pkgs.stdenvNoCC.mkDerivation {
   '';
 
   meta = {
-    description = "Dynamic Island-style Apple Music player for MacBook notch";
+    description = "Dynamic Island-style Apple Music and Spotify player for MacBook notch";
     homepage = "https://github.com/kuraryu405/NotchMusic";
     license = lib.licenses.mit;
     mainProgram = "notchmusic";
