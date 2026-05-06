@@ -21,6 +21,9 @@ let
   moocsCollectPackage = import ../packages/moocs-collect.nix {
     inherit pkgs lib;
   };
+  notchMusicPackage = import ../packages/notchmusic.nix {
+    inherit pkgs lib;
+  };
   iniadCommitPackage = import ../packages/iniad-commit.nix {
     inherit pkgs lib;
   };
@@ -105,6 +108,7 @@ let
   darwinDesktopPackages = with pkgs; [
     google-chrome
     moocsCollectPackage
+    notchMusicPackage
     sqlitebrowser
     unicode-emoji
     obsidian
