@@ -43,6 +43,7 @@ delib.module {
         "cursor"
         "discord"
         "ghostty"
+        "google-chrome"
         "microsoft-office"
         "notion"
         "raycast"

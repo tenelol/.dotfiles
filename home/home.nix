@@ -103,7 +103,6 @@ let
   # Prefer Nix here when the package is cross-platform or when keeping the
   # same binary/toolchain as Linux is useful.
   darwinDesktopPackages = with pkgs; [
-    google-chrome
     moocsCollectPackage
     sqlitebrowser
     unicode-emoji
