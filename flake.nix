@@ -22,6 +22,9 @@
 
     nix-hazkey.url = "github:aster-void/nix-hazkey";
     nix-hazkey.inputs.nixpkgs.follows = "nixpkgs";
+
+    gijiroku.url = "git+ssh://git@github.com/tenelol/gijiroku.git";
+    gijiroku.flake = false;
   };
 
   outputs =

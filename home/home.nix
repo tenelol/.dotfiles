@@ -3,6 +3,7 @@
   pkgs,
   lib,
   config,
+  inputs,
   profile,
   ...
 }:
@@ -20,6 +21,10 @@ let
   };
   moocsCollectPackage = import ../packages/moocs-collect.nix {
     inherit pkgs lib;
+  };
+  gijirokuPackage = import ../packages/gijiroku.nix {
+    inherit pkgs lib;
+    src = inputs.gijiroku;
   };
   iniadCommitPackage = import ../packages/iniad-commit.nix {
     inherit pkgs lib;
@@ -103,6 +108,7 @@ let
   # Prefer Nix here when the package is cross-platform or when keeping the
   # same binary/toolchain as Linux is useful.
   darwinDesktopPackages = with pkgs; [
+    gijirokuPackage
     moocsCollectPackage
     sqlitebrowser
     unicode-emoji

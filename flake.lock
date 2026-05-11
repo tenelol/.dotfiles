@@ -44,6 +44,22 @@
         "type": "github"
       }
     },
+    "gijiroku": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1778467918,
+        "narHash": "sha256-W7Li/Z9LoNawPFoEsdZkKwJbcXkhlytGZSeOeWe6uVw=",
+        "ref": "refs/heads/main",
+        "rev": "184d0a2ea318e6ca70c78ea842990a5d47ee55f0",
+        "revCount": 1,
+        "type": "git",
+        "url": "ssh://git@github.com/tenelol/gijiroku.git"
+      },
+      "original": {
+        "type": "git",
+        "url": "ssh://git@github.com/tenelol/gijiroku.git"
+      }
+    },
     "gitignore": {
       "inputs": {
         "nixpkgs": [
@@ -239,6 +255,7 @@
     "root": {
       "inputs": {
         "denix": "denix",
+        "gijiroku": "gijiroku",
         "home-manager": "home-manager",
         "nix-darwin": "nix-darwin",
         "nix-hazkey": "nix-hazkey",
