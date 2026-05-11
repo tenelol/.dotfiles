@@ -47,11 +47,11 @@
     "gijiroku": {
       "flake": false,
       "locked": {
-        "lastModified": 1778467918,
-        "narHash": "sha256-W7Li/Z9LoNawPFoEsdZkKwJbcXkhlytGZSeOeWe6uVw=",
+        "lastModified": 1778483383,
+        "narHash": "sha256-gFz+mNWsHxwDBjK1r9ECM7Pu5FsnJVczDdDwYUN0WJ0=",
         "ref": "refs/heads/main",
-        "rev": "184d0a2ea318e6ca70c78ea842990a5d47ee55f0",
-        "revCount": 1,
+        "rev": "e4abe168845a92dcd0c0ec3045fe5059421f8060",
+        "revCount": 2,
         "type": "git",
         "url": "ssh://git@github.com/tenelol/gijiroku.git"
       },
