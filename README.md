@@ -68,7 +68,7 @@ Script Commands は `~/.config/raycast/scripts` に展開されるので、Rayca
 
 Darwin 実機がまだ無い段階でも `macbook` host を腐らせないため、普段の軽量チェックは Linux / Darwin をまとめて見る `./scripts/validate eval` を基準にします。
 このコマンドは各 configuration の `system.build.toplevel.drvPath` を直接評価して、全 host と rice 派生 config が壊れていないかを build なしで確認します。
-CI ではまず `./scripts/validate eval` で全 platform の評価を見て、その上で `checks.x86_64-linux.build-*` を個別に build します。ローカルの実運用は引き続き `nh os build` / `nh darwin build` を使います。Darwin は GitHub Actions の Linux runner では build せず、ローカルで `./scripts/validate darwin` を回す運用です。
+CI の pull request では `nix fmt --ci` と `./scripts/validate eval` だけを走らせ、GitHub 上の待ち時間を軽くしています。Linux host の実 build は `main` への push と `workflow_dispatch` で `checks.x86_64-linux.build-*` を個別に build します。ローカルの実運用は引き続き `nh os build` / `nh darwin build` を使います。Darwin は GitHub Actions の Linux runner では build せず、ローカルで `./scripts/validate darwin` を回す運用です。
 
 整形確認:
 

@@ -62,6 +62,7 @@ jobs:
         run: ./scripts/validate eval
 
   linux-build-checks:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
