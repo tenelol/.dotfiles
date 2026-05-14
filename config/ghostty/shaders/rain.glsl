@@ -1,6 +1,6 @@
-const float RAIN_TILT = 0.18;
-const float RAIN_ALPHA = 0.34;
-const float RAIN_TEXT_DODGE = 0.55;
+const float RAIN_SLANT = 0.105;
+const float RAIN_ALPHA = 0.24;
+const float RAIN_TEXT_DODGE = 0.42;
 
 float hash12(vec2 p) {
     vec3 p3 = fract(vec3(p.xyx) * 0.1031);
@@ -8,36 +8,40 @@ float hash12(vec2 p) {
     return fract((p3.x + p3.y) * p3.z);
 }
 
-float rainLayer(vec2 p, float scale, float speed, float density, float width, float dropLength, float seed) {
+float drizzleLayer(vec2 p, float columns, float rows, float speed, float density, float width, float dropLength, float seed) {
     vec2 rp = p;
-    rp.x += rp.y * RAIN_TILT;
-    rp.y += iTime * speed;
+    rp.y -= iTime * speed;
+    rp.x -= rp.y * RAIN_SLANT;
 
-    float aspect = iResolution.x / iResolution.y;
-    vec2 grid = vec2(scale * aspect, scale * 1.8);
-    vec2 cell = floor(rp * grid);
-    vec2 local = fract(rp * grid);
+    vec2 grid = vec2(columns, rows);
+    vec2 cell = floor(rp * grid + vec2(seed, seed * 1.37));
+    vec2 local = fract(rp * grid + vec2(seed, seed * 1.37));
 
-    float rnd = hash12(cell + vec2(seed, seed * 2.17));
+    float rnd = hash12(cell + vec2(seed * 2.11, seed * 5.03));
     float activeDrop = step(1.0 - density, rnd);
-    float center = mix(0.18, 0.82, hash12(cell + vec2(seed * 3.41, seed)));
-    float line = 1.0 - smoothstep(width, width * 2.8, abs(local.x - center));
+    float centerX = mix(0.22, 0.78, hash12(cell + vec2(seed * 7.31, seed * 0.43)));
+    float wobble = (hash12(cell + vec2(seed * 9.17, seed * 4.61)) - 0.5) * 0.035;
 
-    float body = smoothstep(0.0, 0.08, local.y) * (1.0 - smoothstep(dropLength, dropLength + 0.16, local.y));
-    float head = 1.0 - smoothstep(0.0, 0.055, abs(local.y - dropLength));
+    float lineMask = 1.0 - smoothstep(width, width * 2.6, abs(local.x - centerX - wobble));
+    float topFade = smoothstep(0.0, 0.12, local.y);
+    float bottomFade = 1.0 - smoothstep(dropLength - 0.10, dropLength, local.y);
+    float bodyMask = topFade * bottomFade * step(local.y, dropLength);
+    float headGlow = 1.0 - smoothstep(0.0, 0.075, abs(local.y - dropLength * 0.86));
+    float brightness = mix(0.55, 1.0, clamp(local.y / dropLength, 0.0, 1.0));
 
-    return activeDrop * line * max(body * 0.72, head);
+    return activeDrop * lineMask * max(bodyMask * brightness, headGlow * 0.28);
 }
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     vec2 uv = fragCoord.xy / iResolution.xy;
-    vec2 p = fragCoord.xy / iResolution.y;
+    float aspect = iResolution.x / iResolution.y;
+    vec2 p = vec2(uv.x * aspect, 1.0 - uv.y);
     vec4 baseColor = texture(iChannel0, uv);
 
     float rain = 0.0;
-    rain += rainLayer(p, 18.0, 0.28, 0.48, 0.030, 0.62, 1.0) * 0.46;
-    rain += rainLayer(p, 31.0, 0.42, 0.36, 0.022, 0.52, 7.0) * 0.34;
-    rain += rainLayer(p, 46.0, 0.58, 0.26, 0.018, 0.42, 13.0) * 0.24;
+    rain += drizzleLayer(p, 42.0, 72.0, 0.11, 0.28, 0.020, 0.34, 1.0) * 0.42;
+    rain += drizzleLayer(p, 58.0, 96.0, 0.16, 0.22, 0.016, 0.29, 7.0) * 0.34;
+    rain += drizzleLayer(p, 76.0, 128.0, 0.21, 0.16, 0.013, 0.24, 13.0) * 0.24;
     rain = clamp(rain, 0.0, 1.0);
 
     float textMask = smoothstep(0.18, 0.86, baseColor.a);
