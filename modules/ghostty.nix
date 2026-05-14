@@ -10,6 +10,7 @@ let
       ../config/ghostty/config-darwin
     else
       ../config/ghostty/config;
+  ghosttyShaders = ../config/ghostty/shaders;
 in
 delib.module {
   name = "ghostty";
@@ -18,5 +19,6 @@ delib.module {
 
   home.ifEnabled = {
     xdg.configFile."ghostty/config".source = ghosttyConfig;
+    xdg.configFile."ghostty/shaders".source = ghosttyShaders;
   };
 }
