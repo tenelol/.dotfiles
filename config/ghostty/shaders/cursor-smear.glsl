@@ -1,6 +1,6 @@
 // Cursor motion shader for Ghostty.
-// Small one-cell moves get a soft glide. Navigation gets stars. Large jumps
-// get a circular warp that settles back into place.
+// Small one-cell moves get a soft glide. Every move gets stars. Large jumps get
+// a circular warp that settles back into place.
 
 const int STAR_COUNT = 10;
 const float INPUT_SECONDS = 0.18;
@@ -79,7 +79,6 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
     float anyMove = smoothstep(cell * 0.35, cell * 1.15, travel) * focus;
     float bigJump = smoothstep(cell * 6.0, cell * 12.0, travel) * anyMove;
-    float navigationMove = anyMove * (1.0 - inputMove);
 
     float along = segmentT(fragCoord, previous, current);
     float trailDist = segmentDistance(fragCoord, previous, current);
@@ -119,7 +118,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     color.rgb += accent * inputMove * inputLife * (glideTrail * 0.07 + glidePulse * 0.10);
 
     float starLife = 1.0 - smoothstep(0.04, STAR_SECONDS, age);
-    float starPower = navigationMove * (1.0 - bigJump * 0.62) * starLife;
+    float starPower = anyMove * starLife;
     float stars = 0.0;
 
     for (int i = 0; i < STAR_COUNT; i++) {
