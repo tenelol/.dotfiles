@@ -95,7 +95,7 @@ for sid in 1 2 3 4 5 6 7 8 9; do
 
   "$SKETCHYBAR_BIN" --add item "space.$sid" left \
                     --set "space.$sid" "${item[@]}" \
-                    --subscribe "space.$sid" yabai_space_change mouse.entered mouse.exited
+                    --subscribe "space.$sid" mouse.entered mouse.exited
 done
 
 spaces=(
@@ -110,6 +110,18 @@ spaces=(
 )
 "$SKETCHYBAR_BIN" --add bracket spaces '/space\..*/' \
                   --set spaces "${spaces[@]}"
+
+space_observer=(
+  drawing=off
+  updates=on
+  width=0
+  padding_left=0
+  padding_right=0
+  script="$PLUGIN_DIR/spaces.sh"
+)
+"$SKETCHYBAR_BIN" --add item space_observer left \
+                  --set space_observer "${space_observer[@]}" \
+                  --subscribe space_observer yabai_space_change
 
 front_app=(
   width=190
@@ -163,7 +175,7 @@ focused_workspace="$(
 )"
 
 if [ -n "$focused_workspace" ]; then
-  "$SKETCHYBAR_BIN" --trigger yabai_space_change FOCUSED="$focused_workspace"
+  "$SKETCHYBAR_BIN" --trigger yabai_space_change FOCUSED="$focused_workspace" REFRESH=all
 else
-  "$SKETCHYBAR_BIN" --trigger yabai_space_change
+  "$SKETCHYBAR_BIN" --trigger yabai_space_change REFRESH=all
 fi

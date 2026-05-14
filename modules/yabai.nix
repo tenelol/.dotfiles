@@ -69,8 +69,8 @@ delib.module {
           yabai -m signal --remove "$signal" 2>/dev/null || true
         done
 
-        yabai -m signal --add label=sketchybar_space_changed event=space_changed action='/opt/homebrew/bin/sketchybar --trigger yabai_space_change FOCUSED=$YABAI_SPACE_INDEX'
-        yabai -m signal --add label=sketchybar_display_changed event=display_changed action='/opt/homebrew/bin/sketchybar --trigger yabai_space_change'
+        yabai -m signal --add label=sketchybar_space_changed event=space_changed action='/opt/homebrew/bin/sketchybar --trigger yabai_space_change FOCUSED=$YABAI_SPACE_INDEX PREVIOUS=$YABAI_RECENT_SPACE_INDEX'
+        yabai -m signal --add label=sketchybar_display_changed event=display_changed action='/opt/homebrew/bin/sketchybar --trigger yabai_space_change REFRESH=all'
         yabai -m signal --add label=sketchybar_space_created event=space_created action='/opt/homebrew/bin/sketchybar --reload'
         yabai -m signal --add label=sketchybar_space_destroyed event=space_destroyed action='/opt/homebrew/bin/sketchybar --reload'
 
