@@ -51,7 +51,6 @@ let
     nvim-notify = pkgs.vimPlugins.nvim-notify;
     luasnip = pkgs.vimPlugins.luasnip;
     friendly-snippets = pkgs.vimPlugins.friendly-snippets;
-    smear-cursor-nvim = pkgs.vimPlugins.smear-cursor-nvim;
     telescope-nvim = pkgs.vimPlugins.telescope-nvim;
     toggleterm-nvim = pkgs.vimPlugins.toggleterm-nvim;
     nvim-ts-autotag = pkgs.vimPlugins.nvim-ts-autotag;
