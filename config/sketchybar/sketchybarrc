@@ -90,6 +90,7 @@ while read -r did sid; do
   [ -n "$did" ] && [ -n "$sid" ] || continue
   click_script="$(space_click_script "$sid")"
   item=(
+    updates=on
     width=18
     padding_left=3
     padding_right=3
@@ -112,13 +113,9 @@ while read -r did sid; do
     click_script="$click_script"
   )
 
-  if [ "$did" != 0 ]; then
-    item+=(display="$did")
-  fi
-
   "$SKETCHYBAR_BIN" --add space "space.$sid" left \
                     --set "space.$sid" "${item[@]}" \
-                    --subscribe "space.$sid" mouse.entered mouse.exited
+                    --subscribe "space.$sid" space_change mouse.entered mouse.exited
 done <<EOF
 $display_space_rows
 EOF

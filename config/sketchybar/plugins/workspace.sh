@@ -21,21 +21,30 @@ selected_is_true() {
 }
 
 if [ -z "$selected" ]; then
-  focused_workspace="$(
-    "$YABAI_BIN" -m query --spaces --space 2>/dev/null \
-      | sed -nE 's/.*"index"[[:space:]]*:[[:space:]]*([0-9]+).*/\1/p' \
-      | head -n 1
-  )"
+  selected="$(
+    "$YABAI_BIN" -m query --spaces 2>/dev/null \
+      | /usr/bin/python3 -c '
+import json
+import sys
 
-  if [ "$SID" = "$focused_workspace" ]; then
-    selected=true
-  else
-    selected=false
-  fi
+sid = sys.argv[1]
+try:
+    spaces = json.load(sys.stdin)
+except Exception:
+    spaces = []
+
+for space in spaces:
+    if str(space.get("index")) == sid:
+        print("true" if space.get("is-visible") else "false")
+        break
+' "$SID"
+  )"
+  selected="${selected:-false}"
 fi
 
 if [ "$SENDER" = "mouse.entered" ] && ! selected_is_true; then
   "$SKETCHYBAR_BIN" --set "$NAME" \
+    updates=on \
     width=18 \
     padding_left=3 \
     padding_right=3 \
@@ -56,6 +65,7 @@ fi
 
 if [ "$SENDER" = "mouse.exited" ] && ! selected_is_true; then
   "$SKETCHYBAR_BIN" --set "$NAME" \
+    updates=on \
     width=18 \
     padding_left=3 \
     padding_right=3 \
@@ -76,6 +86,7 @@ fi
 
 if selected_is_true; then
   "$SKETCHYBAR_BIN" --animate "$ANIMATION" 14 --set "$NAME" \
+    updates=on \
     width=18 \
     padding_left=3 \
     padding_right=3 \
@@ -92,6 +103,7 @@ if selected_is_true; then
     label.color="$TEXT_STRONG"
 else
   "$SKETCHYBAR_BIN" --animate "$ANIMATION" "$ANIMATION_DURATION" --set "$NAME" \
+    updates=on \
     width=18 \
     padding_left=3 \
     padding_right=3 \
