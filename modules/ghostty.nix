@@ -49,10 +49,10 @@ let
       ''
         cp "$src" "$out"
         substituteInPlace "$out" \
-          --replace-fail 'const float MAX_SIZE = 0.05;' 'const float MAX_SIZE = 0.026;' \
-          --replace-fail 'const float RING_THICKNESS = 0.02;' 'const float RING_THICKNESS = 0.014;' \
-          --replace-fail 'vec4 COLOR = vec4(0.35, 0.36, 0.44, 1.0);' 'vec4 COLOR = vec4(0.35, 0.36, 0.44, 0.45);' \
-          --replace-fail 'const float BLUR = 1.0;' 'const float BLUR = 1.5;'
+          --replace-fail 'const float MAX_SIZE = 0.05;' 'const float MAX_SIZE = 0.034;' \
+          --replace-fail 'const float RING_THICKNESS = 0.02;' 'const float RING_THICKNESS = 0.018;' \
+          --replace-fail 'vec4 COLOR = vec4(0.35, 0.36, 0.44, 1.0);' 'vec4 COLOR = vec4(0.35, 0.36, 0.44, 0.68);' \
+          --replace-fail 'const float BLUR = 1.0;' 'const float BLUR = 1.2;'
         awk '
           /^    \/\/ Normalization & setup \(-1 to 1 coords\)/ {
             print "    if (iFocus == 0) {";
