@@ -5,6 +5,11 @@ YABAI_BIN="/run/current-system/sw/bin/yabai"
 SID="${NAME#space.}"
 ANIMATION=tanh
 ANIMATION_DURATION=12
+TRANSPARENT=0x00000000
+TEXT=0xeef5f7fa
+TEXT_DIM=0xa8f5f7fa
+TEXT_STRONG=0xffffffff
+ACCENT=0xff8bd5ff
 
 focused_workspace="$FOCUSED"
 
@@ -24,15 +29,15 @@ if [ "$SENDER" = "mouse.entered" ] && [ "$SID" != "$focused_workspace" ]; then
     label.width=18 \
     label.align=center \
     background.drawing=on \
-    background.height=2 \
+    background.height=3 \
     background.corner_radius=2 \
     background.padding_left=0 \
     background.padding_right=0 \
     background.border_width=0 \
-    background.color=0x00000000 \
-    background.border_color=0x00000000
+    background.color="$TRANSPARENT" \
+    background.border_color="$TRANSPARENT"
   "$SKETCHYBAR_BIN" --animate "$ANIMATION" "$ANIMATION_DURATION" --set "$NAME" \
-    label.color=0xd8f5f7fa
+    label.color="$TEXT"
   exit 0
 fi
 
@@ -44,15 +49,15 @@ if [ "$SENDER" = "mouse.exited" ] && [ "$SID" != "$focused_workspace" ]; then
     label.width=18 \
     label.align=center \
     background.drawing=on \
-    background.height=2 \
+    background.height=3 \
     background.corner_radius=2 \
     background.padding_left=0 \
     background.padding_right=0 \
     background.border_width=0 \
-    background.color=0x00000000 \
-    background.border_color=0x00000000
+    background.color="$TRANSPARENT" \
+    background.border_color="$TRANSPARENT"
   "$SKETCHYBAR_BIN" --animate "$ANIMATION" "$ANIMATION_DURATION" --set "$NAME" \
-    label.color=0x9ff5f7fa
+    label.color="$TEXT_DIM"
   exit 0
 fi
 
@@ -64,14 +69,14 @@ if [ "$SID" = "$focused_workspace" ]; then
     label.width=18 \
     label.align=center \
     background.drawing=on \
-    background.height=2 \
+    background.height=3 \
     background.corner_radius=2 \
     background.padding_left=0 \
     background.padding_right=0 \
     background.border_width=0 \
-    background.color=0xffd7f7ff \
-    background.border_color=0x00000000 \
-    label.color=0xffffffff
+    background.color="$ACCENT" \
+    background.border_color="$TRANSPARENT" \
+    label.color="$TEXT_STRONG"
 else
   "$SKETCHYBAR_BIN" --animate "$ANIMATION" "$ANIMATION_DURATION" --set "$NAME" \
     width=18 \
@@ -80,12 +85,12 @@ else
     label.width=18 \
     label.align=center \
     background.drawing=on \
-    background.height=2 \
+    background.height=3 \
     background.corner_radius=2 \
     background.padding_left=0 \
     background.padding_right=0 \
     background.border_width=0 \
-    background.color=0x00000000 \
-    background.border_color=0x00000000 \
-    label.color=0x9ff5f7fa
+    background.color="$TRANSPARENT" \
+    background.border_color="$TRANSPARENT" \
+    label.color="$TEXT_DIM"
 fi
