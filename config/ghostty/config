@@ -24,7 +24,6 @@ cursor-style = "block"
 # Custom shaders
 custom-shader = ~/.config/ghostty/shaders/aurora.glsl
 custom-shader = ~/.config/ghostty/shaders/liquid_glass_focus.glsl
-custom-shader = ~/.config/ghostty/shaders/rain.glsl
 custom-shader = ~/.config/ghostty/shaders/cursor_tail.glsl
 custom-shader = ~/.config/ghostty/shaders/ripple_rectangle_cursor.glsl
 custom-shader-animation = true
