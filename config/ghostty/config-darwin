@@ -36,6 +36,8 @@ right-click-action = "context-menu"
 
 # Custom shaders
 custom-shader = ~/.config/ghostty/shaders/aurora.glsl
+custom-shader = ~/.config/ghostty/shaders/cursor_warp.glsl
+custom-shader = ~/.config/ghostty/shaders/ripple_cursor.glsl
 custom-shader-animation = true
 
 # Quick terminal
