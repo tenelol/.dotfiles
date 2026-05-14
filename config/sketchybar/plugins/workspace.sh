@@ -2,8 +2,7 @@
 
 SKETCHYBAR_BIN="/opt/homebrew/bin/sketchybar"
 YABAI_BIN="/run/current-system/sw/bin/yabai"
-STATE_FILE="${TMPDIR:-/tmp}/sketchybar/focused_workspace"
-SID="${NAME#space.}"
+SID="${SID:-${NAME#space.}}"
 ANIMATION=tanh
 ANIMATION_DURATION=12
 TRANSPARENT=0x00000000
@@ -12,21 +11,30 @@ TEXT_DIM=0xa8f5f7fa
 TEXT_STRONG=0xffffffff
 ACCENT=0xff8bd5ff
 
-focused_workspace="$FOCUSED"
+selected="$SELECTED"
 
-if [ -z "$focused_workspace" ] && [ -r "$STATE_FILE" ]; then
-  IFS= read -r focused_workspace < "$STATE_FILE"
-fi
+selected_is_true() {
+  case "$selected" in
+    true|on|1|yes) return 0 ;;
+    *) return 1 ;;
+  esac
+}
 
-if [ -z "$focused_workspace" ]; then
+if [ -z "$selected" ]; then
   focused_workspace="$(
     "$YABAI_BIN" -m query --spaces --space 2>/dev/null \
       | sed -nE 's/.*"index"[[:space:]]*:[[:space:]]*([0-9]+).*/\1/p' \
       | head -n 1
   )"
+
+  if [ "$SID" = "$focused_workspace" ]; then
+    selected=true
+  else
+    selected=false
+  fi
 fi
 
-if [ "$SENDER" = "mouse.entered" ] && [ "$SID" != "$focused_workspace" ]; then
+if [ "$SENDER" = "mouse.entered" ] && ! selected_is_true; then
   "$SKETCHYBAR_BIN" --set "$NAME" \
     width=18 \
     padding_left=3 \
@@ -46,7 +54,7 @@ if [ "$SENDER" = "mouse.entered" ] && [ "$SID" != "$focused_workspace" ]; then
   exit 0
 fi
 
-if [ "$SENDER" = "mouse.exited" ] && [ "$SID" != "$focused_workspace" ]; then
+if [ "$SENDER" = "mouse.exited" ] && ! selected_is_true; then
   "$SKETCHYBAR_BIN" --set "$NAME" \
     width=18 \
     padding_left=3 \
@@ -66,7 +74,7 @@ if [ "$SENDER" = "mouse.exited" ] && [ "$SID" != "$focused_workspace" ]; then
   exit 0
 fi
 
-if [ "$SID" = "$focused_workspace" ]; then
+if selected_is_true; then
   "$SKETCHYBAR_BIN" --animate "$ANIMATION" 14 --set "$NAME" \
     width=18 \
     padding_left=3 \

@@ -51,7 +51,7 @@ delib.module {
       };
 
       extraConfig = ''
-        for sid in 1 2 3 4 5 6 7 8 9; do
+        yabai -m query --spaces 2>/dev/null | /usr/bin/python3 -c 'import json, sys; [print(space["index"]) for space in json.load(sys.stdin) if isinstance(space.get("index"), int)]' 2>/dev/null | while read -r sid; do
           yabai -m space "$sid" --label "$sid" 2>/dev/null || true
         done
 
@@ -65,16 +65,15 @@ delib.module {
         yabai -m rule --add label=calculator app='Calculator' manage=off
         yabai -m rule --add label=finder_dialogs app='Finder' title='^(Copy|Move|Info|Preferences)' manage=off
 
-        for signal in sketchybar_space_changed sketchybar_display_changed sketchybar_space_created sketchybar_space_destroyed; do
+        for signal in sketchybar_display_changed sketchybar_space_created sketchybar_space_destroyed; do
           yabai -m signal --remove "$signal" 2>/dev/null || true
         done
 
-        yabai -m signal --add label=sketchybar_space_changed event=space_changed action='/opt/homebrew/bin/sketchybar --trigger yabai_space_change FOCUSED=$YABAI_SPACE_INDEX PREVIOUS=$YABAI_RECENT_SPACE_INDEX'
-        yabai -m signal --add label=sketchybar_display_changed event=display_changed action='/opt/homebrew/bin/sketchybar --trigger yabai_space_change REFRESH=all'
+        yabai -m signal --add label=sketchybar_display_changed event=display_changed action='/opt/homebrew/bin/sketchybar --reload'
         yabai -m signal --add label=sketchybar_space_created event=space_created action='/opt/homebrew/bin/sketchybar --reload'
         yabai -m signal --add label=sketchybar_space_destroyed event=space_destroyed action='/opt/homebrew/bin/sketchybar --reload'
 
-        /opt/homebrew/bin/sketchybar --trigger yabai_space_change 2>/dev/null || true
+        /opt/homebrew/bin/sketchybar --reload 2>/dev/null || true
       '';
     };
 
