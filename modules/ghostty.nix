@@ -74,6 +74,7 @@ delib.module {
     xdg.configFile = {
       "ghostty/config".source = ghosttyConfig;
       "ghostty/shaders/aurora.glsl".source = ghosttyAuroraShader;
+      "ghostty/shaders/rain_background.glsl".source = ../config/ghostty/shaders/rain_background.glsl;
       "ghostty/shaders/liquid_glass_focus.glsl".source =
         ../config/ghostty/shaders/liquid_glass_focus.glsl;
       "ghostty/shaders/cursor_tail.glsl".source = ghosttyCursorTailShader;
