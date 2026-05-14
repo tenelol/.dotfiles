@@ -1,6 +1,6 @@
-const float RAIN_SLANT = 0.105;
-const float RAIN_ALPHA = 0.24;
-const float RAIN_TEXT_DODGE = 0.42;
+const float RAIN_SLANT = 0.18;
+const float RAIN_ALPHA = 0.42;
+const float RAIN_TEXT_DODGE = 0.50;
 
 float hash12(vec2 p) {
     vec3 p3 = fract(vec3(p.xyx) * 0.1031);
@@ -11,7 +11,6 @@ float hash12(vec2 p) {
 float drizzleLayer(vec2 p, float columns, float rows, float speed, float density, float width, float dropLength, float seed) {
     vec2 rp = p;
     rp.y -= iTime * speed;
-    rp.x -= rp.y * RAIN_SLANT;
 
     vec2 grid = vec2(columns, rows);
     vec2 cell = floor(rp * grid + vec2(seed, seed * 1.37));
@@ -22,26 +21,28 @@ float drizzleLayer(vec2 p, float columns, float rows, float speed, float density
     float centerX = mix(0.22, 0.78, hash12(cell + vec2(seed * 7.31, seed * 0.43)));
     float wobble = (hash12(cell + vec2(seed * 9.17, seed * 4.61)) - 0.5) * 0.035;
 
-    float lineMask = 1.0 - smoothstep(width, width * 2.6, abs(local.x - centerX - wobble));
-    float topFade = smoothstep(0.0, 0.12, local.y);
-    float bottomFade = 1.0 - smoothstep(dropLength - 0.10, dropLength, local.y);
+    float alongDrop = clamp(local.y / dropLength, 0.0, 1.0);
+    float streakX = centerX + (alongDrop - 0.5) * RAIN_SLANT + wobble;
+    float lineMask = 1.0 - smoothstep(width, width * 2.2, abs(local.x - streakX));
+    float topFade = smoothstep(0.0, 0.08, local.y);
+    float bottomFade = 1.0 - smoothstep(dropLength - 0.14, dropLength, local.y);
     float bodyMask = topFade * bottomFade * step(local.y, dropLength);
-    float headGlow = 1.0 - smoothstep(0.0, 0.075, abs(local.y - dropLength * 0.86));
-    float brightness = mix(0.55, 1.0, clamp(local.y / dropLength, 0.0, 1.0));
+    float headGlow = 1.0 - smoothstep(0.0, 0.095, abs(local.y - dropLength * 0.88));
+    float brightness = mix(0.68, 1.0, alongDrop);
 
-    return activeDrop * lineMask * max(bodyMask * brightness, headGlow * 0.28);
+    return activeDrop * lineMask * max(bodyMask * brightness, headGlow * 0.22);
 }
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     vec2 uv = fragCoord.xy / iResolution.xy;
     float aspect = iResolution.x / iResolution.y;
-    vec2 p = vec2(uv.x * aspect, 1.0 - uv.y);
+    vec2 p = vec2(uv.x * aspect, uv.y);
     vec4 baseColor = texture(iChannel0, uv);
 
     float rain = 0.0;
-    rain += drizzleLayer(p, 42.0, 72.0, 0.11, 0.28, 0.020, 0.34, 1.0) * 0.42;
-    rain += drizzleLayer(p, 58.0, 96.0, 0.16, 0.22, 0.016, 0.29, 7.0) * 0.34;
-    rain += drizzleLayer(p, 76.0, 128.0, 0.21, 0.16, 0.013, 0.24, 13.0) * 0.24;
+    rain += drizzleLayer(p, 28.0, 28.0, 0.19, 0.34, 0.038, 0.52, 1.0) * 0.48;
+    rain += drizzleLayer(p, 38.0, 38.0, 0.27, 0.26, 0.030, 0.46, 7.0) * 0.34;
+    rain += drizzleLayer(p, 50.0, 52.0, 0.34, 0.18, 0.024, 0.40, 13.0) * 0.22;
     rain = clamp(rain, 0.0, 1.0);
 
     float textMask = smoothstep(0.18, 0.86, baseColor.a);
