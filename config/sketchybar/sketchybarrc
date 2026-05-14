@@ -1,6 +1,7 @@
 #!/bin/bash
 
 SKETCHYBAR_BIN="/opt/homebrew/bin/sketchybar"
+YABAI_BIN="/run/current-system/sw/bin/yabai"
 PLUGIN_DIR="$CONFIG_DIR/plugins"
 
 space_key_code() {
@@ -25,11 +26,11 @@ bar=(
   y_offset=0
   corner_radius=0
   blur_radius=36
-  color=0xd8181a20
+  color=0xd814171d
   border_width=0
-  border_color=0x30d7f7ff
-  padding_left=10
-  padding_right=10
+  border_color=0x18ffffff
+  padding_left=14
+  padding_right=14
   sticky=on
   topmost=window
   shadow=off
@@ -41,20 +42,20 @@ default=(
   updates=when_shown
   drawing=on
   icon.drawing=off
-  label.color=0xfff5f7fa
+  label.color=0xd8f5f7fa
   label.highlight_color=0xffffffff
-  label.font="CaskaydiaCove Nerd Font:SemiBold:12.0"
-  label.padding_left=10
-  label.padding_right=10
-  background.drawing=on
-  background.height=28
-  background.corner_radius=6
-  background.color=0x1affffff
-  background.border_width=1
-  background.border_color=0x14ffffff
+  label.font="CaskaydiaCove Nerd Font:Regular:12.0"
+  label.padding_left=8
+  label.padding_right=8
+  background.drawing=off
+  background.height=24
+  background.corner_radius=12
+  background.color=0x00000000
+  background.border_width=0
+  background.border_color=0x00000000
   blur_radius=0
-  padding_left=3
-  padding_right=3
+  padding_left=2
+  padding_right=2
 )
 "$SKETCHYBAR_BIN" --default "${default[@]}"
 
@@ -63,7 +64,23 @@ default=(
 for sid in 1 2 3 4 5 6 7 8 9; do
   key_code="$(space_key_code "$sid")"
   item=(
+    width=18
+    padding_left=3
+    padding_right=3
     label="$sid"
+    label.width=18
+    label.align=center
+    label.color=0xaef5f7fa
+    label.padding_left=0
+    label.padding_right=0
+    background.drawing=on
+    background.height=2
+    background.corner_radius=2
+    background.padding_left=0
+    background.padding_right=0
+    background.color=0x00000000
+    background.border_color=0x00000000
+    background.y_offset=-11
     script="$PLUGIN_DIR/workspace.sh"
     click_script="osascript -e 'tell application \"System Events\" to key code $key_code using control down'"
   )
@@ -74,12 +91,12 @@ for sid in 1 2 3 4 5 6 7 8 9; do
 done
 
 front_app=(
-  width=220
-  label.max_chars=24
+  width=180
+  label.max_chars=20
   label.align=left
-  label.color=0xfff5f7fa
-  background.color=0x14121418
-  background.border_color=0x20ffffff
+  label.color=0xcff5f7fa
+  label.font="CaskaydiaCove Nerd Font:SemiBold:12.0"
+  background.drawing=off
   script="$PLUGIN_DIR/front_app.sh"
 )
 "$SKETCHYBAR_BIN" --add item front_app left \
@@ -88,8 +105,10 @@ front_app=(
 
 battery=(
   update_freq=60
-  background.color=0x15121418
-  background.border_color=0x18ffffff
+  background.drawing=off
+  background.height=24
+  background.corner_radius=12
+  background.border_width=1
   label.padding_left=0
   script="$PLUGIN_DIR/battery.sh"
 )
@@ -99,9 +118,8 @@ battery=(
 
 clock=(
   update_freq=30
-  background.color=0x15121418
-  background.border_color=0x18ffffff
-  label.color=0xfff5f7fa
+  background.drawing=off
+  label.color=0xd8f5f7fa
   label.padding_left=0
   script="$PLUGIN_DIR/clock.sh"
 )
@@ -109,4 +127,15 @@ clock=(
                   --set clock "${clock[@]}"
 
 "$SKETCHYBAR_BIN" --update
-"$SKETCHYBAR_BIN" --trigger yabai_space_change
+
+focused_workspace="$(
+  "$YABAI_BIN" -m query --spaces --space 2>/dev/null \
+    | sed -nE 's/.*"index"[[:space:]]*:[[:space:]]*([0-9]+).*/\1/p' \
+    | head -n 1
+)"
+
+if [ -n "$focused_workspace" ]; then
+  "$SKETCHYBAR_BIN" --trigger yabai_space_change FOCUSED="$focused_workspace"
+else
+  "$SKETCHYBAR_BIN" --trigger yabai_space_change
+fi
