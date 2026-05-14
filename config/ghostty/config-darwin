@@ -34,6 +34,10 @@ mouse-hide-while-typing = true
 copy-on-select = false
 right-click-action = "context-menu"
 
+# Cursor smear shader
+custom-shader = "~/.config/ghostty/shaders/cursor-smear.glsl"
+custom-shader-animation = true
+
 # Quick terminal
 keybind = "ctrl+shift+space=toggle_quick_terminal"
 quick-terminal-position = "bottom"
