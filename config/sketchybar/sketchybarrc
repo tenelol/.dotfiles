@@ -12,38 +12,19 @@ TEXT_DIM=0xa8f5f7fa
 TEXT_MUTED=0xcff5f7fa
 TEXT_STRONG=0xffffffff
 
-space_click_script() {
-  printf "%s" "/opt/homebrew/bin/hs -q -c 'yabaiFocusSpace($1)'"
+space_key_code() {
+  case "$1" in
+    1) printf 18 ;;
+    2) printf 19 ;;
+    3) printf 20 ;;
+    4) printf 21 ;;
+    5) printf 23 ;;
+    6) printf 22 ;;
+    7) printf 26 ;;
+    8) printf 28 ;;
+    9) printf 25 ;;
+  esac
 }
-
-display_space_rows="$(
-  "$YABAI_BIN" -m query --displays 2>/dev/null \
-    | /usr/bin/python3 -c '
-import json
-import sys
-
-try:
-    displays = json.load(sys.stdin)
-except Exception:
-    displays = []
-
-for display in sorted(displays, key=lambda item: item.get("index", 0)):
-    display_index = display.get("index")
-    if not isinstance(display_index, int):
-        continue
-    for space_index in display.get("spaces", []):
-        if isinstance(space_index, int):
-            print(f"{display_index} {space_index}")
-'
-)"
-
-if [ -z "$display_space_rows" ]; then
-  display_space_rows="$(
-    for sid in 1 2 3 4 5 6 7 8 9; do
-      printf '0 %s\n' "$sid"
-    done
-  )"
-fi
 
 bar=(
   position=top
@@ -86,11 +67,11 @@ default=(
 )
 "$SKETCHYBAR_BIN" --default "${default[@]}"
 
-while read -r did sid; do
-  [ -n "$did" ] && [ -n "$sid" ] || continue
-  click_script="$(space_click_script "$sid")"
+"$SKETCHYBAR_BIN" --add event yabai_space_change
+
+for sid in 1 2 3 4 5 6 7 8 9; do
+  key_code="$(space_key_code "$sid")"
   item=(
-    updates=on
     width=18
     padding_left=3
     padding_right=3
@@ -108,17 +89,14 @@ while read -r did sid; do
     background.color="$TRANSPARENT"
     background.border_color="$TRANSPARENT"
     background.y_offset=-11
-    space="$sid"
     script="$PLUGIN_DIR/workspace.sh"
-    click_script="$click_script"
+    click_script="osascript -e 'tell application \"System Events\" to key code $key_code using control down'"
   )
 
-  "$SKETCHYBAR_BIN" --add space "space.$sid" left \
+  "$SKETCHYBAR_BIN" --add item "space.$sid" left \
                     --set "space.$sid" "${item[@]}" \
-                    --subscribe "space.$sid" space_change mouse.entered mouse.exited
-done <<EOF
-$display_space_rows
-EOF
+                    --subscribe "space.$sid" mouse.entered mouse.exited
+done
 
 spaces=(
   background.drawing=on
@@ -130,23 +108,20 @@ spaces=(
   background.padding_left=6
   background.padding_right=6
 )
+"$SKETCHYBAR_BIN" --add bracket spaces '/space\..*/' \
+                  --set spaces "${spaces[@]}"
 
-for did in $(printf '%s\n' "$display_space_rows" | /usr/bin/awk '{ print $1 }' | /usr/bin/sort -n | /usr/bin/uniq); do
-  bracket_members=()
-
-  while read -r row_did sid; do
-    [ "$row_did" = "$did" ] || continue
-    bracket_members+=("space.$sid")
-  done <<EOF
-$display_space_rows
-EOF
-
-  [ "${#bracket_members[@]}" -gt 0 ] || continue
-
-  bracket_name="spaces.$did"
-  "$SKETCHYBAR_BIN" --add bracket "$bracket_name" "${bracket_members[@]}" \
-                    --set "$bracket_name" "${spaces[@]}"
-done
+space_observer=(
+  drawing=off
+  updates=on
+  width=0
+  padding_left=0
+  padding_right=0
+  script="$PLUGIN_DIR/spaces.sh"
+)
+"$SKETCHYBAR_BIN" --add item space_observer left \
+                  --set space_observer "${space_observer[@]}" \
+                  --subscribe space_observer yabai_space_change
 
 front_app=(
   width=190
@@ -193,22 +168,14 @@ clock=(
 
 "$SKETCHYBAR_BIN" --update
 
-"$YABAI_BIN" -m query --spaces 2>/dev/null \
-  | /usr/bin/python3 -c '
-import json
-import sys
+focused_workspace="$(
+  "$YABAI_BIN" -m query --spaces --space 2>/dev/null \
+    | sed -nE 's/.*"index"[[:space:]]*:[[:space:]]*([0-9]+).*/\1/p' \
+    | head -n 1
+)"
 
-try:
-    spaces = json.load(sys.stdin)
-except Exception:
-    spaces = []
-
-for space in spaces:
-    space_index = space.get("index")
-    if isinstance(space_index, int):
-        selected = "true" if space.get("is-visible") else "false"
-        print(f"{space_index} {selected}")
-' \
-  | while read -r sid selected; do
-    NAME="space.$sid" SID="$sid" SELECTED="$selected" SENDER=forced "$PLUGIN_DIR/workspace.sh"
-  done
+if [ -n "$focused_workspace" ]; then
+  "$SKETCHYBAR_BIN" --trigger yabai_space_change FOCUSED="$focused_workspace" REFRESH=all
+else
+  "$SKETCHYBAR_BIN" --trigger yabai_space_change REFRESH=all
+fi
