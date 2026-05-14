@@ -24,20 +24,19 @@ let
           --replace-fail 'const float GLOW_OPACITY = 1.0;' 'const float GLOW_OPACITY = 0.45;' \
           --replace-fail 'fragColor = vec4(finalColor, terminalColor.a);' 'fragColor = vec4(finalColor, max(terminalColor.a, finalSnakeAlpha * GLOW_OPACITY));'
       '';
-  ghosttyCursorWarpShader =
-    pkgs.runCommand "ghostty-cursor-warp-subtle.glsl"
+  ghosttyCursorTailShader =
+    pkgs.runCommand "ghostty-cursor-tail-subtle.glsl"
       {
         src = pkgs.fetchurl {
-          url = "https://raw.githubusercontent.com/sahaj-b/ghostty-cursor-shaders/06d4e90fb5410e9c4d0b3131584060adddf89406/cursor_warp.glsl";
-          hash = "sha256-WJ9x9TfO6JCgfkCPE9Bi/32T3m2fdCyE5L3mEExdUfs=";
+          url = "https://raw.githubusercontent.com/sahaj-b/ghostty-cursor-shaders/06d4e90fb5410e9c4d0b3131584060adddf89406/cursor_tail.glsl";
+          hash = "sha256-CEEjiRG9USeW8i9c+FbFgt8Rzcrc11KFNHOfvH0soxI=";
         };
       }
       ''
         substitute "$src" "$out" \
           --replace-fail 'vec4 TRAIL_COLOR = vec4(sRGBToLinear(iCurrentCursorColor.rgb), iCurrentCursorColor.a);' 'vec4 TRAIL_COLOR = vec4(sRGBToLinear(iCurrentCursorColor.rgb), iCurrentCursorColor.a * 0.55);' \
-          --replace-fail 'const float DURATION = 0.2;' 'const float DURATION = 0.22;' \
-          --replace-fail 'const float THRESHOLD_MIN_DISTANCE = 1.5;' 'const float THRESHOLD_MIN_DISTANCE = 1.0;' \
-          --replace-fail 'const float FADE_ENABLED = 0.0;' 'const float FADE_ENABLED = 1.0;'
+          --replace-fail 'const float DURATION = 0.09;' 'const float DURATION = 0.13;' \
+          --replace-fail 'const float THRESHOLD_MIN_DISTANCE = 1.5;' 'const float THRESHOLD_MIN_DISTANCE = 1.0;'
       '';
   ghosttyRippleCursorShader =
     pkgs.runCommand "ghostty-ripple-cursor-subtle.glsl"
@@ -75,7 +74,7 @@ delib.module {
     xdg.configFile = {
       "ghostty/config".source = ghosttyConfig;
       "ghostty/shaders/aurora.glsl".source = ghosttyAuroraShader;
-      "ghostty/shaders/cursor_warp.glsl".source = ghosttyCursorWarpShader;
+      "ghostty/shaders/cursor_tail.glsl".source = ghosttyCursorTailShader;
       "ghostty/shaders/ripple_cursor.glsl".source = ghosttyRippleCursorShader;
     };
   };
