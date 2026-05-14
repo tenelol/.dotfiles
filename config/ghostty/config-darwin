@@ -35,11 +35,7 @@ copy-on-select = false
 right-click-action = "context-menu"
 
 # Custom shaders
-custom-shader = ~/.config/ghostty/shaders/crt.glsl
-custom-shader = ~/.config/ghostty/shaders/bettercrt.glsl
-custom-shader = ~/.config/ghostty/shaders/bloom.glsl
 custom-shader = ~/.config/ghostty/shaders/aurora.glsl
-custom-shader = ~/.config/ghostty/shaders/cursor_warp.glsl
 custom-shader-animation = true
 
 # Quick terminal
