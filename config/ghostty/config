@@ -20,9 +20,6 @@ mouse-hide-while-typing = true
 
 # Cursor
 cursor-style = "block"
-custom-shader-animation = true
-custom-shader = shaders/cursor_warp.glsl
-custom-shader = shaders/slash.glsl
 
 # Quick terminal
 keybind = "ctrl+shift+space=toggle_quick_terminal"
