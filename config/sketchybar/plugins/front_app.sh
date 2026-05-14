@@ -15,4 +15,6 @@ fi
 
 [ -n "$app_name" ] || exit 0
 
-"$SKETCHYBAR_BIN" --set "$NAME" label="$app_name"
+"$SKETCHYBAR_BIN" --set "$NAME" \
+  label="$app_name" \
+  label.color=0xcff5f7fa

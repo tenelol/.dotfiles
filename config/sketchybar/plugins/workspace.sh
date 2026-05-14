@@ -3,6 +3,8 @@
 SKETCHYBAR_BIN="/opt/homebrew/bin/sketchybar"
 YABAI_BIN="/run/current-system/sw/bin/yabai"
 SID="${NAME#space.}"
+ANIMATION=tanh
+ANIMATION_DURATION=12
 
 focused_workspace="$FOCUSED"
 
@@ -16,28 +18,74 @@ fi
 
 if [ "$SENDER" = "mouse.entered" ] && [ "$SID" != "$focused_workspace" ]; then
   "$SKETCHYBAR_BIN" --set "$NAME" \
-    background.color=0x2ad7f7ff \
-    background.border_color=0x45d7f7ff \
-    label.color=0xffffffff
+    width=18 \
+    padding_left=3 \
+    padding_right=3 \
+    label.width=18 \
+    label.align=center \
+    background.drawing=on \
+    background.height=2 \
+    background.corner_radius=2 \
+    background.padding_left=0 \
+    background.padding_right=0 \
+    background.border_width=0 \
+    background.color=0x00000000 \
+    background.border_color=0x00000000
+  "$SKETCHYBAR_BIN" --animate "$ANIMATION" "$ANIMATION_DURATION" --set "$NAME" \
+    label.color=0xd8f5f7fa
   exit 0
 fi
 
 if [ "$SENDER" = "mouse.exited" ] && [ "$SID" != "$focused_workspace" ]; then
   "$SKETCHYBAR_BIN" --set "$NAME" \
-    background.color=0x1affffff \
-    background.border_color=0x14ffffff \
-    label.color=0xc8f5f7fa
+    width=18 \
+    padding_left=3 \
+    padding_right=3 \
+    label.width=18 \
+    label.align=center \
+    background.drawing=on \
+    background.height=2 \
+    background.corner_radius=2 \
+    background.padding_left=0 \
+    background.padding_right=0 \
+    background.border_width=0 \
+    background.color=0x00000000 \
+    background.border_color=0x00000000
+  "$SKETCHYBAR_BIN" --animate "$ANIMATION" "$ANIMATION_DURATION" --set "$NAME" \
+    label.color=0x9ff5f7fa
   exit 0
 fi
 
 if [ "$SID" = "$focused_workspace" ]; then
-  "$SKETCHYBAR_BIN" --set "$NAME" \
+  "$SKETCHYBAR_BIN" --animate "$ANIMATION" 14 --set "$NAME" \
+    width=18 \
+    padding_left=3 \
+    padding_right=3 \
+    label.width=18 \
+    label.align=center \
+    background.drawing=on \
+    background.height=2 \
+    background.corner_radius=2 \
+    background.padding_left=0 \
+    background.padding_right=0 \
+    background.border_width=0 \
     background.color=0xffd7f7ff \
-    background.border_color=0xffffffff \
-    label.color=0xff111318
+    background.border_color=0x00000000 \
+    label.color=0xffffffff
 else
-  "$SKETCHYBAR_BIN" --set "$NAME" \
-    background.color=0x1affffff \
-    background.border_color=0x14ffffff \
-    label.color=0xc8f5f7fa
+  "$SKETCHYBAR_BIN" --animate "$ANIMATION" "$ANIMATION_DURATION" --set "$NAME" \
+    width=18 \
+    padding_left=3 \
+    padding_right=3 \
+    label.width=18 \
+    label.align=center \
+    background.drawing=on \
+    background.height=2 \
+    background.corner_radius=2 \
+    background.padding_left=0 \
+    background.padding_right=0 \
+    background.border_width=0 \
+    background.color=0x00000000 \
+    background.border_color=0x00000000 \
+    label.color=0x9ff5f7fa
 fi
