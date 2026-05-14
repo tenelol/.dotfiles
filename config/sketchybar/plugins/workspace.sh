@@ -2,6 +2,7 @@
 
 SKETCHYBAR_BIN="/opt/homebrew/bin/sketchybar"
 YABAI_BIN="/run/current-system/sw/bin/yabai"
+STATE_FILE="${TMPDIR:-/tmp}/sketchybar/focused_workspace"
 SID="${NAME#space.}"
 ANIMATION=tanh
 ANIMATION_DURATION=12
@@ -12,6 +13,10 @@ TEXT_STRONG=0xffffffff
 ACCENT=0xff8bd5ff
 
 focused_workspace="$FOCUSED"
+
+if [ -z "$focused_workspace" ] && [ -r "$STATE_FILE" ]; then
+  IFS= read -r focused_workspace < "$STATE_FILE"
+fi
 
 if [ -z "$focused_workspace" ]; then
   focused_workspace="$(
