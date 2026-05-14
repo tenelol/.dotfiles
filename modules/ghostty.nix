@@ -35,7 +35,7 @@ let
       ''
         substitute "$src" "$out" \
           --replace-fail 'vec4 TRAIL_COLOR = vec4(sRGBToLinear(iCurrentCursorColor.rgb), iCurrentCursorColor.a);' 'vec4 TRAIL_COLOR = vec4(sRGBToLinear(iCurrentCursorColor.rgb), iCurrentCursorColor.a * 0.55);' \
-          --replace-fail 'const float DURATION = 0.2;' 'const float DURATION = 0.15;' \
+          --replace-fail 'const float DURATION = 0.2;' 'const float DURATION = 0.22;' \
           --replace-fail 'const float THRESHOLD_MIN_DISTANCE = 1.5;' 'const float THRESHOLD_MIN_DISTANCE = 1.0;' \
           --replace-fail 'const float FADE_ENABLED = 0.0;' 'const float FADE_ENABLED = 1.0;'
       '';
