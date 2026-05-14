@@ -17,4 +17,4 @@ fi
 
 "$SKETCHYBAR_BIN" --set "$NAME" \
   label="$app_name" \
-  label.color=0xcff5f7fa
+  label.color=0xeef5f7fa
