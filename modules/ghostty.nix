@@ -17,10 +17,6 @@ delib.module {
   options = delib.singleEnableOption (!host.isServer);
 
   home.ifEnabled = {
-    xdg.configFile = {
-      "ghostty/config".source = ghosttyConfig;
-      "ghostty/shaders/cursor-smear.glsl".source =
-        ../config/ghostty/shaders/cursor-smear.glsl;
-    };
+    xdg.configFile."ghostty/config".source = ghosttyConfig;
   };
 }
