@@ -33,7 +33,7 @@ delib.module {
         display_arrangement_order = "horizontal";
 
         mouse_follows_focus = "off";
-        focus_follows_mouse = "autofocus";
+        focus_follows_mouse = "autoraise";
         window_origin_display = "focused";
         window_zoom_persist = "on";
 
