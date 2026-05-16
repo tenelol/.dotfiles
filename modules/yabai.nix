@@ -56,7 +56,7 @@ delib.module {
           yabai -m space "$sid" --label "$sid" 2>/dev/null || true
         done
 
-        for rule in system_settings system_preferences app_store calculator finder_dialogs; do
+        for rule in system_settings system_preferences app_store calculator finder_dialogs codex_pet_dialog; do
           yabai -m rule --remove "$rule" 2>/dev/null || true
         done
 
@@ -65,6 +65,7 @@ delib.module {
         yabai -m rule --add label=app_store app='App Store' manage=off
         yabai -m rule --add label=calculator app='Calculator' manage=off
         yabai -m rule --add label=finder_dialogs app='Finder' title='^(Copy|Move|Info|Preferences)' manage=off
+        yabai -m rule --add label=codex_pet_dialog app='^Codex$' title='^Codex$' role='AXWindow' subrole='AXDialog' manage=off
 
         for signal in sketchybar_space_changed sketchybar_display_changed sketchybar_space_created sketchybar_space_destroyed; do
           yabai -m signal --remove "$signal" 2>/dev/null || true
