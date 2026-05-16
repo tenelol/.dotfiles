@@ -319,6 +319,7 @@ local function resetZoomScrollMode()
 
   zoomScrollModeActive = false
   zoomScrollAccumulator = 0
+  hs.alert.show("Zoom scroll off", 0.6)
   return true
 end
 
@@ -335,6 +336,7 @@ local function toggleZoomScrollMode()
 
   zoomScrollModeActive = true
   zoomScrollAccumulator = 0
+  hs.alert.show("Zoom scroll", 0.6)
 
   return true
 end
@@ -367,6 +369,7 @@ local function applyZoomScrollStep(direction)
   if zoomScaleSteps == 0 then
     zoomScrollModeActive = false
     zoomScrollAccumulator = 0
+    hs.alert.show("Zoom scroll off", 0.6)
   end
 
   return true
@@ -430,7 +433,7 @@ _G.forcePressZoomTap = hs.eventtap.new({ eventTypes.gesture }, function(event)
     return true
   end
 
-  if stage == 0 then
+  if stage < 2 then
     forcePressActive = false
   end
 
