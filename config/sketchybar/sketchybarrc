@@ -141,6 +141,7 @@ front_app=(
 music=(
   updates=on
   update_freq=5
+  display=2
   drawing=off
   width=260
   icon.drawing=on
