@@ -43,7 +43,7 @@ delib.module {
         "codex-app"
         "cursor"
         "discord"
-        "docker"
+        "docker-desktop"
         "ghostty"
         "google-chrome"
         "microsoft-office"
