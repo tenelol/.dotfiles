@@ -23,7 +23,7 @@ delib.module {
           "style=round"
           "width=4.0"
           "hidpi=on"
-          "active_color=0xff334155"
+          "active_color=gradient(top_left=0xffff5f8f,bottom_right=0xff00d4ff)"
           "inactive_color=0xff334155"
           "background_color=0x00000000"
           "blacklist=Codex"
