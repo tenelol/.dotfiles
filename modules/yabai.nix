@@ -42,7 +42,7 @@ delib.module {
         bottom_padding = 0;
         left_padding = 0;
         right_padding = 0;
-        window_gap = 0;
+        window_gap = 6;
         external_bar = "all:42:0";
 
         mouse_modifier = "alt";

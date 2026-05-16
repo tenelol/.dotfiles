@@ -23,8 +23,8 @@ delib.module {
           "style=round"
           "width=4.0"
           "hidpi=on"
-          "active_color=0xff1f2937"
-          "inactive_color=0xff1f2937"
+          "active_color=0xff334155"
+          "inactive_color=0xff334155"
           "background_color=0x00000000"
           "blacklist=Codex"
         ];
