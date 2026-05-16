@@ -52,6 +52,7 @@ delib.module {
         "spotify"
         "slack"
         "tailscale-app"
+        "thebrowsercompany-dia"
         "zed"
         "zen"
       ];
