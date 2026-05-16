@@ -11,10 +11,9 @@ local forcePressActive = false
 local lastZoomToggleAt = 0
 local debounceSeconds = 0.5
 local controlTapSuppressedUntil = 0
-local zoomScrollModeActive = false
+local systemZoomActive = false
 local zoomScrollAccumulator = 0
 local lastZoomScaleStepAt = 0
-local zoomScaleSteps = 0
 
 hs.autoLaunch(true)
 pcall(function()
@@ -46,8 +45,6 @@ local tmuxPrefixConfig = {
 local zoomScrollConfig = {
   stepThreshold = 60,
   stepIntervalSeconds = 0.12,
-  maxSteps = 12,
-  zoomInDirection = 1,
 }
 
 local leftCommandKeyCode = keycodes.map.cmd
@@ -309,65 +306,13 @@ local function sendSystemZoomShortcut(key)
   return true
 end
 
-local function resetZoomScrollMode()
-  while zoomScaleSteps > 0 do
-    if not sendSystemZoomShortcut("-") then
-      return false
-    end
-    zoomScaleSteps = zoomScaleSteps - 1
+local function toggleSystemZoom()
+  if not sendSystemZoomShortcut("8") then
+    return false
   end
 
-  zoomScrollModeActive = false
+  systemZoomActive = not systemZoomActive
   zoomScrollAccumulator = 0
-  return true
-end
-
-local function toggleZoomScrollMode()
-  if not systemZoomHotkeysEnabled() then
-    hs.alert.show("Enable Accessibility > Zoom > keyboard shortcuts for global zoom.", 5)
-    hs.urlevent.openURL("x-apple.systempreferences:com.apple.Accessibility-Settings.extension")
-    return false
-  end
-
-  if zoomScrollModeActive then
-    return resetZoomScrollMode()
-  end
-
-  zoomScrollModeActive = true
-  zoomScrollAccumulator = 0
-
-  return true
-end
-
-local function applyZoomScrollStep(direction)
-  if direction > 0 then
-    if zoomScaleSteps >= zoomScrollConfig.maxSteps then
-      return true
-    end
-
-    if not sendSystemZoomShortcut("=") then
-      return false
-    end
-
-    zoomScaleSteps = zoomScaleSteps + 1
-    return true
-  end
-
-  if zoomScaleSteps == 0 then
-    zoomScrollModeActive = false
-    zoomScrollAccumulator = 0
-    return false
-  end
-
-  if not sendSystemZoomShortcut("-") then
-    return false
-  end
-
-  zoomScaleSteps = zoomScaleSteps - 1
-  if zoomScaleSteps == 0 then
-    zoomScrollModeActive = false
-    zoomScrollAccumulator = 0
-  end
 
   return true
 end
@@ -424,7 +369,7 @@ _G.forcePressZoomTap = hs.eventtap.new({ eventTypes.gesture }, function(event)
     if not forcePressActive and now - lastZoomToggleAt > debounceSeconds then
       forcePressActive = true
       lastZoomToggleAt = now
-      toggleZoomScrollMode()
+      toggleSystemZoom()
     end
 
     return true
@@ -437,9 +382,9 @@ _G.forcePressZoomTap = hs.eventtap.new({ eventTypes.gesture }, function(event)
   return false
 end)
 
--- In zoom scroll mode, use two-finger vertical trackpad scroll to change zoom scale.
+-- While zoomed in, use two-finger vertical trackpad scroll to change zoom scale.
 _G.forcePressZoomScaleTap = hs.eventtap.new({ scrollWheelEvent }, function(event)
-  if not zoomScrollModeActive then
+  if not systemZoomActive then
     return false
   end
 
@@ -457,7 +402,7 @@ _G.forcePressZoomScaleTap = hs.eventtap.new({ scrollWheelEvent }, function(event
     return false
   end
 
-  zoomScrollAccumulator = zoomScrollAccumulator + (delta * zoomScrollConfig.zoomInDirection)
+  zoomScrollAccumulator = zoomScrollAccumulator + delta
 
   if math.abs(zoomScrollAccumulator) < zoomScrollConfig.stepThreshold then
     return true
@@ -469,11 +414,14 @@ _G.forcePressZoomScaleTap = hs.eventtap.new({ scrollWheelEvent }, function(event
   end
 
   lastZoomScaleStepAt = now
-  local direction = zoomScrollAccumulator > 0 and 1 or -1
-  local consumed = applyZoomScrollStep(direction)
+  if zoomScrollAccumulator > 0 then
+    sendSystemZoomShortcut("=")
+  else
+    sendSystemZoomShortcut("-")
+  end
 
   zoomScrollAccumulator = 0
-  return consumed
+  return true
 end)
 
 -- Ignore drag motion while a force press is active so zooming does not also
