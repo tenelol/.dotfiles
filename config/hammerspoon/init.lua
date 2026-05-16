@@ -4,9 +4,7 @@ local json = hs.json
 local keycodes = hs.keycodes
 local keyDownEvent = eventTypes.keyDown
 local flagsChangedEvent = eventTypes.flagsChanged
-local leftMouseDownEvent = eventTypes.leftMouseDown
 local leftMouseDraggedEvent = eventTypes.leftMouseDragged
-local leftMouseUpEvent = eventTypes.leftMouseUp
 local pressureEvent = eventTypes.pressure
 local scrollWheelEvent = eventTypes.scrollWheel
 local forcePressActive = false
@@ -52,8 +50,6 @@ local zoomScrollConfig = {
   maxSteps = 12,
   zoomInDirection = 1,
   forcePressureThreshold = 0.8,
-  touchForceThreshold = 0.85,
-  releaseForceThreshold = 0.2,
 }
 
 local leftCommandKeyCode = keycodes.map.cmd
@@ -426,22 +422,7 @@ local function scrollIsMomentum(event)
   return momentumPhase ~= 0
 end
 
-local function pressureDetailsIndicateForcePress(event)
-  if not pressureEvent then
-    return false
-  end
-
-  local eventType = event:getType()
-  local detailedType = event:getType(true)
-  if eventType ~= pressureEvent and detailedType ~= pressureEvent then
-    return false
-  end
-
-  local details = event:getTouchDetails()
-  if not details then
-    return false
-  end
-
+local function isForcePress(details)
   local stage = details.stage or 0
   local pressure = details.pressure or 0
   local stageTransition = details.stageTransition or 0
@@ -454,7 +435,15 @@ local function pressureDetailsIndicateForcePress(event)
     or behavior == "deepDrag"
 end
 
-local function pressureDetailsIndicateRelease(event)
+local function forcePressEnded(details)
+  local stage = details.stage or 0
+  local pressure = details.pressure or 0
+
+  return stage == 0 or pressure < 0.1
+end
+
+-- Keep the eventtap in a global so Hammerspoon does not collect it.
+_G.forcePressZoomTap = hs.eventtap.new({ eventTypes.gesture, pressureEvent }, function(event)
   if not pressureEvent then
     return false
   end
@@ -470,105 +459,7 @@ local function pressureDetailsIndicateRelease(event)
     return false
   end
 
-  local stage = details.stage or 0
-  local pressure = details.pressure or 0
-
-  return stage == 0 or pressure < 0.1
-end
-
-local function maxGestureTouchForce(event)
-  if event:getType() ~= eventTypes.gesture then
-    return nil, nil
-  end
-
-  local ok, touches = pcall(function()
-    return event:getTouches()
-  end)
-
-  if not ok or type(touches) ~= "table" then
-    return nil, nil
-  end
-
-  local maxForce = 0
-  local hasTouchingTrackpadTouch = false
-  for _, touch in ipairs(touches) do
-    if touch.type == "indirect" and touch.touching then
-      hasTouchingTrackpadTouch = true
-      maxForce = math.max(maxForce, touch.force or 0)
-    end
-  end
-
-  return maxForce, hasTouchingTrackpadTouch
-end
-
-local function gestureTouchIndicatesForcePress(event)
-  local maxForce, hasTouchingTrackpadTouch = maxGestureTouchForce(event)
-  return hasTouchingTrackpadTouch and maxForce >= zoomScrollConfig.touchForceThreshold
-end
-
-local function gestureTouchIndicatesRelease(event)
-  local maxForce, hasTouchingTrackpadTouch = maxGestureTouchForce(event)
-  if hasTouchingTrackpadTouch == nil then
-    return false
-  end
-
-  return (not hasTouchingTrackpadTouch) or maxForce <= zoomScrollConfig.releaseForceThreshold
-end
-
-local function mouseEventIndicatesForcePress(event)
-  local eventType = event:getType()
-  if eventType ~= leftMouseDownEvent and eventType ~= leftMouseDraggedEvent then
-    return false
-  end
-
-  local mousePressureProperty = eventProperties.mouseEventPressure
-  if not mousePressureProperty then
-    return false
-  end
-
-  local pressure = event:getProperty(mousePressureProperty) or 0
-  return pressure >= zoomScrollConfig.forcePressureThreshold
-end
-
-local function mouseEventIndicatesRelease(event)
-  local eventType = event:getType()
-  if eventType == leftMouseUpEvent then
-    return true
-  end
-
-  if eventType ~= leftMouseDraggedEvent then
-    return false
-  end
-
-  local mousePressureProperty = eventProperties.mouseEventPressure
-  if not mousePressureProperty then
-    return false
-  end
-
-  local pressure = event:getProperty(mousePressureProperty) or 0
-  return pressure <= zoomScrollConfig.releaseForceThreshold
-end
-
-local function isForcePress(event)
-  return pressureDetailsIndicateForcePress(event)
-    or gestureTouchIndicatesForcePress(event)
-    or mouseEventIndicatesForcePress(event)
-end
-
-local function forcePressEnded(event)
-  return pressureDetailsIndicateRelease(event)
-    or gestureTouchIndicatesRelease(event)
-    or mouseEventIndicatesRelease(event)
-end
-
-local forcePressEventTypes = { eventTypes.gesture, leftMouseDownEvent, leftMouseDraggedEvent, leftMouseUpEvent }
-if pressureEvent then
-  table.insert(forcePressEventTypes, pressureEvent)
-end
-
--- Keep the eventtap in a global so Hammerspoon does not collect it.
-_G.forcePressZoomTap = hs.eventtap.new(forcePressEventTypes, function(event)
-  if isForcePress(event) then
+  if isForcePress(details) then
     local now = hs.timer.secondsSinceEpoch()
     if not forcePressActive and now - lastZoomToggleAt > debounceSeconds then
       forcePressActive = true
@@ -579,7 +470,7 @@ _G.forcePressZoomTap = hs.eventtap.new(forcePressEventTypes, function(event)
     return true
   end
 
-  if forcePressEnded(event) then
+  if forcePressEnded(details) then
     forcePressActive = false
   end
 
