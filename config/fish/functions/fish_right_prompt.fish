@@ -1,15 +1,10 @@
 function fish_right_prompt
         set -l cmd_status $status
-        set -l tn_fg c0caf5
-        set -l tn_blue 7aa2f7
-        set -l tn_cyan 7dcfff
-        set -l tn_green 9ece6a
-        set -l tn_magenta bb9af7
-        set -l tn_red f7768e
-        set -l tn_yellow e0af68
+        set -l prompt_white ffffff
+        set -l prompt_blue 7aa2f7
 
         if test $cmd_status -ne 0
-                echo -n (set_color --bold $tn_red)"✘ $cmd_status"
+                echo -n (set_color --bold $prompt_blue)"✘ $cmd_status"
         end
 
         if not command -sq git
@@ -121,46 +116,42 @@ function fish_right_prompt
         end
 
         if test -n "$branch"
-                if test $branch_detached -ne 0
-                        set_color --bold $tn_magenta
-                else
-                        set_color --bold $tn_green
-                end
+                set_color --bold $prompt_blue
                 echo -n " $branch"
         end
         if test -n "$commit"
-                echo -n ' '(set_color $tn_yellow)"$commit"
+                echo -n ' '(set_color $prompt_blue)"$commit"
         end
         if test -n "$action"
                 set_color normal
-                echo -n (set_color $tn_fg)':'(set_color --bold $tn_red)"$action"
+                echo -n (set_color $prompt_white)':'(set_color --bold $prompt_blue)"$action"
         end
         if test $status_ahead -ne 0
-                echo -n ' '(set_color $tn_magenta)'⬆'
+                echo -n ' '(set_color $prompt_blue)'⬆'
         end
         if test $status_behind -ne 0
-                echo -n ' '(set_color $tn_magenta)'⬇'
+                echo -n ' '(set_color $prompt_blue)'⬇'
         end
         if test $status_stashed -ne 0
-                echo -n ' '(set_color $tn_cyan)'✭'
+                echo -n ' '(set_color $prompt_blue)'✭'
         end
         if test $status_added -ne 0
-                echo -n ' '(set_color $tn_green)'✚'
+                echo -n ' '(set_color $prompt_blue)'✚'
         end
         if test $status_deleted -ne 0
-                echo -n ' '(set_color $tn_red)'✖'
+                echo -n ' '(set_color $prompt_blue)'✖'
         end
         if test $status_modified -ne 0
-                echo -n ' '(set_color $tn_blue)'✱'
+                echo -n ' '(set_color $prompt_blue)'✱'
         end
         if test $status_renamed -ne 0
-                echo -n ' '(set_color $tn_magenta)'➜'
+                echo -n ' '(set_color $prompt_blue)'➜'
         end
         if test $status_unmerged -ne 0
-                echo -n ' '(set_color $tn_yellow)'═'
+                echo -n ' '(set_color $prompt_blue)'═'
         end
         if test $status_untracked -ne 0
-                echo -n ' '(set_color $tn_fg)'◼'
+                echo -n ' '(set_color $prompt_blue)'◼'
         end
 
         set_color normal

@@ -1,4 +1,5 @@
 local plugin = require("nix-plugin")
+local theme = require("core.theme")
 
 return {
   plugin.spec("noice-nvim", {
@@ -7,7 +8,7 @@ return {
       local notify = require("notify")
 
       notify.setup({
-        background_colour = "#000000",
+        background_colour = theme.bg,
         render = "compact",
         stages = "fade",
         timeout = 2000,

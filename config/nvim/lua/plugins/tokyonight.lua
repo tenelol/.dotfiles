@@ -1,6 +1,12 @@
 local plugin = require("nix-plugin")
 local theme = require("core.theme")
 
+local function set_highlights(hl, groups, spec)
+  for _, group in ipairs(groups) do
+    hl[group] = spec
+  end
+end
+
 return {
   plugin.spec("tokyonight-nvim", {
     lazy = false,
@@ -22,7 +28,167 @@ return {
           sidebars = "transparent",
           floats = "transparent",
         },
+        on_colors = function(c)
+          local white_keys = { "fg", "fg_dark", "fg_float", "fg_sidebar" }
+          local blue_keys = {
+            "blue",
+            "blue0",
+            "blue1",
+            "blue2",
+            "blue5",
+            "blue6",
+            "blue7",
+            "comment",
+            "cyan",
+            "dark3",
+            "dark5",
+            "fg_gutter",
+            "green",
+            "green1",
+            "green2",
+            "magenta",
+            "magenta2",
+            "orange",
+            "purple",
+            "red",
+            "red1",
+            "teal",
+            "yellow",
+            "error",
+            "todo",
+            "warning",
+            "info",
+            "hint",
+          }
+
+          for _, key in ipairs(white_keys) do
+            c[key] = theme.fg
+          end
+          for _, key in ipairs(blue_keys) do
+            c[key] = theme.blue
+          end
+
+          c.border_highlight = theme.blue
+          c.bg_visual = theme.bg_selection
+          c.bg_search = theme.blue
+          c.diff = {
+            add = theme.bg_selection,
+            delete = theme.bg_selection,
+            change = theme.bg_selection,
+            text = theme.blue,
+          }
+          c.git = {
+            add = theme.blue,
+            change = theme.blue,
+            delete = theme.blue,
+            ignore = theme.blue,
+          }
+          c.rainbow = {
+            theme.blue,
+            theme.fg,
+          }
+          c.terminal = {
+            black = theme.bg,
+            black_bright = theme.blue,
+            red = theme.blue,
+            red_bright = theme.blue,
+            green = theme.blue,
+            green_bright = theme.blue,
+            yellow = theme.blue,
+            yellow_bright = theme.blue,
+            blue = theme.blue,
+            blue_bright = theme.blue,
+            magenta = theme.blue,
+            magenta_bright = theme.blue,
+            cyan = theme.blue,
+            cyan_bright = theme.blue,
+            white = theme.fg,
+            white_bright = theme.fg,
+          }
+        end,
         on_highlights = function(hl, _)
+          set_highlights(hl, {
+            "Normal",
+            "NormalFloat",
+            "MsgArea",
+            "Identifier",
+            "Delimiter",
+            "@variable",
+            "@variable.builtin",
+            "@variable.member",
+            "@property",
+            "@punctuation",
+            "@punctuation.bracket",
+            "@punctuation.delimiter",
+            "@punctuation.special",
+            "@text",
+            "@text.literal",
+          }, { fg = theme.fg, bg = "none" })
+
+          set_highlights(hl, {
+            "Boolean",
+            "Character",
+            "Comment",
+            "Conditional",
+            "Constant",
+            "Debug",
+            "Define",
+            "Exception",
+            "Float",
+            "Function",
+            "Include",
+            "Keyword",
+            "Label",
+            "Macro",
+            "Number",
+            "Operator",
+            "PreCondit",
+            "PreProc",
+            "Repeat",
+            "Special",
+            "SpecialChar",
+            "SpecialComment",
+            "Statement",
+            "StorageClass",
+            "String",
+            "Structure",
+            "Tag",
+            "Todo",
+            "Type",
+            "Typedef",
+            "@boolean",
+            "@character",
+            "@comment",
+            "@constant",
+            "@constant.builtin",
+            "@constant.macro",
+            "@constructor",
+            "@function",
+            "@function.builtin",
+            "@function.call",
+            "@function.macro",
+            "@keyword",
+            "@keyword.conditional",
+            "@keyword.exception",
+            "@keyword.function",
+            "@keyword.import",
+            "@keyword.operator",
+            "@keyword.repeat",
+            "@label",
+            "@module",
+            "@number",
+            "@number.float",
+            "@operator",
+            "@string",
+            "@string.escape",
+            "@string.regex",
+            "@tag",
+            "@tag.attribute",
+            "@tag.delimiter",
+            "@type",
+            "@type.builtin",
+          }, { fg = theme.blue, bg = "none" })
+
           hl.Normal = { fg = theme.fg, bg = "none" }
           hl.NormalNC = { fg = theme.fg_dark, bg = "none" }
           hl.EndOfBuffer = { fg = theme.fg_gutter, bg = "none" }
@@ -42,13 +208,18 @@ return {
 
           hl.CursorLine = { bg = theme.bg_highlight }
           hl.Visual = { bg = theme.bg_selection }
-          hl.Search = { fg = theme.bg, bg = theme.yellow }
-          hl.IncSearch = { fg = theme.bg, bg = theme.orange }
+          hl.Search = { fg = theme.fg, bg = theme.blue }
+          hl.IncSearch = { fg = theme.fg, bg = theme.blue }
 
           hl.DiagnosticError = { fg = theme.red }
           hl.DiagnosticWarn = { fg = theme.yellow }
           hl.DiagnosticInfo = { fg = theme.cyan }
           hl.DiagnosticHint = { fg = theme.green }
+          hl.Error = { fg = theme.blue }
+          hl.DiffAdd = { fg = theme.fg, bg = theme.bg_selection }
+          hl.DiffChange = { fg = theme.fg, bg = theme.bg_selection }
+          hl.DiffDelete = { fg = theme.blue, bg = theme.bg_selection }
+          hl.DiffText = { fg = theme.fg, bg = theme.blue }
 
           hl.TelescopeBorder = { fg = theme.blue, bg = "none" }
           hl.TelescopeNormal = { fg = theme.fg, bg = "none" }
