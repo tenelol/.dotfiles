@@ -2,9 +2,9 @@ local plugin = require("nix-plugin")
 local theme = require("core.theme")
 
 local function apply_highlights()
-	vim.api.nvim_set_hl(0, "IblIndent", { fg = theme.fg })
-	vim.api.nvim_set_hl(0, "IblScope", { fg = theme.fg })
-	vim.api.nvim_set_hl(0, "IblWhitespace", { fg = theme.fg })
+	vim.api.nvim_set_hl(0, "IblIndent", { fg = theme.fg_gutter })
+	vim.api.nvim_set_hl(0, "IblScope", { fg = theme.blue })
+	vim.api.nvim_set_hl(0, "IblWhitespace", { fg = theme.fg_gutter })
 end
 
 return {
@@ -14,7 +14,7 @@ return {
 			apply_highlights()
 
 			vim.api.nvim_create_autocmd("ColorScheme", {
-				group = vim.api.nvim_create_augroup("white_ibl_highlights", { clear = true }),
+				group = vim.api.nvim_create_augroup("tokyonight_ibl_highlights", { clear = true }),
 				callback = apply_highlights,
 			})
 

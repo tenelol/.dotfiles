@@ -29,156 +29,154 @@ return {
           floats = "transparent",
         },
         on_colors = function(c)
-          local white_keys = { "fg", "fg_dark", "fg_float", "fg_sidebar" }
-          local blue_keys = {
-            "blue",
-            "blue0",
-            "blue1",
-            "blue2",
-            "blue5",
-            "blue6",
-            "blue7",
-            "comment",
-            "cyan",
-            "dark3",
-            "dark5",
-            "fg_gutter",
-            "green",
-            "green1",
-            "green2",
-            "magenta",
-            "magenta2",
-            "orange",
-            "purple",
-            "red",
-            "red1",
-            "teal",
-            "yellow",
-            "error",
-            "todo",
-            "warning",
-            "info",
-            "hint",
-          }
-
-          for _, key in ipairs(white_keys) do
-            c[key] = theme.fg
-          end
-          for _, key in ipairs(blue_keys) do
-            c[key] = theme.blue
-          end
-
+          c.fg = theme.fg
+          c.fg_dark = theme.fg_dark
+          c.fg_float = theme.fg
+          c.fg_sidebar = theme.fg_dark
+          c.fg_gutter = theme.fg_gutter
+          c.comment = theme.comment
+          c.bg = theme.bg
+          c.bg_dark = theme.bg_dark
+          c.bg_float = theme.bg_dark
+          c.bg_highlight = theme.bg_highlight
+          c.bg_sidebar = theme.bg_dark
+          c.blue = theme.blue
+          c.blue0 = theme.blue0
+          c.cyan = theme.cyan
+          c.green = theme.green
+          c.magenta = theme.magenta
+          c.orange = theme.orange
+          c.purple = theme.purple
+          c.red = theme.red
+          c.yellow = theme.yellow
+          c.error = theme.red
+          c.warning = theme.yellow
+          c.info = theme.cyan
+          c.hint = theme.green
+          c.todo = theme.magenta
           c.border_highlight = theme.blue
           c.bg_visual = theme.bg_selection
-          c.bg_search = theme.blue
+          c.bg_search = theme.yellow
           c.diff = {
-            add = theme.bg_selection,
-            delete = theme.bg_selection,
-            change = theme.bg_selection,
-            text = theme.blue,
+            add = "#20303b",
+            delete = "#3b2430",
+            change = "#2f2d3f",
+            text = "#3d3650",
           }
           c.git = {
-            add = theme.blue,
-            change = theme.blue,
-            delete = theme.blue,
-            ignore = theme.blue,
+            add = theme.green,
+            change = theme.yellow,
+            delete = theme.red,
+            ignore = theme.fg_gutter,
           }
           c.rainbow = {
+            theme.red,
+            theme.yellow,
+            theme.green,
+            theme.cyan,
             theme.blue,
-            theme.fg,
+            theme.magenta,
           }
           c.terminal = {
             black = theme.bg,
-            black_bright = theme.blue,
-            red = theme.blue,
-            red_bright = theme.blue,
-            green = theme.blue,
-            green_bright = theme.blue,
-            yellow = theme.blue,
-            yellow_bright = theme.blue,
+            black_bright = theme.fg_gutter,
+            red = theme.red,
+            red_bright = theme.red,
+            green = theme.green,
+            green_bright = theme.green,
+            yellow = theme.yellow,
+            yellow_bright = theme.yellow,
             blue = theme.blue,
             blue_bright = theme.blue,
-            magenta = theme.blue,
-            magenta_bright = theme.blue,
-            cyan = theme.blue,
-            cyan_bright = theme.blue,
+            magenta = theme.magenta,
+            magenta_bright = theme.magenta,
+            cyan = theme.cyan,
+            cyan_bright = theme.cyan,
             white = theme.fg,
-            white_bright = theme.fg,
+            white_bright = "#ffffff",
           }
         end,
         on_highlights = function(hl, _)
           set_highlights(hl, {
-            "Boolean",
-            "Character",
             "Comment",
-            "Constant",
-            "Delimiter",
-            "Float",
-            "Normal",
-            "NormalFloat",
-            "MsgArea",
-            "Identifier",
-            "Number",
-            "String",
-            "StorageClass",
-            "Structure",
-            "Type",
-            "Typedef",
-            "IblIndent",
-            "IblWhitespace",
-            "NonText",
-            "Whitespace",
-            "@boolean",
-            "@character",
             "@comment",
-            "@constant",
-            "@constant.builtin",
-            "@constant.macro",
-            "@module",
-            "@number",
-            "@number.float",
+            "@comment.documentation",
+          }, { fg = theme.comment, bg = "none", italic = true })
+
+          set_highlights(hl, {
+            "String",
+            "Character",
             "@string",
             "@string.escape",
             "@string.regex",
+            "@character",
+          }, { fg = theme.green, bg = "none" })
+
+          set_highlights(hl, {
+            "Boolean",
+            "Constant",
+            "Float",
+            "Number",
+            "@boolean",
+            "@constant",
+            "@constant.builtin",
+            "@constant.macro",
+            "@number",
+            "@number.float",
+          }, { fg = theme.orange, bg = "none" })
+
+          set_highlights(hl, {
+            "Type",
+            "StorageClass",
+            "Structure",
+            "Typedef",
             "@type",
             "@type.builtin",
+          }, { fg = theme.cyan, bg = "none" })
+
+          set_highlights(hl, {
+            "Identifier",
+            "@module",
             "@variable",
             "@variable.builtin",
             "@variable.member",
             "@property",
-            "@punctuation",
-            "@punctuation.bracket",
-            "@punctuation.delimiter",
-            "@punctuation.special",
             "@text",
             "@text.literal",
           }, { fg = theme.fg, bg = "none" })
 
           set_highlights(hl, {
-            "Conditional",
+            "@punctuation",
+            "@punctuation.bracket",
+            "@punctuation.delimiter",
+            "@punctuation.special",
+            "Delimiter",
+            "NonText",
+            "Whitespace",
+          }, { fg = theme.fg_gutter, bg = "none" })
+
+          set_highlights(hl, {
             "Debug",
-            "Define",
-            "Exception",
             "Function",
-            "Include",
-            "Keyword",
-            "Label",
-            "Macro",
-            "Operator",
-            "PreCondit",
-            "PreProc",
-            "Repeat",
-            "Special",
-            "SpecialChar",
-            "SpecialComment",
-            "Statement",
-            "Tag",
-            "Todo",
             "@constructor",
             "@function",
             "@function.builtin",
             "@function.call",
             "@function.macro",
+          }, { fg = theme.blue, bg = "none" })
+
+          set_highlights(hl, {
+            "Conditional",
+            "Define",
+            "Exception",
+            "Include",
+            "Keyword",
+            "Label",
+            "Macro",
+            "PreCondit",
+            "PreProc",
+            "Repeat",
+            "Statement",
             "@keyword",
             "@keyword.conditional",
             "@keyword.exception",
@@ -187,11 +185,23 @@ return {
             "@keyword.operator",
             "@keyword.repeat",
             "@label",
+          }, { fg = theme.magenta, bg = "none" })
+
+          set_highlights(hl, {
+            "Operator",
             "@operator",
+          }, { fg = theme.cyan, bg = "none" })
+
+          set_highlights(hl, {
+            "Special",
+            "SpecialChar",
+            "SpecialComment",
             "@tag",
             "@tag.attribute",
             "@tag.delimiter",
-          }, { fg = theme.blue, bg = "none" })
+          }, { fg = theme.yellow, bg = "none" })
+
+          hl.Todo = { fg = theme.yellow, bg = theme.bg_highlight, bold = true }
 
           hl.Normal = { fg = theme.fg, bg = "none" }
           hl.NormalNC = { fg = theme.fg_dark, bg = "none" }
@@ -209,24 +219,24 @@ return {
           hl.TabLineSel = { fg = theme.bg, bg = theme.cyan }
           hl.TabLineFill = { fg = theme.fg_gutter, bg = "none" }
           hl.WinSeparator = { fg = theme.fg_gutter, bg = "none" }
-          hl.IblIndent = { fg = theme.fg, bg = "none" }
-          hl.IblScope = { fg = theme.fg, bg = "none" }
-          hl.IblWhitespace = { fg = theme.fg, bg = "none" }
+          hl.IblIndent = { fg = theme.fg_gutter, bg = "none" }
+          hl.IblScope = { fg = theme.blue, bg = "none" }
+          hl.IblWhitespace = { fg = theme.fg_gutter, bg = "none" }
 
           hl.CursorLine = { bg = theme.bg_highlight }
           hl.Visual = { bg = theme.bg_selection }
-          hl.Search = { fg = theme.fg, bg = theme.blue }
-          hl.IncSearch = { fg = theme.fg, bg = theme.blue }
+          hl.Search = { fg = theme.bg_dark, bg = theme.yellow }
+          hl.IncSearch = { fg = theme.bg_dark, bg = theme.orange }
 
           hl.DiagnosticError = { fg = theme.red }
           hl.DiagnosticWarn = { fg = theme.yellow }
           hl.DiagnosticInfo = { fg = theme.cyan }
           hl.DiagnosticHint = { fg = theme.green }
-          hl.Error = { fg = theme.blue }
-          hl.DiffAdd = { fg = theme.fg, bg = theme.bg_selection }
-          hl.DiffChange = { fg = theme.fg, bg = theme.bg_selection }
-          hl.DiffDelete = { fg = theme.blue, bg = theme.bg_selection }
-          hl.DiffText = { fg = theme.fg, bg = theme.blue }
+          hl.Error = { fg = theme.red }
+          hl.DiffAdd = { fg = theme.green, bg = "#20303b" }
+          hl.DiffChange = { fg = theme.yellow, bg = "#2f2d3f" }
+          hl.DiffDelete = { fg = theme.red, bg = "#3b2430" }
+          hl.DiffText = { fg = theme.fg, bg = "#3d3650" }
 
           hl.TelescopeBorder = { fg = theme.blue, bg = "none" }
           hl.TelescopeNormal = { fg = theme.fg, bg = "none" }

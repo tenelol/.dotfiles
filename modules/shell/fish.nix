@@ -33,39 +33,39 @@ delib.module {
       plugins = [ fishLogoPlugin ];
 
       interactiveShellInit = ''
-        # Keep interactive syntax highlighting on the white/blue palette.
-        set -g fish_color_normal ffffff
-        set -g fish_color_command 7aa2f7
-        set -g fish_color_keyword 7aa2f7
-        set -g fish_color_error ffffff
-        set -g fish_color_param ffffff
-        set -g fish_color_option ffffff
-        set -g fish_color_quote ffffff
-        set -g fish_color_redirection 7aa2f7
-        set -g fish_color_end ffffff
-        set -g fish_color_operator 7aa2f7
-        set -g fish_color_escape 7aa2f7
-        set -g fish_color_autosuggestion 7aa2f7
-        set -g fish_color_comment ffffff
-        set -g fish_color_match 7aa2f7
-        set -g fish_color_selection ffffff --background=364a82
-        set -g fish_color_search_match ffffff --background=364a82
-        set -g fish_color_cancel ffffff
-        set -g fish_color_valid_path ffffff
-        set -g fish_color_cwd ffffff
-        set -g fish_color_cwd_root ffffff
-        set -g fish_color_user ffffff
-        set -g fish_color_host ffffff
-        set -g fish_color_host_remote ffffff
-        set -g fish_color_status ffffff
+        # Match the terminal/Neovim TokyoNight palette while keeping errors obvious.
+        set -g fish_color_normal c0caf5
+        set -g fish_color_command 7dcfff
+        set -g fish_color_keyword bb9af7
+        set -g fish_color_error f7768e
+        set -g fish_color_param c0caf5
+        set -g fish_color_option e0af68
+        set -g fish_color_quote 9ece6a
+        set -g fish_color_redirection bb9af7
+        set -g fish_color_end ff9e64
+        set -g fish_color_operator 7dcfff
+        set -g fish_color_escape bb9af7
+        set -g fish_color_autosuggestion 565f89
+        set -g fish_color_comment 565f89
+        set -g fish_color_match e0af68
+        set -g fish_color_selection c0caf5 --background=364a82
+        set -g fish_color_search_match 1f2335 --background=e0af68
+        set -g fish_color_cancel f7768e
+        set -g fish_color_valid_path 9ece6a
+        set -g fish_color_cwd 7aa2f7
+        set -g fish_color_cwd_root f7768e
+        set -g fish_color_user bb9af7
+        set -g fish_color_host 7dcfff
+        set -g fish_color_host_remote e0af68
+        set -g fish_color_status f7768e
 
         set -g fish_pager_color_progress 7aa2f7
-        set -g fish_pager_color_prefix 7aa2f7
-        set -g fish_pager_color_completion ffffff
-        set -g fish_pager_color_description ffffff
-        set -g fish_pager_color_selected_prefix 7aa2f7 --background=364a82
-        set -g fish_pager_color_selected_completion ffffff --background=364a82
-        set -g fish_pager_color_selected_description ffffff --background=364a82
+        set -g fish_pager_color_prefix 7dcfff
+        set -g fish_pager_color_completion c0caf5
+        set -g fish_pager_color_description 9aa5ce
+        set -g fish_pager_color_selected_prefix 7dcfff --background=364a82
+        set -g fish_pager_color_selected_completion c0caf5 --background=364a82
+        set -g fish_pager_color_selected_description c0caf5 --background=364a82
 
         if test -d /run/wrappers/bin
           if not contains /run/wrappers/bin $PATH
