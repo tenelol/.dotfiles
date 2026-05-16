@@ -12,6 +12,7 @@ local lastZoomToggleAt = 0
 local debounceSeconds = 0.5
 local controlTapSuppressedUntil = 0
 local systemZoomActive = false
+local lastSystemZoomStateCheckAt = 0
 local zoomScrollAccumulator = 0
 local lastZoomScaleStepAt = 0
 
@@ -43,8 +44,9 @@ local tmuxPrefixConfig = {
 }
 
 local zoomScrollConfig = {
-  stepThreshold = 60,
-  stepIntervalSeconds = 0.12,
+  stepThreshold = 32,
+  stepIntervalSeconds = 0.08,
+  stateRefreshSeconds = 0.5,
 }
 
 local leftCommandKeyCode = keycodes.map.cmd
@@ -295,6 +297,21 @@ local function systemZoomHotkeysEnabled()
   return ok and output:match("[1tT]") ~= nil
 end
 
+local function readSystemZoomedIn()
+  local output, ok = hs.execute("/usr/bin/defaults read com.apple.universalaccess closeViewZoomedIn 2>/dev/null", true)
+  return ok and output:match("[1tT]") ~= nil
+end
+
+local function refreshSystemZoomState(force)
+  local now = hs.timer.secondsSinceEpoch()
+  if force or now - lastSystemZoomStateCheckAt > zoomScrollConfig.stateRefreshSeconds then
+    systemZoomActive = readSystemZoomedIn()
+    lastSystemZoomStateCheckAt = now
+  end
+
+  return systemZoomActive
+end
+
 local function sendSystemZoomShortcut(key)
   if not systemZoomHotkeysEnabled() then
     hs.alert.show("Enable Accessibility > Zoom > keyboard shortcuts for global zoom.", 5)
@@ -307,12 +324,19 @@ local function sendSystemZoomShortcut(key)
 end
 
 local function toggleSystemZoom()
+  local wasActive = refreshSystemZoomState(true)
+
   if not sendSystemZoomShortcut("8") then
     return false
   end
 
-  systemZoomActive = not systemZoomActive
+  systemZoomActive = not wasActive
+  lastSystemZoomStateCheckAt = hs.timer.secondsSinceEpoch()
   zoomScrollAccumulator = 0
+
+  hs.timer.doAfter(0.2, function()
+    refreshSystemZoomState(true)
+  end)
 
   return true
 end
@@ -384,7 +408,7 @@ end)
 
 -- While zoomed in, use two-finger vertical trackpad scroll to change zoom scale.
 _G.forcePressZoomScaleTap = hs.eventtap.new({ scrollWheelEvent }, function(event)
-  if not systemZoomActive then
+  if not refreshSystemZoomState(false) then
     return false
   end
 
@@ -431,6 +455,7 @@ _G.forcePressDragSuppressor = hs.eventtap.new({ leftMouseDraggedEvent }, functio
 end)
 
 if accessibilityEnabled then
+  refreshSystemZoomState(true)
   _G.commandTapImeSwitch:start()
   _G.terminalFocusWatcher:start()
   syncControlDoubleTapTmuxPrefix()
