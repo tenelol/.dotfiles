@@ -20,6 +20,7 @@ delib.module {
         AppleKeyboardUIMode = 3;
         ApplePressAndHoldEnabled = false;
         AppleShowScrollBars = "Automatic";
+        AppleSpacesSwitchOnActivate = false;
         InitialKeyRepeat = 15;
         KeyRepeat = 2;
         NSAutomaticCapitalizationEnabled = false;
