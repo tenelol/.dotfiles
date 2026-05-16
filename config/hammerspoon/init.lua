@@ -9,6 +9,7 @@ local forcePressActive = false
 local zoomToggledForPress = false
 local lastZoomToggleAt = 0
 local debounceSeconds = 0.5
+local controlTapSuppressedUntil = 0
 
 hs.autoLaunch(true)
 pcall(function()
@@ -103,6 +104,7 @@ local function spaceIDForIndex(index)
 end
 
 local function focusSpaceByNativeShortcut(index)
+  controlTapSuppressedUntil = hs.timer.secondsSinceEpoch() + 0.5
   hs.eventtap.keyStroke({ "ctrl" }, tostring(index), 0)
 end
 
@@ -148,6 +150,11 @@ local function resetImeTapState(state)
   state.active = false
   state.pressedAt = 0
   state.usedAsModifier = false
+end
+
+local function resetControlTapState()
+  resetImeTapState(controlTapState)
+  controlTapState.lastTappedAt = 0
 end
 
 local function sendTmuxPrefixOnControlDoubleTap()
@@ -200,6 +207,11 @@ end)
 
 -- Double-tap Control in terminals to send the tmux prefix (Ctrl-a).
 _G.controlDoubleTapTmuxPrefix = hs.eventtap.new({ flagsChangedEvent, keyDownEvent }, function(event)
+  if hs.timer.secondsSinceEpoch() <= controlTapSuppressedUntil then
+    resetControlTapState()
+    return false
+  end
+
   local eventType = event:getType()
 
   if eventType == keyDownEvent then
@@ -246,6 +258,27 @@ _G.controlDoubleTapTmuxPrefix = hs.eventtap.new({ flagsChangedEvent, keyDownEven
   end
 
   return false
+end)
+
+local function syncControlDoubleTapTmuxPrefix()
+  if not _G.controlDoubleTapTmuxPrefix then
+    return
+  end
+
+  if frontmostAppIsTerminal() then
+    if not _G.controlDoubleTapTmuxPrefix:isEnabled() then
+      _G.controlDoubleTapTmuxPrefix:start()
+    end
+  else
+    if _G.controlDoubleTapTmuxPrefix:isEnabled() then
+      _G.controlDoubleTapTmuxPrefix:stop()
+    end
+    resetControlTapState()
+  end
+end
+
+_G.terminalFocusWatcher = hs.application.watcher.new(function()
+  syncControlDoubleTapTmuxPrefix()
 end)
 
 local function systemZoomHotkeysEnabled()
@@ -308,7 +341,8 @@ end)
 
 if accessibilityEnabled then
   _G.commandTapImeSwitch:start()
-  _G.controlDoubleTapTmuxPrefix:start()
+  _G.terminalFocusWatcher:start()
+  syncControlDoubleTapTmuxPrefix()
   _G.forcePressZoomTap:start()
   _G.forcePressDragSuppressor:start()
 else
