@@ -21,10 +21,10 @@ delib.module {
         ProgramArguments = [
           "${pkgs.jankyborders}/bin/borders"
           "style=round"
-          "width=4.0"
+          "width=5.0"
           "hidpi=on"
-          "active_color=gradient(top_left=0xff0f172a,bottom_right=0xff334155)"
-          "inactive_color=gradient(top_left=0xff020617,bottom_right=0xff1e293b)"
+          "active_color=gradient(top_left=0xff111827,bottom_right=0xff94a3b8)"
+          "inactive_color=gradient(top_left=0xff020617,bottom_right=0xff64748b)"
           "background_color=0x00000000"
           "blacklist=Codex"
         ];
