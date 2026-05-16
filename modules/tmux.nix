@@ -7,7 +7,7 @@ delib.module {
       enable = true;
       package = pkgs.tmux;
 
-      prefix = "C-a";
+      prefix = "F12";
       keyMode = "vi";
       mouse = true;
       focusEvents = true;

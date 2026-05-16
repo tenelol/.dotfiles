@@ -171,7 +171,7 @@ end
 
 local function sendTmuxPrefixOnControlDoubleTap()
   if frontmostAppIsTerminal() then
-    hs.eventtap.keyStroke({ "ctrl" }, "a", 0)
+    hs.eventtap.keyStroke({}, "f12", 0)
   end
 end
 
@@ -217,7 +217,7 @@ _G.commandTapImeSwitch = hs.eventtap.new({ flagsChangedEvent, keyDownEvent }, fu
   return false
 end)
 
--- Double-tap Control in terminals to send the tmux prefix (Ctrl-a).
+-- Double-tap Control in terminals to send the tmux prefix (F12).
 _G.controlDoubleTapTmuxPrefix = hs.eventtap.new({ flagsChangedEvent, keyDownEvent }, function(event)
   if hs.timer.secondsSinceEpoch() <= controlTapSuppressedUntil then
     resetControlTapState()
