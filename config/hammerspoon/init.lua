@@ -48,7 +48,6 @@ local zoomScrollConfig = {
   stepIntervalSeconds = 0.12,
   maxSteps = 12,
   zoomInDirection = 1,
-  forcePressureThreshold = 0.8,
 }
 
 local leftCommandKeyCode = keycodes.map.cmd
@@ -410,26 +409,6 @@ local function scrollIsMomentum(event)
   return momentumPhase ~= 0
 end
 
-local function isForcePress(details)
-  local stage = details.stage or 0
-  local pressure = details.pressure or 0
-  local stageTransition = details.stageTransition or 0
-  local behavior = details.pressureBehavior
-
-  return stage >= 2
-    or pressure >= zoomScrollConfig.forcePressureThreshold
-    or stageTransition >= 0.95
-    or behavior == "deepClick"
-    or behavior == "deepDrag"
-end
-
-local function forcePressEnded(details)
-  local stage = details.stage or 0
-  local pressure = details.pressure or 0
-
-  return stage == 0 or pressure < 0.1
-end
-
 -- Keep the eventtap in a global so Hammerspoon does not collect it.
 _G.forcePressZoomTap = hs.eventtap.new({ eventTypes.gesture }, function(event)
   if not pressureEvent or event:getType(true) ~= pressureEvent then
@@ -441,7 +420,9 @@ _G.forcePressZoomTap = hs.eventtap.new({ eventTypes.gesture }, function(event)
     return false
   end
 
-  if isForcePress(details) then
+  local stage = details.stage or 0
+
+  if stage >= 2 then
     local now = hs.timer.secondsSinceEpoch()
     if not forcePressActive and now - lastZoomToggleAt > debounceSeconds then
       forcePressActive = true
@@ -452,7 +433,7 @@ _G.forcePressZoomTap = hs.eventtap.new({ eventTypes.gesture }, function(event)
     return true
   end
 
-  if forcePressEnded(details) then
+  if stage < 2 then
     forcePressActive = false
   end
 
