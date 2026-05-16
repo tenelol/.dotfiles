@@ -29,20 +29,10 @@ delib.module {
         bind | split-window -h -c "#{pane_current_path}"
         bind - split-window -v -c "#{pane_current_path}"
         bind c new-window -c "#{pane_current_path}"
-        bind p display-popup -E -d "#{pane_current_path}" -w 90% -h 80%
+        bind p display-popup -E -d "#{pane_current_path}" -w 75% -h 60%
         bind r source-file "~/.config/tmux/tmux.conf" \; display-message "tmux.conf reloaded"
 
-        set -g status-position top
-        set -g status-interval 5
-        set -g status-justify left
-        set -g status-left-length 40
-        set -g status-right-length 80
-        set -g status-style "bg=default,fg=colour250"
-        set -g status-left "#[fg=colour81,bold]#S #[fg=colour240]| "
-        set -g status-right "#[fg=colour245]%Y-%m-%d #[fg=colour81]%H:%M "
-        set -g window-status-separator ""
-        setw -g window-status-format "#[fg=colour245] #I:#W "
-        setw -g window-status-current-format "#[fg=colour15,bg=colour24,bold] #I:#W "
+        set -g status off
 
         set -g pane-border-style "fg=colour238"
         set -g pane-active-border-style "fg=colour81"
