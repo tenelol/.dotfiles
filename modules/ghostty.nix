@@ -78,8 +78,6 @@ delib.module {
         ../config/ghostty/shaders/liquid_glass_focus.glsl;
       "ghostty/shaders/cursor_tail.glsl".source = ghosttyCursorTailShader;
       "ghostty/shaders/ripple_rectangle_cursor.glsl".source = ghosttyRippleRectangleCursorShader;
-      "ghostty/shaders/cursor_fireworks.glsl".source =
-        ../config/ghostty/shaders/cursor_fireworks.glsl;
     };
   };
 }
