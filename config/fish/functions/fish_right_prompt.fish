@@ -1,35 +1,43 @@
 function fish_right_prompt
         set -l cmd_status $status
+        set -l tn_fg c0caf5
+        set -l tn_blue 7aa2f7
+        set -l tn_cyan 7dcfff
+        set -l tn_green 9ece6a
+        set -l tn_magenta bb9af7
+        set -l tn_red f7768e
+        set -l tn_yellow e0af68
+
         if test $cmd_status -ne 0
-                echo -n (set_color red)"✘ $cmd_status"
+                echo -n (set_color --bold $tn_red)"✘ $cmd_status"
         end
-    
+
         if not command -sq git
                 set_color normal
                 return
         end
-    
+
         # Get the git directory for later use.
         # Return if not inside a Git repository work tree.
         if not set -l git_dir (command git rev-parse --git-dir 2>/dev/null)
                 set_color normal
                 return
         end
-    
+
         # Get the current action ("merge", "rebase", etc.)
         # and if there's one get the current commit hash too.
         set -l commit ''
         if set -l action (fish_print_git_action "$git_dir")
                 set commit (command git rev-parse HEAD 2> /dev/null | string sub -l 7)
         end
-    
+
         # Get either the branch name or a branch descriptor.
         set -l branch_detached 0
         if not set -l branch (command git symbolic-ref --short HEAD 2>/dev/null)
                 set branch_detached 1
                 set branch (command git describe --contains --all HEAD 2>/dev/null)
         end
-    
+
         # Get the commit difference counts between local and remote.
         command git rev-list --count --left-right 'HEAD...@{upstream}' 2>/dev/null \
                 | read -d \t -l status_ahead status_behind
@@ -37,7 +45,7 @@ function fish_right_prompt
                 set status_ahead 0
                 set status_behind 0
         end
-    
+
         # Get the stash status.
         # (git stash list) is very slow. => Avoid using it.
         set -l status_stashed 0
@@ -49,7 +57,7 @@ function fish_right_prompt
                         set status_stashed 1
                 end
         end
-    
+
         # git-status' porcelain v1 format starts with 2 letters on each line:
         #   The first letter (X) denotes the index state.
         #   The second letter (Y) denotes the working directory state.
@@ -111,51 +119,49 @@ function fish_right_prompt
         if string match -qe '\?\?' $porcelain_status
                 set status_untracked 1
         end
-    
-        set_color -o
-    
+
         if test -n "$branch"
                 if test $branch_detached -ne 0
-                        set_color brmagenta
+                        set_color --bold $tn_magenta
                 else
-                        set_color green
+                        set_color --bold $tn_green
                 end
                 echo -n " $branch"
         end
         if test -n "$commit"
-                echo -n ' '(set_color yellow)"$commit"
+                echo -n ' '(set_color $tn_yellow)"$commit"
         end
         if test -n "$action"
                 set_color normal
-                echo -n (set_color white)':'(set_color -o brred)"$action"
+                echo -n (set_color $tn_fg)':'(set_color --bold $tn_red)"$action"
         end
         if test $status_ahead -ne 0
-                echo -n ' '(set_color brmagenta)'⬆'
+                echo -n ' '(set_color $tn_magenta)'⬆'
         end
         if test $status_behind -ne 0
-                echo -n ' '(set_color brmagenta)'⬇'
+                echo -n ' '(set_color $tn_magenta)'⬇'
         end
         if test $status_stashed -ne 0
-                echo -n ' '(set_color cyan)'✭'
+                echo -n ' '(set_color $tn_cyan)'✭'
         end
         if test $status_added -ne 0
-                echo -n ' '(set_color green)'✚'
+                echo -n ' '(set_color $tn_green)'✚'
         end
         if test $status_deleted -ne 0
-                echo -n ' '(set_color red)'✖'
+                echo -n ' '(set_color $tn_red)'✖'
         end
         if test $status_modified -ne 0
-                echo -n ' '(set_color blue)'✱'
+                echo -n ' '(set_color $tn_blue)'✱'
         end
         if test $status_renamed -ne 0
-                echo -n ' '(set_color magenta)'➜'
+                echo -n ' '(set_color $tn_magenta)'➜'
         end
         if test $status_unmerged -ne 0
-                echo -n ' '(set_color yellow)'═'
+                echo -n ' '(set_color $tn_yellow)'═'
         end
         if test $status_untracked -ne 0
-                echo -n ' '(set_color white)'◼'
+                echo -n ' '(set_color $tn_fg)'◼'
         end
-    
+
         set_color normal
 end

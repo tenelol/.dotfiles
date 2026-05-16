@@ -8,7 +8,12 @@ font-feature = "calt"
 window-title-font-family = "SF Pro Text"
 
 # Visual style
-theme = "light:Rose Pine Dawn,dark:TokyoNight Storm"
+theme = "TokyoNight Storm"
+foreground = c0caf5
+background = 24283b
+cursor-color = 7dcfff
+selection-foreground = c0caf5
+selection-background = 364a82
 window-colorspace = "display-p3"
 background-opacity = 0
 background-opacity-cells = true
