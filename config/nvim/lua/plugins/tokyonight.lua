@@ -108,11 +108,40 @@ return {
         end,
         on_highlights = function(hl, _)
           set_highlights(hl, {
+            "Boolean",
+            "Character",
+            "Comment",
+            "Constant",
+            "Delimiter",
+            "Float",
             "Normal",
             "NormalFloat",
             "MsgArea",
             "Identifier",
-            "Delimiter",
+            "Number",
+            "String",
+            "StorageClass",
+            "Structure",
+            "Type",
+            "Typedef",
+            "IblIndent",
+            "IblWhitespace",
+            "NonText",
+            "Whitespace",
+            "@boolean",
+            "@character",
+            "@comment",
+            "@constant",
+            "@constant.builtin",
+            "@constant.macro",
+            "@module",
+            "@number",
+            "@number.float",
+            "@string",
+            "@string.escape",
+            "@string.regex",
+            "@type",
+            "@type.builtin",
             "@variable",
             "@variable.builtin",
             "@variable.member",
@@ -126,21 +155,15 @@ return {
           }, { fg = theme.fg, bg = "none" })
 
           set_highlights(hl, {
-            "Boolean",
-            "Character",
-            "Comment",
             "Conditional",
-            "Constant",
             "Debug",
             "Define",
             "Exception",
-            "Float",
             "Function",
             "Include",
             "Keyword",
             "Label",
             "Macro",
-            "Number",
             "Operator",
             "PreCondit",
             "PreProc",
@@ -149,19 +172,8 @@ return {
             "SpecialChar",
             "SpecialComment",
             "Statement",
-            "StorageClass",
-            "String",
-            "Structure",
             "Tag",
             "Todo",
-            "Type",
-            "Typedef",
-            "@boolean",
-            "@character",
-            "@comment",
-            "@constant",
-            "@constant.builtin",
-            "@constant.macro",
             "@constructor",
             "@function",
             "@function.builtin",
@@ -175,18 +187,10 @@ return {
             "@keyword.operator",
             "@keyword.repeat",
             "@label",
-            "@module",
-            "@number",
-            "@number.float",
             "@operator",
-            "@string",
-            "@string.escape",
-            "@string.regex",
             "@tag",
             "@tag.attribute",
             "@tag.delimiter",
-            "@type",
-            "@type.builtin",
           }, { fg = theme.blue, bg = "none" })
 
           hl.Normal = { fg = theme.fg, bg = "none" }
@@ -205,6 +209,9 @@ return {
           hl.TabLineSel = { fg = theme.bg, bg = theme.cyan }
           hl.TabLineFill = { fg = theme.fg_gutter, bg = "none" }
           hl.WinSeparator = { fg = theme.fg_gutter, bg = "none" }
+          hl.IblIndent = { fg = theme.fg, bg = "none" }
+          hl.IblScope = { fg = theme.fg, bg = "none" }
+          hl.IblWhitespace = { fg = theme.fg, bg = "none" }
 
           hl.CursorLine = { bg = theme.bg_highlight }
           hl.Visual = { bg = theme.bg_selection }
