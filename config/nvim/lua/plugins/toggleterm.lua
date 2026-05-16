@@ -1,4 +1,5 @@
 local plugin = require("nix-plugin")
+local theme = require("core.theme")
 
 return {
   plugin.spec("toggleterm-nvim", {
@@ -40,13 +41,13 @@ return {
 
       local function apply_winbar_highlights()
         vim.api.nvim_set_hl(0, "WinBarActive", {
-          fg = "#0A111D",
-          bg = "#7CC6FF",
+          fg = theme.bg,
+          bg = theme.cyan,
           bold = true,
         })
         vim.api.nvim_set_hl(0, "WinBarInactive", {
-          fg = "#E9F2FF",
-          bg = "#2F3F5E",
+          fg = theme.fg_dark,
+          bg = theme.bg_highlight,
           bold = true,
         })
       end
