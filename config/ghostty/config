@@ -7,6 +7,12 @@ font-size = 12
 font-feature = "calt"
 
 # Window feel
+theme = "TokyoNight Storm"
+foreground = c0caf5
+background = 24283b
+cursor-color = 7dcfff
+selection-foreground = c0caf5
+selection-background = 364a82
 window-padding-x = 14
 window-padding-y = 12
 window-padding-balance = true
@@ -47,9 +53,6 @@ keybind = "super+shift+,=reload_config"
 # Mac-like copy/paste
 keybind = "super+c=copy_to_clipboard"
 keybind = "super+v=paste_from_clipboard"
-
-# Colors
-# Keep default text colors; rely on background-opacity for transparency.
 
 # Use a context menu on right-click.
 right-click-action = "context-menu"
