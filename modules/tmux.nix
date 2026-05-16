@@ -29,6 +29,7 @@ delib.module {
         bind | split-window -h -c "#{pane_current_path}"
         bind - split-window -v -c "#{pane_current_path}"
         bind c new-window -c "#{pane_current_path}"
+        bind p display-popup -E -d "#{pane_current_path}" -w 90% -h 80%
         bind r source-file "~/.config/tmux/tmux.conf" \; display-message "tmux.conf reloaded"
 
         set -g status-position top
