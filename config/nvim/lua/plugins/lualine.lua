@@ -5,12 +5,12 @@ local function setup_lualine()
     -- 色コードをまとめて設定。各プラグインの色設定で使用
     local colors = {
         fg = theme.fg,
-        fg2 = theme.bg,
+        fg2 = theme.fg,
         fg3 = theme.fg_dark,
         bg = 'none',
         bg3 = 'none',
         white = theme.fg,
-        black = theme.bg,
+        black = theme.blue,
         yellow = theme.yellow,
         orange = theme.orange,
         red = theme.red,
