@@ -38,10 +38,10 @@ delib.module {
         window_origin_display = "focused";
         window_zoom_persist = "on";
 
-        top_padding = 0;
-        bottom_padding = 0;
-        left_padding = 0;
-        right_padding = 0;
+        top_padding = 6;
+        bottom_padding = 6;
+        left_padding = 6;
+        right_padding = 6;
         window_gap = 6;
         external_bar = "all:42:0";
 
