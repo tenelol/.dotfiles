@@ -15,6 +15,7 @@ local zoomScrollModeActive = false
 local zoomScrollAccumulator = 0
 local lastZoomScaleStepAt = 0
 local zoomScaleSteps = 0
+local zoomEnabledByScrollMode = false
 
 hs.autoLaunch(true)
 pcall(function()
@@ -318,6 +319,13 @@ local function resetZoomScrollMode()
     zoomScaleSteps = zoomScaleSteps - 1
   end
 
+  if zoomEnabledByScrollMode then
+    if not sendSystemZoomShortcut("8") then
+      return false
+    end
+    zoomEnabledByScrollMode = false
+  end
+
   zoomScrollModeActive = false
   zoomScrollAccumulator = 0
   hs.alert.show("Zoom scroll off", 0.6)
@@ -335,8 +343,14 @@ local function toggleZoomScrollMode()
     return resetZoomScrollMode()
   end
 
+  if not sendSystemZoomShortcut("8") then
+    return false
+  end
+
   zoomScrollModeActive = true
+  zoomEnabledByScrollMode = true
   zoomScrollAccumulator = 0
+  zoomScaleSteps = 0
   hs.alert.show("Zoom scroll", 0.6)
 
   return true
@@ -368,9 +382,7 @@ local function applyZoomScrollStep(direction)
 
   zoomScaleSteps = zoomScaleSteps - 1
   if zoomScaleSteps == 0 then
-    zoomScrollModeActive = false
-    zoomScrollAccumulator = 0
-    hs.alert.show("Zoom scroll off", 0.6)
+    resetZoomScrollMode()
   end
 
   return true
@@ -431,8 +443,14 @@ local function forcePressEnded(details)
 end
 
 -- Keep the eventtap in a global so Hammerspoon does not collect it.
-_G.forcePressZoomTap = hs.eventtap.new({ eventTypes.gesture }, function(event)
-  if not pressureEvent or event:getType(true) ~= pressureEvent then
+_G.forcePressZoomTap = hs.eventtap.new({ eventTypes.gesture, pressureEvent }, function(event)
+  if not pressureEvent then
+    return false
+  end
+
+  local eventType = event:getType()
+  local detailedType = event:getType(true)
+  if eventType ~= pressureEvent and detailedType ~= pressureEvent then
     return false
   end
 
