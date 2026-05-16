@@ -14,6 +14,7 @@ let
     vim-astro = pkgs.vimPlugins.vim-astro;
     barbar-nvim = pkgs.vimPlugins.barbar-nvim;
     gitsigns-nvim = pkgs.vimPlugins.gitsigns-nvim;
+    indent-blankline-nvim = pkgs.vimPlugins.indent-blankline-nvim;
     diffview-nvim = pkgs.vimPlugins.diffview-nvim;
     neogit = pkgs.vimPlugins.neogit;
     trouble-nvim = pkgs.vimPlugins.trouble-nvim;
