@@ -22,7 +22,24 @@ local imeConfig = {
   tapThresholdSeconds = 0.2,
 }
 
+local tmuxPrefixConfig = {
+  tapThresholdSeconds = 0.25,
+  doubleTapThresholdSeconds = 0.35,
+  terminalBundleIDs = {
+    ["com.mitchellh.ghostty"] = true,
+    ["com.apple.Terminal"] = true,
+    ["com.googlecode.iterm2"] = true,
+  },
+  terminalAppNames = {
+    Ghostty = true,
+    Terminal = true,
+    iTerm2 = true,
+  },
+}
+
 local leftCommandKeyCode = keycodes.map.cmd
+local leftControlKeyCode = keycodes.map.ctrl or 59
+local rightControlKeyCode = keycodes.map.rightctrl or 62
 local function switchToEnglish()
   if not keycodes.currentSourceID(imeConfig.englishSourceID) then
     hs.alert.show(("Failed to switch to %s"):format(imeConfig.englishSourceID), 2)
@@ -42,6 +59,17 @@ local function toggleIme()
   else
     switchToJapanese()
   end
+end
+
+local function frontmostAppIsTerminal()
+  local app = hs.application.frontmostApplication()
+  if not app then
+    return false
+  end
+
+  return tmuxPrefixConfig.terminalBundleIDs[app:bundleID()]
+    or tmuxPrefixConfig.terminalAppNames[app:name()]
+    or false
 end
 
 local function yabaiSpaces()
@@ -109,11 +137,23 @@ local leftCommandTapState = {
   pressedAt = 0,
   usedAsModifier = false,
 }
+local controlTapState = {
+  active = false,
+  pressedAt = 0,
+  usedAsModifier = false,
+  lastTappedAt = 0,
+}
 
 local function resetImeTapState(state)
   state.active = false
   state.pressedAt = 0
   state.usedAsModifier = false
+end
+
+local function sendTmuxPrefixOnControlDoubleTap()
+  if frontmostAppIsTerminal() then
+    hs.eventtap.keyStroke({ "ctrl" }, "a", 0)
+  end
 end
 
 -- Tap left Command to toggle between ABC and Japanese input sources.
@@ -152,6 +192,56 @@ _G.commandTapImeSwitch = hs.eventtap.new({ flagsChangedEvent, keyDownEvent }, fu
 
     if tapped then
       toggleIme()
+    end
+  end
+
+  return false
+end)
+
+-- Double-tap Control in terminals to send the tmux prefix (Ctrl-a).
+_G.controlDoubleTapTmuxPrefix = hs.eventtap.new({ flagsChangedEvent, keyDownEvent }, function(event)
+  local eventType = event:getType()
+
+  if eventType == keyDownEvent then
+    if controlTapState.active then
+      controlTapState.usedAsModifier = true
+    end
+
+    return false
+  end
+
+  local keyCode = event:getKeyCode()
+  if keyCode ~= leftControlKeyCode and keyCode ~= rightControlKeyCode then
+    if controlTapState.active then
+      controlTapState.usedAsModifier = true
+    end
+
+    return false
+  end
+
+  local controlPressed = event:getFlags().ctrl
+
+  if controlPressed and not controlTapState.active then
+    controlTapState.active = true
+    controlTapState.usedAsModifier = false
+    controlTapState.pressedAt = hs.timer.secondsSinceEpoch()
+    return false
+  end
+
+  if (not controlPressed) and controlTapState.active then
+    local now = hs.timer.secondsSinceEpoch()
+    local tapped = not controlTapState.usedAsModifier
+      and (now - controlTapState.pressedAt) <= tmuxPrefixConfig.tapThresholdSeconds
+
+    resetImeTapState(controlTapState)
+
+    if tapped then
+      if (now - controlTapState.lastTappedAt) <= tmuxPrefixConfig.doubleTapThresholdSeconds then
+        controlTapState.lastTappedAt = 0
+        sendTmuxPrefixOnControlDoubleTap()
+      else
+        controlTapState.lastTappedAt = now
+      end
     end
   end
 
@@ -218,6 +308,7 @@ end)
 
 if accessibilityEnabled then
   _G.commandTapImeSwitch:start()
+  _G.controlDoubleTapTmuxPrefix:start()
   _G.forcePressZoomTap:start()
   _G.forcePressDragSuppressor:start()
 else
