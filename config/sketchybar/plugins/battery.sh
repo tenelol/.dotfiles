@@ -44,7 +44,7 @@ esac
 
 if [ -n "$charging" ]; then
   icon=""
-  color="0xff79f2c0"
+  color="$TEXT"
 fi
 
 case "$percentage" in
@@ -59,12 +59,6 @@ case "$percentage" in
     border_color="$GLASS_BORDER"
     ;;
 esac
-
-if [ -n "$charging" ]; then
-  background_drawing=on
-  background_color=0x3079f2c0
-  border_color=0x5579f2c0
-fi
 
 "$SKETCHYBAR_BIN" --set "$NAME" \
   background.drawing="$background_drawing" \
