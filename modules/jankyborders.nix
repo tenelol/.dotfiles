@@ -23,10 +23,9 @@ delib.module {
           "style=round"
           "width=4.0"
           "hidpi=on"
-          "active_color=gradient(top_left=0xffff5f8f,bottom_right=0xff00d4ff)"
-          "inactive_color=0xff334155"
+          "active_color=gradient(top_left=0xff7e22ce,bottom_right=0xff0e7490)"
+          "inactive_color=gradient(top_left=0xff3b0764,bottom_right=0xff164e63)"
           "background_color=0x00000000"
-          "blacklist=Codex"
         ];
         RunAtLoad = true;
         KeepAlive = true;
