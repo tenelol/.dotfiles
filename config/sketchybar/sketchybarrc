@@ -169,7 +169,10 @@ battery=(
   background.color="$GLASS_BG"
   background.border_color="$GLASS_BORDER"
   background.border_width=1
-  label.padding_left=0
+  icon.padding_left=8
+  icon.padding_right=3
+  label.padding_left=2
+  label.padding_right=10
   script="$PLUGIN_DIR/battery.sh"
 )
 "$SKETCHYBAR_BIN" --add item battery right \
