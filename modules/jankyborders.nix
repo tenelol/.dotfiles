@@ -24,8 +24,9 @@ delib.module {
           "width=4.0"
           "hidpi=on"
           "active_color=0xff8bd5ff"
-          "inactive_color=0x30ffffff"
+          "inactive_color=0xff8bd5ff"
           "background_color=0x00000000"
+          "blacklist=Codex"
         ];
         RunAtLoad = true;
         KeepAlive = true;
