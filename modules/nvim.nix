@@ -47,7 +47,7 @@ let
     neo-tree-nvim = pkgs.vimPlugins.neo-tree-nvim;
     plenary-nvim = pkgs.vimPlugins.plenary-nvim;
     nui-nvim = pkgs.vimPlugins.nui-nvim;
-    nightfox-nvim = pkgs.vimPlugins.nightfox-nvim;
+    tokyonight-nvim = pkgs.vimPlugins.tokyonight-nvim;
     noice-nvim = pkgs.vimPlugins.noice-nvim;
     nvim-notify = pkgs.vimPlugins.nvim-notify;
     luasnip = pkgs.vimPlugins.luasnip;

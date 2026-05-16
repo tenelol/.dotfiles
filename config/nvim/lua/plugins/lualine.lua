@@ -1,24 +1,25 @@
 local plugin = require("nix-plugin")
+local theme = require("core.theme")
 
 local function setup_lualine()
     -- 色コードをまとめて設定。各プラグインの色設定で使用
     local colors = {
-        fg = '#e9f2ff',
-        fg2 = '#0a111d',
-        fg3 = '#b9c7d8',
+        fg = theme.fg,
+        fg2 = theme.bg,
+        fg3 = theme.fg_dark,
         bg = 'none',
         bg3 = 'none',
-        white = '#ffffff',
-        black = '#000000',
-        yellow = '#ffec50',
-        orange = '#ffaf00',
-        red = '#ff6510',
-        magenta = '#e0898d',
-        cyan = '#7cc6ff',
-        blue = '#235bc8',
-        darkblue = '#3672a4',
-        green = '#78ffd6',
-        darkbrown = '#542d24',
+        white = theme.fg,
+        black = theme.bg,
+        yellow = theme.yellow,
+        orange = theme.orange,
+        red = theme.red,
+        magenta = theme.magenta,
+        cyan = theme.cyan,
+        blue = theme.blue,
+        darkblue = theme.blue0,
+        green = theme.green,
+        darkbrown = theme.orange,
     }
 
     -- 独自テーマの設定
