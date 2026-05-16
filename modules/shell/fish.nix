@@ -33,10 +33,6 @@ delib.module {
       plugins = [ fishLogoPlugin ];
 
       interactiveShellInit = ''
-        if not set -q TMUX; and not set -q NO_TMUX; and test "$TERM" != "dumb"; and command -q tmux
-          exec tmux new-session -A -s main
-        end
-
         if test -d /run/wrappers/bin
           if not contains /run/wrappers/bin $PATH
             set -gx PATH /run/wrappers/bin $PATH
