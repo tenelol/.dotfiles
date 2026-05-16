@@ -219,9 +219,9 @@ return {
           hl.TabLineSel = { fg = theme.bg, bg = theme.cyan }
           hl.TabLineFill = { fg = theme.fg_gutter, bg = "none" }
           hl.WinSeparator = { fg = theme.fg_gutter, bg = "none" }
-          hl.IblIndent = { fg = theme.fg_gutter, bg = "none" }
-          hl.IblScope = { fg = theme.blue, bg = "none" }
-          hl.IblWhitespace = { fg = theme.fg_gutter, bg = "none" }
+          hl.IblIndent = { fg = theme.ibl_indent, bg = "none" }
+          hl.IblScope = { fg = theme.ibl_scope, bg = "none" }
+          hl.IblWhitespace = { fg = theme.ibl_indent, bg = "none" }
 
           hl.CursorLine = { bg = theme.bg_highlight }
           hl.Visual = { bg = theme.bg_selection }
