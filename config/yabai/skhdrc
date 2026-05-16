@@ -1,5 +1,5 @@
 # AeroSpace-like bindings for yabai.
-# Use keycodes for Option bindings so they do not depend on the active input source.
+# Use keycodes for number bindings so they do not depend on the active input source.
 
 :: service @
 
@@ -44,6 +44,16 @@ alt + shift - 0x16 : /opt/homebrew/bin/hs -q -c 'yabaiMoveFocusedWindowToSpace(6
 alt + shift - 0x1A : /opt/homebrew/bin/hs -q -c 'yabaiMoveFocusedWindowToSpace(7)'
 alt + shift - 0x1C : /opt/homebrew/bin/hs -q -c 'yabaiMoveFocusedWindowToSpace(8)'
 alt + shift - 0x19 : /opt/homebrew/bin/hs -q -c 'yabaiMoveFocusedWindowToSpace(9)'
+
+ctrl + shift - 0x12 : /opt/homebrew/bin/hs -q -c 'yabaiMoveFocusedWindowToSpace(1)'
+ctrl + shift - 0x13 : /opt/homebrew/bin/hs -q -c 'yabaiMoveFocusedWindowToSpace(2)'
+ctrl + shift - 0x14 : /opt/homebrew/bin/hs -q -c 'yabaiMoveFocusedWindowToSpace(3)'
+ctrl + shift - 0x15 : /opt/homebrew/bin/hs -q -c 'yabaiMoveFocusedWindowToSpace(4)'
+ctrl + shift - 0x17 : /opt/homebrew/bin/hs -q -c 'yabaiMoveFocusedWindowToSpace(5)'
+ctrl + shift - 0x16 : /opt/homebrew/bin/hs -q -c 'yabaiMoveFocusedWindowToSpace(6)'
+ctrl + shift - 0x1A : /opt/homebrew/bin/hs -q -c 'yabaiMoveFocusedWindowToSpace(7)'
+ctrl + shift - 0x1C : /opt/homebrew/bin/hs -q -c 'yabaiMoveFocusedWindowToSpace(8)'
+ctrl + shift - 0x19 : /opt/homebrew/bin/hs -q -c 'yabaiMoveFocusedWindowToSpace(9)'
 
 alt - 0x30 : osascript -e 'tell application "System Events" to key code 123 using control down'
 alt + shift - 0x30 : osascript -e 'tell application "System Events" to key code 124 using control down'
