@@ -38,7 +38,7 @@ delib.module {
         window_origin_display = "focused";
         window_zoom_persist = "on";
 
-        top_padding = 6;
+        top_padding = 2;
         bottom_padding = 6;
         left_padding = 6;
         right_padding = 6;
