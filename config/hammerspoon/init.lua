@@ -1,15 +1,20 @@
 local eventTypes = hs.eventtap.event.types
+local eventProperties = hs.eventtap.event.properties
 local json = hs.json
 local keycodes = hs.keycodes
 local keyDownEvent = eventTypes.keyDown
 local flagsChangedEvent = eventTypes.flagsChanged
 local leftMouseDraggedEvent = eventTypes.leftMouseDragged
 local pressureEvent = eventTypes.pressure
+local scrollWheelEvent = eventTypes.scrollWheel
 local forcePressActive = false
-local zoomToggledForPress = false
 local lastZoomToggleAt = 0
 local debounceSeconds = 0.5
 local controlTapSuppressedUntil = 0
+local systemZoomActive = false
+local lastSystemZoomStateCheckAt = 0
+local zoomScrollAccumulator = 0
+local lastZoomScaleStepAt = 0
 
 hs.autoLaunch(true)
 pcall(function()
@@ -36,6 +41,12 @@ local tmuxPrefixConfig = {
     Terminal = true,
     iTerm2 = true,
   },
+}
+
+local zoomScrollConfig = {
+  stepThreshold = 32,
+  stepIntervalSeconds = 0.08,
+  stateRefreshSeconds = 0.5,
 }
 
 local leftCommandKeyCode = keycodes.map.cmd
@@ -286,15 +297,82 @@ local function systemZoomHotkeysEnabled()
   return ok and output:match("[1tT]") ~= nil
 end
 
-local function toggleSystemZoom()
+local function readSystemZoomedIn()
+  local output, ok = hs.execute("/usr/bin/defaults read com.apple.universalaccess closeViewZoomedIn 2>/dev/null", true)
+  return ok and output:match("[1tT]") ~= nil
+end
+
+local function refreshSystemZoomState(force)
+  local now = hs.timer.secondsSinceEpoch()
+  if force or now - lastSystemZoomStateCheckAt > zoomScrollConfig.stateRefreshSeconds then
+    systemZoomActive = readSystemZoomedIn()
+    lastSystemZoomStateCheckAt = now
+  end
+
+  return systemZoomActive
+end
+
+local function sendSystemZoomShortcut(key)
   if not systemZoomHotkeysEnabled() then
     hs.alert.show("Enable Accessibility > Zoom > keyboard shortcuts for global zoom.", 5)
     hs.urlevent.openURL("x-apple.systempreferences:com.apple.Accessibility-Settings.extension")
     return false
   end
 
-  hs.eventtap.keyStroke({ "cmd", "alt" }, "8", 0)
+  hs.eventtap.keyStroke({ "cmd", "alt" }, key, 0)
   return true
+end
+
+local function toggleSystemZoom()
+  local wasActive = refreshSystemZoomState(true)
+
+  if not sendSystemZoomShortcut("8") then
+    return false
+  end
+
+  systemZoomActive = not wasActive
+  lastSystemZoomStateCheckAt = hs.timer.secondsSinceEpoch()
+  zoomScrollAccumulator = 0
+
+  hs.timer.doAfter(0.2, function()
+    refreshSystemZoomState(true)
+  end)
+
+  return true
+end
+
+local function trackpadScrollDelta(event)
+  local continuous = event:getProperty(eventProperties.scrollWheelEventIsContinuous) or 0
+  if continuous == 0 then
+    return nil
+  end
+
+  local vertical = event:getProperty(eventProperties.scrollWheelEventPointDeltaAxis1) or 0
+  local horizontal = event:getProperty(eventProperties.scrollWheelEventPointDeltaAxis2) or 0
+
+  if vertical == 0 then
+    vertical = event:getProperty(eventProperties.scrollWheelEventFixedPtDeltaAxis1) or 0
+  end
+
+  if horizontal == 0 then
+    horizontal = event:getProperty(eventProperties.scrollWheelEventFixedPtDeltaAxis2) or 0
+  end
+
+  if math.abs(vertical) <= math.abs(horizontal) then
+    return nil
+  end
+
+  return vertical
+end
+
+local function scrollGestureEnded(event)
+  local phase = event:getProperty(eventProperties.scrollWheelEventScrollPhase) or 0
+  return phase == 4 or phase == 8
+end
+
+local function scrollIsMomentum(event)
+  local momentumPhase = event:getProperty(eventProperties.scrollWheelEventMomentumPhase) or 0
+  return momentumPhase ~= 0
 end
 
 -- Keep the eventtap in a global so Hammerspoon does not collect it.
@@ -315,22 +393,59 @@ _G.forcePressZoomTap = hs.eventtap.new({ eventTypes.gesture }, function(event)
     if not forcePressActive and now - lastZoomToggleAt > debounceSeconds then
       forcePressActive = true
       lastZoomToggleAt = now
-      zoomToggledForPress = toggleSystemZoom()
+      toggleSystemZoom()
     end
 
     return true
   end
 
   if stage == 0 then
-    if forcePressActive and zoomToggledForPress then
-      toggleSystemZoom()
-      zoomToggledForPress = false
-    end
-
     forcePressActive = false
   end
 
   return false
+end)
+
+-- While zoomed in, use two-finger vertical trackpad scroll to change zoom scale.
+_G.forcePressZoomScaleTap = hs.eventtap.new({ scrollWheelEvent }, function(event)
+  if not refreshSystemZoomState(false) then
+    return false
+  end
+
+  if scrollGestureEnded(event) then
+    zoomScrollAccumulator = 0
+    return true
+  end
+
+  if scrollIsMomentum(event) then
+    return true
+  end
+
+  local delta = trackpadScrollDelta(event)
+  if not delta then
+    return false
+  end
+
+  zoomScrollAccumulator = zoomScrollAccumulator + delta
+
+  if math.abs(zoomScrollAccumulator) < zoomScrollConfig.stepThreshold then
+    return true
+  end
+
+  local now = hs.timer.secondsSinceEpoch()
+  if now - lastZoomScaleStepAt < zoomScrollConfig.stepIntervalSeconds then
+    return true
+  end
+
+  lastZoomScaleStepAt = now
+  if zoomScrollAccumulator > 0 then
+    sendSystemZoomShortcut("=")
+  else
+    sendSystemZoomShortcut("-")
+  end
+
+  zoomScrollAccumulator = 0
+  return true
 end)
 
 -- Ignore drag motion while a force press is active so zooming does not also
@@ -340,10 +455,12 @@ _G.forcePressDragSuppressor = hs.eventtap.new({ leftMouseDraggedEvent }, functio
 end)
 
 if accessibilityEnabled then
+  refreshSystemZoomState(true)
   _G.commandTapImeSwitch:start()
   _G.terminalFocusWatcher:start()
   syncControlDoubleTapTmuxPrefix()
   _G.forcePressZoomTap:start()
+  _G.forcePressZoomScaleTap:start()
   _G.forcePressDragSuppressor:start()
 else
   hs.alert.show("Enable Accessibility for Hammerspoon, then reopen it.", 5)
