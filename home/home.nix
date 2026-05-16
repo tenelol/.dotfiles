@@ -37,7 +37,6 @@ let
     gdrive
     cowsay
     lolcat
-    zellij
     eza
     bat
     gomi
