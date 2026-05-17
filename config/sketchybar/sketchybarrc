@@ -63,7 +63,7 @@ default=(
 
 "$SKETCHYBAR_BIN" --add event workspace_change
 
-for sid in 1 2 3 4 5 6 7 8 9; do
+for sid in 1 2 3 4 5; do
   workspace_index=$((sid - 1))
   item=(
     width=18

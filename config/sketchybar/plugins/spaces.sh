@@ -21,7 +21,7 @@ query_focused_workspace() {
 
 is_managed_workspace() {
   case "$1" in
-    [1-9]) return 0 ;;
+    [1-5]) return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -79,7 +79,7 @@ mkdir -p "$STATE_DIR"
 printf '%s\n' "$focused_workspace" > "$STATE_FILE"
 
 if [ "$REFRESH" = "all" ] || [ -z "$previous_workspace" ]; then
-  for sid in 1 2 3 4 5 6 7 8 9; do
+  for sid in 1 2 3 4 5; do
     if [ "$sid" = "$focused_workspace" ]; then
       set_active "$sid"
     else
