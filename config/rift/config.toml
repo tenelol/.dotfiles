@@ -118,7 +118,6 @@ app_rules = [
   { app_name = "App Store", manage = false },
   { app_name = "Calculator", manage = false },
   { app_name = "Finder", title_regex = "^(Copy|Move|Info|Preferences)", manage = false },
-  { app_name = "Codex", title_regex = "^Codex$", ax_role = "AXWindow", ax_subrole = "AXDialog", manage = false },
 ]
 
 [modifier_combinations]
@@ -143,6 +142,10 @@ display_move = "Alt + Ctrl + Shift"
 "Alt + J" = { move_focus = "down" }
 "Alt + K" = { move_focus = "up" }
 "Alt + L" = { move_focus = "right" }
+"Alt + Left" = { move_focus = "left" }
+"Alt + Down" = { move_focus = "down" }
+"Alt + Up" = { move_focus = "up" }
+"Alt + Right" = { move_focus = "right" }
 
 "move + H" = { move_node = "left" }
 "move + J" = { move_node = "down" }
