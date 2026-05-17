@@ -123,6 +123,7 @@ join = "Alt + Ctrl"
 [keys]
 "Alt + Enter" = { exec = ["/bin/bash", "-c", "open -a Ghostty"] }
 "Alt + Ctrl + Shift + R" = { exec = ["/bin/sh", "-lc", "launchctl kickstart -k gui/$(id -u)/org.nixos.rift"] }
+"Alt + Ctrl + Shift + E" = "toggle_space_activated"
 
 "Alt + Slash" = { set_workspace_layout = { mode = "scrolling" } }
 "Alt + B" = { set_workspace_layout = { mode = "bsp" } }
