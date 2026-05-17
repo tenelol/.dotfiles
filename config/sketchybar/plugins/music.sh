@@ -1,9 +1,8 @@
 #!/bin/sh
 
 SKETCHYBAR_BIN="/opt/homebrew/bin/sketchybar"
-PLUGIN_DIR="$(cd -- "$(dirname -- "$0")" && pwd)"
-
-. "$PLUGIN_DIR/theme.sh"
+TEXT=0xeef5f7fa
+TEXT_DIM=0xa8f5f7fa
 
 sanitize_track() {
   /usr/bin/tr '\r\n' ' ' | /usr/bin/sed 's/[[:space:]][[:space:]]*/ /g; s/^ //; s/ $//'
@@ -58,8 +57,6 @@ fi
 
 "$SKETCHYBAR_BIN" --set "$NAME" \
   drawing=on \
-  background.color="$GLASS_BG_STRONG" \
-  background.border_color="$ACCENT_ALT_SOFT" \
-  icon.color="$ACCENT_ALT" \
+  icon.color="$TEXT_DIM" \
   label="$track" \
   label.color="$TEXT"
