@@ -10,6 +10,7 @@ local zoomToggledForPress = false
 local lastZoomToggleAt = 0
 local debounceSeconds = 0.5
 local controlTapSuppressedUntil = 0
+local forcePressZoomEnabled = false
 
 hs.autoLaunch(true)
 pcall(function()
@@ -297,54 +298,73 @@ local function toggleSystemZoom()
   return true
 end
 
--- Keep the eventtap in a global so Hammerspoon does not collect it.
-_G.forcePressZoomTap = hs.eventtap.new({ eventTypes.gesture }, function(event)
-  if not pressureEvent or event:getType(true) ~= pressureEvent then
-    return false
-  end
-
-  local details = event:getTouchDetails()
-  if not details then
-    return false
-  end
-
-  local stage = details.stage or 0
-
-  if stage >= 2 then
-    local now = hs.timer.secondsSinceEpoch()
-    if not forcePressActive and now - lastZoomToggleAt > debounceSeconds then
-      forcePressActive = true
-      lastZoomToggleAt = now
-      zoomToggledForPress = toggleSystemZoom()
+if forcePressZoomEnabled then
+  -- Keep the eventtap in a global so Hammerspoon does not collect it.
+  _G.forcePressZoomTap = hs.eventtap.new({ eventTypes.gesture }, function(event)
+    if not pressureEvent or event:getType(true) ~= pressureEvent then
+      return false
     end
 
-    return true
-  end
-
-  if stage == 0 then
-    if forcePressActive and zoomToggledForPress then
-      toggleSystemZoom()
-      zoomToggledForPress = false
+    local details = event:getTouchDetails()
+    if not details then
+      return false
     end
 
-    forcePressActive = false
+    local stage = details.stage or 0
+
+    if stage >= 2 then
+      local now = hs.timer.secondsSinceEpoch()
+      if not forcePressActive and now - lastZoomToggleAt > debounceSeconds then
+        forcePressActive = true
+        lastZoomToggleAt = now
+        zoomToggledForPress = toggleSystemZoom()
+      end
+
+      return true
+    end
+
+    if stage == 0 then
+      if forcePressActive and zoomToggledForPress then
+        toggleSystemZoom()
+        zoomToggledForPress = false
+      end
+
+      forcePressActive = false
+    end
+
+    return false
+  end)
+
+  -- Ignore drag motion while a force press is active so zooming does not also
+  -- move the pointer selection/window under the cursor.
+  _G.forcePressDragSuppressor = hs.eventtap.new({ leftMouseDraggedEvent }, function(_)
+    return forcePressActive
+  end)
+else
+  if _G.forcePressZoomTap then
+    _G.forcePressZoomTap:stop()
+    _G.forcePressZoomTap = nil
   end
 
-  return false
-end)
+  if _G.forcePressDragSuppressor then
+    _G.forcePressDragSuppressor:stop()
+    _G.forcePressDragSuppressor = nil
+  end
 
--- Ignore drag motion while a force press is active so zooming does not also
--- move the pointer selection/window under the cursor.
-_G.forcePressDragSuppressor = hs.eventtap.new({ leftMouseDraggedEvent }, function(_)
-  return forcePressActive
-end)
+  if _G.forcePressZoomScaleTap then
+    _G.forcePressZoomScaleTap:stop()
+    _G.forcePressZoomScaleTap = nil
+  end
+end
 
 if accessibilityEnabled then
   _G.commandTapImeSwitch:start()
   _G.terminalFocusWatcher:start()
   syncControlDoubleTapTmuxPrefix()
-  _G.forcePressZoomTap:start()
-  _G.forcePressDragSuppressor:start()
+  if forcePressZoomEnabled then
+    _G.forcePressZoomTap:start()
+    _G.forcePressDragSuppressor:start()
+  end
 else
   hs.alert.show("Enable Accessibility for Hammerspoon, then reopen it.", 5)
 end
