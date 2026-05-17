@@ -1,0 +1,20 @@
+#!/bin/sh
+set -eu
+
+RIFT_CLI="${RIFT_CLI:-/opt/homebrew/bin/rift-cli}"
+
+if "$RIFT_CLI" subscribe list-cli 2>/dev/null | /usr/bin/grep -Fq 'sketchybar --trigger workspace_change'; then
+  exit 0
+fi
+
+exec "$RIFT_CLI" subscribe cli \
+  --event workspace_changed \
+  --command /bin/sh \
+  --args -c \
+  --args '
+focused="$RIFT_WORKSPACE_NAME"
+case "$focused" in
+  ""|*[!0-9]*) exit 0 ;;
+esac
+/opt/homebrew/bin/sketchybar --trigger workspace_change FOCUSED="$focused"
+'
