@@ -19,7 +19,7 @@ NixOS と `nix-darwin` を 1 つの flake で管理し、Home Manager は各 sys
 - [modules](./modules): denix が自動発見する shared / host-specific module
 - [rices](./rices): denix の rice 定義。今は共通 wallpaper を切り替える最小実装
 - [home/home.nix](./home/home.nix): 共通 Home Manager 設定
-- [config](./config): Neovim、fish、niri、waybar などの実ファイル
+- [config](./config): Neovim、fish、niri、Rift、waybar などの実ファイル
 - [packages](./packages): 軽い独自 package 定義
 - [legacy](./legacy): 退避した旧構成。現行 flake では未使用
 
@@ -130,6 +130,7 @@ nh darwin build . -H macbook-redmoon
 - bootloader のような machine 固有前提は host metadata で明示し、共通 base module に埋め込まない
 - 外部バイナリに依存する integration は explicit allowlist に寄せ、将来 host を足しても暗黙に広げない
 - Linux desktop は `niri` 前提
+- macOS desktop は `Rift` 前提。yabai/skhd は使わず、Rift の virtual workspace と SketchyBar 連携に寄せる
 - `nixos.base` は全 NixOS host 共通、desktop 前提は host 非 server の module に分離
 - macOS でも同じ Neovim 設定を使う。clipboard や language toolchain は Nix 側で揃える
 
