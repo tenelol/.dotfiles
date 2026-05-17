@@ -29,7 +29,7 @@ master_side = "left"
 new_window_placement = "master"
 
 [settings.layout.scrolling]
-animate = false
+animate = true
 column_width_ratio = 0.7
 min_column_width_ratio = 0.3
 max_column_width_ratio = 0.9
