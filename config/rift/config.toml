@@ -119,11 +119,10 @@ app_rules = [
 [modifier_combinations]
 move = "Alt + Shift"
 join = "Alt + Ctrl"
-display_move = "Alt + Ctrl + Shift"
 
 [keys]
 "Alt + Enter" = { exec = ["/bin/bash", "-c", "open -a Ghostty"] }
-"Alt + Ctrl + Shift + R" = { exec = ["/opt/homebrew/bin/rift-cli", "service", "restart"] }
+"Alt + Ctrl + Shift + R" = { exec = ["/bin/sh", "-lc", "launchctl kickstart -k gui/$(id -u)/org.nixos.rift"] }
 
 "Alt + Slash" = { set_workspace_layout = { mode = "scrolling" } }
 "Alt + B" = { set_workspace_layout = { mode = "bsp" } }
@@ -179,8 +178,3 @@ display_move = "Alt + Ctrl + Shift"
 
 "Alt + Shift + Left" = { focus_display = "left" }
 "Alt + Shift + Right" = { focus_display = "right" }
-
-"display_move + H" = { move_window_to_display = { selector = "left" } }
-"display_move + L" = { move_window_to_display = { selector = "right" } }
-"display_move + Left" = { move_window_to_display = { selector = "left" } }
-"display_move + Right" = { move_window_to_display = { selector = "right" } }
