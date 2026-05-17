@@ -81,9 +81,10 @@ delib.module {
 
       trackpad = {
         Clicking = true;
-        # Keep macOS Spaces gestures disabled; Rift workspace switching is keyboard-first.
+        # Rift observes macOS-generated three-finger horizontal gesture events
+        # and maps them to virtual workspace switching.
         TrackpadThreeFingerDrag = false;
-        TrackpadThreeFingerHorizSwipeGesture = 0;
+        TrackpadThreeFingerHorizSwipeGesture = 2;
       };
     };
 
