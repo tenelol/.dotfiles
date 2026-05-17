@@ -1,38 +1,24 @@
 #!/bin/bash
 
 SKETCHYBAR_BIN="/opt/homebrew/bin/sketchybar"
-RIFT_CLI="/opt/homebrew/bin/rift-cli"
 PLUGIN_DIR="$CONFIG_DIR/plugins"
 
-TRANSPARENT=0x00000000
-GLASS_BG=0x260b1018
-GLASS_BORDER=0x30ffffff
-TEXT=0xeef5f7fa
-TEXT_DIM=0xa8f5f7fa
-TEXT_MUTED=0xcff5f7fa
-TEXT_STRONG=0xffffffff
-
-focused_workspace() {
-  "$RIFT_CLI" query workspaces 2>/dev/null \
-    | tr '{' '\n' \
-    | sed -nE 's/.*"index"[[:space:]]*:[[:space:]]*([0-9]+).*"is_active"[[:space:]]*:[[:space:]]*true.*/\1/p' \
-    | head -n 1 \
-    | awk '{ print $1 + 1 }'
-}
+. "$PLUGIN_DIR/theme.sh"
+. "$PLUGIN_DIR/window-manager.sh"
 
 bar=(
   position=top
   display=all
-  height=42
+  height=44
   margin=0
   y_offset=0
   corner_radius=0
-  blur_radius=56
+  blur_radius=72
   color="$TRANSPARENT"
   border_width=0
   border_color="$TRANSPARENT"
-  padding_left=12
-  padding_right=12
+  padding_left=10
+  padding_right=10
   sticky=on
   topmost=window
   shadow=off
@@ -50,41 +36,42 @@ default=(
   label.padding_left=10
   label.padding_right=10
   background.drawing=on
-  background.height=28
-  background.corner_radius=14
+  background.height=30
+  background.corner_radius=15
   background.color="$GLASS_BG"
   background.border_width=1
   background.border_color="$GLASS_BORDER"
   blur_radius=0
-  padding_left=3
-  padding_right=3
+  padding_left=4
+  padding_right=4
 )
 "$SKETCHYBAR_BIN" --default "${default[@]}"
 
 "$SKETCHYBAR_BIN" --add event workspace_change
 
 for sid in 1 2 3 4 5; do
-  workspace_index=$((sid - 1))
   item=(
-    width=18
+    width=26
     padding_left=3
     padding_right=3
     label="$sid"
-    label.width=18
+    label.width=26
     label.align=center
+    label.font="CaskaydiaCove Nerd Font:SemiBold:12.0"
     label.color="$TEXT_DIM"
     label.padding_left=0
     label.padding_right=0
     background.drawing=on
-    background.height=3
-    background.corner_radius=2
+    background.height=24
+    background.corner_radius=12
     background.padding_left=0
     background.padding_right=0
     background.color="$TRANSPARENT"
     background.border_color="$TRANSPARENT"
-    background.y_offset=-11
+    background.border_width=0
+    background.y_offset=0
     script="$PLUGIN_DIR/workspace.sh"
-    click_script="$RIFT_CLI execute workspace switch $workspace_index"
+    click_script="/bin/sh -lc '. \"$PLUGIN_DIR/window-manager.sh\"; switch_workspace $sid'"
   )
 
   "$SKETCHYBAR_BIN" --add item "space.$sid" left \
@@ -94,13 +81,13 @@ done
 
 spaces=(
   background.drawing=on
-  background.height=28
-  background.corner_radius=14
-  background.color="$GLASS_BG"
+  background.height=32
+  background.corner_radius=16
+  background.color="$GLASS_BG_STRONG"
   background.border_width=1
   background.border_color="$GLASS_BORDER"
-  background.padding_left=6
-  background.padding_right=6
+  background.padding_left=5
+  background.padding_right=5
 )
 "$SKETCHYBAR_BIN" --add bracket spaces '/space\..*/' \
                   --set spaces "${spaces[@]}"
@@ -119,13 +106,19 @@ space_observer=(
                   --subscribe space_observer workspace_change
 
 front_app=(
-  width=190
-  label.max_chars=24
+  width=220
+  icon.drawing=on
+  icon="󰣆"
+  icon.font="CaskaydiaCove Nerd Font:Regular:14.0"
+  icon.color="$ACCENT"
+  icon.padding_left=10
+  icon.padding_right=0
+  label.max_chars=26
   label.align=left
-  label.color="$TEXT_MUTED"
+  label.color="$TEXT"
   label.font="CaskaydiaCove Nerd Font:SemiBold:12.0"
   background.drawing=on
-  background.color="$GLASS_BG"
+  background.color="$GLASS_BG_STRONG"
   background.border_color="$GLASS_BORDER"
   script="$PLUGIN_DIR/front_app.sh"
 )
@@ -138,20 +131,20 @@ music=(
   update_freq=5
   display=2
   drawing=off
-  width=260
+  width=286
   icon.drawing=on
   icon=""
-  icon.font="CaskaydiaCove Nerd Font:Regular:13.0"
-  icon.color="$TEXT_DIM"
+  icon.font="CaskaydiaCove Nerd Font:Regular:14.0"
+  icon.color="$ACCENT_ALT"
   icon.padding_left=10
   icon.padding_right=0
-  label.max_chars=38
+  label.max_chars=40
   label.align=left
   label.color="$TEXT"
   label.font="CaskaydiaCove Nerd Font:SemiBold:12.0"
   background.drawing=on
-  background.color="$GLASS_BG"
-  background.border_color="$GLASS_BORDER"
+  background.color="$GLASS_BG_STRONG"
+  background.border_color="$ACCENT_ALT_SOFT"
   script="$PLUGIN_DIR/music.sh"
 )
 "$SKETCHYBAR_BIN" --add item music center \
@@ -160,9 +153,9 @@ music=(
 battery=(
   update_freq=60
   background.drawing=on
-  background.height=28
-  background.corner_radius=14
-  background.color="$GLASS_BG"
+  background.height=30
+  background.corner_radius=15
+  background.color="$GLASS_BG_STRONG"
   background.border_color="$GLASS_BORDER"
   background.border_width=1
   icon.padding_left=8
@@ -177,8 +170,14 @@ battery=(
 
 clock=(
   update_freq=30
+  icon.drawing=on
+  icon="󰥔"
+  icon.font="CaskaydiaCove Nerd Font:Regular:14.0"
+  icon.color="$ACCENT"
+  icon.padding_left=10
+  icon.padding_right=0
   background.drawing=on
-  background.color="$GLASS_BG"
+  background.color="$GLASS_BG_STRONG"
   background.border_color="$GLASS_BORDER"
   label.color="$TEXT"
   label.padding_left=10
