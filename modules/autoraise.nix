@@ -1,19 +1,21 @@
 {
   delib,
   host,
+  lib,
   pkgs,
   profile,
   ...
 }:
 let
   homeDir = "/Users/${profile.username}";
+  isDarwinDesktop = !host.isServer && builtins.match ".*-darwin" host.system != null;
 in
 delib.module {
   name = "autoraise";
 
   options = delib.singleEnableOption false;
 
-  darwin.ifEnabled = {
+  darwin.ifEnabled = lib.mkIf isDarwinDesktop {
     launchd.user.agents.autoraise = {
       serviceConfig = {
         ProgramArguments = [
@@ -32,7 +34,7 @@ delib.module {
     };
   };
 
-  home.ifEnabled = {
+  home.ifEnabled = lib.mkIf isDarwinDesktop {
     home.packages = [ pkgs.autoraise ];
 
     xdg.configFile."AutoRaise/config".source = ../config/autoraise/config;
