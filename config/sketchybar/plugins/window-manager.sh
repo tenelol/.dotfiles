@@ -39,7 +39,7 @@ switch_workspace() {
 
   case "$(active_window_manager)" in
     aerospace)
-      "$AEROSPACE_CLI" workspace "$workspace"
+      "$AEROSPACE_CLI" summon-workspace "$workspace"
       ;;
     rift)
       workspace_index=$((workspace - 1))

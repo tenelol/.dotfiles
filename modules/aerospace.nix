@@ -28,7 +28,16 @@ delib.module {
         ProgramArguments = [
           "/usr/bin/open"
           "-g"
+          "--env"
+          "HOME=${homeDir}"
+          "--env"
+          "XDG_CONFIG_HOME=${homeDir}/.config"
+          "--env"
+          "PATH=/opt/homebrew/bin:/opt/homebrew/sbin:/run/current-system/sw/bin:/usr/bin:/bin:/usr/sbin:/sbin"
           "/Applications/AeroSpace.app"
+          "--args"
+          "--config-path"
+          "${homeDir}/.config/aerospace/aerospace.toml"
         ];
         RunAtLoad = true;
         ProcessType = "Interactive";
@@ -67,7 +76,16 @@ delib.module {
 
       if [ -d /Applications/AeroSpace.app ]; then
         $DRY_RUN_CMD /usr/bin/xattr -dr com.apple.quarantine /Applications/AeroSpace.app >/dev/null 2>&1 || true
-        $DRY_RUN_CMD /usr/bin/open -g /Applications/AeroSpace.app >/dev/null 2>&1 || true
+        $DRY_RUN_CMD /usr/bin/open -g \
+          --env HOME=${homeDir} \
+          --env XDG_CONFIG_HOME=${homeDir}/.config \
+          --env PATH=/opt/homebrew/bin:/opt/homebrew/sbin:/run/current-system/sw/bin:/usr/bin:/bin:/usr/sbin:/sbin \
+          /Applications/AeroSpace.app \
+          --args --config-path ${homeDir}/.config/aerospace/aerospace.toml >/dev/null 2>&1 || true
+      fi
+
+      if [ -x /opt/homebrew/bin/aerospace ]; then
+        $DRY_RUN_CMD /opt/homebrew/bin/aerospace reload-config --no-gui >/dev/null 2>&1 || true
       fi
     '';
 
