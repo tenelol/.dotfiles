@@ -81,7 +81,8 @@ delib.module {
 
       trackpad = {
         Clicking = true;
-        TrackpadThreeFingerDrag = true;
+        # Rift uses three-finger horizontal swipes for workspace switching.
+        TrackpadThreeFingerDrag = false;
       };
     };
 

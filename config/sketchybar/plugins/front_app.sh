@@ -1,15 +1,12 @@
 #!/bin/sh
 
 SKETCHYBAR_BIN="/opt/homebrew/bin/sketchybar"
-YABAI_BIN="/run/current-system/sw/bin/yabai"
 
 if [ "$SENDER" = "front_app_switched" ] && [ -n "$INFO" ]; then
   app_name="$INFO"
 else
   app_name="$(
-    "$YABAI_BIN" -m query --windows --window 2>/dev/null \
-      | sed -nE 's/.*"app"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/p' \
-      | head -n 1
+    osascript -e 'tell application "System Events" to get name of first application process whose frontmost is true' 2>/dev/null
   )"
 fi
 

@@ -11,9 +11,7 @@ in
 delib.module {
   name = "yabai";
 
-  options = delib.singleEnableOption (
-    !host.isServer && builtins.match ".*-darwin" host.system != null
-  );
+  options = delib.singleEnableOption false;
 
   darwin.ifEnabled = {
     services.yabai = {
