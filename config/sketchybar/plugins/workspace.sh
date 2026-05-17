@@ -1,16 +1,14 @@
 #!/bin/sh
 
 SKETCHYBAR_BIN="/opt/homebrew/bin/sketchybar"
-RIFT_CLI="/opt/homebrew/bin/rift-cli"
+PLUGIN_DIR="$(cd -- "$(dirname -- "$0")" && pwd)"
 STATE_FILE="${TMPDIR:-/tmp}/sketchybar/focused_workspace"
 SID="${NAME#space.}"
 ANIMATION=tanh
 ANIMATION_DURATION=12
-TRANSPARENT=0x00000000
-TEXT=0xeef5f7fa
-TEXT_DIM=0xa8f5f7fa
-TEXT_STRONG=0xffffffff
-ACCENT=0xff8bd5ff
+
+. "$PLUGIN_DIR/theme.sh"
+. "$PLUGIN_DIR/window-manager.sh"
 
 focused_workspace="$FOCUSED"
 
@@ -19,30 +17,24 @@ if [ -z "$focused_workspace" ] && [ -r "$STATE_FILE" ]; then
 fi
 
 if [ -z "$focused_workspace" ]; then
-  focused_workspace="$(
-    "$RIFT_CLI" query workspaces 2>/dev/null \
-      | tr '{' '\n' \
-      | sed -nE 's/.*"index"[[:space:]]*:[[:space:]]*([0-9]+).*"is_active"[[:space:]]*:[[:space:]]*true.*/\1/p' \
-      | head -n 1 \
-      | awk '{ print $1 + 1 }'
-  )"
+  focused_workspace="$(focused_workspace)"
 fi
 
 if [ "$SENDER" = "mouse.entered" ] && [ "$SID" != "$focused_workspace" ]; then
   "$SKETCHYBAR_BIN" --set "$NAME" \
-    width=18 \
+    width=28 \
     padding_left=3 \
     padding_right=3 \
-    label.width=18 \
+    label.width=28 \
     label.align=center \
     background.drawing=on \
-    background.height=3 \
-    background.corner_radius=2 \
+    background.height=24 \
+    background.corner_radius=12 \
     background.padding_left=0 \
     background.padding_right=0 \
-    background.border_width=0 \
-    background.color="$TRANSPARENT" \
-    background.border_color="$TRANSPARENT"
+    background.border_width=1 \
+    background.color="$GLASS_HOVER" \
+    background.border_color="$GLASS_BORDER"
   "$SKETCHYBAR_BIN" --animate "$ANIMATION" "$ANIMATION_DURATION" --set "$NAME" \
     label.color="$TEXT"
   exit 0
@@ -50,14 +42,14 @@ fi
 
 if [ "$SENDER" = "mouse.exited" ] && [ "$SID" != "$focused_workspace" ]; then
   "$SKETCHYBAR_BIN" --set "$NAME" \
-    width=18 \
+    width=26 \
     padding_left=3 \
     padding_right=3 \
-    label.width=18 \
+    label.width=26 \
     label.align=center \
     background.drawing=on \
-    background.height=3 \
-    background.corner_radius=2 \
+    background.height=24 \
+    background.corner_radius=12 \
     background.padding_left=0 \
     background.padding_right=0 \
     background.border_width=0 \
@@ -70,30 +62,30 @@ fi
 
 if [ "$SID" = "$focused_workspace" ]; then
   "$SKETCHYBAR_BIN" --animate "$ANIMATION" 14 --set "$NAME" \
-    width=18 \
+    width=30 \
     padding_left=3 \
     padding_right=3 \
-    label.width=18 \
+    label.width=30 \
     label.align=center \
     background.drawing=on \
-    background.height=3 \
-    background.corner_radius=2 \
+    background.height=24 \
+    background.corner_radius=12 \
     background.padding_left=0 \
     background.padding_right=0 \
-    background.border_width=0 \
-    background.color="$ACCENT" \
-    background.border_color="$TRANSPARENT" \
+    background.border_width=1 \
+    background.color="$ACCENT_SOFT" \
+    background.border_color="$ACCENT" \
     label.color="$TEXT_STRONG"
 else
   "$SKETCHYBAR_BIN" --animate "$ANIMATION" "$ANIMATION_DURATION" --set "$NAME" \
-    width=18 \
+    width=26 \
     padding_left=3 \
     padding_right=3 \
-    label.width=18 \
+    label.width=26 \
     label.align=center \
     background.drawing=on \
-    background.height=3 \
-    background.corner_radius=2 \
+    background.height=24 \
+    background.corner_radius=12 \
     background.padding_left=0 \
     background.padding_right=0 \
     background.border_width=0 \
