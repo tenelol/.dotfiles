@@ -131,7 +131,8 @@ nh darwin build . -H macbook-redmoon
 - 外部バイナリに依存する integration は explicit allowlist に寄せ、将来 host を足しても暗黙に広げない
 - Linux desktop は `niri` 前提
 - macOS desktop は `Rift` 前提。yabai/skhd は使わず、Rift の virtual workspace と SketchyBar 連携に寄せる
-- Rift は外部ディスプレイ運用を優先して `bsp` を既定にする。`scrolling` は `Alt+/` で明示的に使い、3 本指 horizontal swipe は Rift の virtual workspace 移動に使う
+- Rift は `scrolling` を既定にして niri 風の column workflow に寄せる。`Alt+h/l` で column 間 focus、`Alt+Ctrl+Left/Right` で strip scroll、`Alt+Ctrl+Up/Down` で center/snap。3 本指 horizontal swipe は Rift の virtual workspace 移動に使う
+- 外部ディスプレイで `scrolling` が不安定なときは `Alt+b` で一時的に `bsp` へ戻す
 - `nixos.base` は全 NixOS host 共通、desktop 前提は host 非 server の module に分離
 - macOS でも同じ Neovim 設定を使う。clipboard や language toolchain は Nix 側で揃える
 
