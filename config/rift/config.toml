@@ -20,7 +20,7 @@ run_on_start = [
 hot_reload = true
 
 [settings.layout]
-mode = "bsp"
+mode = "scrolling"
 
 [settings.layout.master_stack]
 master_ratio = 0.6
@@ -29,6 +29,7 @@ master_side = "left"
 new_window_placement = "master"
 
 [settings.layout.scrolling]
+animate = false
 column_width_ratio = 0.7
 min_column_width_ratio = 0.3
 max_column_width_ratio = 0.9
@@ -133,6 +134,10 @@ display_move = "Alt + Ctrl + Shift"
 "Alt + M" = { set_workspace_layout = { mode = "master_stack" } }
 "Alt + Comma" = { set_workspace_layout = { mode = "stack" } }
 "Alt + Period" = { set_workspace_layout = { mode = "traditional" } }
+"Alt + Ctrl + Left" = { scroll_strip = { delta = -0.5 } }
+"Alt + Ctrl + Right" = { scroll_strip = { delta = 0.5 } }
+"Alt + Ctrl + Down" = "snap_strip"
+"Alt + Ctrl + Up" = "center_selection"
 
 "Alt + H" = { move_focus = "left" }
 "Alt + J" = { move_focus = "down" }
