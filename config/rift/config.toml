@@ -1,11 +1,11 @@
 [settings]
 animate = true
-animation_duration = 3.0
+animation_duration = 0.2
 animation_fps = 100.0
 default_disable = false
 
 focus_follows_mouse = true
-mouse_follows_focus = true
+mouse_follows_focus = false
 mouse_hides_on_focus = false
 auto_focus_blacklist = [
   "com.apple.dock",
@@ -29,7 +29,7 @@ master_side = "left"
 new_window_placement = "master"
 
 [settings.layout.scrolling]
-animate = true
+animate = false
 column_width_ratio = 0.7
 min_column_width_ratio = 0.3
 max_column_width_ratio = 0.9
@@ -123,6 +123,7 @@ display_move = "Alt + Ctrl + Shift"
 
 [keys]
 "Alt + Enter" = { exec = ["/bin/bash", "-c", "open -a Ghostty"] }
+"Alt + Ctrl + Shift + R" = { exec = ["/opt/homebrew/bin/rift-cli", "service", "restart"] }
 
 "Alt + Slash" = { set_workspace_layout = { mode = "scrolling" } }
 "Alt + B" = { set_workspace_layout = { mode = "bsp" } }
