@@ -20,7 +20,7 @@ run_on_start = [
 hot_reload = true
 
 [settings.layout]
-mode = "scrolling"
+mode = "bsp"
 
 [settings.layout.master_stack]
 master_ratio = 0.6
@@ -36,12 +36,12 @@ alignment = "center"
 focus_navigation_style = "niri"
 
 [settings.layout.scrolling.gestures]
-enabled = true
+enabled = false
 invert_horizontal = false
 vertical_tolerance = 0.4
 fingers = 3
 distance_pct = 0.08
-propagate_to_workspace_swipe = true
+propagate_to_workspace_swipe = false
 workspace_switch_threshold = 0.625
 
 [settings.layout.stack]
@@ -73,12 +73,12 @@ thickness = 20.0
 spacing = 1.0
 
 [settings.ui.mission_control]
-enabled = true
+enabled = false
 fade_enabled = false
 fade_duration_ms = 180.0
 
 [settings.gestures]
-enabled = true
+enabled = false
 invert_horizontal_swipe = false
 swipe_vertical_tolerance = 0.4
 skip_empty = false
@@ -179,7 +179,11 @@ display_move = "Alt + Ctrl + Shift"
 "Alt + Shift + Space" = "toggle_window_floating"
 "Alt + Shift + X" = "toggle_orientation"
 "Alt + Shift + F" = "toggle_fullscreen"
-"Alt + Ctrl + M" = "show_mission_control_all"
+
+"Alt + Shift + Left" = { focus_display = "left" }
+"Alt + Shift + Right" = { focus_display = "right" }
 
 "display_move + H" = { move_window_to_display = { selector = "left" } }
 "display_move + L" = { move_window_to_display = { selector = "right" } }
+"display_move + Left" = { move_window_to_display = { selector = "left" } }
+"display_move + Right" = { move_window_to_display = { selector = "right" } }
