@@ -1,2 +1,8 @@
 # AutoRaise config file
-ignoreApps="Codex,Codex App"
+pollMillis=50
+delay=3
+requireMouseStop=true
+ignoreSpaceChanged=true
+disableKey="control"
+mouseDelta=0.1
+ignoreApps="Codex,Codex App,Hammerspoon"

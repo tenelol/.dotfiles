@@ -47,7 +47,7 @@ delib.module {
     system.activationScripts.cleanupLegacyYabai.text = ''
       uid="$(/usr/bin/id -u ${profile.username})"
 
-      for label in org.nixos.aerospace org.nixos.yabai org.nixos.skhd homebrew.mxcl.yabai homebrew.mxcl.skhd; do
+      for label in org.nixos.aerospace org.nixos.autoraise org.nixos.yabai org.nixos.skhd homebrew.mxcl.yabai homebrew.mxcl.skhd; do
         /bin/launchctl bootout "gui/$uid/$label" >/dev/null 2>&1 || true
       done
 
@@ -58,6 +58,8 @@ delib.module {
 
       /usr/bin/pkill -u ${profile.username} -x AeroSpace >/dev/null 2>&1 || true
       /usr/bin/pkill -u ${profile.username} -x aerospace >/dev/null 2>&1 || true
+      /usr/bin/pkill -u ${profile.username} -x autoraise >/dev/null 2>&1 || true
+      /usr/bin/pkill -u ${profile.username} -x AutoRaise >/dev/null 2>&1 || true
       /usr/bin/pkill -u ${profile.username} -x yabai >/dev/null 2>&1 || true
       /usr/bin/pkill -u ${profile.username} -x skhd >/dev/null 2>&1 || true
 
