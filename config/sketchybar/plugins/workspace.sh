@@ -7,7 +7,12 @@ SID="${NAME#space.}"
 ANIMATION=tanh
 ANIMATION_DURATION=12
 
-. "$PLUGIN_DIR/theme.sh"
+TRANSPARENT=0x00000000
+TEXT=0xeef5f7fa
+TEXT_DIM=0xa8f5f7fa
+TEXT_STRONG=0xffffffff
+ACCENT=0xff8bd5ff
+
 . "$PLUGIN_DIR/window-manager.sh"
 
 focused_workspace="$FOCUSED"
@@ -22,19 +27,19 @@ fi
 
 if [ "$SENDER" = "mouse.entered" ] && [ "$SID" != "$focused_workspace" ]; then
   "$SKETCHYBAR_BIN" --set "$NAME" \
-    width=28 \
+    width=18 \
     padding_left=3 \
     padding_right=3 \
-    label.width=28 \
+    label.width=18 \
     label.align=center \
     background.drawing=on \
-    background.height=24 \
-    background.corner_radius=12 \
+    background.height=3 \
+    background.corner_radius=2 \
     background.padding_left=0 \
     background.padding_right=0 \
-    background.border_width=1 \
-    background.color="$GLASS_HOVER" \
-    background.border_color="$GLASS_BORDER"
+    background.border_width=0 \
+    background.color="$TRANSPARENT" \
+    background.border_color="$TRANSPARENT"
   "$SKETCHYBAR_BIN" --animate "$ANIMATION" "$ANIMATION_DURATION" --set "$NAME" \
     label.color="$TEXT"
   exit 0
@@ -42,14 +47,14 @@ fi
 
 if [ "$SENDER" = "mouse.exited" ] && [ "$SID" != "$focused_workspace" ]; then
   "$SKETCHYBAR_BIN" --set "$NAME" \
-    width=26 \
+    width=18 \
     padding_left=3 \
     padding_right=3 \
-    label.width=26 \
+    label.width=18 \
     label.align=center \
     background.drawing=on \
-    background.height=24 \
-    background.corner_radius=12 \
+    background.height=3 \
+    background.corner_radius=2 \
     background.padding_left=0 \
     background.padding_right=0 \
     background.border_width=0 \
@@ -62,30 +67,30 @@ fi
 
 if [ "$SID" = "$focused_workspace" ]; then
   "$SKETCHYBAR_BIN" --animate "$ANIMATION" 14 --set "$NAME" \
-    width=30 \
+    width=18 \
     padding_left=3 \
     padding_right=3 \
-    label.width=30 \
+    label.width=18 \
     label.align=center \
     background.drawing=on \
-    background.height=24 \
-    background.corner_radius=12 \
+    background.height=3 \
+    background.corner_radius=2 \
     background.padding_left=0 \
     background.padding_right=0 \
-    background.border_width=1 \
-    background.color="$ACCENT_SOFT" \
-    background.border_color="$ACCENT" \
+    background.border_width=0 \
+    background.color="$ACCENT" \
+    background.border_color="$TRANSPARENT" \
     label.color="$TEXT_STRONG"
 else
   "$SKETCHYBAR_BIN" --animate "$ANIMATION" "$ANIMATION_DURATION" --set "$NAME" \
-    width=26 \
+    width=18 \
     padding_left=3 \
     padding_right=3 \
-    label.width=26 \
+    label.width=18 \
     label.align=center \
     background.drawing=on \
-    background.height=24 \
-    background.corner_radius=12 \
+    background.height=3 \
+    background.corner_radius=2 \
     background.padding_left=0 \
     background.padding_right=0 \
     background.border_width=0 \

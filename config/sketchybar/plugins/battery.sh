@@ -1,9 +1,9 @@
 #!/bin/sh
 
 SKETCHYBAR_BIN="/opt/homebrew/bin/sketchybar"
-PLUGIN_DIR="$(cd -- "$(dirname -- "$0")" && pwd)"
-
-. "$PLUGIN_DIR/theme.sh"
+GLASS_BG=0x260b1018
+GLASS_BORDER=0x30ffffff
+TEXT=0xeef5f7fa
 
 battery_status="$(/usr/bin/pmset -g batt)"
 percentage="$(printf '%s\n' "$battery_status" | /usr/bin/grep -Eo '[0-9]+%' | /usr/bin/head -n 1 | /usr/bin/cut -d% -f1)"
@@ -13,23 +13,23 @@ percentage="$(printf '%s\n' "$battery_status" | /usr/bin/grep -Eo '[0-9]+%' | /u
 case "$percentage" in
   9[0-9]|100)
     icon=""
-    color="$ACCENT_ALT"
+    color="0xff79f2c0"
     ;;
   [6-8][0-9])
     icon=""
-    color="$TEXT"
+    color="0xfff5f7fa"
     ;;
   [3-5][0-9])
     icon=""
-    color="$WARNING"
+    color="0xffffd166"
     ;;
   [1-2][0-9])
     icon=""
-    color="$WARNING"
+    color="0xffff9f43"
     ;;
   *)
     icon=""
-    color="$DANGER"
+    color="0xffff6b6b"
     ;;
 esac
 
@@ -44,40 +44,32 @@ esac
 
 if [ -n "$charging" ]; then
   icon=""
-  color="$ACCENT"
+  color="$TEXT"
 fi
 
 case "$percentage" in
   [0-9]|1[0-9])
     background_drawing=on
-    background_color="$DANGER_SOFT"
-    border_color="$DANGER"
-    label_color="$TEXT_STRONG"
-    ;;
-  2[0-9])
-    background_drawing=on
-    background_color="$WARNING_SOFT"
-    border_color="$WARNING"
-    label_color="$TEXT_STRONG"
+    background_color=0x38ff6b6b
+    border_color=0x66ff6b6b
     ;;
   *)
     background_drawing=on
-    background_color="$GLASS_BG_STRONG"
+    background_color="$GLASS_BG"
     border_color="$GLASS_BORDER"
-    label_color="$TEXT"
     ;;
 esac
 
 "$SKETCHYBAR_BIN" --set "$NAME" \
   background.drawing="$background_drawing" \
-  background.height=30 \
-  background.corner_radius=15 \
+  background.height=28 \
+  background.corner_radius=14 \
   background.border_width=1 \
   background.color="$background_color" \
   background.border_color="$border_color" \
   icon.drawing=on \
   icon="$icon" \
-  icon.font="CaskaydiaCove Nerd Font:Regular:14.0" \
+  icon.font="CaskaydiaCove Nerd Font:Regular:13.0" \
   icon.color="$color" \
   label="${percentage}%" \
-  label.color="$label_color"
+  label.color="$TEXT"

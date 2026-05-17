@@ -7,7 +7,11 @@ STATE_FILE="$STATE_DIR/focused_workspace"
 ANIMATION=tanh
 ANIMATION_DURATION=12
 
-. "$PLUGIN_DIR/theme.sh"
+TRANSPARENT=0x00000000
+TEXT_DIM=0xa8f5f7fa
+TEXT_STRONG=0xffffffff
+ACCENT=0xff8bd5ff
+
 . "$PLUGIN_DIR/window-manager.sh"
 
 is_managed_workspace() {
@@ -21,19 +25,19 @@ set_active() {
   is_managed_workspace "$1" || return 0
 
   "$SKETCHYBAR_BIN" --animate "$ANIMATION" 14 --set "space.$1" \
-    width=30 \
+    width=18 \
     padding_left=3 \
     padding_right=3 \
-    label.width=30 \
+    label.width=18 \
     label.align=center \
     background.drawing=on \
-    background.height=24 \
-    background.corner_radius=12 \
+    background.height=3 \
+    background.corner_radius=2 \
     background.padding_left=0 \
     background.padding_right=0 \
-    background.border_width=1 \
-    background.color="$ACCENT_SOFT" \
-    background.border_color="$ACCENT" \
+    background.border_width=0 \
+    background.color="$ACCENT" \
+    background.border_color="$TRANSPARENT" \
     label.color="$TEXT_STRONG"
 }
 
@@ -41,14 +45,14 @@ set_inactive() {
   is_managed_workspace "$1" || return 0
 
   "$SKETCHYBAR_BIN" --animate "$ANIMATION" "$ANIMATION_DURATION" --set "space.$1" \
-    width=26 \
+    width=18 \
     padding_left=3 \
     padding_right=3 \
-    label.width=26 \
+    label.width=18 \
     label.align=center \
     background.drawing=on \
-    background.height=24 \
-    background.corner_radius=12 \
+    background.height=3 \
+    background.corner_radius=2 \
     background.padding_left=0 \
     background.padding_right=0 \
     background.border_width=0 \
