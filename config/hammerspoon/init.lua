@@ -87,6 +87,20 @@ local function yabaiSpaces()
   return spaces
 end
 
+local function yabaiWindows()
+  local output, ok = hs.execute("/run/current-system/sw/bin/yabai -m query --windows 2>/dev/null", true)
+  if not ok or not output or output == "" then
+    return nil, "failed to query yabai windows"
+  end
+
+  local decodeOk, windows = pcall(json.decode, output)
+  if not decodeOk or type(windows) ~= "table" then
+    return nil, "failed to parse yabai windows"
+  end
+
+  return windows
+end
+
 local function spaceIDForIndex(index)
   local spaces, err = yabaiSpaces()
   if not spaces then
@@ -106,6 +120,36 @@ end
 local function focusSpaceByNativeShortcut(index)
   controlTapSuppressedUntil = hs.timer.secondsSinceEpoch() + 0.5
   hs.eventtap.keyStroke({ "ctrl" }, tostring(index), 0)
+end
+
+local function focusSpaceByID(spaceID)
+  if hs.spaces and hs.spaces.gotoSpace then
+    return hs.spaces.gotoSpace(spaceID)
+  end
+
+  local spaces, err = yabaiSpaces()
+  if not spaces then
+    return false, err
+  end
+
+  for _, space in ipairs(spaces) do
+    if tonumber(space.id) == tonumber(spaceID) then
+      focusSpaceByNativeShortcut(space.index)
+      return true
+    end
+  end
+
+  return false, ("space id %s was not found"):format(tostring(spaceID))
+end
+
+local function focusYabaiWindow(windowID)
+  if not windowID then
+    return
+  end
+
+  hs.timer.doAfter(0.15, function()
+    hs.execute(("/run/current-system/sw/bin/yabai -m window --focus %d >/dev/null 2>&1"):format(windowID), true)
+  end)
 end
 
 function _G.yabaiMoveFocusedWindowToSpace(index)
@@ -132,6 +176,72 @@ function _G.yabaiMoveFocusedWindowToSpace(index)
   end)
 
   return true
+end
+
+local appSpaceFocusIgnoredBundles = {
+  ["com.raycast.macos"] = true,
+  ["org.hammerspoon.Hammerspoon"] = true,
+}
+
+local function focusActivatedAppSpace(app)
+  if not app then
+    return
+  end
+
+  local bundleID = app:bundleID()
+  if bundleID and appSpaceFocusIgnoredBundles[bundleID] then
+    return
+  end
+
+  local appPID = app:pid()
+  if not appPID then
+    return
+  end
+
+  local windows = yabaiWindows()
+  if not windows then
+    return
+  end
+
+  local targetWindow = nil
+  for _, window in ipairs(windows) do
+    if tonumber(window.pid) == tonumber(appPID)
+        and not window["is-minimized"]
+        and not window["is-hidden"] then
+      if window["is-visible"] then
+        return
+      end
+
+      if window["has-focus"] then
+        targetWindow = window
+        break
+      end
+
+      if not targetWindow and window["root-window"] then
+        targetWindow = window
+      end
+    end
+  end
+
+  if not targetWindow or not targetWindow.space then
+    return
+  end
+
+  local spaceID = spaceIDForIndex(targetWindow.space)
+  if not spaceID then
+    return
+  end
+
+  if targetWindow.display then
+    hs.execute(("/run/current-system/sw/bin/yabai -m display --focus %d >/dev/null 2>&1"):format(targetWindow.display), true)
+  end
+
+  focusSpaceByID(spaceID)
+  focusYabaiWindow(targetWindow.id)
+end
+
+function _G.focusFrontmostAppSpace()
+  focusActivatedAppSpace(hs.application.frontmostApplication())
 end
 
 local leftCommandTapState = {
@@ -277,8 +387,14 @@ local function syncControlDoubleTapTmuxPrefix()
   end
 end
 
-_G.terminalFocusWatcher = hs.application.watcher.new(function()
+_G.applicationFocusWatcher = hs.application.watcher.new(function(_, eventType)
   syncControlDoubleTapTmuxPrefix()
+
+  if eventType == hs.application.watcher.activated then
+    hs.timer.doAfter(0.15, function()
+      _G.focusFrontmostAppSpace()
+    end)
+  end
 end)
 
 local function systemZoomHotkeysEnabled()
@@ -341,7 +457,7 @@ end)
 
 if accessibilityEnabled then
   _G.commandTapImeSwitch:start()
-  _G.terminalFocusWatcher:start()
+  _G.applicationFocusWatcher:start()
   syncControlDoubleTapTmuxPrefix()
   _G.forcePressZoomTap:start()
   _G.forcePressDragSuppressor:start()
