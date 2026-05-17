@@ -20,11 +20,15 @@ fi
 
 if [ -z "$focused_workspace" ]; then
   focused_workspace="$(
-    "$RIFT_CLI" query workspaces 2>/dev/null \
-      | tr '{' '\n' \
-      | sed -nE 's/.*"index"[[:space:]]*:[[:space:]]*([0-9]+).*"is_active"[[:space:]]*:[[:space:]]*true.*/\1/p' \
-      | head -n 1 \
-      | awk '{ print $1 + 1 }'
+    if /usr/bin/pgrep -qx AeroSpace >/dev/null 2>&1 && [ -x /opt/homebrew/bin/aerospace ]; then
+      /opt/homebrew/bin/aerospace list-workspaces --focused 2>/dev/null | head -n 1
+    else
+      "$RIFT_CLI" query workspaces 2>/dev/null \
+        | tr '{' '\n' \
+        | sed -nE 's/.*"index"[[:space:]]*:[[:space:]]*([0-9]+).*"is_active"[[:space:]]*:[[:space:]]*true.*/\1/p' \
+        | head -n 1 \
+        | awk '{ print $1 + 1 }'
+    fi
   )"
 fi
 
