@@ -1,6 +1,6 @@
 [settings]
 animate = true
-animation_duration = 3.0
+animation_duration = 5.0
 animation_fps = 100.0
 default_disable = false
 
