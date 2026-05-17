@@ -1,18 +1,23 @@
 #!/bin/sh
 
 SKETCHYBAR_BIN="/opt/homebrew/bin/sketchybar"
-PLUGIN_DIR="$(cd -- "$(dirname -- "$0")" && pwd)"
+RIFT_CLI="/opt/homebrew/bin/rift-cli"
 STATE_DIR="${TMPDIR:-/tmp}/sketchybar"
 STATE_FILE="$STATE_DIR/focused_workspace"
 ANIMATION=tanh
 ANIMATION_DURATION=12
-
 TRANSPARENT=0x00000000
 TEXT_DIM=0xa8f5f7fa
 TEXT_STRONG=0xffffffff
 ACCENT=0xff8bd5ff
 
-. "$PLUGIN_DIR/window-manager.sh"
+query_focused_workspace() {
+  "$RIFT_CLI" query workspaces 2>/dev/null \
+    | tr '{' '\n' \
+    | sed -nE 's/.*"index"[[:space:]]*:[[:space:]]*([0-9]+).*"is_active"[[:space:]]*:[[:space:]]*true.*/\1/p' \
+    | head -n 1 \
+    | awk '{ print $1 + 1 }'
+}
 
 is_managed_workspace() {
   case "$1" in
@@ -62,7 +67,7 @@ set_inactive() {
 }
 
 focused_workspace="$FOCUSED"
-[ -n "$focused_workspace" ] || focused_workspace="$(focused_workspace)"
+[ -n "$focused_workspace" ] || focused_workspace="$(query_focused_workspace)"
 [ -n "$focused_workspace" ] || exit 0
 
 previous_workspace="$PREVIOUS"

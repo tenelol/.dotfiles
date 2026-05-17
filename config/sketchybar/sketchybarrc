@@ -1,9 +1,8 @@
 #!/bin/bash
 
 SKETCHYBAR_BIN="/opt/homebrew/bin/sketchybar"
+RIFT_CLI="/opt/homebrew/bin/rift-cli"
 PLUGIN_DIR="$CONFIG_DIR/plugins"
-
-. "$PLUGIN_DIR/window-manager.sh"
 
 TRANSPARENT=0x00000000
 GLASS_BG=0x260b1018
@@ -12,6 +11,14 @@ TEXT=0xeef5f7fa
 TEXT_DIM=0xa8f5f7fa
 TEXT_MUTED=0xcff5f7fa
 TEXT_STRONG=0xffffffff
+
+focused_workspace() {
+  "$RIFT_CLI" query workspaces 2>/dev/null \
+    | tr '{' '\n' \
+    | sed -nE 's/.*"index"[[:space:]]*:[[:space:]]*([0-9]+).*"is_active"[[:space:]]*:[[:space:]]*true.*/\1/p' \
+    | head -n 1 \
+    | awk '{ print $1 + 1 }'
+}
 
 bar=(
   position=top
@@ -57,6 +64,7 @@ default=(
 "$SKETCHYBAR_BIN" --add event workspace_change
 
 for sid in 1 2 3 4 5; do
+  workspace_index=$((sid - 1))
   item=(
     width=18
     padding_left=3
@@ -76,7 +84,7 @@ for sid in 1 2 3 4 5; do
     background.border_color="$TRANSPARENT"
     background.y_offset=-11
     script="$PLUGIN_DIR/workspace.sh"
-    click_script="/bin/sh -lc '. \"$PLUGIN_DIR/window-manager.sh\"; switch_workspace $sid'"
+    click_script="$RIFT_CLI execute workspace switch $workspace_index"
   )
 
   "$SKETCHYBAR_BIN" --add item "space.$sid" left \
