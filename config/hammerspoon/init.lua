@@ -38,6 +38,11 @@ local tmuxPrefixConfig = {
   },
 }
 
+local zoomPressConfig = {
+  zoomOutStepsOnPress = 24,
+  zoomInStepsOnPress = 1,
+}
+
 local leftCommandKeyCode = keycodes.map.cmd
 local leftControlKeyCode = keycodes.map.ctrl or 59
 local rightControlKeyCode = keycodes.map.rightctrl or 62
@@ -297,6 +302,16 @@ local function toggleSystemZoom()
   return true
 end
 
+local function normalizeActiveSystemZoomScale()
+  for _ = 1, zoomPressConfig.zoomOutStepsOnPress do
+    hs.eventtap.keyStroke({ "cmd", "alt" }, "-", 0)
+  end
+
+  for _ = 1, zoomPressConfig.zoomInStepsOnPress do
+    hs.eventtap.keyStroke({ "cmd", "alt" }, "=", 0)
+  end
+end
+
 -- Keep the eventtap in a global so Hammerspoon does not collect it.
 _G.forcePressZoomTap = hs.eventtap.new({ eventTypes.gesture }, function(event)
   if not pressureEvent or event:getType(true) ~= pressureEvent then
@@ -316,6 +331,13 @@ _G.forcePressZoomTap = hs.eventtap.new({ eventTypes.gesture }, function(event)
       forcePressActive = true
       lastZoomToggleAt = now
       zoomToggledForPress = toggleSystemZoom()
+      if zoomToggledForPress then
+        hs.timer.doAfter(0.05, function()
+          if forcePressActive and zoomToggledForPress then
+            normalizeActiveSystemZoomScale()
+          end
+        end)
+      end
     end
 
     return true
