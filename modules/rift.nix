@@ -2,26 +2,28 @@
   delib,
   hm,
   host,
+  lib,
   pkgs,
   profile,
   ...
 }:
 let
   homeDir = "/Users/${profile.username}";
+  isDarwinDesktop = !host.isServer && builtins.match ".*-darwin" host.system != null;
 in
 delib.module {
   name = "rift";
 
-  options = delib.singleEnableOption (
-    !host.isServer && builtins.match ".*-darwin" host.system != null
-  );
+  options = delib.singleEnableOption isDarwinDesktop;
 
-  darwin.ifEnabled = {
+  darwin.always = lib.mkIf isDarwinDesktop {
     homebrew = {
       taps = [ "acsandmann/tap" ];
       brews = [ "acsandmann/tap/rift" ];
     };
+  };
 
+  darwin.ifEnabled = {
     launchd.user.agents.rift = {
       serviceConfig = {
         ProgramArguments = [
@@ -45,10 +47,17 @@ delib.module {
     system.activationScripts.cleanupLegacyYabai.text = ''
       uid="$(/usr/bin/id -u ${profile.username})"
 
-      for label in org.nixos.yabai org.nixos.skhd homebrew.mxcl.yabai homebrew.mxcl.skhd; do
+      for label in org.nixos.aerospace org.nixos.yabai org.nixos.skhd homebrew.mxcl.yabai homebrew.mxcl.skhd; do
         /bin/launchctl bootout "gui/$uid/$label" >/dev/null 2>&1 || true
       done
 
+      if /usr/bin/pgrep -u ${profile.username} -x AeroSpace >/dev/null 2>&1; then
+        launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/osascript \
+          -e 'tell application "AeroSpace" to quit' >/dev/null 2>&1 || true
+      fi
+
+      /usr/bin/pkill -u ${profile.username} -x AeroSpace >/dev/null 2>&1 || true
+      /usr/bin/pkill -u ${profile.username} -x aerospace >/dev/null 2>&1 || true
       /usr/bin/pkill -u ${profile.username} -x yabai >/dev/null 2>&1 || true
       /usr/bin/pkill -u ${profile.username} -x skhd >/dev/null 2>&1 || true
 

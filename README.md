@@ -17,7 +17,7 @@ NixOS と `nix-darwin` を 1 つの flake で管理し、Home Manager は各 sys
 - [flake.nix](./flake.nix): flake entrypoint。`denix.lib.configurations` で host/module を束ねる
 - [hosts](./hosts): host 名、種別、system、rice や boot のような host 固有 metadata と hardware import だけを置く薄い定義
 - [modules](./modules): denix が自動発見する shared / host-specific module
-- [rices](./rices): denix の rice 定義。今は共通 wallpaper を切り替える最小実装
+- [rices](./rices): denix の rice 定義。共通 wallpaper と macOS の WM variant を切り替える
 - [home/home.nix](./home/home.nix): 共通 Home Manager 設定
 - [config](./config): Neovim、fish、niri、Rift、waybar などの実ファイル
 - [packages](./packages): 軽い独自 package 定義
@@ -117,11 +117,12 @@ rice を切り替えて build:
 ```sh
 nh os build . -H nvidia-desktop-redmoon
 nh darwin build . -H macbook-redmoon
+nh darwin build . -H macbook-aerospace
 ```
 
 `nh` を使う前提で書いています。`nixos-rebuild` や `darwin-rebuild` を直接叩くより、普段の運用では `nh` を優先します。
 共通の評価入口として `./scripts/validate` を置いていて、`eval` / `linux` / `darwin` の 3 モードを使い分けます。
-通常の `nixos` / `nvidia-desktop` / `macbook` は `indigo` rice を使い、`*-redmoon` のような派生 config で別 wallpaper を試せます。Linux desktop では `switch` 後に Home Manager activation が `apply-theme-wallpaper` を叩くので、`niri` 上でも wallpaper が即時反映されます。headless な `nixos-server` にも rice 名は付きますが、今のところ見た目には影響しません。
+通常の `nixos` / `nvidia-desktop` / `macbook` は `indigo` rice を使い、`*-redmoon` のような派生 config で別 wallpaper を試せます。`macbook-aerospace` は `indigo` を継承しつつ、Rift を止めて AeroSpace を起動する macOS 用 variant です。Linux desktop では `switch` 後に Home Manager activation が `apply-theme-wallpaper` を叩くので、`niri` 上でも wallpaper が即時反映されます。headless な `nixos-server` にも rice 名は付きますが、今のところ見た目には影響しません。
 
 ## Design Notes
 
@@ -130,7 +131,7 @@ nh darwin build . -H macbook-redmoon
 - bootloader のような machine 固有前提は host metadata で明示し、共通 base module に埋め込まない
 - 外部バイナリに依存する integration は explicit allowlist に寄せ、将来 host を足しても暗黙に広げない
 - Linux desktop は `niri` 前提
-- macOS desktop は `Rift` 前提。yabai/skhd は使わず、Rift の virtual workspace と SketchyBar 連携に寄せる
+- macOS desktop は通常 `Rift` 前提。外部ディスプレイで Rift が不安定なときは `macbook-aerospace` rice で AeroSpace に切り替える
 - Rift は `scrolling` を既定にして niri 風の column workflow に寄せる。`Alt+h/l` で column 間 focus、`Alt+Ctrl+Left/Right` で strip scroll、`Alt+Ctrl+Up/Down` で center/snap。3 本指 horizontal swipe は Rift の virtual workspace 移動に使う
 - 外部ディスプレイで `scrolling` が不安定なときは `Alt+b` で一時的に `bsp` へ戻す
 - `nixos.base` は全 NixOS host 共通、desktop 前提は host 非 server の module に分離
