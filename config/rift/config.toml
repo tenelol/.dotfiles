@@ -93,7 +93,7 @@ drag_swap_fraction = 0.3
 
 [virtual_workspaces]
 enabled = true
-default_workspace_count = 9
+default_workspace_count = 5
 auto_assign_windows = true
 preserve_focus_per_workspace = true
 workspace_auto_back_and_forth = false
@@ -106,10 +106,6 @@ workspace_names = [
   "3",
   "4",
   "5",
-  "6",
-  "7",
-  "8",
-  "9",
 ]
 
 app_rules = [
@@ -165,20 +161,12 @@ display_move = "Alt + Ctrl + Shift"
 "Alt + 3" = { switch_to_workspace = 2 }
 "Alt + 4" = { switch_to_workspace = 3 }
 "Alt + 5" = { switch_to_workspace = 4 }
-"Alt + 6" = { switch_to_workspace = 5 }
-"Alt + 7" = { switch_to_workspace = 6 }
-"Alt + 8" = { switch_to_workspace = 7 }
-"Alt + 9" = { switch_to_workspace = 8 }
 
 "move + 1" = { move_window_to_workspace = 0 }
 "move + 2" = { move_window_to_workspace = 1 }
 "move + 3" = { move_window_to_workspace = 2 }
 "move + 4" = { move_window_to_workspace = 3 }
 "move + 5" = { move_window_to_workspace = 4 }
-"move + 6" = { move_window_to_workspace = 5 }
-"move + 7" = { move_window_to_workspace = 6 }
-"move + 8" = { move_window_to_workspace = 7 }
-"move + 9" = { move_window_to_workspace = 8 }
 
 "Alt + Tab" = "switch_to_last_workspace"
 "Alt + Shift + Tab" = "next_workspace"
