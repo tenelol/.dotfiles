@@ -15,6 +15,10 @@ on-focused-monitor-changed = ['move-mouse monitor-lazy-center']
 automatically-unhide-macos-hidden-apps = false
 persistent-workspaces = ['1', '2', '3', '4', '5']
 
+[workspace-to-monitor-force-assignment]
+4 = ['secondary', 'main']
+5 = ['secondary', 'main']
+
 exec-on-workspace-change = [
   '/bin/bash',
   '-lc',
@@ -76,11 +80,11 @@ alt-ctrl-l = 'swap --wrap-around right'
 alt-minus = 'resize smart -50'
 alt-equal = 'resize smart +50'
 
-alt-1 = 'summon-workspace 1'
-alt-2 = 'summon-workspace 2'
-alt-3 = 'summon-workspace 3'
-alt-4 = 'summon-workspace 4'
-alt-5 = 'summon-workspace 5'
+alt-1 = 'workspace 1'
+alt-2 = 'workspace 2'
+alt-3 = 'workspace 3'
+alt-4 = 'workspace 4'
+alt-5 = 'workspace 5'
 
 alt-shift-1 = 'move-node-to-workspace --focus-follows-window 1'
 alt-shift-2 = 'move-node-to-workspace --focus-follows-window 2'
@@ -103,6 +107,8 @@ alt-shift-left = 'focus-monitor left'
 alt-shift-right = 'focus-monitor right'
 alt-shift-up = 'focus-monitor up'
 alt-shift-down = 'focus-monitor down'
+alt-shift-m = 'focus-monitor main'
+alt-shift-s = 'focus-monitor secondary main'
 
 alt-ctrl-shift-h = 'move-node-to-monitor --focus-follows-window left'
 alt-ctrl-shift-l = 'move-node-to-monitor --focus-follows-window right'
@@ -112,6 +118,8 @@ alt-ctrl-shift-j = 'move-node-to-monitor --focus-follows-window down'
 alt-ctrl-shift-k = 'move-node-to-monitor --focus-follows-window up'
 alt-ctrl-shift-down = 'move-node-to-monitor --focus-follows-window down'
 alt-ctrl-shift-up = 'move-node-to-monitor --focus-follows-window up'
+alt-ctrl-shift-m = 'move-node-to-monitor --focus-follows-window main'
+alt-ctrl-shift-s = 'move-node-to-monitor --focus-follows-window secondary main'
 alt-ctrl-shift-tab = 'move-workspace-to-monitor --wrap-around next'
 
 [mode.service.binding]
@@ -130,6 +138,8 @@ left = ['move-workspace-to-monitor --wrap-around left', 'mode main']
 right = ['move-workspace-to-monitor --wrap-around right', 'mode main']
 up = ['move-workspace-to-monitor --wrap-around up', 'mode main']
 down = ['move-workspace-to-monitor --wrap-around down', 'mode main']
+m = ['move-workspace-to-monitor main', 'mode main']
+s = ['move-workspace-to-monitor secondary main', 'mode main']
 h = ['join-with left', 'mode main']
 j = ['join-with down', 'mode main']
 k = ['join-with up', 'mode main']

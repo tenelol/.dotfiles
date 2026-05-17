@@ -84,7 +84,7 @@ for sid in 1 2 3 4 5; do
     background.border_color="$TRANSPARENT"
     background.y_offset=-11
     script="$PLUGIN_DIR/workspace.sh"
-    click_script="$RIFT_CLI execute workspace switch $workspace_index"
+    click_script="/bin/sh -lc 'if /usr/bin/pgrep -qx AeroSpace && [ -x /opt/homebrew/bin/aerospace ]; then /opt/homebrew/bin/aerospace workspace $sid; else /opt/homebrew/bin/rift-cli execute workspace switch $workspace_index; fi'"
   )
 
   "$SKETCHYBAR_BIN" --add item "space.$sid" left \

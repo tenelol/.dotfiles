@@ -12,6 +12,11 @@ TEXT_STRONG=0xffffffff
 ACCENT=0xff8bd5ff
 
 query_focused_workspace() {
+  if /usr/bin/pgrep -qx AeroSpace >/dev/null 2>&1 && [ -x /opt/homebrew/bin/aerospace ]; then
+    /opt/homebrew/bin/aerospace list-workspaces --focused 2>/dev/null | head -n 1
+    return
+  fi
+
   "$RIFT_CLI" query workspaces 2>/dev/null \
     | tr '{' '\n' \
     | sed -nE 's/.*"index"[[:space:]]*:[[:space:]]*([0-9]+).*"is_active"[[:space:]]*:[[:space:]]*true.*/\1/p' \
