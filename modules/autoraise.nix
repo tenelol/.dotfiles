@@ -11,9 +11,7 @@ in
 delib.module {
   name = "autoraise";
 
-  options = delib.singleEnableOption (
-    builtins.match ".*-darwin" host.system != null && !host.isServer
-  );
+  options = delib.singleEnableOption false;
 
   darwin.ifEnabled = {
     launchd.user.agents.autoraise = {
