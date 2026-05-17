@@ -41,6 +41,10 @@ delib.module {
         ".GlobalPreferences" = {
           AppleMenuBarVisibleInFullscreen = false;
         };
+
+        "com.apple.dock" = {
+          "workspaces-auto-swoosh" = true;
+        };
       };
 
       dock = {
