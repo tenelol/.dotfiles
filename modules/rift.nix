@@ -51,15 +51,12 @@ delib.module {
         /bin/launchctl bootout "gui/$uid/$label" >/dev/null 2>&1 || true
       done
 
-      if /usr/bin/pgrep -u ${profile.username} -x AeroSpace >/dev/null 2>&1; then
-        launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/osascript \
-          -e 'tell application "AeroSpace" to quit' >/dev/null 2>&1 || true
-      fi
-
       /usr/bin/pkill -u ${profile.username} -x AeroSpace >/dev/null 2>&1 || true
       /usr/bin/pkill -u ${profile.username} -x aerospace >/dev/null 2>&1 || true
       /usr/bin/pkill -u ${profile.username} -x autoraise >/dev/null 2>&1 || true
       /usr/bin/pkill -u ${profile.username} -x AutoRaise >/dev/null 2>&1 || true
+      /usr/bin/pkill -u ${profile.username} -f '[A]pplications/AeroSpace.app/Contents/MacOS/AeroSpace' >/dev/null 2>&1 || true
+      /usr/bin/pkill -u ${profile.username} -f '[a]utoraise.*/bin/autoraise' >/dev/null 2>&1 || true
       /usr/bin/pkill -u ${profile.username} -x yabai >/dev/null 2>&1 || true
       /usr/bin/pkill -u ${profile.username} -x skhd >/dev/null 2>&1 || true
 
@@ -91,6 +88,18 @@ delib.module {
     '';
 
     home.activation.syncRiftSketchybarSubscription = hm.dag.entryAfter [ "linkGeneration" ] ''
+      uid="$(/usr/bin/id -u ${profile.username})"
+
+      $DRY_RUN_CMD /bin/launchctl bootout "gui/$uid/org.nixos.aerospace" >/dev/null 2>&1 || true
+      $DRY_RUN_CMD /bin/launchctl bootout "gui/$uid/org.nixos.autoraise" >/dev/null 2>&1 || true
+      $DRY_RUN_CMD /usr/bin/pkill -u ${profile.username} -x AeroSpace >/dev/null 2>&1 || true
+      $DRY_RUN_CMD /usr/bin/pkill -u ${profile.username} -x aerospace >/dev/null 2>&1 || true
+      $DRY_RUN_CMD /usr/bin/pkill -u ${profile.username} -x autoraise >/dev/null 2>&1 || true
+      $DRY_RUN_CMD /usr/bin/pkill -u ${profile.username} -x AutoRaise >/dev/null 2>&1 || true
+      $DRY_RUN_CMD /usr/bin/pkill -u ${profile.username} -f '[A]pplications/AeroSpace.app/Contents/MacOS/AeroSpace' >/dev/null 2>&1 || true
+      $DRY_RUN_CMD /usr/bin/pkill -u ${profile.username} -f '[a]utoraise.*/bin/autoraise' >/dev/null 2>&1 || true
+      $DRY_RUN_CMD /bin/launchctl kickstart -k "gui/$uid/org.nixos.rift" >/dev/null 2>&1 || true
+
       if [ -x "$HOME/.config/rift/sketchybar-workspace-subscribe" ]; then
         $DRY_RUN_CMD "$HOME/.config/rift/sketchybar-workspace-subscribe" >/dev/null 2>&1 || true
       fi
