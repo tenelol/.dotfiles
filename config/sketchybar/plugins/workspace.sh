@@ -1,19 +1,16 @@
 #!/bin/sh
 
 SKETCHYBAR_BIN="/opt/homebrew/bin/sketchybar"
-PLUGIN_DIR="$(cd -- "$(dirname -- "$0")" && pwd)"
+RIFT_CLI="/opt/homebrew/bin/rift-cli"
 STATE_FILE="${TMPDIR:-/tmp}/sketchybar/focused_workspace"
 SID="${NAME#space.}"
 ANIMATION=tanh
 ANIMATION_DURATION=12
-
 TRANSPARENT=0x00000000
 TEXT=0xeef5f7fa
 TEXT_DIM=0xa8f5f7fa
 TEXT_STRONG=0xffffffff
 ACCENT=0xff8bd5ff
-
-. "$PLUGIN_DIR/window-manager.sh"
 
 focused_workspace="$FOCUSED"
 
@@ -22,7 +19,13 @@ if [ -z "$focused_workspace" ] && [ -r "$STATE_FILE" ]; then
 fi
 
 if [ -z "$focused_workspace" ]; then
-  focused_workspace="$(focused_workspace)"
+  focused_workspace="$(
+    "$RIFT_CLI" query workspaces 2>/dev/null \
+      | tr '{' '\n' \
+      | sed -nE 's/.*"index"[[:space:]]*:[[:space:]]*([0-9]+).*"is_active"[[:space:]]*:[[:space:]]*true.*/\1/p' \
+      | head -n 1 \
+      | awk '{ print $1 + 1 }'
+  )"
 fi
 
 if [ "$SENDER" = "mouse.entered" ] && [ "$SID" != "$focused_workspace" ]; then
