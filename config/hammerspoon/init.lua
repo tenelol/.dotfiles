@@ -38,7 +38,7 @@ local tmuxPrefixConfig = {
 
 local zoomPressConfig = {
   zoomOutStepsOnPress = 24,
-  zoomInStepsOnPress = 1,
+  zoomInStepsOnPress = 7,
 }
 
 local leftCommandKeyCode = keycodes.map.cmd
