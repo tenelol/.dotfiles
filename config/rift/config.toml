@@ -78,7 +78,7 @@ fade_enabled = false
 fade_duration_ms = 180.0
 
 [settings.gestures]
-enabled = false
+enabled = true
 invert_horizontal_swipe = false
 swipe_vertical_tolerance = 0.4
 skip_empty = false
