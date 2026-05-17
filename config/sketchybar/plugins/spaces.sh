@@ -1,7 +1,7 @@
 #!/bin/sh
 
 SKETCHYBAR_BIN="/opt/homebrew/bin/sketchybar"
-YABAI_BIN="/run/current-system/sw/bin/yabai"
+RIFT_CLI="/opt/homebrew/bin/rift-cli"
 STATE_DIR="${TMPDIR:-/tmp}/sketchybar"
 STATE_FILE="$STATE_DIR/focused_workspace"
 ANIMATION=tanh
@@ -12,9 +12,11 @@ TEXT_STRONG=0xffffffff
 ACCENT=0xff8bd5ff
 
 query_focused_workspace() {
-  "$YABAI_BIN" -m query --spaces --space 2>/dev/null \
-    | sed -nE 's/.*"index"[[:space:]]*:[[:space:]]*([0-9]+).*/\1/p' \
-    | head -n 1
+  "$RIFT_CLI" query workspaces 2>/dev/null \
+    | tr '{' '\n' \
+    | sed -nE 's/.*"index"[[:space:]]*:[[:space:]]*([0-9]+).*"is_active"[[:space:]]*:[[:space:]]*true.*/\1/p' \
+    | head -n 1 \
+    | awk '{ print $1 + 1 }'
 }
 
 is_managed_workspace() {
