@@ -20,7 +20,7 @@ delib.module {
         AppleKeyboardUIMode = 3;
         ApplePressAndHoldEnabled = false;
         AppleShowScrollBars = "Automatic";
-        AppleSpacesSwitchOnActivate = true;
+        AppleSpacesSwitchOnActivate = false;
         InitialKeyRepeat = 15;
         KeyRepeat = 2;
         NSAutomaticCapitalizationEnabled = false;
@@ -40,10 +40,6 @@ delib.module {
       CustomUserPreferences = {
         ".GlobalPreferences" = {
           AppleMenuBarVisibleInFullscreen = false;
-        };
-
-        "com.apple.dock" = {
-          "workspaces-auto-swoosh" = true;
         };
       };
 
