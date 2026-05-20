@@ -10,9 +10,27 @@ TRANSPARENT=0x00000000
 TEXT_DIM=0xa8f5f7fa
 TEXT_STRONG=0xffffffff
 ACCENT=0xff8bd5ff
+ALL_WORKSPACES="1 2 3 4 5 6 7 8 9 10 11 12 13 14 15"
+
+aerospace_running() {
+  /usr/bin/pgrep -qx AeroSpace >/dev/null 2>&1 && [ -x /opt/homebrew/bin/aerospace ]
+}
+
+if aerospace_running; then
+  MANAGED_WORKSPACES="$ALL_WORKSPACES"
+else
+  MANAGED_WORKSPACES="1 2 3 4 5"
+fi
+
+space_item_name() {
+  workspace_id="$1"
+  local_workspace=$(( (workspace_id - 1) % 5 + 1 ))
+
+  printf 'space.%s.%s\n' "$workspace_id" "$local_workspace"
+}
 
 query_focused_workspace() {
-  if /usr/bin/pgrep -qx AeroSpace >/dev/null 2>&1 && [ -x /opt/homebrew/bin/aerospace ]; then
+  if aerospace_running; then
     /opt/homebrew/bin/aerospace list-workspaces --focused 2>/dev/null | head -n 1
     return
   fi
@@ -25,16 +43,17 @@ query_focused_workspace() {
 }
 
 is_managed_workspace() {
-  case "$1" in
-    [1-5]) return 0 ;;
-    *) return 1 ;;
-  esac
+  for workspace_id in $MANAGED_WORKSPACES; do
+    [ "$1" = "$workspace_id" ] && return 0
+  done
+
+  return 1
 }
 
 set_active() {
   is_managed_workspace "$1" || return 0
 
-  "$SKETCHYBAR_BIN" --animate "$ANIMATION" 14 --set "space.$1" \
+  "$SKETCHYBAR_BIN" --animate "$ANIMATION" 14 --set "$(space_item_name "$1")" \
     width=18 \
     padding_left=3 \
     padding_right=3 \
@@ -54,7 +73,7 @@ set_active() {
 set_inactive() {
   is_managed_workspace "$1" || return 0
 
-  "$SKETCHYBAR_BIN" --animate "$ANIMATION" "$ANIMATION_DURATION" --set "space.$1" \
+  "$SKETCHYBAR_BIN" --animate "$ANIMATION" "$ANIMATION_DURATION" --set "$(space_item_name "$1")" \
     width=18 \
     padding_left=3 \
     padding_right=3 \
@@ -84,7 +103,7 @@ mkdir -p "$STATE_DIR"
 printf '%s\n' "$focused_workspace" > "$STATE_FILE"
 
 if [ "$REFRESH" = "all" ] || [ -z "$previous_workspace" ]; then
-  for sid in 1 2 3 4 5; do
+  for sid in $MANAGED_WORKSPACES; do
     if [ "$sid" = "$focused_workspace" ]; then
       set_active "$sid"
     else

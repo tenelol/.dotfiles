@@ -50,5 +50,13 @@ delib.module {
     '';
 
     xdg.configFile."sketchybar".source = ../config/sketchybar;
+
+    home.activation.restartSketchybar = hm.dag.entryAfter [ "linkGeneration" ] ''
+      uid="$(/usr/bin/id -u)"
+
+      if [ -x /opt/homebrew/bin/sketchybar ]; then
+        $DRY_RUN_CMD /bin/launchctl kickstart -k "gui/$uid/org.nixos.sketchybar" >/dev/null 2>&1 || true
+      fi
+    '';
   };
 }
