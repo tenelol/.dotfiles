@@ -179,6 +179,13 @@ if.app-id = 'io.tailscale.ipn.macsys'
 run = 'layout floating'
 
 [[on-window-detected]]
+if.app-id = 'com.voiceos.app'
+run = [
+  'move-node-to-monitor built-in',
+  'layout floating',
+]
+
+[[on-window-detected]]
 if.app-id = 'com.apple.finder'
 if.window-title-regex-substring = '^(Copy|Move|Info|Preferences)'
 run = 'layout floating'
