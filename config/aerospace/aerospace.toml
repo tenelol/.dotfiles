@@ -75,14 +75,14 @@ alt-ctrl-down = 'layout tiles'
 alt-ctrl-up = 'balance-sizes'
 alt-ctrl-r = 'reload-config'
 
-alt-h = 'focus --boundaries all-monitors-outer-frame left'
-alt-j = 'focus --boundaries all-monitors-outer-frame down'
-alt-k = 'focus --boundaries all-monitors-outer-frame up'
-alt-l = 'focus --boundaries all-monitors-outer-frame right'
-alt-left = 'focus --boundaries all-monitors-outer-frame left'
-alt-down = 'focus --boundaries all-monitors-outer-frame down'
-alt-up = 'focus --boundaries all-monitors-outer-frame up'
-alt-right = 'focus --boundaries all-monitors-outer-frame right'
+alt-h = 'focus --ignore-floating --boundaries all-monitors-outer-frame left'
+alt-j = 'focus --ignore-floating --boundaries all-monitors-outer-frame down'
+alt-k = 'focus --ignore-floating --boundaries all-monitors-outer-frame up'
+alt-l = 'focus --ignore-floating --boundaries all-monitors-outer-frame right'
+alt-left = 'focus --ignore-floating --boundaries all-monitors-outer-frame left'
+alt-down = 'focus --ignore-floating --boundaries all-monitors-outer-frame down'
+alt-up = 'focus --ignore-floating --boundaries all-monitors-outer-frame up'
+alt-right = 'focus --ignore-floating --boundaries all-monitors-outer-frame right'
 
 alt-shift-h = 'move left'
 alt-shift-j = 'move down'
@@ -180,10 +180,7 @@ run = 'layout floating'
 
 [[on-window-detected]]
 if.app-id = 'com.voiceos.app'
-run = [
-  'move-node-to-monitor built-in',
-  'layout floating',
-]
+run = 'layout floating'
 
 [[on-window-detected]]
 if.app-id = 'com.apple.finder'
