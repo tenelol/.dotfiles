@@ -36,6 +36,7 @@ delib.module {
 
         set -g pane-border-style "fg=colour238"
         set -g pane-active-border-style "fg=colour81"
+        setw -g clock-mode-colour colour81
         set -g message-style "bg=colour24,fg=colour15"
         set -g mode-style "bg=colour24,fg=colour15"
       '';
