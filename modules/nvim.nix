@@ -12,7 +12,7 @@ let
     nvim-autopairs = pkgs.vimPlugins.nvim-autopairs;
     nvim-surround = pkgs.vimPlugins.nvim-surround;
     vim-astro = pkgs.vimPlugins.vim-astro;
-    barbar-nvim = pkgs.vimPlugins.barbar-nvim;
+    bufferline-nvim = pkgs.vimPlugins.bufferline-nvim;
     gitsigns-nvim = pkgs.vimPlugins.gitsigns-nvim;
     indent-blankline-nvim = pkgs.vimPlugins.indent-blankline-nvim;
     diffview-nvim = pkgs.vimPlugins.diffview-nvim;
