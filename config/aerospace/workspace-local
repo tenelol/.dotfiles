@@ -1,0 +1,52 @@
+#!/bin/sh
+
+set -eu
+
+AEROSPACE="${AEROSPACE:-/opt/homebrew/bin/aerospace}"
+
+action="${1:-}"
+local_workspace="${2:-}"
+
+case "$action" in
+  focus | move) ;;
+  *)
+    printf 'usage: %s focus|move 1..5\n' "$0" >&2
+    exit 2
+    ;;
+esac
+
+case "$local_workspace" in
+  1 | 2 | 3 | 4 | 5) ;;
+  *)
+    printf 'usage: %s focus|move 1..5\n' "$0" >&2
+    exit 2
+    ;;
+esac
+
+monitor_name="$("$AEROSPACE" list-monitors --focused --format '%{monitor-name}' | head -n 1)"
+
+case "$monitor_name" in
+  *Built-in*)
+    offset=0
+    ;;
+  *VZ249*)
+    offset=5
+    ;;
+  *Sidecar*)
+    offset=10
+    ;;
+  *)
+    offset=5
+    ;;
+esac
+
+workspace="$((offset + local_workspace))"
+
+case "$action" in
+  focus)
+    exec "$AEROSPACE" workspace "$workspace"
+    ;;
+  move)
+    exec "$AEROSPACE" move-node-to-workspace --focus-follows-window "$workspace"
+    ;;
+esac

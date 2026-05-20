@@ -68,6 +68,10 @@ delib.module {
 
   home.ifEnabled = lib.mkIf isDarwinDesktop {
     xdg.configFile."aerospace/aerospace.toml".source = ../config/aerospace/aerospace.toml;
+    xdg.configFile."aerospace/workspace-local" = {
+      source = ../config/aerospace/workspace-local;
+      executable = true;
+    };
 
     home.activation.prepareAerospaceApp = hm.dag.entryAfter [ "linkGeneration" ] ''
       if [ ! -d /Applications/AeroSpace.app ] && [ -x /opt/homebrew/bin/brew ]; then

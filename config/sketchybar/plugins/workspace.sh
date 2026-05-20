@@ -4,6 +4,7 @@ SKETCHYBAR_BIN="/opt/homebrew/bin/sketchybar"
 RIFT_CLI="/opt/homebrew/bin/rift-cli"
 STATE_FILE="${TMPDIR:-/tmp}/sketchybar/focused_workspace"
 SID="${NAME#space.}"
+SID="${SID%%.*}"
 ANIMATION=tanh
 ANIMATION_DURATION=12
 TRANSPARENT=0x00000000
