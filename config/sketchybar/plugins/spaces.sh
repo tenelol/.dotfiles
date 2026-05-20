@@ -10,17 +10,11 @@ TRANSPARENT=0x00000000
 TEXT_DIM=0xa8f5f7fa
 TEXT_STRONG=0xffffffff
 ACCENT=0xff8bd5ff
-ALL_WORKSPACES="1 2 3 4 5 6 7 8 9 10 11 12 13 14 15"
+MANAGED_WORKSPACES="1 2 3 4 5"
 
 aerospace_running() {
   /usr/bin/pgrep -qx AeroSpace >/dev/null 2>&1 && [ -x /opt/homebrew/bin/aerospace ]
 }
-
-if aerospace_running; then
-  MANAGED_WORKSPACES="$ALL_WORKSPACES"
-else
-  MANAGED_WORKSPACES="1 2 3 4 5"
-fi
 
 space_item_name() {
   workspace_id="$1"
