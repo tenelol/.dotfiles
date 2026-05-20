@@ -25,15 +25,6 @@ focused_workspace() {
     | awk '{ print $1 + 1 }'
 }
 
-aerospace_workspace_offset() {
-  case "$1" in
-    *Built-in*) printf '0\n' ;;
-    *VZ249*) printf '5\n' ;;
-    *Sidecar*) printf '10\n' ;;
-    *) printf '5\n' ;;
-  esac
-}
-
 add_workspace_item() {
   local workspace_id="$1"
   local local_workspace="$2"
@@ -153,24 +144,16 @@ spaces=(
 if /usr/bin/pgrep -qx AeroSpace >/dev/null 2>&1 && [ -x /opt/homebrew/bin/aerospace ]; then
   while IFS='|' read -r display_id display_name; do
     [ -n "$display_id" ] || continue
-    offset="$(aerospace_workspace_offset "$display_name")"
-    add_workspace_group "display.$display_id" "$display_id" "$offset"
+    case "$display_name" in
+      *Built-in*)
+        add_workspace_group "built_in" "$display_id" "0"
+        break
+        ;;
+    esac
   done < <(/opt/homebrew/bin/aerospace list-monitors --format '%{monitor-id}|%{monitor-name}')
 else
   add_workspace_group "rift" "" "0"
 fi
-
-display_observer=(
-  drawing=off
-  updates=on
-  width=0
-  padding_left=0
-  padding_right=0
-  script="$PLUGIN_DIR/restart_on_display_change.sh"
-)
-"$SKETCHYBAR_BIN" --add item display_observer left \
-                  --set display_observer "${display_observer[@]}" \
-                  --subscribe display_observer display_change system_woke
 
 space_observer=(
   drawing=off
