@@ -29,6 +29,16 @@ return {
                 return vim.lsp.inlay_hint ~= nil and client:supports_method("textDocument/inlayHint")
             end
 
+            local function hover_preview()
+                vim.lsp.buf.hover({
+                    border = "rounded",
+                    focus = false,
+                    focusable = false,
+                    max_width = math.min(80, math.floor(vim.o.columns * 0.6)),
+                    max_height = math.min(12, math.floor(vim.o.lines * 0.35)),
+                })
+            end
+
             local on_attach = function(client, bufnr)
                 if client:supports_method("textDocument/documentSymbol") then
                     navic.attach(client, bufnr)
@@ -38,7 +48,7 @@ return {
                     vim.keymap.set(mode, lhs, rhs, { buffer = bufnr, silent = true, desc = desc })
                 end
 
-                map("n", "K", vim.lsp.buf.hover, "Hover")
+                map("n", "K", hover_preview, "Hover")
                 map("n", "gd", telescope_picker("lsp_definitions"), "Go to definition")
                 map("n", "gD", vim.lsp.buf.declaration, "Go to declaration")
                 map("n", "gi", telescope_picker("lsp_implementations"), "Go to implementation")
@@ -80,23 +90,6 @@ return {
                         callback = vim.lsp.buf.clear_references,
                     })
                 end
-
-                vim.api.nvim_create_autocmd("CursorHold", {
-                    group = lsp_augroup,
-                    buffer = bufnr,
-                    callback = function()
-                        if vim.api.nvim_get_mode().mode ~= "n" then
-                            return
-                        end
-
-                        vim.diagnostic.open_float(nil, {
-                            border = "rounded",
-                            focusable = false,
-                            scope = "cursor",
-                            source = "if_many",
-                        })
-                    end,
-                })
 
                 if supports_inlay_hints(client) then
                     vim.lsp.inlay_hint.enable(false, { bufnr = bufnr })

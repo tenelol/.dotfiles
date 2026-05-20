@@ -22,6 +22,21 @@ map("n", "<C-j>", "<C-w>j", { noremap = true, silent = true })
 map("n", "<C-k>", "<C-w>k", { noremap = true, silent = true })
 map("n", "<C-l>", "<C-w>l", { noremap = true, silent = true })
 
+map("n", "K", function()
+  for _, client in ipairs(vim.lsp.get_clients({ bufnr = 0 })) do
+    if client:supports_method("textDocument/hover") then
+      vim.lsp.buf.hover({
+        border = "rounded",
+        focus = false,
+        focusable = false,
+        max_width = math.min(80, math.floor(vim.o.columns * 0.6)),
+        max_height = math.min(12, math.floor(vim.o.lines * 0.35)),
+      })
+      return
+    end
+  end
+end, { silent = true, desc = "Hover" })
+
 map("t", "<C-h>", "<Cmd>wincmd h<CR>", { noremap = true, silent = true })
 map("t", "<C-j>", "<Cmd>wincmd j<CR>", { noremap = true, silent = true })
 map("t", "<C-k>", "<Cmd>wincmd k<CR>", { noremap = true, silent = true })
