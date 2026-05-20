@@ -38,6 +38,7 @@ add_workspace_item() {
   local workspace_id="$1"
   local local_workspace="$2"
   local display_id="${3:-}"
+  local item_name="space.$workspace_id.$local_workspace"
   local workspace_index=$((local_workspace - 1))
   local display_arg=()
 
@@ -68,9 +69,31 @@ add_workspace_item() {
     click_script="/bin/sh -lc 'if /usr/bin/pgrep -qx AeroSpace && [ -x /opt/homebrew/bin/aerospace ]; then /opt/homebrew/bin/aerospace workspace $workspace_id; else /opt/homebrew/bin/rift-cli execute workspace switch $workspace_index; fi'"
   )
 
-  "$SKETCHYBAR_BIN" --add item "space.$workspace_id.$local_workspace" left \
-                    --set "space.$workspace_id.$local_workspace" "${item[@]}" \
-                    --subscribe "space.$workspace_id.$local_workspace" mouse.entered mouse.exited
+  "$SKETCHYBAR_BIN" --add item "$item_name" left \
+                    --set "$item_name" "${item[@]}" \
+                    --subscribe "$item_name" mouse.entered mouse.exited
+}
+
+add_workspace_group() {
+  local group_name="$1"
+  local display_id="${2:-}"
+  local offset="$3"
+  local bracket_display_arg=()
+  local item_names=()
+  local workspace_id
+
+  if [ -n "$display_id" ]; then
+    bracket_display_arg=(display="$display_id")
+  fi
+
+  for local_workspace in 1 2 3 4 5; do
+    workspace_id="$((offset + local_workspace))"
+    item_names+=("space.$workspace_id.$local_workspace")
+    add_workspace_item "$workspace_id" "$local_workspace" "$display_id"
+  done
+
+  "$SKETCHYBAR_BIN" --add bracket "spaces.$group_name" "${item_names[@]}" \
+                    --set "spaces.$group_name" "${bracket_display_arg[@]}" "${spaces[@]}"
 }
 
 bar=(
@@ -116,21 +139,6 @@ default=(
 
 "$SKETCHYBAR_BIN" --add event workspace_change
 
-if /usr/bin/pgrep -qx AeroSpace >/dev/null 2>&1 && [ -x /opt/homebrew/bin/aerospace ]; then
-  while IFS='|' read -r display_id display_name; do
-    [ -n "$display_id" ] || continue
-    offset="$(aerospace_workspace_offset "$display_name")"
-
-    for local_workspace in 1 2 3 4 5; do
-      add_workspace_item "$((offset + local_workspace))" "$local_workspace" "$display_id"
-    done
-  done < <(/opt/homebrew/bin/aerospace list-monitors --format '%{monitor-id}|%{monitor-name}')
-else
-  for local_workspace in 1 2 3 4 5; do
-    add_workspace_item "$local_workspace" "$local_workspace"
-  done
-fi
-
 spaces=(
   background.drawing=on
   background.height=28
@@ -141,8 +149,28 @@ spaces=(
   background.padding_left=6
   background.padding_right=6
 )
-"$SKETCHYBAR_BIN" --add bracket spaces '/space\..*/' \
-                  --set spaces "${spaces[@]}"
+
+if /usr/bin/pgrep -qx AeroSpace >/dev/null 2>&1 && [ -x /opt/homebrew/bin/aerospace ]; then
+  while IFS='|' read -r display_id display_name; do
+    [ -n "$display_id" ] || continue
+    offset="$(aerospace_workspace_offset "$display_name")"
+    add_workspace_group "display.$display_id" "$display_id" "$offset"
+  done < <(/opt/homebrew/bin/aerospace list-monitors --format '%{monitor-id}|%{monitor-name}')
+else
+  add_workspace_group "rift" "" "0"
+fi
+
+display_observer=(
+  drawing=off
+  updates=on
+  width=0
+  padding_left=0
+  padding_right=0
+  script="$PLUGIN_DIR/restart_on_display_change.sh"
+)
+"$SKETCHYBAR_BIN" --add item display_observer left \
+                  --set display_observer "${display_observer[@]}" \
+                  --subscribe display_observer display_change system_woke
 
 space_observer=(
   drawing=off
