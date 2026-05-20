@@ -52,8 +52,9 @@ delib.module {
       managedBy = "aerospace";
     };
 
-    # AeroSpace is more stable with "Displays have separate Spaces" disabled.
-    system.defaults.spaces.spans-displays = lib.mkForce true;
+    # Keep displays as separate Spaces so native fullscreen video does not
+    # blank the other monitors.
+    system.defaults.spaces.spans-displays = lib.mkForce false;
 
     system.activationScripts.stopRiftForAerospace.text = ''
       uid="$(/usr/bin/id -u ${profile.username})"
