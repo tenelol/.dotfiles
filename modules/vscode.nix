@@ -25,6 +25,13 @@ delib.module {
         userSettings = {
           "files.autoSave" = "afterDelay";
           "update.mode" = "none";
+          "emmet.triggerExpansionOnTab" = true;
+          "emmet.includeLanguages" = {
+            javascript = "javascriptreact";
+            typescript = "typescriptreact";
+            javascriptreact = "javascriptreact";
+            typescriptreact = "typescriptreact";
+          };
         };
 
         extensions = with pkgs.vscode-extensions; [
