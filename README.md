@@ -53,10 +53,10 @@ Script Commands は `~/.config/raycast/scripts` に展開されるので、Rayca
 
 最初に入れてある個人用コマンド:
 
-- `Dotfiles: Rebuild macbook`: Terminal.app を開かずに `nh darwin switch . -H macbook` を裏で実行する。管理者権限が必要なときだけ macOS の認証ダイアログを出し、結果は通知で返す
+- `Dotfiles: Rebuild macbook`: Terminal.app を開かずに、現在の rice を保った `nh darwin switch` を裏で実行する。AeroSpace process/config や現在の wallpaper から `macbook-indigo` / `macbook-aerospace` のような rice 付き config を指定し、管理者権限が必要なときだけ macOS の認証ダイアログを出す
 - `Apps: Open Ghostty`: Ghostty を新しく開く。Raycast の `Extensions` → `Script Commands` → `Open Ghostty` で hotkey を割り当てる
 
-`Dotfiles: Rebuild macbook` の実行ログは `~/Library/Logs/dotfiles/macbook-switch-latest.log` に置き、重複起動は lock で防いでいます。
+`Dotfiles: Rebuild macbook` の実行ログは `~/Library/Logs/dotfiles/macbook-switch-latest.log` に置き、重複起動は lock と実行中の rebuild/switch process 確認で防いでいます。
 
 ## Workflow
 
@@ -93,9 +93,23 @@ nh os switch . -H nixos-server
 macOS host を build / switch:
 
 ```sh
-./scripts/validate darwin
-nh darwin build . -H macbook
-nh darwin switch . -H macbook
+if pgrep -f '(^|[[:space:]/])(nh[[:space:]]+(os|darwin)[[:space:]]+(build|switch)|darwin-rebuild[[:space:]]+(build|switch)|nixos-rebuild[[:space:]]+(build|switch))([[:space:]]|$)' >/dev/null; then
+  echo "another rebuild or switch is already running" >&2
+else
+  if pgrep -qx AeroSpace || [ -e ~/.config/aerospace/aerospace.toml ]; then
+    rice="aerospace"
+  else
+    wallpaper="$(readlink ~/.config/theme/wallpaper.png 2>/dev/null || true)"
+    case "$wallpaper" in
+      *redmoon* | *Redmoon* | *RedMoon*) rice="redmoon" ;;
+      *) rice="indigo" ;;
+    esac
+  fi
+  target="macbook-${rice}"
+  ./scripts/validate darwin
+  nh darwin build . -H "$target"
+  nh darwin switch . -H "$target"
+fi
 ```
 
 macOS に初回導入するときは、まず upstream Nix を入れてからこの repo を初回 switch します。
@@ -110,7 +124,7 @@ sudo nix run github:nix-darwin/nix-darwin#darwin-rebuild -- switch --flake .#mac
 ```
 
 初回は Homebrew を公式インストーラで入れてから `switch` します。以降の cask 管理は既存の `homebrew.*` 設定に寄せています。
-その後は `nh` と `darwin-rebuild` が入るので、通常どおり `nh darwin build . -H macbook` / `nh darwin switch . -H macbook` を使います。
+その後は `nh` と `darwin-rebuild` が入るので、通常の rebuild / switch では現在の desktop 状態から rice 付き config を組み立てて指定します。
 
 rice を切り替えて build:
 
@@ -122,6 +136,7 @@ nh darwin build . -H macbook-aerospace
 
 `nh` を使う前提で書いています。`nixos-rebuild` や `darwin-rebuild` を直接叩くより、普段の運用では `nh` を優先します。
 共通の評価入口として `./scripts/validate` を置いていて、`eval` / `linux` / `darwin` の 3 モードを使い分けます。
+手動で rebuild / switch するときも、実行前に既存の rebuild/switch process がないか確認し、AeroSpace process/config や現在の wallpaper から組み立てた config 名を `-H` に渡して現在の rice を保ちます。
 通常の `nixos` / `nvidia-desktop` / `macbook` は `indigo` rice を使い、`*-redmoon` のような派生 config で別 wallpaper を試せます。`macbook-aerospace` は `indigo` を継承しつつ、Rift を止めて AeroSpace を起動する macOS 用 variant です。Linux desktop では `switch` 後に Home Manager activation が `apply-theme-wallpaper` を叩くので、`niri` 上でも wallpaper が即時反映されます。headless な `nixos-server` にも rice 名は付きますが、今のところ見た目には影響しません。
 
 ## Design Notes
