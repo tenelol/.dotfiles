@@ -7,9 +7,20 @@ return {
     config = function()
       local notify = require("notify")
 
+      local function notification_width()
+        return math.min(80, math.max(30, math.floor(vim.o.columns * 0.45)))
+      end
+
+      local function notification_height()
+        return math.min(8, math.max(4, math.floor(vim.o.lines * 0.25)))
+      end
+
       notify.setup({
         background_colour = theme.bg,
-        render = "compact",
+        max_height = notification_height,
+        max_width = notification_width,
+        minimum_width = 24,
+        render = "wrapped-compact",
         stages = "fade",
         timeout = 2000,
       })
@@ -33,6 +44,14 @@ return {
         },
         messages = {
           view_search = "virtualtext",
+        },
+        views = {
+          mini = {
+            size = {
+              max_height = 4,
+              max_width = 60,
+            },
+          },
         },
         presets = {
           bottom_search = true,

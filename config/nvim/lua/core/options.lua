@@ -8,6 +8,7 @@ vim.opt.ignorecase = true
 vim.opt.number = true
 vim.opt.pumblend = 12
 vim.opt.relativenumber = false
+vim.opt.fillchars:append({ eob = " " })
 vim.opt.scrolloff = 8
 vim.opt.shiftwidth = 2
 vim.opt.signcolumn = "yes"
