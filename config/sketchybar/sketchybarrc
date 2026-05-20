@@ -142,15 +142,15 @@ spaces=(
 )
 
 if /usr/bin/pgrep -qx AeroSpace >/dev/null 2>&1 && [ -x /opt/homebrew/bin/aerospace ]; then
-  while IFS='|' read -r display_id display_name; do
-    [ -n "$display_id" ] || continue
+  while IFS='|' read -r sketchybar_display_id display_name; do
+    [ -n "$sketchybar_display_id" ] || continue
     case "$display_name" in
       *Built-in*)
-        add_workspace_group "built_in" "$display_id" "0"
+        add_workspace_group "built_in" "$sketchybar_display_id" "0"
         break
         ;;
     esac
-  done < <(/opt/homebrew/bin/aerospace list-monitors --format '%{monitor-id}|%{monitor-name}')
+  done < <(/opt/homebrew/bin/aerospace list-monitors --format '%{monitor-appkit-nsscreen-screens-id}|%{monitor-name}')
 else
   add_workspace_group "rift" "" "0"
 fi
