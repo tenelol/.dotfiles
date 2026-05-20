@@ -30,12 +30,12 @@ vim.diagnostic.config({
     signs = true,
     underline = true,
     update_in_insert = false,
-    virtual_text = {
-        spacing = 2,
-        source = "if_many",
-    },
+    virtual_text = false,
+    virtual_lines = false,
     float = {
         border = "rounded",
+        header = "",
+        prefix = "",
         source = "if_many",
     },
 })

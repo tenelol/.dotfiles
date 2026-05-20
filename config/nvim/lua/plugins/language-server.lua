@@ -1,9 +1,52 @@
 local plugin = require("nix-plugin")
 
+local function setup_inline_diagnostics()
+    require("tiny-inline-diagnostic").setup({
+        preset = "modern",
+        transparent_bg = true,
+        options = {
+            show_source = {
+                enabled = true,
+                if_many = true,
+            },
+            show_code = true,
+            softwrap = 48,
+            throttle = 50,
+            add_messages = {
+                messages = true,
+                display_count = false,
+                use_max_severity = false,
+                show_multiple_glyphs = true,
+            },
+            multilines = {
+                enabled = true,
+                always_show = false,
+                trim_whitespaces = true,
+            },
+            show_related = {
+                enabled = true,
+                max_count = 2,
+            },
+            overflow = {
+                mode = "wrap",
+                padding = 4,
+            },
+        },
+    })
+
+    vim.diagnostic.config({
+        virtual_text = false,
+        virtual_lines = false,
+    })
+end
+
 return {
     plugin.spec("nvim-lspconfig", {
         event = { "BufReadPre", "BufNewFile" },
         dependencies = {
+            plugin.dep("tiny-inline-diagnostic-nvim", {
+                config = setup_inline_diagnostics,
+            }),
             plugin.dep("nvim-navic"),
         },
         config = function()
@@ -60,6 +103,10 @@ return {
                     vim.diagnostic.open_float(nil, {
                         border = "rounded",
                         focusable = false,
+                        header = "",
+                        max_height = math.min(16, math.floor(vim.o.lines * 0.45)),
+                        max_width = math.min(100, math.floor(vim.o.columns * 0.75)),
+                        prefix = "",
                         scope = "cursor",
                         source = "if_many",
                     })

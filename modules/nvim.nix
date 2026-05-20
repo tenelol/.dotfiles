@@ -18,6 +18,7 @@ let
     diffview-nvim = pkgs.vimPlugins.diffview-nvim;
     neogit = pkgs.vimPlugins.neogit;
     trouble-nvim = pkgs.vimPlugins.trouble-nvim;
+    tiny-inline-diagnostic-nvim = pkgs.vimPlugins.tiny-inline-diagnostic-nvim;
     aerial-nvim = pkgs.vimPlugins.aerial-nvim;
     nvim-navic = pkgs.vimPlugins.nvim-navic;
     todo-comments-nvim = pkgs.vimPlugins.todo-comments-nvim;
