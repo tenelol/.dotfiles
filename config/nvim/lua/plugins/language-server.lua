@@ -99,7 +99,7 @@ return {
                 })
 
                 if supports_inlay_hints(client) then
-                    vim.lsp.inlay_hint.enable(true, { bufnr = bufnr })
+                    vim.lsp.inlay_hint.enable(false, { bufnr = bufnr })
                     map("n", "<leader>lh", function()
                         local enabled = vim.lsp.inlay_hint.is_enabled({ bufnr = bufnr })
                         vim.lsp.inlay_hint.enable(not enabled, { bufnr = bufnr })
