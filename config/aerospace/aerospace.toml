@@ -25,16 +25,16 @@ persistent-workspaces = [
 3 = ['built-in', 'main']
 4 = ['built-in', 'main']
 5 = ['built-in', 'main']
-6 = ['VZ249', 'main']
-7 = ['VZ249', 'main']
-8 = ['VZ249', 'main']
-9 = ['VZ249', 'main']
-10 = ['VZ249', 'main']
-11 = ['Sidecar', 'main']
-12 = ['Sidecar', 'main']
-13 = ['Sidecar', 'main']
-14 = ['Sidecar', 'main']
-15 = ['Sidecar', 'main']
+6 = 'VZ249'
+7 = 'VZ249'
+8 = 'VZ249'
+9 = 'VZ249'
+10 = 'VZ249'
+11 = 'Sidecar'
+12 = 'Sidecar'
+13 = 'Sidecar'
+14 = 'Sidecar'
+15 = 'Sidecar'
 
 exec-on-workspace-change = [
   '/bin/bash',
