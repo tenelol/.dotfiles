@@ -3,6 +3,6 @@ delib.rice {
   name = "redmoon";
 
   myconfig = {
-    theme.wallpaper = "redmoon.png";
+    theme.wallpaper = "wallpaper.png";
   };
 }

@@ -12,7 +12,7 @@ delib.module {
   options =
     with delib;
     moduleOptions {
-      wallpaper = strOption "Indigo.png";
+      wallpaper = strOption "wallpaper.png";
       sketchybar = {
         transparent = strOption "0x00000000";
         glassBg = strOption "0x260b1018";
@@ -72,7 +72,7 @@ delib.module {
         }
 
         (lib.mkIf pkgs.stdenv.hostPlatform.isDarwin {
-          home.activation.applyThemeWallpaper = hm.dag.entryAfter [ "writeBoundary" ] ''
+          home.activation.applyThemeWallpaper = hm.dag.entryAfter [ "linkGeneration" ] ''
             wallpaper="$(${pkgs.coreutils}/bin/readlink -f "$HOME/.config/theme/wallpaper.png")"
 
             if [ -f "$wallpaper" ]; then
@@ -137,7 +137,7 @@ delib.module {
             '';
           };
 
-          home.activation.applyThemeWallpaper = hm.dag.entryAfter [ "writeBoundary" ] ''
+          home.activation.applyThemeWallpaper = hm.dag.entryAfter [ "linkGeneration" ] ''
             $DRY_RUN_CMD "$HOME/.local/bin/apply-theme-wallpaper" || true
           '';
         })
