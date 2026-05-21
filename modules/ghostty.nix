@@ -10,6 +10,28 @@ let
       ../config/ghostty/config-darwin
     else
       ../config/ghostty/config;
+  mkGhosttyReadabilityShader =
+    myconfig:
+    pkgs.writeText "ghostty-readability-scrim.glsl" ''
+      const float SCRIM_ALPHA = ${toString myconfig.theme.ghostty.readabilityScrim};
+
+      void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+          vec2 uv = fragCoord.xy / iResolution.xy;
+          vec4 baseColor = texture(iChannel0, uv);
+
+          if (SCRIM_ALPHA <= 0.0) {
+              fragColor = baseColor;
+              return;
+          }
+
+          float backgroundMask = 1.0 - smoothstep(0.02, 0.18, baseColor.a);
+          float scrimAlpha = SCRIM_ALPHA * backgroundMask;
+          vec3 scrimColor = iBackgroundColor * 0.55;
+          vec3 color = mix(baseColor.rgb, scrimColor, scrimAlpha);
+
+          fragColor = vec4(color, max(baseColor.a, scrimAlpha));
+      }
+    '';
   mkGhosttyConfig =
     myconfig:
     let
@@ -105,6 +127,7 @@ delib.module {
         "ghostty/shaders/aurora.glsl".source = ghosttyAuroraShader;
         "ghostty/shaders/liquid_glass_focus.glsl".source =
           ../config/ghostty/shaders/liquid_glass_focus.glsl;
+        "ghostty/shaders/readability_scrim.glsl".source = mkGhosttyReadabilityShader myconfig;
         "ghostty/shaders/cursor_tail.glsl".source = ghosttyCursorTailShader;
         "ghostty/shaders/ripple_rectangle_cursor.glsl".source = ghosttyRippleRectangleCursorShader;
       };
