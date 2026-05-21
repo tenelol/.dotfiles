@@ -26,6 +26,7 @@ delib.module {
       ghostty = {
         foreground = strOption "c0caf5";
         background = strOption "24283b";
+        backgroundBlur = intOption (if pkgs.stdenv.hostPlatform.isDarwin then 96 else 64);
         cursor = strOption "7aa2f7";
         selectionForeground = strOption "c0caf5";
         selectionBackground = strOption "364a82";
