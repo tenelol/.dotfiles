@@ -60,6 +60,7 @@ custom-shader = ~/.config/ghostty/shaders/aurora.glsl
 custom-shader = ~/.config/ghostty/shaders/liquid_glass_focus.glsl
 custom-shader = ~/.config/ghostty/shaders/readability_scrim.glsl
 custom-shader = ~/.config/ghostty/shaders/cursor_tail.glsl
+custom-shader = ~/.config/ghostty/shaders/leaf_burst.glsl
 custom-shader = ~/.config/ghostty/shaders/ripple_rectangle_cursor.glsl
 custom-shader-animation = true
 

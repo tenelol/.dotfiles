@@ -87,9 +87,9 @@ let
           --replace-fail 'const float DURATION = 0.09;' 'const float DURATION = 0.13;' \
           --replace-fail 'const float THRESHOLD_MIN_DISTANCE = 1.5;' 'const float THRESHOLD_MIN_DISTANCE = 1.0;'
       '';
-  mkGhosttyCursorLeafShader =
+  mkGhosttyLeafBurstShader =
     myconfig:
-    pkgs.writeText "ghostty-cursor-leaves.glsl" ''
+    pkgs.writeText "ghostty-leaf-burst.glsl" ''
       const float LEAF_ALPHA = ${toString myconfig.theme.ghostty.leafBurst};
       const float DURATION = 0.78;
       const int LEAF_COUNT = 9;
@@ -163,8 +163,8 @@ let
               float seed = fi * 23.17 + 9.31;
               float delay = hash(seed) * 0.22;
               float t = clamp((progress - delay) / (1.0 - delay), 0.0, 1.0);
-              float active = step(0.001, t) * (1.0 - step(1.0, t));
-              float fade = pow(1.0 - t, 1.10) * smoothstep(0.0, 0.10, t) * active;
+              float leafActive = step(0.001, t) * (1.0 - step(1.0, t));
+              float fade = pow(1.0 - t, 1.10) * smoothstep(0.0, 0.10, t) * leafActive;
               float flutter = sin(iTime * (4.5 + hash(seed + 1.0) * 4.0) + seed);
               float side = (hash(seed + 2.0) - 0.5) * 0.18;
 
@@ -229,11 +229,8 @@ delib.module {
         "ghostty/shaders/liquid_glass_focus.glsl".source =
           ../config/ghostty/shaders/liquid_glass_focus.glsl;
         "ghostty/shaders/readability_scrim.glsl".source = mkGhosttyReadabilityShader myconfig;
-        "ghostty/shaders/cursor_tail.glsl".source =
-          if myconfig.theme.ghostty.leafBurst > 0.0 then
-            mkGhosttyCursorLeafShader myconfig
-          else
-            ghosttyCursorTailShader;
+        "ghostty/shaders/cursor_tail.glsl".source = ghosttyCursorTailShader;
+        "ghostty/shaders/leaf_burst.glsl".source = mkGhosttyLeafBurstShader myconfig;
         "ghostty/shaders/ripple_rectangle_cursor.glsl".source = ghosttyRippleRectangleCursorShader;
       };
     };
