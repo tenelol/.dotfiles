@@ -36,28 +36,44 @@ let
     myconfig:
     let
       theme = myconfig.theme.ghostty;
+      baseConfig = builtins.readFile ghosttyConfig;
+      themedConfig =
+        builtins.replaceStrings
+          [
+            "foreground = c0caf5"
+            "background = 24283b"
+            "background-blur = 96"
+            "background-blur = 64"
+            "cursor-color = 7aa2f7"
+            "selection-foreground = c0caf5"
+            "selection-background = 364a82"
+          ]
+          [
+            "foreground = ${theme.foreground}"
+            "background = ${theme.background}"
+            "background-blur = ${toString theme.backgroundBlur}"
+            "background-blur = ${toString theme.backgroundBlur}"
+            "cursor-color = ${theme.cursor}"
+            "selection-foreground = ${theme.selectionForeground}"
+            "selection-background = ${theme.selectionBackground}"
+          ]
+          baseConfig;
     in
     pkgs.writeText "ghostty-config" (
-      builtins.replaceStrings
-        [
-          "foreground = c0caf5"
-          "background = 24283b"
-          "background-blur = 96"
-          "background-blur = 64"
-          "cursor-color = 7aa2f7"
-          "selection-foreground = c0caf5"
-          "selection-background = 364a82"
-        ]
-        [
-          "foreground = ${theme.foreground}"
-          "background = ${theme.background}"
-          "background-blur = ${toString theme.backgroundBlur}"
-          "background-blur = ${toString theme.backgroundBlur}"
-          "cursor-color = ${theme.cursor}"
-          "selection-foreground = ${theme.selectionForeground}"
-          "selection-background = ${theme.selectionBackground}"
-        ]
-        (builtins.readFile ghosttyConfig)
+      if theme.leafBurst > 0.0 then
+        builtins.replaceStrings
+          [
+            "custom-shader = ~/.config/ghostty/shaders/cursor_tail.glsl\n"
+          ]
+          [
+            ''
+              custom-shader = ~/.config/ghostty/shaders/cursor_tail.glsl
+              custom-shader = ~/.config/ghostty/shaders/leaf_burst.glsl
+            ''
+          ]
+          themedConfig
+      else
+        themedConfig
     );
   ghosttyAuroraShader =
     pkgs.runCommand "ghostty-aurora-tokyo-night.glsl"
@@ -231,8 +247,15 @@ delib.module {
           ../config/ghostty/shaders/liquid_glass_focus.glsl;
         "ghostty/shaders/readability_scrim.glsl".source = mkGhosttyReadabilityShader myconfig;
         "ghostty/shaders/cursor_tail.glsl".source = ghosttyCursorTailShader;
-        "ghostty/shaders/leaf_burst.glsl".source = mkGhosttyLeafBurstShader myconfig;
         "ghostty/shaders/ripple_rectangle_cursor.glsl".source = ghosttyRippleRectangleCursorShader;
-      };
+      }
+      // (
+        if myconfig.theme.ghostty.leafBurst > 0.0 then
+          {
+            "ghostty/shaders/leaf_burst.glsl".source = mkGhosttyLeafBurstShader myconfig;
+          }
+        else
+          { }
+      );
     };
 }
