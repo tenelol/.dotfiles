@@ -21,6 +21,7 @@ delib.rice {
         foreground = "dbeafe";
         background = "101827";
         backgroundBlur = 192;
+        readabilityScrim = 0.58;
         cursor = "7dd3fc";
         selectionForeground = "e0f2fe";
         selectionBackground = "1e3a5f";
