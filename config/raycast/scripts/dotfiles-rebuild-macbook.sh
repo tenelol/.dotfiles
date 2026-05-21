@@ -36,20 +36,12 @@ is_rebuild_running() {
 }
 
 detect_target_configuration() {
-  local rice wallpaper
+  local rice
 
   if /usr/bin/pgrep -qx AeroSpace >/dev/null 2>&1 || [ -e "${HOME}/.config/aerospace/aerospace.toml" ]; then
     rice="aerospace"
   else
-    wallpaper="$(/usr/bin/readlink "${HOME}/.config/theme/wallpaper.png" 2>/dev/null || true)"
-    case "$wallpaper" in
-      *redmoon* | *Redmoon* | *RedMoon*)
-        rice="redmoon"
-        ;;
-      *)
-        rice="rift"
-        ;;
-    esac
+    rice="rift"
   fi
 
   printf 'macbook-%s\n' "$rice"

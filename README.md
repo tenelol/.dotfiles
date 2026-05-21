@@ -99,11 +99,7 @@ else
   if pgrep -qx AeroSpace || [ -e ~/.config/aerospace/aerospace.toml ]; then
     rice="aerospace"
   else
-    wallpaper="$(readlink ~/.config/theme/wallpaper.png 2>/dev/null || true)"
-    case "$wallpaper" in
-      *redmoon* | *Redmoon* | *RedMoon*) rice="redmoon" ;;
-      *) rice="rift" ;;
-    esac
+    rice="rift"
   fi
   target="macbook-${rice}"
   ./scripts/validate darwin
@@ -129,16 +125,14 @@ sudo nix run github:nix-darwin/nix-darwin#darwin-rebuild -- switch --flake .#mac
 rice を切り替えて build:
 
 ```sh
-nh os build . -H nvidia-desktop-redmoon
 nh darwin build . -H macbook-rift
-nh darwin build . -H macbook-redmoon
 nh darwin build . -H macbook-aerospace
 ```
 
 `nh` を使う前提で書いています。`nixos-rebuild` や `darwin-rebuild` を直接叩くより、普段の運用では `nh` を優先します。
 共通の評価入口として `./scripts/validate` を置いていて、`eval` / `linux` / `darwin` の 3 モードを使い分けます。
 手動で rebuild / switch するときも、実行前に既存の rebuild/switch process がないか確認し、AeroSpace process/config や現在の wallpaper から組み立てた config 名を `-H` に渡して現在の rice を保ちます。
-通常の `nixos` / `nvidia-desktop` は `indigo` rice を使い、`macbook` の通常運用は `macbook-rift` として明示します。`macbook-rift` は Rift と Indigo 系 theme、`macbook-aerospace` は AeroSpace と Earth 系 theme を使い、wallpaper、SketchyBar の文字色/accent、Ghostty foreground、JankyBorders の色を rice から切り替えます。`*-redmoon` のような派生 config で別 wallpaper も試せます。Linux desktop では `switch` 後に Home Manager activation が `apply-theme-wallpaper` を叩くので、`niri` 上でも wallpaper が即時反映されます。headless な `nixos-server` にも rice 名は付きますが、今のところ見た目には影響しません。
+通常の `nixos` / `nvidia-desktop` は `indigo` rice を使い、`macbook` の通常運用は `macbook-rift` として明示します。wallpaper は `img/wallpaper.png` に集約し、SketchyBar の文字色/accent、Ghostty foreground、JankyBorders の色は rice から切り替えます。Linux desktop では `switch` 後に Home Manager activation が `apply-theme-wallpaper` を叩くので、`niri` 上でも wallpaper が即時反映されます。headless な `nixos-server` にも rice 名は付きますが、今のところ見た目には影響しません。
 
 ## Design Notes
 
