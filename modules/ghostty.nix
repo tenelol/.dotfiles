@@ -20,6 +20,8 @@ let
         [
           "foreground = c0caf5"
           "background = 24283b"
+          "background-blur = 96"
+          "background-blur = 64"
           "cursor-color = 7aa2f7"
           "selection-foreground = c0caf5"
           "selection-background = 364a82"
@@ -27,6 +29,8 @@ let
         [
           "foreground = ${theme.foreground}"
           "background = ${theme.background}"
+          "background-blur = ${toString theme.backgroundBlur}"
+          "background-blur = ${toString theme.backgroundBlur}"
           "cursor-color = ${theme.cursor}"
           "selection-foreground = ${theme.selectionForeground}"
           "selection-background = ${theme.selectionBackground}"

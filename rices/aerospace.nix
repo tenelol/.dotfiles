@@ -20,6 +20,7 @@ delib.rice {
       ghostty = {
         foreground = "dbeafe";
         background = "101827";
+        backgroundBlur = 192;
         cursor = "7dd3fc";
         selectionForeground = "e0f2fe";
         selectionBackground = "1e3a5f";
