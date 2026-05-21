@@ -28,9 +28,14 @@ delib.module {
         background = strOption "24283b";
         backgroundBlur = intOption (if pkgs.stdenv.hostPlatform.isDarwin then 96 else 64);
         readabilityScrim = floatOption 0.0;
+        leafBurst = floatOption 0.0;
         cursor = strOption "7aa2f7";
         selectionForeground = strOption "c0caf5";
         selectionBackground = strOption "364a82";
+        paletteBlue = strOption "7aa2f7";
+        paletteCyan = strOption "7dcfff";
+        paletteBrightBlue = strOption "7aa2f7";
+        paletteBrightCyan = strOption "8be9ff";
       };
       jankyborders = {
         activeColor = strOption "gradient(top_left=0xff1e293b,bottom_right=0xffffffff)";

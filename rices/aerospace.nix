@@ -10,25 +10,30 @@ delib.rice {
       wallpaper = "aerospace.png";
       sketchybar = {
         glassBg = "0x2a07111f";
-        glassBorder = "0x387dd3fc";
-        text = "0xffedf6ff";
-        textDim = "0xa8b8d8ff";
-        textMuted = "0xcfcae7ff";
+        glassBorder = "0x3886efac";
+        text = "0xffecfdf5";
+        textDim = "0xa8bbf7d0";
+        textMuted = "0xcfa7f3d0";
         textStrong = "0xffffffff";
-        accent = "0xff7dd3fc";
+        accent = "0xff86efac";
       };
       ghostty = {
-        foreground = "dbeafe";
-        background = "101827";
+        foreground = "dcfce7";
+        background = "0f1f17";
         backgroundBlur = 192;
         readabilityScrim = 0.58;
-        cursor = "7dd3fc";
-        selectionForeground = "e0f2fe";
-        selectionBackground = "1e3a5f";
+        leafBurst = 0.92;
+        cursor = "86efac";
+        selectionForeground = "ecfdf5";
+        selectionBackground = "14532d";
+        paletteBlue = "22c55e";
+        paletteCyan = "86efac";
+        paletteBrightBlue = "4ade80";
+        paletteBrightCyan = "bbf7d0";
       };
       jankyborders = {
-        activeColor = "gradient(top_left=0xff0f172a,bottom_right=0xff7dd3fc)";
-        inactiveColor = "gradient(top_left=0xff111827,bottom_right=0xff93a4b8)";
+        activeColor = "gradient(top_left=0xff0f172a,bottom_right=0xff86efac)";
+        inactiveColor = "gradient(top_left=0xff111827,bottom_right=0xff8aa69a)";
         backgroundColor = "0x00000000";
       };
     };
