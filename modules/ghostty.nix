@@ -93,6 +93,8 @@ let
       const float LEAF_ALPHA = ${toString myconfig.theme.ghostty.leafBurst};
       const float DURATION = 0.78;
       const int LEAF_COUNT = 9;
+      const float MIN_HORIZONTAL_CELLS = 1.35;
+      const float MIN_VERTICAL_LINES = 0.45;
 
       vec3 sRGBToLinear(vec3 c) {
           return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(vec3(0.04045), c));
@@ -143,11 +145,10 @@ let
           vec2 previousCenter = previousCursor.xy - previousCursor.zw * offsetFactor;
           vec2 delta = currentCenter - previousCenter;
           float distanceMoved = length(delta);
-          float cursorChange = max(distanceMoved, abs(currentCursor.z - previousCursor.z));
-          float minChange = max(currentCursor.z * 0.16, 0.0005);
+          float minMovement = max(currentCursor.z * MIN_HORIZONTAL_CELLS, currentCursor.w * MIN_VERTICAL_LINES);
           float progress = (iTime - iTimeCursorChange) / DURATION;
 
-          if (cursorChange <= minChange || progress < 0.0 || progress >= 1.0) {
+          if (distanceMoved <= minMovement || progress < 0.0 || progress >= 1.0) {
               return;
           }
 
