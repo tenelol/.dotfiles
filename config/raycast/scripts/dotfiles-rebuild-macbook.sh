@@ -47,7 +47,7 @@ detect_target_configuration() {
         rice="redmoon"
         ;;
       *)
-        rice="indigo"
+        rice="rift"
         ;;
     esac
   fi

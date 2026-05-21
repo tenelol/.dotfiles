@@ -5,6 +5,9 @@ GLASS_BG=0x260b1018
 GLASS_BORDER=0x30ffffff
 TEXT=0xeef5f7fa
 
+theme_file="${XDG_CONFIG_HOME:-$HOME/.config}/theme/sketchybar.env"
+[ -r "$theme_file" ] && . "$theme_file"
+
 battery_status="$(/usr/bin/pmset -g batt)"
 percentage="$(printf '%s\n' "$battery_status" | /usr/bin/grep -Eo '[0-9]+%' | /usr/bin/head -n 1 | /usr/bin/cut -d% -f1)"
 

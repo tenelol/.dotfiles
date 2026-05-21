@@ -15,30 +15,35 @@ delib.module {
     !host.isServer && builtins.match ".*-darwin" host.system != null
   );
 
-  darwin.ifEnabled = {
-    launchd.user.agents.jankyborders = {
-      serviceConfig = {
-        ProgramArguments = [
-          "${pkgs.jankyborders}/bin/borders"
-          "style=round"
-          "width=8.0"
-          "hidpi=on"
-          "active_color=gradient(top_left=0xff1e293b,bottom_right=0xffffffff)"
-          "inactive_color=gradient(top_left=0xff334155,bottom_right=0xfff8fafc)"
-          "background_color=0x00000000"
-        ];
-        RunAtLoad = true;
-        KeepAlive = true;
-        ProcessType = "Interactive";
-        EnvironmentVariables = {
-          USER = profile.username;
-          HOME = homeDir;
+  darwin.ifEnabled =
+    { myconfig, ... }:
+    let
+      theme = myconfig.theme.jankyborders;
+    in
+    {
+      launchd.user.agents.jankyborders = {
+        serviceConfig = {
+          ProgramArguments = [
+            "${pkgs.jankyborders}/bin/borders"
+            "style=round"
+            "width=8.0"
+            "hidpi=on"
+            "active_color=${theme.activeColor}"
+            "inactive_color=${theme.inactiveColor}"
+            "background_color=${theme.backgroundColor}"
+          ];
+          RunAtLoad = true;
+          KeepAlive = true;
+          ProcessType = "Interactive";
+          EnvironmentVariables = {
+            USER = profile.username;
+            HOME = homeDir;
+          };
         };
-      };
 
-      managedBy = "jankyborders";
+        managedBy = "jankyborders";
+      };
     };
-  };
 
   home.ifEnabled = {
     home.packages = [ pkgs.jankyborders ];

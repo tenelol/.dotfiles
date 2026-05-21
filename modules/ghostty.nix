@@ -10,6 +10,29 @@ let
       ../config/ghostty/config-darwin
     else
       ../config/ghostty/config;
+  mkGhosttyConfig =
+    myconfig:
+    let
+      theme = myconfig.theme.ghostty;
+    in
+    pkgs.writeText "ghostty-config" (
+      builtins.replaceStrings
+        [
+          "foreground = c0caf5"
+          "background = 24283b"
+          "cursor-color = 7aa2f7"
+          "selection-foreground = c0caf5"
+          "selection-background = 364a82"
+        ]
+        [
+          "foreground = ${theme.foreground}"
+          "background = ${theme.background}"
+          "cursor-color = ${theme.cursor}"
+          "selection-foreground = ${theme.selectionForeground}"
+          "selection-background = ${theme.selectionBackground}"
+        ]
+        (builtins.readFile ghosttyConfig)
+    );
   ghosttyAuroraShader =
     pkgs.runCommand "ghostty-aurora-tokyo-night.glsl"
       {
@@ -70,14 +93,16 @@ delib.module {
 
   options = delib.singleEnableOption (!host.isServer);
 
-  home.ifEnabled = {
-    xdg.configFile = {
-      "ghostty/config".source = ghosttyConfig;
-      "ghostty/shaders/aurora.glsl".source = ghosttyAuroraShader;
-      "ghostty/shaders/liquid_glass_focus.glsl".source =
-        ../config/ghostty/shaders/liquid_glass_focus.glsl;
-      "ghostty/shaders/cursor_tail.glsl".source = ghosttyCursorTailShader;
-      "ghostty/shaders/ripple_rectangle_cursor.glsl".source = ghosttyRippleRectangleCursorShader;
+  home.ifEnabled =
+    { myconfig, ... }:
+    {
+      xdg.configFile = {
+        "ghostty/config".source = mkGhosttyConfig myconfig;
+        "ghostty/shaders/aurora.glsl".source = ghosttyAuroraShader;
+        "ghostty/shaders/liquid_glass_focus.glsl".source =
+          ../config/ghostty/shaders/liquid_glass_focus.glsl;
+        "ghostty/shaders/cursor_tail.glsl".source = ghosttyCursorTailShader;
+        "ghostty/shaders/ripple_rectangle_cursor.glsl".source = ghosttyRippleRectangleCursorShader;
+      };
     };
-  };
 }

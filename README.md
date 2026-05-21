@@ -31,7 +31,7 @@ macOS の GUI アプリは「cross-platform なものは Nix、App Store / cask-
 ## Codex
 
 `macbook` では Homebrew cask で `codex-app` に加えて `codex` CLI も入れる運用です。
-`nh darwin switch . -H macbook` 後は terminal から `codex` をそのまま叩けます。
+`nh darwin switch . -H macbook-rift` 後は terminal から `codex` をそのまま叩けます。
 
 初回ログインだけは別途必要です。ブラウザ認証を使うなら:
 
@@ -53,7 +53,7 @@ Script Commands は `~/.config/raycast/scripts` に展開されるので、Rayca
 
 最初に入れてある個人用コマンド:
 
-- `Dotfiles: Rebuild macbook`: Terminal.app を開かずに、現在の rice を保った `nh darwin switch` を裏で実行する。AeroSpace process/config や現在の wallpaper から `macbook-indigo` / `macbook-aerospace` のような rice 付き config を指定し、管理者権限が必要なときだけ macOS の認証ダイアログを出す
+- `Dotfiles: Rebuild macbook`: Terminal.app を開かずに、現在の rice を保った `nh darwin switch` を裏で実行する。AeroSpace process/config や現在の wallpaper から `macbook-rift` / `macbook-aerospace` のような rice 付き config を指定し、管理者権限が必要なときだけ macOS の認証ダイアログを出す
 - `Apps: Open Ghostty`: Ghostty を新しく開く。Raycast の `Extensions` → `Script Commands` → `Open Ghostty` で hotkey を割り当てる
 
 `Dotfiles: Rebuild macbook` の実行ログは `~/Library/Logs/dotfiles/macbook-switch-latest.log` に置き、重複起動は lock と実行中の rebuild/switch process 確認で防いでいます。
@@ -102,7 +102,7 @@ else
     wallpaper="$(readlink ~/.config/theme/wallpaper.png 2>/dev/null || true)"
     case "$wallpaper" in
       *redmoon* | *Redmoon* | *RedMoon*) rice="redmoon" ;;
-      *) rice="indigo" ;;
+      *) rice="rift" ;;
     esac
   fi
   target="macbook-${rice}"
@@ -120,7 +120,7 @@ curl -fsSL https://install.determinate.systems/nix | sh -s -- install --prefer-u
 source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
 cd ~/.dotfiles
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-sudo nix run github:nix-darwin/nix-darwin#darwin-rebuild -- switch --flake .#macbook
+sudo nix run github:nix-darwin/nix-darwin#darwin-rebuild -- switch --flake .#macbook-rift
 ```
 
 初回は Homebrew を公式インストーラで入れてから `switch` します。以降の cask 管理は既存の `homebrew.*` 設定に寄せています。
@@ -130,6 +130,7 @@ rice を切り替えて build:
 
 ```sh
 nh os build . -H nvidia-desktop-redmoon
+nh darwin build . -H macbook-rift
 nh darwin build . -H macbook-redmoon
 nh darwin build . -H macbook-aerospace
 ```
@@ -137,7 +138,7 @@ nh darwin build . -H macbook-aerospace
 `nh` を使う前提で書いています。`nixos-rebuild` や `darwin-rebuild` を直接叩くより、普段の運用では `nh` を優先します。
 共通の評価入口として `./scripts/validate` を置いていて、`eval` / `linux` / `darwin` の 3 モードを使い分けます。
 手動で rebuild / switch するときも、実行前に既存の rebuild/switch process がないか確認し、AeroSpace process/config や現在の wallpaper から組み立てた config 名を `-H` に渡して現在の rice を保ちます。
-通常の `nixos` / `nvidia-desktop` / `macbook` は `indigo` rice を使い、`*-redmoon` のような派生 config で別 wallpaper を試せます。`macbook-aerospace` は `indigo` を継承しつつ、Rift を止めて AeroSpace を起動する macOS 用 variant です。Linux desktop では `switch` 後に Home Manager activation が `apply-theme-wallpaper` を叩くので、`niri` 上でも wallpaper が即時反映されます。headless な `nixos-server` にも rice 名は付きますが、今のところ見た目には影響しません。
+通常の `nixos` / `nvidia-desktop` は `indigo` rice を使い、`macbook` の通常運用は `macbook-rift` として明示します。`macbook-rift` は Rift と Indigo 系 theme、`macbook-aerospace` は AeroSpace と Earth 系 theme を使い、wallpaper、SketchyBar の文字色/accent、Ghostty foreground、JankyBorders の色を rice から切り替えます。`*-redmoon` のような派生 config で別 wallpaper も試せます。Linux desktop では `switch` 後に Home Manager activation が `apply-theme-wallpaper` を叩くので、`niri` 上でも wallpaper が即時反映されます。headless な `nixos-server` にも rice 名は付きますが、今のところ見た目には影響しません。
 
 ## Design Notes
 

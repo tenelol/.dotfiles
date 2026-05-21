@@ -13,6 +13,9 @@ TEXT_DIM=0xa8f5f7fa
 TEXT_STRONG=0xffffffff
 ACCENT=0xff8bd5ff
 
+theme_file="${XDG_CONFIG_HOME:-$HOME/.config}/theme/sketchybar.env"
+[ -r "$theme_file" ] && . "$theme_file"
+
 focused_workspace="$FOCUSED"
 
 if [ -z "$focused_workspace" ] && [ -r "$STATE_FILE" ]; then

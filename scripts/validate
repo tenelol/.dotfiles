@@ -66,6 +66,6 @@ case "$mode" in
     nh os build . -H nixos-server
     ;;
   darwin)
-    nh darwin build . -H macbook
+    nh darwin build . -H macbook-rift
     ;;
 esac

@@ -4,6 +4,9 @@ SKETCHYBAR_BIN="/opt/homebrew/bin/sketchybar"
 TEXT=0xeef5f7fa
 TEXT_DIM=0xa8f5f7fa
 
+theme_file="${XDG_CONFIG_HOME:-$HOME/.config}/theme/sketchybar.env"
+[ -r "$theme_file" ] && . "$theme_file"
+
 sanitize_track() {
   /usr/bin/tr '\r\n' ' ' | /usr/bin/sed 's/[[:space:]][[:space:]]*/ /g; s/^ //; s/ $//'
 }

@@ -12,6 +12,9 @@ TEXT_STRONG=0xffffffff
 ACCENT=0xff8bd5ff
 MANAGED_WORKSPACES="1 2 3 4 5"
 
+theme_file="${XDG_CONFIG_HOME:-$HOME/.config}/theme/sketchybar.env"
+[ -r "$theme_file" ] && . "$theme_file"
+
 aerospace_running() {
   /usr/bin/pgrep -qx AeroSpace >/dev/null 2>&1 && [ -x /opt/homebrew/bin/aerospace ]
 }
