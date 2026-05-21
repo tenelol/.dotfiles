@@ -4,5 +4,5 @@ delib.host {
   type = "laptop";
   system = "aarch64-darwin";
 
-  myconfig.rice = "indigo";
+  rice = "rift";
 }

@@ -1,6 +1,10 @@
 #!/bin/sh
 
 SKETCHYBAR_BIN="/opt/homebrew/bin/sketchybar"
+TEXT=0xeef5f7fa
+
+theme_file="${XDG_CONFIG_HOME:-$HOME/.config}/theme/sketchybar.env"
+[ -r "$theme_file" ] && . "$theme_file"
 
 if [ "$SENDER" = "front_app_switched" ] && [ -n "$INFO" ]; then
   app_name="$INFO"
@@ -14,4 +18,4 @@ fi
 
 "$SKETCHYBAR_BIN" --set "$NAME" \
   label="$app_name" \
-  label.color=0xeef5f7fa
+  label.color="$TEXT"
