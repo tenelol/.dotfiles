@@ -22,6 +22,7 @@ delib.module {
       networkBackend = myconfig.nixos.desktop.networkBackend;
       usesIwdNetworkd = networkBackend == "iwd-networkd";
       usesDhcpcdResolved = networkBackend == "dhcpcd-resolved";
+      usesResolved = usesIwdNetworkd || usesDhcpcdResolved;
     in
     {
       assertions = [
@@ -36,16 +37,24 @@ delib.module {
 
       networking.networkmanager.enable = false;
       networking.useNetworkd = usesIwdNetworkd;
+      networking.resolvconf.enable = lib.mkForce (!usesResolved);
       networking.wireless.iwd.enable = true;
-      networking.wireless.iwd.settings = {
-        General = {
-          EnableNetworkConfiguration = usesIwdNetworkd;
+      networking.wireless.iwd.settings =
+        {
+          General = {
+            EnableNetworkConfiguration = usesIwdNetworkd;
+          };
+          Settings = {
+            AutoConnect = true;
+          };
+        }
+        // lib.optionalAttrs usesIwdNetworkd {
+          Network = {
+            # iwd defaults to systemd-resolved when it configures links itself.
+            NameResolvingService = "systemd";
+          };
         };
-        Settings = {
-          AutoConnect = true;
-        };
-      };
-      services.resolved.enable = usesDhcpcdResolved;
+      services.resolved.enable = usesResolved;
 
       services.pulseaudio.enable = false;
 
