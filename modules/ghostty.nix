@@ -107,10 +107,11 @@ let
     myconfig:
     pkgs.writeText "ghostty-leaf-burst.glsl" ''
       const float LEAF_ALPHA = ${toString myconfig.theme.ghostty.leafBurst};
-      const float DURATION = 0.78;
+      const float IDLE_DELAY = 0.22;
+      const float DURATION = 1.25;
       const int LEAF_COUNT = 9;
-      const float MIN_HORIZONTAL_CELLS = 1.35;
-      const float MIN_VERTICAL_LINES = 0.45;
+      const float MIN_HORIZONTAL_CELLS = 0.72;
+      const float MIN_VERTICAL_LINES = 0.34;
       const float TRIGGER_RATE = 0.20;
 
       vec3 sRGBToLinear(vec3 c) {
@@ -163,7 +164,8 @@ let
           vec2 delta = currentCenter - previousCenter;
           float distanceMoved = length(delta);
           float minMovement = max(currentCursor.z * MIN_HORIZONTAL_CELLS, currentCursor.w * MIN_VERTICAL_LINES);
-          float progress = (iTime - iTimeCursorChange) / DURATION;
+          float idleTime = iTime - iTimeCursorChange;
+          float progress = (idleTime - IDLE_DELAY) / DURATION;
 
           if (distanceMoved <= minMovement || progress < 0.0 || progress >= 1.0) {
               return;
