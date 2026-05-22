@@ -14,9 +14,9 @@ default-root-container-orientation = 'auto'
 on-focused-monitor-changed = ['move-mouse monitor-lazy-center']
 automatically-unhide-macos-hidden-apps = false
 persistent-workspaces = [
-  '1', '2', '3', '4', '5',
-  '6', '7', '8', '9', '10',
-  '11', '12', '13', '14', '15',
+  '1', '2', '3', '4', '5', '6', '7', '8', '9',
+  '10', '11', '12', '13', '14', '15', '16', '17', '18',
+  '19', '20', '21', '22', '23', '24', '25', '26', '27',
 ]
 
 [workspace-to-monitor-force-assignment]
@@ -25,16 +25,28 @@ persistent-workspaces = [
 3 = ['built-in', 'main']
 4 = ['built-in', 'main']
 5 = ['built-in', 'main']
-6 = 'VZ249'
-7 = 'VZ249'
-8 = 'VZ249'
-9 = 'VZ249'
+6 = ['built-in', 'main']
+7 = ['built-in', 'main']
+8 = ['built-in', 'main']
+9 = ['built-in', 'main']
 10 = 'VZ249'
-11 = 'Sidecar'
-12 = 'Sidecar'
-13 = 'Sidecar'
-14 = 'Sidecar'
-15 = 'Sidecar'
+11 = 'VZ249'
+12 = 'VZ249'
+13 = 'VZ249'
+14 = 'VZ249'
+15 = 'VZ249'
+16 = 'VZ249'
+17 = 'VZ249'
+18 = 'VZ249'
+19 = 'Sidecar'
+20 = 'Sidecar'
+21 = 'Sidecar'
+22 = 'Sidecar'
+23 = 'Sidecar'
+24 = 'Sidecar'
+25 = 'Sidecar'
+26 = 'Sidecar'
+27 = 'Sidecar'
 
 exec-on-workspace-change = [
   '/bin/bash',
@@ -102,12 +114,20 @@ alt-2 = 'exec-and-forget /bin/sh -lc "$HOME/.config/aerospace/workspace-local fo
 alt-3 = 'exec-and-forget /bin/sh -lc "$HOME/.config/aerospace/workspace-local focus 3"'
 alt-4 = 'exec-and-forget /bin/sh -lc "$HOME/.config/aerospace/workspace-local focus 4"'
 alt-5 = 'exec-and-forget /bin/sh -lc "$HOME/.config/aerospace/workspace-local focus 5"'
+alt-6 = 'exec-and-forget /bin/sh -lc "$HOME/.config/aerospace/workspace-local focus 6"'
+alt-7 = 'exec-and-forget /bin/sh -lc "$HOME/.config/aerospace/workspace-local focus 7"'
+alt-8 = 'exec-and-forget /bin/sh -lc "$HOME/.config/aerospace/workspace-local focus 8"'
+alt-9 = 'exec-and-forget /bin/sh -lc "$HOME/.config/aerospace/workspace-local focus 9"'
 
 alt-shift-1 = 'exec-and-forget /bin/sh -lc "$HOME/.config/aerospace/workspace-local move 1"'
 alt-shift-2 = 'exec-and-forget /bin/sh -lc "$HOME/.config/aerospace/workspace-local move 2"'
 alt-shift-3 = 'exec-and-forget /bin/sh -lc "$HOME/.config/aerospace/workspace-local move 3"'
 alt-shift-4 = 'exec-and-forget /bin/sh -lc "$HOME/.config/aerospace/workspace-local move 4"'
 alt-shift-5 = 'exec-and-forget /bin/sh -lc "$HOME/.config/aerospace/workspace-local move 5"'
+alt-shift-6 = 'exec-and-forget /bin/sh -lc "$HOME/.config/aerospace/workspace-local move 6"'
+alt-shift-7 = 'exec-and-forget /bin/sh -lc "$HOME/.config/aerospace/workspace-local move 7"'
+alt-shift-8 = 'exec-and-forget /bin/sh -lc "$HOME/.config/aerospace/workspace-local move 8"'
+alt-shift-9 = 'exec-and-forget /bin/sh -lc "$HOME/.config/aerospace/workspace-local move 9"'
 
 alt-tab = 'workspace-back-and-forth'
 alt-shift-tab = 'workspace --wrap-around next'

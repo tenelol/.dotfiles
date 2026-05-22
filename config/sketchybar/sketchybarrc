@@ -81,7 +81,7 @@ add_workspace_group() {
     bracket_display_arg=(display="$display_id")
   fi
 
-  for local_workspace in 1 2 3 4 5; do
+  for local_workspace in 1 2 3 4 5 6 7 8 9; do
     workspace_id="$((offset + local_workspace))"
     item_names+=("space.$workspace_id.$local_workspace")
     add_workspace_item "$workspace_id" "$local_workspace" "$display_id"
