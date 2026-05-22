@@ -111,6 +111,7 @@ let
       const int LEAF_COUNT = 9;
       const float MIN_HORIZONTAL_CELLS = 1.35;
       const float MIN_VERTICAL_LINES = 0.45;
+      const float TRIGGER_RATE = 0.20;
 
       vec3 sRGBToLinear(vec3 c) {
           return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(vec3(0.04045), c));
@@ -165,6 +166,15 @@ let
           float progress = (iTime - iTimeCursorChange) / DURATION;
 
           if (distanceMoved <= minMovement || progress < 0.0 || progress >= 1.0) {
+              return;
+          }
+
+          float eventSeed = floor(iTimeCursorChange * 13.0)
+              + currentCenter.x * 37.0
+              + currentCenter.y * 53.0
+              + previousCenter.x * 71.0
+              + previousCenter.y * 89.0;
+          if (hash(eventSeed) > TRIGGER_RATE) {
               return;
           }
 
