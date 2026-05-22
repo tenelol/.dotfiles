@@ -59,22 +59,7 @@ let
           ]
           baseConfig;
     in
-    pkgs.writeText "ghostty-config" (
-      if theme.leafBurst > 0.0 then
-        builtins.replaceStrings
-          [
-            "custom-shader = ~/.config/ghostty/shaders/cursor_tail.glsl\n"
-          ]
-          [
-            ''
-              custom-shader = ~/.config/ghostty/shaders/cursor_tail.glsl
-              custom-shader = ~/.config/ghostty/shaders/leaf_burst.glsl
-            ''
-          ]
-          themedConfig
-      else
-        themedConfig
-    );
+    pkgs.writeText "ghostty-config" themedConfig;
   ghosttyAuroraShader =
     pkgs.runCommand "ghostty-aurora-tokyo-night.glsl"
       {
@@ -103,120 +88,6 @@ let
           --replace-fail 'const float DURATION = 0.09;' 'const float DURATION = 0.13;' \
           --replace-fail 'const float THRESHOLD_MIN_DISTANCE = 1.5;' 'const float THRESHOLD_MIN_DISTANCE = 1.0;'
       '';
-  mkGhosttyLeafBurstShader =
-    myconfig:
-    pkgs.writeText "ghostty-leaf-burst.glsl" ''
-      const float LEAF_ALPHA = ${toString myconfig.theme.ghostty.leafBurst};
-      const float IDLE_DELAY = 0.22;
-      const float DURATION = 1.25;
-      const int LEAF_COUNT = 9;
-      const float MIN_HORIZONTAL_CELLS = 0.72;
-      const float MIN_VERTICAL_LINES = 0.34;
-      const float TRIGGER_RATE = 0.20;
-
-      vec3 sRGBToLinear(vec3 c) {
-          return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(vec3(0.04045), c));
-      }
-
-      float hash(float n) {
-          return fract(sin(n) * 43758.5453123);
-      }
-
-      mat2 rotate2d(float angle) {
-          float s = sin(angle);
-          float c = cos(angle);
-          return mat2(c, -s, s, c);
-      }
-
-      vec2 normalizeToScreen(vec2 value, float isPosition) {
-          return (value * 2.0 - (iResolution.xy * isPosition)) / iResolution.y;
-      }
-
-      float leafSdf(vec2 p) {
-          float taper = clamp(1.0 - abs(p.y) * 0.72, 0.24, 1.0);
-          return length(vec2(p.x / (0.34 * taper), p.y / 0.82)) - 1.0;
-      }
-
-      float leafVein(vec2 p) {
-          float body = 1.0 - smoothstep(-0.02, 0.05, leafSdf(p));
-          float mainVein = 1.0 - smoothstep(0.012, 0.035, abs(p.x));
-          float lengthMask = smoothstep(-0.72, -0.12, p.y) * (1.0 - smoothstep(0.16, 0.72, p.y));
-          float sideA = 1.0 - smoothstep(0.010, 0.030, abs(p.x - p.y * 0.22));
-          float sideB = 1.0 - smoothstep(0.010, 0.030, abs(p.x + p.y * 0.22));
-          return max(mainVein * lengthMask, max(sideA, sideB) * body * 0.32);
-      }
-
-      void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-          vec2 uv = fragCoord.xy / iResolution.xy;
-          fragColor = texture(iChannel0, uv);
-
-          if (LEAF_ALPHA <= 0.0) {
-              return;
-          }
-
-          vec2 p = normalizeToScreen(fragCoord.xy, 1.0);
-          vec4 currentCursor = vec4(normalizeToScreen(iCurrentCursor.xy, 1.0), normalizeToScreen(iCurrentCursor.zw, 0.0));
-          vec4 previousCursor = vec4(normalizeToScreen(iPreviousCursor.xy, 1.0), normalizeToScreen(iPreviousCursor.zw, 0.0));
-
-          vec2 offsetFactor = vec2(-0.5, 0.5);
-          vec2 currentCenter = currentCursor.xy - currentCursor.zw * offsetFactor;
-          vec2 previousCenter = previousCursor.xy - previousCursor.zw * offsetFactor;
-          vec2 delta = currentCenter - previousCenter;
-          float distanceMoved = length(delta);
-          float minMovement = max(currentCursor.z * MIN_HORIZONTAL_CELLS, currentCursor.w * MIN_VERTICAL_LINES);
-          float idleTime = iTime - iTimeCursorChange;
-          float progress = (idleTime - IDLE_DELAY) / DURATION;
-
-          if (distanceMoved <= minMovement || progress < 0.0 || progress >= 1.0) {
-              return;
-          }
-
-          float eventSeed = floor(iTimeCursorChange * 13.0)
-              + currentCenter.x * 37.0
-              + currentCenter.y * 53.0
-              + previousCenter.x * 71.0
-              + previousCenter.y * 89.0;
-          if (hash(eventSeed) > TRIGGER_RATE) {
-              return;
-          }
-
-          float hasDirection = step(0.0001, distanceMoved);
-          vec2 direction = normalize(mix(vec2(0.55, -0.30), delta, hasDirection));
-          vec2 normal = vec2(-direction.y, direction.x);
-          vec3 leafDark = sRGBToLinear(vec3(0.10, 0.38, 0.16));
-          vec3 leafMid = sRGBToLinear(vec3(0.32, 0.74, 0.30));
-          vec3 leafLight = sRGBToLinear(vec3(0.76, 1.00, 0.48));
-
-          for (int i = 0; i < LEAF_COUNT; i++) {
-              float fi = float(i);
-              float seed = fi * 23.17 + 9.31;
-              float delay = hash(seed) * 0.22;
-              float t = clamp((progress - delay) / (1.0 - delay), 0.0, 1.0);
-              float leafActive = step(0.001, t) * (1.0 - step(1.0, t));
-              float fade = pow(1.0 - t, 1.10) * smoothstep(0.0, 0.10, t) * leafActive;
-              float flutter = sin(iTime * (4.5 + hash(seed + 1.0) * 4.0) + seed);
-              float side = (hash(seed + 2.0) - 0.5) * 0.18;
-
-              vec2 anchor = mix(previousCenter, currentCenter, 0.28 + hash(seed + 3.0) * 0.62);
-              vec2 drift = normal * (side + flutter * 0.030 * t);
-              drift += direction * ((hash(seed + 4.0) - 0.65) * 0.10 * t);
-              drift += vec2(0.020 * sin(t * 9.0 + seed), -0.11 * t * t);
-              vec2 leafPosition = anchor + drift;
-
-              float size = mix(0.038, 0.065, hash(seed + 5.0));
-              float angle = atan(direction.y, direction.x) + 1.57079632679 + flutter * 0.60 + (hash(seed + 6.0) - 0.5) * 1.8;
-              vec2 local = rotate2d(-angle) * (p - leafPosition) / size;
-              float shape = 1.0 - smoothstep(-0.035, 0.035, leafSdf(local));
-              float vein = leafVein(local);
-              float alpha = shape * fade * LEAF_ALPHA;
-              vec3 leafColor = mix(leafDark, leafMid, hash(seed + 7.0));
-              leafColor = mix(leafColor, leafLight, vein * 0.52);
-
-              fragColor.rgb = mix(fragColor.rgb, leafColor, alpha);
-              fragColor.a = max(fragColor.a, alpha);
-          }
-      }
-    '';
   ghosttyRippleRectangleCursorShader =
     pkgs.runCommand "ghostty-ripple-rectangle-cursor-subtle.glsl"
       {
@@ -260,14 +131,6 @@ delib.module {
         "ghostty/shaders/readability_scrim.glsl".source = mkGhosttyReadabilityShader myconfig;
         "ghostty/shaders/cursor_tail.glsl".source = ghosttyCursorTailShader;
         "ghostty/shaders/ripple_rectangle_cursor.glsl".source = ghosttyRippleRectangleCursorShader;
-      }
-      // (
-        if myconfig.theme.ghostty.leafBurst > 0.0 then
-          {
-            "ghostty/shaders/leaf_burst.glsl".source = mkGhosttyLeafBurstShader myconfig;
-          }
-        else
-          { }
-      );
+      };
     };
 }
