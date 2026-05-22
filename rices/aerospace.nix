@@ -22,7 +22,6 @@ delib.rice {
         background = "101827";
         backgroundBlur = 192;
         readabilityScrim = 0.58;
-        leafBurst = 0.95;
         cursor = "7dd3fc";
         selectionForeground = "e0f2fe";
         selectionBackground = "1e3a5f";
