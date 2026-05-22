@@ -64,8 +64,8 @@ PATH = '/opt/homebrew/bin:/opt/homebrew/sbin:/run/current-system/sw/bin:/usr/bin
 inner.horizontal = 6
 inner.vertical = 6
 outer.left = 6
-outer.bottom = 6
-outer.top = 44
+outer.bottom = 16
+outer.top = 34
 outer.right = 6
 
 [key-mapping]
