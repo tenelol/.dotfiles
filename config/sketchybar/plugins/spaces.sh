@@ -10,13 +10,19 @@ TRANSPARENT=0x00000000
 TEXT_DIM=0xa8f5f7fa
 TEXT_STRONG=0xffffffff
 ACCENT=0xff8bd5ff
-MANAGED_WORKSPACES="1 2 3 4 5 6 7 8 9"
-
 theme_file="${XDG_CONFIG_HOME:-$HOME/.config}/theme/sketchybar.env"
 [ -r "$theme_file" ] && . "$theme_file"
 
 aerospace_running() {
   /usr/bin/pgrep -qx AeroSpace >/dev/null 2>&1 && [ -x /opt/homebrew/bin/aerospace ]
+}
+
+managed_workspaces() {
+  if aerospace_running; then
+    printf '%s\n' "1 2 3 4 5 6 7 8 9"
+  else
+    printf '%s\n' "1 2 3 4 5"
+  fi
 }
 
 space_item_name() {
@@ -44,7 +50,7 @@ query_focused_workspace() {
 }
 
 is_managed_workspace() {
-  for workspace_id in $MANAGED_WORKSPACES; do
+  for workspace_id in $(managed_workspaces); do
     [ "$1" = "$workspace_id" ] && return 0
   done
 
@@ -106,7 +112,7 @@ mkdir -p "$STATE_DIR"
 printf '%s\n' "$focused_workspace" > "$STATE_FILE"
 
 if [ "$REFRESH" = "all" ] || [ -z "$previous_workspace" ]; then
-  for sid in $MANAGED_WORKSPACES; do
+  for sid in $(managed_workspaces); do
     if [ "$sid" = "$focused_workspace" ]; then
       set_active "$sid"
     else
