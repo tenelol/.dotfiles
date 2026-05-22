@@ -10,7 +10,7 @@ TRANSPARENT=0x00000000
 TEXT_DIM=0xa8f5f7fa
 TEXT_STRONG=0xffffffff
 ACCENT=0xff8bd5ff
-MANAGED_WORKSPACES="1 2 3 4 5"
+MANAGED_WORKSPACES="1 2 3 4 5 6 7 8 9"
 
 theme_file="${XDG_CONFIG_HOME:-$HOME/.config}/theme/sketchybar.env"
 [ -r "$theme_file" ] && . "$theme_file"
@@ -21,7 +21,7 @@ aerospace_running() {
 
 space_item_name() {
   workspace_id="$1"
-  local_workspace=$(( (workspace_id - 1) % 5 + 1 ))
+  local_workspace=$(( (workspace_id - 1) % 9 + 1 ))
 
   printf 'space.%s.%s\n' "$workspace_id" "$local_workspace"
 }

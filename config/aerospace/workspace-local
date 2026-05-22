@@ -10,15 +10,15 @@ local_workspace="${2:-}"
 case "$action" in
   focus | move) ;;
   *)
-    printf 'usage: %s focus|move 1..5\n' "$0" >&2
+    printf 'usage: %s focus|move 1..9\n' "$0" >&2
     exit 2
     ;;
 esac
 
 case "$local_workspace" in
-  1 | 2 | 3 | 4 | 5) ;;
+  1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9) ;;
   *)
-    printf 'usage: %s focus|move 1..5\n' "$0" >&2
+    printf 'usage: %s focus|move 1..9\n' "$0" >&2
     exit 2
     ;;
 esac
@@ -30,13 +30,13 @@ case "$monitor_name" in
     offset=0
     ;;
   *VZ249*)
-    offset=5
+    offset=9
     ;;
   *Sidecar*)
-    offset=10
+    offset=18
     ;;
   *)
-    offset=5
+    offset=9
     ;;
 esac
 
