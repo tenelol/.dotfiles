@@ -11,9 +11,7 @@ in
 delib.module {
   name = "spicetify";
 
-  options = delib.singleEnableOption (
-    !host.isServer && builtins.match ".*-linux" host.system != null
-  );
+  options = delib.singleEnableOption (!host.isServer);
 
   home.ifEnabled = {
     programs.spicetify = {

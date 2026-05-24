@@ -49,7 +49,6 @@ delib.module {
         "microsoft-office"
         "notion"
         "raycast"
-        "spotify"
         "slack"
         "tailscale-app"
         "thebrowsercompany-dia"
