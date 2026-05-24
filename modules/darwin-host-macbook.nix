@@ -1,9 +1,24 @@
 {
   delib,
+  hm,
   host,
+  lib,
   profile,
   ...
 }:
+let
+  aquaSkkHiraganaInputSource = {
+    "Bundle ID" = "jp.sourceforge.inputmethod.aquaskk";
+    "Input Mode" = "com.apple.inputmethod.Japanese.Hiragana";
+    InputSourceKind = "Input Mode";
+  };
+  aquaSkkSelectedInputSources = [
+    aquaSkkHiraganaInputSource
+  ];
+  aquaSkkSelectedInputSourcesPlist = lib.generators.toPlist {
+    escape = true;
+  } aquaSkkSelectedInputSources;
+in
 delib.module {
   name = "darwin.host.macbook";
 
@@ -40,6 +55,40 @@ delib.module {
       CustomUserPreferences = {
         ".GlobalPreferences" = {
           AppleMenuBarVisibleInFullscreen = false;
+        };
+
+        "com.apple.HIToolbox" = {
+          AppleEnabledInputSources = [
+            {
+              InputSourceKind = "Keyboard Layout";
+              "KeyboardLayout ID" = 252;
+              "KeyboardLayout Name" = "ABC";
+            }
+            aquaSkkHiraganaInputSource
+            {
+              "Bundle ID" = "jp.sourceforge.inputmethod.aquaskk";
+              "Input Mode" = "com.apple.inputmethod.Roman";
+              InputSourceKind = "Input Mode";
+            }
+            {
+              "Bundle ID" = "jp.sourceforge.inputmethod.aquaskk";
+              InputSourceKind = "Keyboard Input Method";
+            }
+            {
+              "Bundle ID" = "com.apple.CharacterPaletteIM";
+              InputSourceKind = "Non Keyboard Input Method";
+            }
+            {
+              "Bundle ID" = "com.apple.50onPaletteIM";
+              InputSourceKind = "Non Keyboard Input Method";
+            }
+            {
+              "Bundle ID" = "com.apple.inputmethod.ironwood";
+              InputSourceKind = "Non Keyboard Input Method";
+            }
+          ];
+
+          AppleSelectedInputSources = aquaSkkSelectedInputSources;
         };
       };
 
@@ -98,6 +147,15 @@ delib.module {
       chown ${profile.username} /Users/${profile.username}/Pictures/Screenshots
     '';
 
+    system.activationScripts.postActivation.text = lib.mkAfter ''
+      uid="$(id -u ${profile.username})"
+
+      launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/defaults write \
+        com.apple.HIToolbox AppleSelectedInputSources ${lib.escapeShellArg aquaSkkSelectedInputSourcesPlist}
+
+      killall TextInputMenuAgent >/dev/null 2>&1 || true
+    '';
+
     system.activationScripts.reloadNativeBars.text = ''
       uid="$(id -u ${profile.username})"
 
@@ -109,6 +167,15 @@ delib.module {
 
       killall Dock >/dev/null 2>&1 || true
       killall SystemUIServer >/dev/null 2>&1 || true
+    '';
+  };
+
+  home.ifEnabled = {
+    home.activation.selectAquaSkkInputSource = hm.dag.entryAfter [ "restartHammerspoon" ] ''
+      if [ -x /opt/homebrew/bin/hs ]; then
+        /opt/homebrew/bin/hs -c 'hs.keycodes.currentSourceID("jp.sourceforge.inputmethod.aquaskk.Hiragana")' \
+          >/dev/null 2>&1 || true
+      fi
     '';
   };
 }
