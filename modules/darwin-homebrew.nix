@@ -51,6 +51,7 @@ delib.module {
         "notion"
         "raycast"
         "slack"
+        "spotify"
         "tailscale-app"
         "thebrowsercompany-dia"
         "zed"
