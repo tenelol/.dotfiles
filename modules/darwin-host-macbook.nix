@@ -84,6 +84,10 @@ delib.module {
           AppleMenuBarVisibleInFullscreen = false;
         };
 
+        "jp.sourceforge.inputmethod.aquaskk" = {
+          candidate_window_labels = "ASDFJK";
+        };
+
         "com.apple.HIToolbox" = {
           AppleEnabledInputSources = [
             {
