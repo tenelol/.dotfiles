@@ -63,10 +63,10 @@ PATH = '/opt/homebrew/bin:/opt/homebrew/sbin:/run/current-system/sw/bin:/usr/bin
 [gaps]
 inner.horizontal = 6
 inner.vertical = 6
-outer.left = 6
-outer.bottom = 16
-outer.top = 34
-outer.right = 6
+outer.left = 10
+outer.bottom = 20
+outer.top = 38
+outer.right = 10
 
 [key-mapping]
 preset = 'qwerty'
