@@ -17,7 +17,7 @@ local accessibilityEnabled = hs.accessibilityState(true)
 
 local imeConfig = {
   englishSourceID = "com.apple.keylayout.ABC",
-  japaneseSourceID = "com.apple.inputmethod.Kotoeri.RomajiTyping.Japanese",
+  japaneseSourceID = "jp.sourceforge.inputmethod.aquaskk.Hiragana",
   tapThresholdSeconds = 0.2,
 }
 
