@@ -220,7 +220,6 @@ _G.forcePressDragSuppressor = hs.eventtap.new({ leftMouseDraggedEvent }, functio
 end)
 
 if accessibilityEnabled then
-  _G.commandTapImeSwitch:start()
   _G.terminalFocusWatcher:start()
   syncControlDoubleTapTmuxPrefix()
   _G.forcePressZoomTap:start()
