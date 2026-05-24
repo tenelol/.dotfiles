@@ -12,16 +12,17 @@ let
     "Input Mode" = inputMode;
     InputSourceKind = "Input Mode";
   };
+  macSkkAsciiInputSource = macSkkInputSource "net.mtgto.inputmethod.macSKK.ascii";
   macSkkHiraganaInputSource = macSkkInputSource "net.mtgto.inputmethod.macSKK.hiragana";
   macSkkInputSources = [
-    (macSkkInputSource "net.mtgto.inputmethod.macSKK.ascii")
+    macSkkAsciiInputSource
     macSkkHiraganaInputSource
     (macSkkInputSource "net.mtgto.inputmethod.macSKK.katakana")
     (macSkkInputSource "net.mtgto.inputmethod.macSKK.hankaku")
     (macSkkInputSource "net.mtgto.inputmethod.macSKK.eisu")
   ];
   macSkkSelectedInputSources = [
-    macSkkHiraganaInputSource
+    macSkkAsciiInputSource
   ];
   macSkkSelectedInputSourcesPlist = lib.generators.toPlist {
     escape = true;
