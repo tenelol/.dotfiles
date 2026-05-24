@@ -196,11 +196,4 @@ delib.module {
       killall SystemUIServer >/dev/null 2>&1 || true
     '';
   };
-
-  home.ifEnabled = {
-    home.file."Library/Application Support/AquaSKK/keymap.conf" = {
-      force = true;
-      source = ../config/aquaskk/keymap.conf;
-    };
-  };
 }
