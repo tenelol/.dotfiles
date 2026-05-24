@@ -86,6 +86,7 @@ delib.module {
 
         "jp.sourceforge.inputmethod.aquaskk" = {
           candidate_window_labels = "ASDFJK";
+          show_input_mode_icon = false;
         };
 
         "com.apple.HIToolbox" = {
@@ -194,5 +195,12 @@ delib.module {
       killall Dock >/dev/null 2>&1 || true
       killall SystemUIServer >/dev/null 2>&1 || true
     '';
+  };
+
+  home.ifEnabled = {
+    home.file."Library/Application Support/AquaSKK/keymap.conf" = {
+      force = true;
+      source = ../config/aquaskk/keymap.conf;
+    };
   };
 }
