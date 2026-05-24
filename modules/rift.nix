@@ -26,6 +26,7 @@ delib.module {
   darwin.ifEnabled = {
     launchd.user.agents.rift = {
       serviceConfig = {
+        Label = "git.acsandmann.rift";
         ProgramArguments = [
           "/bin/sh"
           "-lc"
@@ -47,7 +48,7 @@ delib.module {
     system.activationScripts.cleanupLegacyYabai.text = ''
       uid="$(/usr/bin/id -u ${profile.username})"
 
-      for label in org.nixos.aerospace org.nixos.autoraise org.nixos.yabai org.nixos.skhd homebrew.mxcl.yabai homebrew.mxcl.skhd; do
+      for label in org.nixos.rift homebrew.mxcl.rift org.nixos.aerospace org.nixos.autoraise org.nixos.yabai org.nixos.skhd homebrew.mxcl.yabai homebrew.mxcl.skhd; do
         /bin/launchctl bootout "gui/$uid/$label" >/dev/null 2>&1 || true
       done
 
@@ -65,6 +66,8 @@ delib.module {
         /Library/LaunchAgents/org.nixos.skhd.plist \
         "${homeDir}/Library/LaunchAgents/org.nixos.yabai.plist" \
         "${homeDir}/Library/LaunchAgents/org.nixos.skhd.plist" \
+        "${homeDir}/Library/LaunchAgents/org.nixos.rift.plist" \
+        "${homeDir}/Library/LaunchAgents/homebrew.mxcl.rift.plist" \
         "${homeDir}/Library/LaunchAgents/homebrew.mxcl.yabai.plist" \
         "${homeDir}/Library/LaunchAgents/homebrew.mxcl.skhd.plist"; do
         /bin/rm -f "$plist"
@@ -98,7 +101,7 @@ delib.module {
       $DRY_RUN_CMD /usr/bin/pkill -u ${profile.username} -x AutoRaise >/dev/null 2>&1 || true
       $DRY_RUN_CMD /usr/bin/pkill -u ${profile.username} -f '[A]pplications/AeroSpace.app/Contents/MacOS/AeroSpace' >/dev/null 2>&1 || true
       $DRY_RUN_CMD /usr/bin/pkill -u ${profile.username} -f '[a]utoraise.*/bin/autoraise' >/dev/null 2>&1 || true
-      $DRY_RUN_CMD /bin/launchctl kickstart -k "gui/$uid/org.nixos.rift" >/dev/null 2>&1 || true
+      $DRY_RUN_CMD /bin/launchctl kickstart -k "gui/$uid/git.acsandmann.rift" >/dev/null 2>&1 || true
 
       if [ -x "$HOME/.config/rift/sketchybar-workspace-subscribe" ]; then
         $DRY_RUN_CMD "$HOME/.config/rift/sketchybar-workspace-subscribe" >/dev/null 2>&1 || true

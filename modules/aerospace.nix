@@ -59,7 +59,7 @@ delib.module {
     system.activationScripts.stopRiftForAerospace.text = ''
       uid="$(/usr/bin/id -u ${profile.username})"
 
-      for label in org.nixos.rift; do
+      for label in git.acsandmann.rift org.nixos.rift homebrew.mxcl.rift; do
         /bin/launchctl bootout "gui/$uid/$label" >/dev/null 2>&1 || true
       done
 
