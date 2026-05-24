@@ -17,6 +17,34 @@ let
   aquaSkkSelectedInputSourcesPlist = lib.generators.toPlist {
     escape = true;
   } aquaSkkSelectedInputSources;
+  disabledSymbolicHotKey = parameters: {
+    enabled = false;
+    value = {
+      inherit parameters;
+      type = "standard";
+    };
+  };
+  inputSourceShortcutHotKeys = {
+    # 60/61 are the previous/next input source shortcuts.
+    "60" = disabledSymbolicHotKey [
+      32
+      49
+      262144
+    ];
+    "61" = disabledSymbolicHotKey [
+      32
+      49
+      786432
+    ];
+  };
+  inputSourceShortcutCommands = lib.concatStringsSep "\n" (
+    lib.mapAttrsToList (
+      id: hotKey:
+      "launchctl asuser \"$uid\" sudo --user=${profile.username} /usr/bin/defaults write com.apple.symbolichotkeys AppleSymbolicHotKeys -dict-add ${id} ${
+        lib.escapeShellArg (lib.generators.toPlist { escape = true; } hotKey)
+      }"
+    ) inputSourceShortcutHotKeys
+  );
 in
 delib.module {
   name = "darwin.host.macbook";
@@ -146,6 +174,8 @@ delib.module {
 
       launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/defaults write \
         com.apple.HIToolbox AppleSelectedInputSources ${lib.escapeShellArg aquaSkkSelectedInputSourcesPlist}
+
+      ${inputSourceShortcutCommands}
     '';
 
     system.activationScripts.reloadNativeBars.text = ''
