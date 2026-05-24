@@ -6,25 +6,26 @@
   ...
 }:
 let
-  aquaSkkInputSource = inputMode: {
-    "Bundle ID" = "jp.sourceforge.inputmethod.aquaskk";
+  macSkkBundleID = "net.mtgto.inputmethod.macSKK";
+  macSkkInputSource = inputMode: {
+    "Bundle ID" = macSkkBundleID;
     "Input Mode" = inputMode;
     InputSourceKind = "Input Mode";
   };
-  aquaSkkHiraganaInputSource = aquaSkkInputSource "com.apple.inputmethod.Japanese.Hiragana";
-  aquaSkkInputSources = [
-    aquaSkkHiraganaInputSource
-    (aquaSkkInputSource "com.apple.inputmethod.Japanese.Katakana")
-    (aquaSkkInputSource "com.apple.inputmethod.Japanese")
-    (aquaSkkInputSource "com.apple.inputmethod.Japanese.FullWidthRoman")
-    (aquaSkkInputSource "com.apple.inputmethod.Japanese.HalfWidthKana")
+  macSkkHiraganaInputSource = macSkkInputSource "net.mtgto.inputmethod.macSKK.hiragana";
+  macSkkInputSources = [
+    (macSkkInputSource "net.mtgto.inputmethod.macSKK.ascii")
+    macSkkHiraganaInputSource
+    (macSkkInputSource "net.mtgto.inputmethod.macSKK.katakana")
+    (macSkkInputSource "net.mtgto.inputmethod.macSKK.hankaku")
+    (macSkkInputSource "net.mtgto.inputmethod.macSKK.eisu")
   ];
-  aquaSkkSelectedInputSources = [
-    aquaSkkHiraganaInputSource
+  macSkkSelectedInputSources = [
+    macSkkHiraganaInputSource
   ];
-  aquaSkkSelectedInputSourcesPlist = lib.generators.toPlist {
+  macSkkSelectedInputSourcesPlist = lib.generators.toPlist {
     escape = true;
-  } aquaSkkSelectedInputSources;
+  } macSkkSelectedInputSources;
   disabledSymbolicHotKey = parameters: {
     enabled = false;
     value = {
@@ -92,11 +93,6 @@ delib.module {
           AppleMenuBarVisibleInFullscreen = false;
         };
 
-        "jp.sourceforge.inputmethod.aquaskk" = {
-          candidate_window_labels = "ASDFJK";
-          show_input_mode_icon = false;
-        };
-
         "com.apple.HIToolbox" = {
           AppleEnabledInputSources = [
             {
@@ -105,10 +101,10 @@ delib.module {
               "KeyboardLayout Name" = "ABC";
             }
           ]
-          ++ aquaSkkInputSources
+          ++ macSkkInputSources
           ++ [
             {
-              "Bundle ID" = "jp.sourceforge.inputmethod.aquaskk";
+              "Bundle ID" = macSkkBundleID;
               InputSourceKind = "Keyboard Input Method";
             }
             {
@@ -125,7 +121,7 @@ delib.module {
             }
           ];
 
-          AppleSelectedInputSources = aquaSkkSelectedInputSources;
+          AppleSelectedInputSources = macSkkSelectedInputSources;
         };
       };
 
@@ -188,9 +184,39 @@ delib.module {
       uid="$(id -u ${profile.username})"
 
       launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/defaults write \
-        com.apple.HIToolbox AppleSelectedInputSources ${lib.escapeShellArg aquaSkkSelectedInputSourcesPlist}
+        com.apple.HIToolbox AppleSelectedInputSources ${lib.escapeShellArg macSkkSelectedInputSourcesPlist}
 
       ${inputSourceShortcutCommands}
+
+      macskk_container="/Users/${profile.username}/Library/Containers/${macSkkBundleID}/Data"
+      macskk_dict_dir="$macskk_container/Documents/Dictionaries"
+      macskk_prefs="$macskk_container/Library/Preferences/${macSkkBundleID}.plist"
+      aquaskk_dir="/Users/${profile.username}/Library/Application Support/AquaSKK"
+
+      mkdir -p "$macskk_dict_dir" "$(dirname "$macskk_prefs")"
+      chown -R ${profile.username} "/Users/${profile.username}/Library/Containers/${macSkkBundleID}" 2>/dev/null || true
+
+      if [ -f "$aquaskk_dir/SKK-JISYO.L" ] && [ ! -f "$macskk_dict_dir/SKK-JISYO.L" ]; then
+        cp "$aquaskk_dir/SKK-JISYO.L" "$macskk_dict_dir/SKK-JISYO.L"
+        chown ${profile.username} "$macskk_dict_dir/SKK-JISYO.L"
+      fi
+
+      if [ -f "$aquaskk_dir/skk-jisyo.utf8" ] && [ ! -f "$macskk_dict_dir/skk-jisyo.utf8" ]; then
+        cp "$aquaskk_dir/skk-jisyo.utf8" "$macskk_dict_dir/skk-jisyo.utf8"
+        chown ${profile.username} "$macskk_dict_dir/skk-jisyo.utf8"
+      fi
+
+      launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/plutil -create xml1 "$macskk_prefs" 2>/dev/null || true
+      launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/plutil \
+        -replace selectedInputSource -string com.apple.keylayout.ABC "$macskk_prefs"
+      launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/plutil \
+        -replace selectCandidateKeys -string ASDFJK "$macskk_prefs"
+      launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/plutil \
+        -replace showInputModePanel -bool false "$macskk_prefs"
+      launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/plutil \
+        -replace dictionaries \
+        -json '[{"filename":"SKK-JISYO.L","enabled":true,"encoding":3,"type":"traditional","saveToUserDict":true}]' \
+        "$macskk_prefs"
     '';
 
     system.activationScripts.reloadNativeBars.text = ''
