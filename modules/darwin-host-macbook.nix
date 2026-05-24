@@ -6,13 +6,21 @@
   ...
 }:
 let
-  aquaSkkInputSource = {
+  aquaSkkInputSource = inputMode: {
     "Bundle ID" = "jp.sourceforge.inputmethod.aquaskk";
-    "Input Mode" = "com.apple.inputmethod.Japanese";
+    "Input Mode" = inputMode;
     InputSourceKind = "Input Mode";
   };
+  aquaSkkHiraganaInputSource = aquaSkkInputSource "com.apple.inputmethod.Japanese.Hiragana";
+  aquaSkkInputSources = [
+    aquaSkkHiraganaInputSource
+    (aquaSkkInputSource "com.apple.inputmethod.Japanese.Katakana")
+    (aquaSkkInputSource "com.apple.inputmethod.Japanese")
+    (aquaSkkInputSource "com.apple.inputmethod.Japanese.FullWidthRoman")
+    (aquaSkkInputSource "com.apple.inputmethod.Japanese.HalfWidthKana")
+  ];
   aquaSkkSelectedInputSources = [
-    aquaSkkInputSource
+    aquaSkkHiraganaInputSource
   ];
   aquaSkkSelectedInputSourcesPlist = lib.generators.toPlist {
     escape = true;
@@ -96,7 +104,9 @@ delib.module {
               "KeyboardLayout ID" = 252;
               "KeyboardLayout Name" = "ABC";
             }
-            aquaSkkInputSource
+          ]
+          ++ aquaSkkInputSources
+          ++ [
             {
               "Bundle ID" = "jp.sourceforge.inputmethod.aquaskk";
               InputSourceKind = "Keyboard Input Method";
