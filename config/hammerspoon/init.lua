@@ -15,12 +15,6 @@ pcall(function()
 end)
 local accessibilityEnabled = hs.accessibilityState(true)
 
-local imeConfig = {
-  englishSourceID = "com.apple.keylayout.ABC",
-  japaneseSourceID = "jp.sourceforge.inputmethod.aquaskk.Hiragana",
-  tapThresholdSeconds = 0.2,
-}
-
 local tmuxPrefixConfig = {
   tapThresholdSeconds = 0.25,
   doubleTapThresholdSeconds = 0.35,
@@ -41,29 +35,8 @@ local zoomPressConfig = {
   zoomInStepsOnPress = 7,
 }
 
-local leftCommandKeyCode = keycodes.map.cmd
 local leftControlKeyCode = keycodes.map.ctrl or 59
 local rightControlKeyCode = keycodes.map.rightctrl or 62
-local function switchToEnglish()
-  if not keycodes.currentSourceID(imeConfig.englishSourceID) then
-    hs.alert.show(("Failed to switch to %s"):format(imeConfig.englishSourceID), 2)
-  end
-end
-
-local function switchToJapanese()
-  if not keycodes.currentSourceID(imeConfig.japaneseSourceID) then
-    hs.alert.show(("Failed to switch to %s"):format(imeConfig.japaneseSourceID), 2)
-  end
-end
-
-local function toggleIme()
-  local currentSourceID = keycodes.currentSourceID()
-  if currentSourceID == imeConfig.japaneseSourceID then
-    switchToEnglish()
-  else
-    switchToJapanese()
-  end
-end
 
 local function frontmostAppIsTerminal()
   local app = hs.application.frontmostApplication()
@@ -76,11 +49,6 @@ local function frontmostAppIsTerminal()
     or false
 end
 
-local leftCommandTapState = {
-  active = false,
-  pressedAt = 0,
-  usedAsModifier = false,
-}
 local controlTapState = {
   active = false,
   pressedAt = 0,
@@ -88,14 +56,14 @@ local controlTapState = {
   lastTappedAt = 0,
 }
 
-local function resetImeTapState(state)
+local function resetTapState(state)
   state.active = false
   state.pressedAt = 0
   state.usedAsModifier = false
 end
 
 local function resetControlTapState()
-  resetImeTapState(controlTapState)
+  resetTapState(controlTapState)
   controlTapState.lastTappedAt = 0
 end
 
@@ -104,48 +72,6 @@ local function sendTmuxPrefixOnControlDoubleTap()
     hs.eventtap.keyStroke({}, "f12", 0)
   end
 end
-
--- Tap left Command to toggle between ABC and Japanese input sources.
-_G.commandTapImeSwitch = hs.eventtap.new({ flagsChangedEvent, keyDownEvent }, function(event)
-  local eventType = event:getType()
-
-  if eventType == keyDownEvent then
-    if leftCommandTapState.active then
-      leftCommandTapState.usedAsModifier = true
-    end
-
-    return false
-  end
-
-  if event:getKeyCode() ~= leftCommandKeyCode then
-    if leftCommandTapState.active then
-      leftCommandTapState.usedAsModifier = true
-    end
-
-    return false
-  end
-
-  local commandPressed = event:getFlags().cmd
-
-  if commandPressed and not leftCommandTapState.active then
-    leftCommandTapState.active = true
-    leftCommandTapState.usedAsModifier = false
-    leftCommandTapState.pressedAt = hs.timer.secondsSinceEpoch()
-    return false
-  end
-
-  if (not commandPressed) and leftCommandTapState.active then
-    local tapped = not leftCommandTapState.usedAsModifier
-      and (hs.timer.secondsSinceEpoch() - leftCommandTapState.pressedAt) <= imeConfig.tapThresholdSeconds
-    resetImeTapState(leftCommandTapState)
-
-    if tapped then
-      toggleIme()
-    end
-  end
-
-  return false
-end)
 
 -- Double-tap Control in terminals to send the tmux prefix (F12).
 _G.controlDoubleTapTmuxPrefix = hs.eventtap.new({ flagsChangedEvent, keyDownEvent }, function(event)
@@ -182,7 +108,7 @@ _G.controlDoubleTapTmuxPrefix = hs.eventtap.new({ flagsChangedEvent, keyDownEven
     local tapped = not controlTapState.usedAsModifier
       and (now - controlTapState.pressedAt) <= tmuxPrefixConfig.tapThresholdSeconds
 
-    resetImeTapState(controlTapState)
+    resetTapState(controlTapState)
 
     if tapped then
       if (now - controlTapState.lastTappedAt) <= tmuxPrefixConfig.doubleTapThresholdSeconds then

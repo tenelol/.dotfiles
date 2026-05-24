@@ -1,19 +1,18 @@
 {
   delib,
-  hm,
   host,
   lib,
   profile,
   ...
 }:
 let
-  aquaSkkHiraganaInputSource = {
+  aquaSkkInputSource = {
     "Bundle ID" = "jp.sourceforge.inputmethod.aquaskk";
-    "Input Mode" = "com.apple.inputmethod.Japanese.Hiragana";
+    "Input Mode" = "com.apple.inputmethod.Japanese";
     InputSourceKind = "Input Mode";
   };
   aquaSkkSelectedInputSources = [
-    aquaSkkHiraganaInputSource
+    aquaSkkInputSource
   ];
   aquaSkkSelectedInputSourcesPlist = lib.generators.toPlist {
     escape = true;
@@ -64,12 +63,7 @@ delib.module {
               "KeyboardLayout ID" = 252;
               "KeyboardLayout Name" = "ABC";
             }
-            aquaSkkHiraganaInputSource
-            {
-              "Bundle ID" = "jp.sourceforge.inputmethod.aquaskk";
-              "Input Mode" = "com.apple.inputmethod.Roman";
-              InputSourceKind = "Input Mode";
-            }
+            aquaSkkInputSource
             {
               "Bundle ID" = "jp.sourceforge.inputmethod.aquaskk";
               InputSourceKind = "Keyboard Input Method";
@@ -152,8 +146,6 @@ delib.module {
 
       launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/defaults write \
         com.apple.HIToolbox AppleSelectedInputSources ${lib.escapeShellArg aquaSkkSelectedInputSourcesPlist}
-
-      killall TextInputMenuAgent >/dev/null 2>&1 || true
     '';
 
     system.activationScripts.reloadNativeBars.text = ''
@@ -167,15 +159,6 @@ delib.module {
 
       killall Dock >/dev/null 2>&1 || true
       killall SystemUIServer >/dev/null 2>&1 || true
-    '';
-  };
-
-  home.ifEnabled = {
-    home.activation.selectAquaSkkInputSource = hm.dag.entryAfter [ "restartHammerspoon" ] ''
-      if [ -x /opt/homebrew/bin/hs ]; then
-        /opt/homebrew/bin/hs -c 'hs.keycodes.currentSourceID("jp.sourceforge.inputmethod.aquaskk.Hiragana")' \
-          >/dev/null 2>&1 || true
-      fi
     '';
   };
 }
