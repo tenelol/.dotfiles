@@ -195,6 +195,8 @@ in
       };
     }
     // lib.optionalAttrs (!isServer) {
+      ".codex/skills/imoocs".source = ../skills/imoocs;
+      ".claude/skills/imoocs".source = ../skills/imoocs;
       ".config/fontconfig/fonts.conf".source = ../config/fontconfig/fonts.conf;
     };
 
