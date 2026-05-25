@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<'EOF'
+Usage: dotfiles <command> [args]
+
+Commands:
+  doctor    Diagnose the local dotfiles environment
+EOF
+}
+
+command_name="${1:-}"
+
+case "$command_name" in
+  doctor)
+    shift
+    script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+    if [ -x "$script_dir/dotfiles-doctor" ]; then
+      exec "$script_dir/dotfiles-doctor" "$@"
+    fi
+    exec dotfiles-doctor "$@"
+    ;;
+  ""|-h|--help|help)
+    usage
+    ;;
+  *)
+    usage >&2
+    exit 2
+    ;;
+esac
