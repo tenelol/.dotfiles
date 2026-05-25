@@ -6,6 +6,55 @@
 }:
 let
   winresizer = import ../packages/winresizer.nix { inherit pkgs; };
+  jupyterPythonPackages = ps: [
+    ps.cairosvg
+    ps.debugpy
+    ps.ipykernel
+    ps."jupyter-client"
+    ps."jupyter-core"
+    ps.jupytext
+    ps.kaleido
+    ps.nbformat
+    ps.pillow
+    ps.plotly
+    ps.pnglatex
+    ps.pynvim
+    ps.pyperclip
+    ps.requests
+    ps."websocket-client"
+  ];
+  jupyterPython = pkgs.python3.withPackages jupyterPythonPackages;
+  nvimPythonHost =
+    pkgs.runCommand "nvim-jupyter-python-host" { nativeBuildInputs = [ pkgs.makeWrapper ]; }
+      ''
+        mkdir -p "$out/bin"
+        makeWrapper ${jupyterPython}/bin/python3 "$out/bin/nvim-python3" \
+          --unset PYTHONPATH \
+          --unset PYTHONSAFEPATH
+      '';
+  moltenRemotePluginPack = pkgs.neovimUtils.packDir {
+    molten.start = [ pkgs.vimPlugins.molten-nvim ];
+  };
+  moltenRemotePluginManifest = pkgs.runCommand "molten-rplugin.vim" { } ''
+    export HOME="$TMPDIR/home"
+    mkdir -p "$HOME"
+    export NVIM_RPLUGIN_MANIFEST="$out"
+
+    ${pkgs.neovim-unwrapped}/bin/nvim \
+      -u ${pkgs.writeText "manifest.vim" ""} \
+      -i NONE \
+      -n \
+      --cmd "set packpath^=${moltenRemotePluginPack}" \
+      --cmd "set rtp^=${moltenRemotePluginPack}" \
+      --cmd "lua vim.g.python3_host_prog = '${nvimPythonHost}/bin/nvim-python3'; vim.g.loaded_node_provider = 0; vim.g.loaded_perl_provider = 0; vim.g.loaded_ruby_provider = 0" \
+      +UpdateRemotePlugins \
+      +quit! >log 2>&1 || {
+        cat log
+        exit 1
+      }
+
+    test -s "$out"
+  '';
   nixManagedPlugins = {
     emmet-vim = pkgs.vimPlugins.emmet-vim;
     which-key-nvim = pkgs.vimPlugins.which-key-nvim;
@@ -39,6 +88,11 @@ let
     nvim-dap-python = pkgs.vimPlugins.nvim-dap-python;
     nvim-dap-ui = pkgs.vimPlugins.nvim-dap-ui;
     nvim-nio = pkgs.vimPlugins.nvim-nio;
+    image-nvim = pkgs.vimPlugins.image-nvim;
+    jupytext-nvim = pkgs.vimPlugins.jupytext-nvim;
+    molten-nvim = pkgs.vimPlugins.molten-nvim;
+    otter-nvim = pkgs.vimPlugins.otter-nvim;
+    quarto-nvim = pkgs.vimPlugins.quarto-nvim;
     dashboard-nvim = pkgs.vimPlugins.dashboard-nvim;
     presence-nvim = pkgs.vimPlugins.presence-nvim;
     hop-nvim = pkgs.vimPlugins.hop-nvim;
@@ -70,6 +124,8 @@ let
         html
         xml
         markdown
+        markdown_inline
+        bash
         css
         scss
         astro
@@ -104,6 +160,15 @@ delib.module {
       withNodeJs = true;
       withPython3 = true;
       withRuby = false;
+      extraWrapperArgs = [
+        "--set"
+        "NVIM_SYSTEM_RPLUGIN_MANIFEST"
+        "${moltenRemotePluginManifest}"
+      ];
+      extraPython3Packages = jupyterPythonPackages;
+      extraLuaPackages = ps: [
+        ps.magick
+      ];
 
       extraPackages = with pkgs; [
         lua-language-server
@@ -111,8 +176,8 @@ delib.module {
         pyright
         gopls
         nil
-        python3Packages.debugpy
-        python3
+        jupyterPython
+        imagemagick
         vscode-langservers-extracted
         fd
         lazygit
