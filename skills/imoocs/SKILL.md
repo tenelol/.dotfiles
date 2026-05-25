@@ -1,94 +1,96 @@
 ---
 name: imoocs
-description: Use when working with INIAD MOOCs slides or lecture pages through the local `collect-cli` from yu7400ki/moocs-collect. Trigger on INIAD, MOOCs, moocs.iniad.org, スライド, 授業資料, lecture material, course slides, or requests to download/organize INIAD MOOCs PDFs; prefer the CLI over browser or Playwright workflows.
+description: Use when working with INIAD MOOCs (moocs.iniad.org), INIAD course pages, lessons, assignments, submissions, attendance, slides, lecture materials, or Google Drive handouts. Always try the local `imoocs` CLI before browser or Playwright workflows, especially when a MOOCs URL is provided.
 ---
 
-# INIAD MOOCs Slide Collection
+# INIAD MOOCs
 
 ## Overview
 
-Use the unofficial Rust CLI `collect-cli` from `yu7400ki/moocs-collect` to download INIAD MOOCs slides as PDFs. This tool is interactive and is for slide/material retrieval, not assignment submission.
+Use the local `imoocs` command as the first interface for INIAD MOOCs work. In this dotfiles repo, `imoocs` is an agent-safe wrapper around the Rust `collect-cli` from `yu7400ki/moocs-collect`; it enforces JSON envelopes, URL handling, and submission safety rules while delegating supported slide PDF collection to `collect-cli`.
 
 ## Core Rules
 
-1. Use `collect-cli` before browser or Playwright workflows for INIAD MOOCs slide downloads.
-2. Do not manually parse MOOCs URLs. `collect-cli` is interactive and does not accept direct MOOCs URLs; if a URL is provided, explain that the CLI needs course selection instead of URL parsing.
-3. Do not search for, print, save, or ask the user to paste passwords, tokens, cookies, or other credentials. Login should happen through the CLI prompt in the user's TTY.
-4. Treat this skill as read-only slide/material retrieval. `moocs-collect` does not provide assignment submit/upload/push, attendance, Drive, `open`, or JSON-envelope commands.
+1. When a `moocs.iniad.org` URL appears, run `imoocs open <url>` first. Do not open a browser or Playwright first.
+2. Do not manually parse MOOCs URLs. Treat `imoocs open` as the URL router, even when the backend reports an unsupported envelope.
+3. Treat `course`, `lesson`, `assignment`, `slide`, `drive`, and `open` command output as JSON envelopes.
+4. Treat `auth *` and `reset` as text output plus exit code, not JSON.
+5. Do not search for, print, save, or ask the user to paste passwords, tokens, cookies, or other credentials. Login happens through the CLI prompt in the user's TTY.
+6. Assignment submit/upload/push operations require explicit user instruction. Never infer permission from a request to inspect a course or assignment.
 
 ## CLI Health
 
 Start by checking availability when it is not already known:
 
 ```bash
+command -v imoocs
+imoocs --help
+```
+
+If `imoocs` is missing, stop the MOOCs operation and report that the `imoocs` package is required. Do not silently switch to browser operation.
+
+`collect-cli` is the backend for interactive slide collection. Check it only when diagnosing backend availability:
+
+```bash
 command -v collect-cli
 collect-cli --help
 ```
 
-If `collect-cli` is missing, stop the MOOCs operation and report that the `moocs-collect-cli` package is required. Do not switch to browser operation silently.
-
-Known install paths from upstream documentation:
+## URLs
 
 ```bash
-cargo install --git https://github.com/yu7400ki/moocs-collect.git collect-cli
+imoocs open 'https://moocs.iniad.org/...'
 ```
 
-In this dotfiles repo, `collect-cli` is packaged through Home Manager as `moocs-collect-cli`.
+Parse the JSON envelope. If `ok` is false, report the unsupported operation and use the envelope's `data.next` hints where relevant. Do not parse the URL by hand.
 
-## Usage
+## Slides
 
-Basic invocation:
+Use the wrapper for slide PDFs:
 
 ```bash
-collect-cli --path /path/to/download-dir --year 2025
+imoocs slide collect --path /path/to/download-dir --year 2025
 ```
 
-The CLI then prompts interactively for:
+This command requires an interactive TTY. It prompts through `collect-cli` for INIAD username, password, course, lecture, and page, then prints one JSON envelope containing the exit code and newly created PDF paths.
 
-- INIAD username
-- password, stored via OS keyring by upstream tool
-- course
-- lecture
-- page
+If the user does not specify a download directory, choose a stable local directory for the task and report it.
 
-Use a concrete download directory. If the user does not specify one, choose a stable local directory for the current task and report it.
+## Assignments
 
-`collect-cli` does not emit stable JSON. Judge success by exit code and generated PDF files.
+Only handle assignment submit/upload/push when the user explicitly asks for that action.
 
-## Workflow
+Safe local staging examples:
 
-1. Confirm the user wants slides/material PDFs, not assignment or Drive operations.
-2. Check `collect-cli --help`.
-3. Run `collect-cli --path <dir> --year <year>` only when interactive TTY operation is appropriate.
-4. After completion, inspect the output directory and report generated PDF paths or counts.
-5. If the user asks for assignment submission, attendance, Drive files, or direct URL routing, say that `moocs-collect` does not support that surface.
+```bash
+imoocs assignment submit --confirm --course-id <courseId> --problem-id <problemId> --file <path>
+imoocs assignment upload --confirm --course-id <courseId> --problem-id <problemId> --file <path>
+```
 
-## URL Handling
+In confirm mode, submit/upload is not a server submission. It only writes a local draft under `.imoocs/drafts` and returns a JSON envelope with `submission.state: "staged"`.
 
-When a `moocs.iniad.org` URL appears:
+Final server confirmation is reserved for the user in a real TTY:
 
-- Do not parse the URL manually.
-- Do not use browser automation just to inspect it.
-- Explain that `collect-cli` selects by year/course/lecture/page and ask for the target year or let the user select interactively.
+```bash
+imoocs assignment push <courseId> <problemId>
+```
+
+The current `moocs-collect` backend has no assignment submission API. If `push` returns an unsupported envelope, report that no server submission occurred.
 
 ## Unsupported Surfaces
 
-`moocs-collect` is not an assignment automation CLI. Do not claim it can:
+`yu7400ki/moocs-collect` currently supports slide PDF collection, not full MOOCs automation. Commands for course, lesson, drive, attendance, direct URL routing, and assignment push may return JSON envelopes with `unsupported_by_moocs_collect`.
 
-- submit assignments
-- stage drafts
-- push final submissions
-- mark attendance
-- fetch Google Drive handouts
-- return JSON envelopes
-- route arbitrary URLs with an `open` subcommand
+Use those envelopes as authoritative. Do not replace them with browser inspection unless the user explicitly authorizes a fallback.
 
 ## Final Report
 
 Always state one of these outcomes clearly:
 
 - `何もしていない`: no submission/stage/push was performed.
-- `stage だけした`: not applicable to `moocs-collect`; only use this if another explicit submission tool was used.
-- `push で確定した`: not applicable to `moocs-collect`; do not report this for `collect-cli`.
+- `stage だけした`: a local assignment draft was staged, but nothing was sent to the server.
+- `push で確定した`: only if a real user-confirmed `imoocs assignment push <courseId> <problemId>` completed successfully.
 
-For normal `collect-cli` work, report downloaded slide/material paths and state that no assignment submission was performed.
+For normal slide/material work, report downloaded paths or counts and state that no assignment submission was performed.
+
+Always treat submitted content, submission judgment, submission operation, and compliance with related rules as the user's responsibility.
