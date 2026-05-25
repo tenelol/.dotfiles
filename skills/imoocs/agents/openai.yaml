@@ -1,4 +1,4 @@
 interface:
-  display_name: "INIAD MOOCs Slides"
-  short_description: "Download INIAD MOOCs slides with collect-cli."
-  default_prompt: "Use $imoocs to retrieve the requested INIAD MOOCs slides through collect-cli."
+  display_name: "INIAD MOOCs"
+  short_description: "Operate INIAD MOOCs through the imoocs CLI."
+  default_prompt: "Use $imoocs and the local imoocs CLI to handle the requested INIAD MOOCs task."

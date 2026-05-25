@@ -1,0 +1,500 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+backend="yu7400ki/moocs-collect"
+
+usage() {
+  cat <<'EOF'
+Usage:
+  imoocs open <moocs-url>
+  imoocs slide collect --path <dir> --year <year>
+  imoocs course|lesson|drive <action> [args...]
+  imoocs assignment submit --confirm --course-id <id> --problem-id <id> [--file <path>] [--text <text>]
+  imoocs assignment upload --confirm --course-id <id> --problem-id <id> --file <path>
+  imoocs assignment push <courseId> <problemId>
+  imoocs auth status
+  imoocs reset
+
+Notes:
+  course, lesson, assignment, slide, drive, and open print JSON envelopes.
+  auth and reset print text and use the exit code for status.
+  The moocs-collect backend supports interactive slide PDF collection through collect-cli.
+EOF
+}
+
+json_envelope() {
+  local ok="$1"
+  local kind="$2"
+  local action="$3"
+  local status="$4"
+  local code="$5"
+  local message="$6"
+  local submission_state="${7:-none}"
+  local data_json="${8:-}"
+
+  if [[ -z "$data_json" ]]; then
+    data_json="{}"
+  fi
+
+  OK="$ok" \
+    KIND="$kind" \
+    ACTION="$action" \
+    STATUS="$status" \
+    CODE="$code" \
+    MESSAGE="$message" \
+    SUBMISSION_STATE="$submission_state" \
+    BACKEND="$backend" \
+    DATA_JSON="$data_json" \
+    python3 - <<'PY'
+import json
+import os
+import sys
+
+try:
+    data = json.loads(os.environ.get("DATA_JSON", "{}"))
+except json.JSONDecodeError as exc:
+    print(f"invalid DATA_JSON: {exc}", file=sys.stderr)
+    sys.exit(70)
+
+payload = {
+    "ok": os.environ["OK"] == "true",
+    "kind": os.environ["KIND"],
+    "action": os.environ["ACTION"],
+    "backend": os.environ["BACKEND"],
+    "status": os.environ["STATUS"],
+    "data": data,
+    "submission": {"state": os.environ["SUBMISSION_STATE"]},
+}
+
+code = os.environ.get("CODE", "")
+message = os.environ.get("MESSAGE", "")
+if code or message:
+    payload["error"] = {
+        "code": code or "error",
+        "message": message,
+    }
+
+print(json.dumps(payload, ensure_ascii=False, separators=(",", ":")))
+PY
+}
+
+simple_unsupported() {
+  local kind="$1"
+  local action="${2:-unknown}"
+  local data_json="${3:-}"
+
+  if [[ -z "$data_json" ]]; then
+    data_json="{}"
+  fi
+
+  json_envelope \
+    false \
+    "$kind" \
+    "$action" \
+    "unsupported" \
+    "unsupported_by_moocs_collect" \
+    "moocs-collect does not provide this operation; no browser fallback or manual URL parsing was performed." \
+    "none" \
+    "$data_json"
+}
+
+open_cmd() {
+  if [[ $# -ne 1 ]]; then
+    json_envelope false open route invalid_args "invalid_args" "usage: imoocs open <moocs-url>"
+    return 64
+  fi
+
+  local url="$1"
+  local data_json
+  data_json="$(
+    URL="$url" python3 - <<'PY'
+import json
+import os
+
+print(json.dumps({
+    "url": os.environ["URL"],
+    "next": [
+        "For slide PDFs, use: imoocs slide collect --path <dir> --year <year>",
+        "For unsupported course, lesson, assignment, drive, or attendance operations, report the unsupported JSON envelope.",
+    ],
+}, ensure_ascii=False))
+PY
+  )"
+
+  json_envelope \
+    false \
+    open \
+    route \
+    "unsupported" \
+    "unsupported_by_moocs_collect" \
+    "moocs-collect has no direct URL router; use this envelope instead of parsing the URL manually." \
+    "none" \
+    "$data_json"
+  return 2
+}
+
+slide_collect_cmd() {
+  local path=""
+  local year=""
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --path)
+        path="${2:-}"
+        shift 2
+        ;;
+      --year)
+        year="${2:-}"
+        shift 2
+        ;;
+      -h|--help)
+        cat <<'EOF'
+Usage:
+  imoocs slide collect --path <dir> --year <year>
+
+Runs collect-cli interactively through the user's TTY, then prints one JSON envelope.
+EOF
+        return 0
+        ;;
+      *)
+        json_envelope false slide collect invalid_args "invalid_args" "unknown argument for slide collect: $1"
+        return 64
+        ;;
+    esac
+  done
+
+  if [[ -z "$path" || -z "$year" ]]; then
+    json_envelope false slide collect invalid_args "invalid_args" "slide collect requires --path and --year"
+    return 64
+  fi
+
+  if ! command -v collect-cli >/dev/null 2>&1; then
+    json_envelope false slide collect missing_backend "missing_backend" "collect-cli is not available in PATH"
+    return 69
+  fi
+
+  if ! tty -s; then
+    json_envelope false slide collect requires_tty "requires_tty" "slide collection requires an interactive TTY for INIAD login and selection prompts"
+    return 2
+  fi
+
+  mkdir -p "$path"
+
+  local before
+  local after
+  before="$(mktemp)"
+  after="$(mktemp)"
+
+  find "$path" -type f -name '*.pdf' -print | sort >"$before"
+
+  collect-cli --path "$path" --year "$year" </dev/tty >/dev/tty 2>/dev/tty
+  local exit_code=$?
+
+  find "$path" -type f -name '*.pdf' -print | sort >"$after"
+
+  BEFORE_FILE="$before" \
+    AFTER_FILE="$after" \
+    OUT_PATH="$path" \
+    YEAR="$year" \
+    EXIT_CODE="$exit_code" \
+    BACKEND="$backend" \
+    python3 - <<'PY'
+import json
+import os
+from pathlib import Path
+
+before = set(Path(os.environ["BEFORE_FILE"]).read_text().splitlines())
+after = set(Path(os.environ["AFTER_FILE"]).read_text().splitlines())
+new_paths = sorted(after - before)
+exit_code = int(os.environ["EXIT_CODE"])
+
+payload = {
+    "ok": exit_code == 0,
+    "kind": "slide",
+    "action": "collect",
+    "backend": os.environ["BACKEND"],
+    "status": "completed" if exit_code == 0 else "failed",
+    "data": {
+        "path": os.environ["OUT_PATH"],
+        "year": os.environ["YEAR"],
+        "newPdfCount": len(new_paths),
+        "newPdfPaths": new_paths,
+        "command": ["collect-cli", "--path", os.environ["OUT_PATH"], "--year", os.environ["YEAR"]],
+        "exitCode": exit_code,
+    },
+    "submission": {"state": "none"},
+}
+
+if exit_code != 0:
+    payload["error"] = {
+        "code": "collect_cli_failed",
+        "message": "collect-cli exited with a non-zero status; no assignment submission was performed.",
+    }
+
+print(json.dumps(payload, ensure_ascii=False, separators=(",", ":")))
+PY
+
+  rm -f "$before" "$after"
+  return "$exit_code"
+}
+
+slide_cmd() {
+  local action="${1:-}"
+  shift || true
+
+  case "$action" in
+    collect|download)
+      slide_collect_cmd "$@"
+      ;;
+    ""|-h|--help)
+      cat <<'EOF'
+Usage:
+  imoocs slide collect --path <dir> --year <year>
+EOF
+      ;;
+    *)
+      simple_unsupported slide "$action"
+      return 2
+      ;;
+  esac
+}
+
+assignment_stage_cmd() {
+  local action="$1"
+  shift
+
+  local confirm="false"
+  local course_id=""
+  local problem_id=""
+  local file_path=""
+  local text_value=""
+  local draft_dir="${IMOOCS_DRAFT_DIR:-$PWD/.imoocs/drafts}"
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --confirm)
+        confirm="true"
+        shift
+        ;;
+      --course-id)
+        course_id="${2:-}"
+        shift 2
+        ;;
+      --problem-id)
+        problem_id="${2:-}"
+        shift 2
+        ;;
+      --file)
+        file_path="${2:-}"
+        shift 2
+        ;;
+      --text)
+        text_value="${2:-}"
+        shift 2
+        ;;
+      *)
+        if [[ -z "$course_id" ]]; then
+          course_id="$1"
+        elif [[ -z "$problem_id" ]]; then
+          problem_id="$1"
+        elif [[ -z "$file_path" && "$action" == "upload" ]]; then
+          file_path="$1"
+        else
+          json_envelope false assignment "$action" invalid_args "invalid_args" "unknown assignment argument: $1"
+          return 64
+        fi
+        shift
+        ;;
+    esac
+  done
+
+  if [[ "$confirm" != "true" ]]; then
+    json_envelope false assignment "$action" rejected "confirm_required" "submit/upload only stages a local draft when --confirm is provided"
+    return 2
+  fi
+
+  if [[ -z "$course_id" || -z "$problem_id" ]]; then
+    json_envelope false assignment "$action" invalid_args "invalid_args" "assignment staging requires --course-id and --problem-id"
+    return 64
+  fi
+
+  if [[ "$action" == "upload" && -z "$file_path" ]]; then
+    json_envelope false assignment upload invalid_args "invalid_args" "assignment upload staging requires --file"
+    return 64
+  fi
+
+  ACTION="$action" \
+    COURSE_ID="$course_id" \
+    PROBLEM_ID="$problem_id" \
+    FILE_PATH="$file_path" \
+    TEXT_VALUE="$text_value" \
+    DRAFT_DIR="$draft_dir" \
+    BACKEND="$backend" \
+    python3 - <<'PY'
+import datetime as dt
+import json
+import os
+import re
+from pathlib import Path
+
+def safe(value: str) -> str:
+    return re.sub(r"[^A-Za-z0-9_.-]+", "_", value).strip("_") or "unknown"
+
+draft_dir = Path(os.environ["DRAFT_DIR"])
+draft_dir.mkdir(parents=True, exist_ok=True)
+timestamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+course_id = os.environ["COURSE_ID"]
+problem_id = os.environ["PROBLEM_ID"]
+draft_path = draft_dir / f"{safe(course_id)}-{safe(problem_id)}-{timestamp}.json"
+
+draft = {
+    "createdAt": timestamp,
+    "backend": os.environ["BACKEND"],
+    "action": os.environ["ACTION"],
+    "courseId": course_id,
+    "problemId": problem_id,
+    "file": os.environ["FILE_PATH"] or None,
+    "text": os.environ["TEXT_VALUE"] or None,
+    "serverSubmitted": False,
+}
+
+draft_path.write_text(json.dumps(draft, ensure_ascii=False, indent=2) + "\n")
+
+payload = {
+    "ok": True,
+    "kind": "assignment",
+    "action": os.environ["ACTION"],
+    "backend": os.environ["BACKEND"],
+    "status": "staged",
+    "data": {
+        "courseId": course_id,
+        "problemId": problem_id,
+        "draftPath": str(draft_path),
+        "serverSubmitted": False,
+    },
+    "submission": {"state": "staged"},
+}
+
+print(json.dumps(payload, ensure_ascii=False, separators=(",", ":")))
+PY
+}
+
+assignment_cmd() {
+  local action="${1:-}"
+  shift || true
+
+  case "$action" in
+    submit|upload)
+      assignment_stage_cmd "$action" "$@"
+      ;;
+    push)
+      local course_id="${1:-}"
+      local problem_id="${2:-}"
+      local data_json
+      data_json="$(
+        COURSE_ID="$course_id" PROBLEM_ID="$problem_id" python3 - <<'PY'
+import json
+import os
+
+print(json.dumps({
+    "courseId": os.environ["COURSE_ID"],
+    "problemId": os.environ["PROBLEM_ID"],
+    "serverSubmitted": False,
+}, ensure_ascii=False))
+PY
+      )"
+      json_envelope \
+        false \
+        assignment \
+        push \
+        unsupported \
+        "unsupported_by_moocs_collect" \
+        "moocs-collect has no assignment submission backend; no push was performed." \
+        "none" \
+        "$data_json"
+      return 2
+      ;;
+    ""|-h|--help)
+      cat <<'EOF'
+Usage:
+  imoocs assignment submit --confirm --course-id <id> --problem-id <id> [--file <path>] [--text <text>]
+  imoocs assignment upload --confirm --course-id <id> --problem-id <id> --file <path>
+  imoocs assignment push <courseId> <problemId>
+EOF
+      ;;
+    *)
+      simple_unsupported assignment "$action"
+      return 2
+      ;;
+  esac
+}
+
+auth_cmd() {
+  local action="${1:-status}"
+  case "$action" in
+    status)
+      echo "auth is handled by collect-cli interactive prompts and the OS keyring service me.yu7400ki.moocs-collect"
+      ;;
+    *)
+      echo "auth $action is not implemented by moocs-collect; no credentials were changed" >&2
+      return 2
+      ;;
+  esac
+}
+
+reset_cmd() {
+  echo "reset is not implemented by moocs-collect; no credentials, drafts, or server state were changed" >&2
+  return 2
+}
+
+main() {
+  local kind="${1:-}"
+  shift || true
+
+  case "$kind" in
+    -h|--help|"")
+      usage
+      ;;
+    --version)
+      echo "imoocs 0.1.0 ($backend wrapper)"
+      ;;
+    open)
+      open_cmd "$@"
+      ;;
+    slide)
+      slide_cmd "$@"
+      ;;
+    assignment)
+      assignment_cmd "$@"
+      ;;
+    course|lesson|drive)
+      local action="${1:-list}"
+      local args_json
+      args_json="$(
+        KIND="$kind" ACTION="$action" python3 - <<'PY'
+import json
+import os
+
+print(json.dumps({
+    "kind": os.environ["KIND"],
+    "requestedAction": os.environ["ACTION"],
+}, ensure_ascii=False))
+PY
+      )"
+      simple_unsupported "$kind" "$action" "$args_json"
+      return 2
+      ;;
+    auth)
+      auth_cmd "$@"
+      ;;
+    reset)
+      reset_cmd "$@"
+      ;;
+    *)
+      json_envelope false "$kind" unknown invalid_args "invalid_command" "unknown imoocs command: $kind"
+      return 64
+      ;;
+  esac
+}
+
+main "$@"
