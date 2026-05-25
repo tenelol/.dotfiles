@@ -16,6 +16,9 @@ let
   codexBarPackage = import ../packages/codexbar.nix {
     inherit pkgs lib;
   };
+  ccpocketBridgePackage = import ../packages/ccpocket-bridge.nix {
+    inherit pkgs lib;
+  };
   mygdrivePackage = import ../packages/mygdrive.nix {
     inherit pkgs lib;
   };
@@ -126,6 +129,7 @@ let
   ];
 
   darwinCliPackages = with pkgs; [
+    ccpocketBridgePackage
     clang
     cmake
     coreutils
