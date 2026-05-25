@@ -221,7 +221,7 @@ delib.module {
         -replace showInputModePanel -bool true "$macskk_prefs"
       launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/plutil \
         -replace dictionaries \
-        -json '[{"filename":"SKK-JISYO.L","enabled":true,"encoding":3,"type":"traditional","saveToUserDict":true},{"filename":"SKK-JISYO.emoji","enabled":true,"encoding":3,"type":"traditional","saveToUserDict":false}]' \
+        -json '[{"filename":"SKK-JISYO.L","enabled":true,"encoding":3,"type":"traditional","saveToUserDict":true},{"filename":"SKK-JISYO.emoji","enabled":true,"encoding":4,"type":"traditional","saveToUserDict":false}]' \
         "$macskk_prefs"
     '';
 
