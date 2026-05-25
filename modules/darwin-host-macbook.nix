@@ -2,11 +2,13 @@
   delib,
   host,
   lib,
+  pkgs,
   profile,
   ...
 }:
 let
   macSkkBundleID = "net.mtgto.inputmethod.macSKK";
+  macSkkEmojiDictionary = "${pkgs.skkDictionaries.emoji}/share/skk/SKK-JISYO.emoji";
   macSkkInputSource = inputMode: {
     "Bundle ID" = macSkkBundleID;
     "Input Mode" = inputMode;
@@ -207,6 +209,9 @@ delib.module {
         chown ${profile.username} "$macskk_dict_dir/skk-jisyo.utf8"
       fi
 
+      /usr/bin/install -m 0644 ${lib.escapeShellArg macSkkEmojiDictionary} "$macskk_dict_dir/SKK-JISYO.emoji"
+      chown ${profile.username} "$macskk_dict_dir/SKK-JISYO.emoji"
+
       launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/plutil -create xml1 "$macskk_prefs" 2>/dev/null || true
       launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/plutil \
         -replace selectedInputSource -string com.apple.keylayout.ABC "$macskk_prefs"
@@ -216,7 +221,7 @@ delib.module {
         -replace showInputModePanel -bool true "$macskk_prefs"
       launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/plutil \
         -replace dictionaries \
-        -json '[{"filename":"SKK-JISYO.L","enabled":true,"encoding":3,"type":"traditional","saveToUserDict":true}]' \
+        -json '[{"filename":"SKK-JISYO.L","enabled":true,"encoding":3,"type":"traditional","saveToUserDict":true},{"filename":"SKK-JISYO.emoji","enabled":true,"encoding":3,"type":"traditional","saveToUserDict":false}]' \
         "$macskk_prefs"
     '';
 
