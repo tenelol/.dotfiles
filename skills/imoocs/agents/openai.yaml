@@ -1,0 +1,4 @@
+interface:
+  display_name: "INIAD MOOCs"
+  short_description: "Operate INIAD MOOCs through the imoocs CLI."
+  default_prompt: "Use $imoocs to inspect or retrieve the requested INIAD MOOCs course, lesson, assignment, slide, or Drive material."
