@@ -22,6 +22,9 @@ let
   moocsCollectPackage = import ../packages/moocs-collect.nix {
     inherit pkgs lib;
   };
+  moocsCollectCliPackage = import ../packages/moocs-collect-cli.nix {
+    inherit pkgs lib;
+  };
   gijirokuPackage = import ../packages/gijiroku.nix {
     inherit pkgs lib;
     src = inputs.gijiroku;
@@ -57,6 +60,7 @@ let
 
   nonServerPackages = with pkgs; [
     cargo
+    moocsCollectCliPackage
     platformio
     pnpm
     zig
