@@ -170,23 +170,28 @@ delib.module {
         ps.magick
       ];
 
-      extraPackages = with pkgs; [
-        lua-language-server
-        clang-tools
-        pyright
-        gopls
-        nil
-        jupyterPython
-        imagemagick
-        vscode-langservers-extracted
-        fd
-        lazygit
-        ripgrep
-        stylua
-        nixfmt
-        gofumpt
-        gotools
-      ];
+      extraPackages =
+        with pkgs;
+        [
+          lua-language-server
+          clang-tools
+          pyright
+          gopls
+          nil
+          jupyterPython
+          imagemagick
+          vscode-langservers-extracted
+          fd
+          lazygit
+          ripgrep
+          stylua
+          nixfmt
+          gofumpt
+          gotools
+        ]
+        ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isDarwin [
+          macism
+        ];
     };
 
     xdg.configFile."nvim/init.lua".source = ../config/nvim/init.lua;
