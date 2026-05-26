@@ -9,7 +9,7 @@ if vim.fn.executable(macism) ~= 1 then
 end
 
 local default_source = vim.g.nvim_default_input_source or "com.apple.keylayout.ABC"
-local insert_source = vim.g.nvim_insert_input_source
+local insert_source = vim.g.nvim_insert_input_source or "net.mtgto.inputmethod.macSKK.ascii"
 local group = vim.api.nvim_create_augroup("NvimInputSource", { clear = true })
 local notified = false
 
@@ -48,7 +48,7 @@ local function select_source(source)
 end
 
 local function remember_insert_source(source)
-	if source and source ~= "" then
+	if source and source ~= "" and source ~= default_source then
 		insert_source = source
 	end
 end
@@ -75,7 +75,7 @@ end
 vim.api.nvim_create_autocmd("VimEnter", {
 	group = group,
 	callback = function()
-		switch_to_default(true)
+		switch_to_default(false)
 	end,
 })
 
