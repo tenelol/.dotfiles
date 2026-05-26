@@ -27,7 +27,12 @@ delib.module {
       };
 
       masApps = {
+        GarageBand = 682658836;
+        iMovie = 408981434;
+        Keynote = 409183694;
         LINE = 539883307;
+        Numbers = 409203825;
+        Pages = 409201541;
         RunCat = 1429033973;
       };
 
