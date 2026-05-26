@@ -7,23 +7,44 @@
 }:
 let
   macSkkBundleID = "net.mtgto.inputmethod.macSKK";
+  abcInputSource = {
+    InputSourceKind = "Keyboard Layout";
+    "KeyboardLayout ID" = 252;
+    "KeyboardLayout Name" = "ABC";
+  };
   macSkkInputSource = inputMode: {
     "Bundle ID" = macSkkBundleID;
     "Input Mode" = inputMode;
     InputSourceKind = "Input Mode";
+  };
+  macSkkKeyboardInputMethod = {
+    "Bundle ID" = macSkkBundleID;
+    InputSourceKind = "Keyboard Input Method";
+  };
+  characterPaletteInputSource = {
+    "Bundle ID" = "com.apple.CharacterPaletteIM";
+    InputSourceKind = "Non Keyboard Input Method";
   };
   macSkkAsciiInputSource = macSkkInputSource "net.mtgto.inputmethod.macSKK.ascii";
   macSkkHiraganaInputSource = macSkkInputSource "net.mtgto.inputmethod.macSKK.hiragana";
   macSkkInputSources = [
     macSkkAsciiInputSource
     macSkkHiraganaInputSource
-    (macSkkInputSource "net.mtgto.inputmethod.macSKK.katakana")
-    (macSkkInputSource "net.mtgto.inputmethod.macSKK.hankaku")
-    (macSkkInputSource "net.mtgto.inputmethod.macSKK.eisu")
+  ];
+  macSkkEnabledInputSources = [
+    abcInputSource
+  ]
+  ++ macSkkInputSources
+  ++ [
+    macSkkKeyboardInputMethod
+    characterPaletteInputSource
   ];
   macSkkSelectedInputSources = [
-    macSkkAsciiInputSource
+    macSkkHiraganaInputSource
   ];
+  macSkkEnabledInputSourcesPlist = lib.generators.toPlist {
+    escape = true;
+  } macSkkEnabledInputSources;
   macSkkSelectedInputSourcesPlist = lib.generators.toPlist {
     escape = true;
   } macSkkSelectedInputSources;
@@ -99,33 +120,7 @@ delib.module {
         };
 
         "com.apple.HIToolbox" = {
-          AppleEnabledInputSources = [
-            {
-              InputSourceKind = "Keyboard Layout";
-              "KeyboardLayout ID" = 252;
-              "KeyboardLayout Name" = "ABC";
-            }
-          ]
-          ++ macSkkInputSources
-          ++ [
-            {
-              "Bundle ID" = macSkkBundleID;
-              InputSourceKind = "Keyboard Input Method";
-            }
-            {
-              "Bundle ID" = "com.apple.CharacterPaletteIM";
-              InputSourceKind = "Non Keyboard Input Method";
-            }
-            {
-              "Bundle ID" = "com.apple.50onPaletteIM";
-              InputSourceKind = "Non Keyboard Input Method";
-            }
-            {
-              "Bundle ID" = "com.apple.inputmethod.ironwood";
-              InputSourceKind = "Non Keyboard Input Method";
-            }
-          ];
-
+          AppleEnabledInputSources = macSkkEnabledInputSources;
           AppleSelectedInputSources = macSkkSelectedInputSources;
         };
       };
@@ -189,6 +184,8 @@ delib.module {
       uid="$(id -u ${profile.username})"
 
       launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/defaults write \
+        com.apple.HIToolbox AppleEnabledInputSources ${lib.escapeShellArg macSkkEnabledInputSourcesPlist}
+      launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/defaults write \
         com.apple.HIToolbox AppleSelectedInputSources ${lib.escapeShellArg macSkkSelectedInputSourcesPlist}
 
       ${inputSourceShortcutCommands}
@@ -215,14 +212,16 @@ delib.module {
       launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/plutil \
         -replace selectedInputSource -string com.apple.keylayout.ABC "$macskk_prefs"
       launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/plutil \
-        -replace selectCandidateKeys -string ASDFJK "$macskk_prefs"
+        -replace selectCandidateKeys -string 123456789 "$macskk_prefs"
+      launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/defaults write \
+        ${macSkkBundleID} selectCandidateKeys -string 123456789
       launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/plutil \
         -replace showInputModePanel -bool false "$macskk_prefs"
       launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/defaults write \
         ${macSkkBundleID} showInputModePanel -bool false
       launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/plutil \
         -replace dictionaries \
-        -json '[{"filename":"SKK-JISYO.L","enabled":true,"encoding":3,"type":"traditional","saveToUserDict":true}]' \
+        -json '[{"filename":"SKK-JISYO.L","enabled":true,"encoding":3,"type":"traditional","saveToUserDict":true},{"filename":"skk-jisyo.utf8","enabled":true,"encoding":4,"type":"traditional","saveToUserDict":true}]' \
         "$macskk_prefs"
     '';
 
