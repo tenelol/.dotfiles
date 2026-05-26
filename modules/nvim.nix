@@ -6,6 +6,8 @@
 }:
 let
   winresizer = import ../packages/winresizer.nix { inherit pkgs; };
+  skkeleton = import ../packages/skkeleton.nix { inherit pkgs; };
+  skkDictionary = "${pkgs.skkDictionaries.l}/share/skk/SKK-JISYO.L";
   jupyterPythonPackages = ps: [
     ps.cairosvg
     ps.debugpy
@@ -105,6 +107,7 @@ let
     tokyonight-nvim = pkgs.vimPlugins.tokyonight-nvim;
     noice-nvim = pkgs.vimPlugins.noice-nvim;
     nvim-notify = pkgs.vimPlugins.nvim-notify;
+    denops-vim = pkgs.vimPlugins.denops-vim;
     luasnip = pkgs.vimPlugins.luasnip;
     friendly-snippets = pkgs.vimPlugins.friendly-snippets;
     telescope-nvim = pkgs.vimPlugins.telescope-nvim;
@@ -135,7 +138,7 @@ let
     lazygit-nvim = pkgs.vimPlugins.lazygit-nvim;
     codecompanion-nvim = pkgs.vimPlugins.codecompanion-nvim;
     yazi-nvim = pkgs.vimPlugins.yazi-nvim;
-    inherit winresizer;
+    inherit skkeleton winresizer;
   };
   nixManagedPluginPaths = builtins.mapAttrs (_: plugin: toString plugin) nixManagedPlugins;
   nixManagedPluginsLua =
@@ -188,6 +191,7 @@ delib.module {
           nixfmt
           gofumpt
           gotools
+          deno
         ]
         ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isDarwin [
           macism
@@ -198,6 +202,13 @@ delib.module {
     xdg.configFile."nvim/lua".source = ../config/nvim/lua;
     xdg.configFile."nvim/lazy-path.lua".text = ''
       return ${builtins.toJSON (toString pkgs.vimPlugins.lazy-nvim)}
+    '';
+    xdg.configFile."nvim/skkeleton-dictionaries.lua".text = ''
+      return {
+        global_dictionaries = {
+          { ${builtins.toJSON skkDictionary}, "euc-jp" },
+        },
+      }
     '';
     xdg.configFile."nvim/nix-managed-plugins.lua".text = nixManagedPluginsLua;
 
