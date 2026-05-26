@@ -54,6 +54,8 @@ imoocs slide collect --path /path/to/download-dir --year 2025
 
 This command requires an interactive TTY. It prompts through `collect-cli` for INIAD username, password, course, lecture, and page, then prints one JSON envelope containing the exit code and newly created PDF paths.
 
+If the user wants to avoid typing or pasting the username in chat, tell them to set `IMOOCS_USERNAME` in their own shell before running `imoocs slide collect`. Do not write the actual username into `SKILL.md`, dotfiles, commands shown in final output, or repo files.
+
 If the user does not specify a download directory, choose a stable local directory for the task and report it.
 
 ## Assignments

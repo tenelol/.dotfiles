@@ -6,7 +6,7 @@
 
 pkgs.stdenvNoCC.mkDerivation {
   pname = "imoocs";
-  version = "0.1.0";
+  version = "0.1.1";
 
   src = ../config/scripts/imoocs;
   dontUnpack = true;
@@ -24,6 +24,7 @@ pkgs.stdenvNoCC.mkDerivation {
         lib.makeBinPath [
           collectCli
           pkgs.coreutils
+          pkgs.expect
           pkgs.findutils
           pkgs.python3
         ]
