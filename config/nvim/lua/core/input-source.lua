@@ -10,6 +10,7 @@ end
 
 local default_source = vim.g.nvim_default_input_source or "com.apple.keylayout.ABC"
 local insert_source = vim.g.nvim_insert_input_source or "net.mtgto.inputmethod.macSKK.ascii"
+local terminal_source = vim.g.nvim_terminal_input_source or "net.mtgto.inputmethod.macSKK.ascii"
 local group = vim.api.nvim_create_augroup("NvimInputSource", { clear = true })
 local notified = false
 
@@ -69,7 +70,7 @@ local function is_insert_like_mode()
 	local mode = vim.api.nvim_get_mode().mode
 	local first = mode:sub(1, 1)
 
-	return first == "i" or first == "R"
+	return first == "i" or first == "R" or first == "t"
 end
 
 vim.api.nvim_create_autocmd("VimEnter", {
@@ -92,6 +93,22 @@ vim.api.nvim_create_autocmd("InsertLeave", {
 	group = group,
 	callback = function()
 		switch_to_default(true)
+	end,
+})
+
+vim.api.nvim_create_autocmd("TermEnter", {
+	group = group,
+	callback = function()
+		if current_source() ~= terminal_source then
+			select_source(terminal_source)
+		end
+	end,
+})
+
+vim.api.nvim_create_autocmd("TermLeave", {
+	group = group,
+	callback = function()
+		switch_to_default(false)
 	end,
 })
 
