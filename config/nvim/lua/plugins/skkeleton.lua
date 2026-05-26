@@ -50,7 +50,7 @@ return {
 				callback = configure_skkeleton,
 			})
 
-			vim.keymap.set({ "i", "c" }, "<C-\\>", "<Plug>(skkeleton-toggle)", {
+			vim.keymap.set({ "i", "c", "t" }, "<C-\\>", "<Plug>(skkeleton-toggle)", {
 				silent = true,
 				desc = "Toggle skkeleton",
 			})
