@@ -221,8 +221,10 @@ delib.module {
         ${macSkkBundleID} showInputModePanel -bool false
       launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/plutil \
         -replace dictionaries \
-        -json '[{"filename":"SKK-JISYO.L","enabled":true,"encoding":3,"type":"traditional","saveToUserDict":true},{"filename":"skk-jisyo.utf8","enabled":true,"encoding":4,"type":"traditional","saveToUserDict":true}]' \
+        -json '[{"filename":"SKK-JISYO.L","enabled":true,"encoding":3,"type":"traditional","saveToUserDict":true}]' \
         "$macskk_prefs"
+      launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/defaults import \
+        ${macSkkBundleID} "$macskk_prefs"
     '';
 
     system.activationScripts.reloadNativeBars.text = ''
