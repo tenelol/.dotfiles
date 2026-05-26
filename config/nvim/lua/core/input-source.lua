@@ -9,9 +9,9 @@ if vim.fn.executable(macism) ~= 1 then
 end
 
 local skk_ascii_source = "net.mtgto.inputmethod.macSKK.ascii"
-local default_source = vim.g.nvim_default_input_source or skk_ascii_source
+local default_source = vim.g.nvim_default_input_source or "com.apple.keylayout.ABC"
 local insert_source = vim.g.nvim_insert_input_source or skk_ascii_source
-local terminal_source = vim.g.nvim_terminal_input_source or skk_ascii_source
+local terminal_source = vim.g.nvim_terminal_input_source or default_source
 local group = vim.api.nvim_create_augroup("NvimInputSource", { clear = true })
 local notified = false
 
@@ -49,18 +49,8 @@ local function select_source(source)
 	end
 end
 
-local function remember_insert_source(source)
-	if source and source ~= "" and source ~= default_source then
-		insert_source = source
-	end
-end
-
-local function switch_to_default(remember_current)
+local function switch_to_default()
 	local source = current_source()
-
-	if remember_current then
-		remember_insert_source(source)
-	end
 
 	if source and source ~= default_source then
 		select_source(default_source)
@@ -77,7 +67,7 @@ end
 vim.api.nvim_create_autocmd("VimEnter", {
 	group = group,
 	callback = function()
-		switch_to_default(false)
+		switch_to_default()
 	end,
 })
 
@@ -93,7 +83,7 @@ vim.api.nvim_create_autocmd("InsertEnter", {
 vim.api.nvim_create_autocmd("InsertLeave", {
 	group = group,
 	callback = function()
-		switch_to_default(true)
+		switch_to_default()
 	end,
 })
 
@@ -109,7 +99,7 @@ vim.api.nvim_create_autocmd("TermEnter", {
 vim.api.nvim_create_autocmd("TermLeave", {
 	group = group,
 	callback = function()
-		switch_to_default(false)
+		switch_to_default()
 	end,
 })
 
@@ -117,7 +107,7 @@ vim.api.nvim_create_autocmd("FocusGained", {
 	group = group,
 	callback = function()
 		if not is_insert_like_mode() then
-			switch_to_default(false)
+			switch_to_default()
 		end
 	end,
 })
