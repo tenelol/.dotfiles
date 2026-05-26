@@ -19,6 +19,7 @@ Notes:
   course, lesson, assignment, slide, drive, and open print JSON envelopes.
   auth and reset print text and use the exit code for status.
   The moocs-collect backend supports interactive slide PDF collection through collect-cli.
+  If IMOOCS_USERNAME is set, slide collect fills only the username prompt from it.
 EOF
 }
 
@@ -76,6 +77,55 @@ if code or message:
 
 print(json.dumps(payload, ensure_ascii=False, separators=(",", ":")))
 PY
+}
+
+run_collect_cli() {
+  local path="$1"
+  local year="$2"
+
+  if [[ -z "${IMOOCS_USERNAME:-}" ]]; then
+    collect-cli --path "$path" --year "$year" </dev/tty >/dev/tty 2>/dev/tty
+    return $?
+  fi
+
+  if ! command -v expect >/dev/null 2>&1; then
+    echo "expect is required when IMOOCS_USERNAME is set" >&2
+    return 69
+  fi
+
+  COLLECT_PATH="$path" COLLECT_YEAR="$year" expect <<'EXPECT'
+set timeout -1
+spawn collect-cli --path $env(COLLECT_PATH) --year $env(COLLECT_YEAR)
+expect {
+  -re "ユーザー名:" {
+    log_user 0
+    send -- "$env(IMOOCS_USERNAME)\r"
+    expect {
+      -re "パスワード:?" {
+        log_user 1
+        send_user -- "パスワード: "
+        interact
+        catch wait result
+        exit [lindex $result 3]
+      }
+      -re "ログイン中|科目を取得中|科目を選択" {
+        log_user 1
+        interact
+        catch wait result
+        exit [lindex $result 3]
+      }
+      eof {
+        catch wait result
+        exit [lindex $result 3]
+      }
+    }
+  }
+  eof {
+    catch wait result
+    exit [lindex $result 3]
+  }
+}
+EXPECT
 }
 
 simple_unsupported() {
@@ -187,7 +237,7 @@ EOF
 
   find "$path" -type f -name '*.pdf' -print | sort >"$before"
 
-  collect-cli --path "$path" --year "$year" </dev/tty >/dev/tty 2>/dev/tty
+  run_collect_cli "$path" "$year"
   local exit_code=$?
 
   find "$path" -type f -name '*.pdf' -print | sort >"$after"
@@ -456,7 +506,7 @@ main() {
       usage
       ;;
     --version)
-      echo "imoocs 0.1.0 ($backend wrapper)"
+      echo "imoocs 0.1.1 ($backend wrapper)"
       ;;
     open)
       open_cmd "$@"
