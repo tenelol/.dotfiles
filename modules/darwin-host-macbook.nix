@@ -217,7 +217,7 @@ delib.module {
       launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/plutil \
         -replace selectCandidateKeys -string ASDFJK "$macskk_prefs"
       launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/plutil \
-        -replace showInputModePanel -bool true "$macskk_prefs"
+        -replace showInputModePanel -bool false "$macskk_prefs"
       launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/plutil \
         -replace dictionaries \
         -json '[{"filename":"SKK-JISYO.L","enabled":true,"encoding":3,"type":"traditional","saveToUserDict":true}]' \

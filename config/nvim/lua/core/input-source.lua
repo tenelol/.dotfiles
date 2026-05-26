@@ -8,9 +8,10 @@ if vim.fn.executable(macism) ~= 1 then
 	return
 end
 
-local default_source = vim.g.nvim_default_input_source or "com.apple.keylayout.ABC"
-local insert_source = vim.g.nvim_insert_input_source or "net.mtgto.inputmethod.macSKK.ascii"
-local terminal_source = vim.g.nvim_terminal_input_source or "net.mtgto.inputmethod.macSKK.ascii"
+local skk_ascii_source = "net.mtgto.inputmethod.macSKK.ascii"
+local default_source = vim.g.nvim_default_input_source or skk_ascii_source
+local insert_source = vim.g.nvim_insert_input_source or skk_ascii_source
+local terminal_source = vim.g.nvim_terminal_input_source or skk_ascii_source
 local group = vim.api.nvim_create_augroup("NvimInputSource", { clear = true })
 local notified = false
 
