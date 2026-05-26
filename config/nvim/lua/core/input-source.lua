@@ -8,10 +8,8 @@ if vim.fn.executable(macism) ~= 1 then
 	return
 end
 
-local skk_ascii_source = "net.mtgto.inputmethod.macSKK.ascii"
 local default_source = vim.g.nvim_default_input_source or "com.apple.keylayout.ABC"
-local insert_source = vim.g.nvim_insert_input_source or skk_ascii_source
-local terminal_source = vim.g.nvim_terminal_input_source or default_source
+local restore_source = nil
 local group = vim.api.nvim_create_augroup("NvimInputSource", { clear = true })
 local notified = false
 
@@ -57,57 +55,47 @@ local function switch_to_default()
 	end
 end
 
-local function is_insert_like_mode()
-	local mode = vim.api.nvim_get_mode().mode
-	local first = mode:sub(1, 1)
+local function enter_nvim()
+	if not restore_source then
+		local source = current_source()
 
-	return first == "i" or first == "R" or first == "t"
+		if source and source ~= default_source then
+			restore_source = source
+		end
+	end
+
+	switch_to_default()
+end
+
+local function leave_nvim()
+	if restore_source and restore_source ~= "" and current_source() ~= restore_source then
+		select_source(restore_source)
+	end
+
+	restore_source = nil
 end
 
 vim.api.nvim_create_autocmd("VimEnter", {
 	group = group,
-	callback = function()
-		switch_to_default()
-	end,
+	callback = enter_nvim,
 })
 
-vim.api.nvim_create_autocmd("InsertEnter", {
+vim.api.nvim_create_autocmd({ "InsertEnter", "CmdlineEnter", "TermEnter" }, {
 	group = group,
-	callback = function()
-		if insert_source and current_source() ~= insert_source then
-			select_source(insert_source)
-		end
-	end,
+	callback = switch_to_default,
 })
 
-vim.api.nvim_create_autocmd("InsertLeave", {
+vim.api.nvim_create_autocmd({ "InsertLeave", "CmdlineLeave", "TermLeave" }, {
 	group = group,
-	callback = function()
-		switch_to_default()
-	end,
-})
-
-vim.api.nvim_create_autocmd("TermEnter", {
-	group = group,
-	callback = function()
-		if current_source() ~= terminal_source then
-			select_source(terminal_source)
-		end
-	end,
-})
-
-vim.api.nvim_create_autocmd("TermLeave", {
-	group = group,
-	callback = function()
-		switch_to_default()
-	end,
+	callback = switch_to_default,
 })
 
 vim.api.nvim_create_autocmd("FocusGained", {
 	group = group,
-	callback = function()
-		if not is_insert_like_mode() then
-			switch_to_default()
-		end
-	end,
+	callback = enter_nvim,
+})
+
+vim.api.nvim_create_autocmd({ "FocusLost", "VimLeavePre" }, {
+	group = group,
+	callback = leave_nvim,
 })
