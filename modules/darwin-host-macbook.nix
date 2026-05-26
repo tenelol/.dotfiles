@@ -94,6 +94,10 @@ delib.module {
           AppleMenuBarVisibleInFullscreen = false;
         };
 
+        "kCFPreferencesAnyApplication" = {
+          TSMLanguageIndicatorEnabled = false;
+        };
+
         "com.apple.HIToolbox" = {
           AppleEnabledInputSources = [
             {
