@@ -224,9 +224,6 @@ delib.module {
         -replace dictionaries \
         -json '[{"filename":"SKK-JISYO.L","enabled":true,"encoding":3,"type":"traditional","saveToUserDict":true}]' \
         "$macskk_prefs"
-
-      launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/killall cfprefsd >/dev/null 2>&1 || true
-      launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/killall macSKK >/dev/null 2>&1 || true
     '';
 
     system.activationScripts.reloadNativeBars.text = ''
