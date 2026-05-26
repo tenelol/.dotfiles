@@ -12,6 +12,8 @@ return {
       { "<leader>ot", desc = "New terminal" },
       { "<leader>oT", desc = "Select terminal" },
       { "<leader>oa", desc = "Toggle all terminals" },
+      { "<leader>on", desc = "Next terminal" },
+      { "<leader>op", desc = "Previous terminal" },
       { "[T", desc = "Previous terminal" },
       { "]T", desc = "Next terminal" },
       { "<leader>to", desc = "Toggle test output" },
@@ -67,7 +69,7 @@ return {
       apply_winbar_highlights()
 
       map("n", "<C-\\>", function()
-        terminal.toggle_shell()
+        terminal.toggle(vim.v.count)
       end, { silent = true, desc = "Toggle terminal" })
 
       vim.api.nvim_create_user_command("ClaudeCode", function()
@@ -110,6 +112,14 @@ return {
       map("n", "<leader>oa", function()
         terminal.toggle_all()
       end, { silent = true, desc = "Toggle all terminals" })
+
+      map("n", "<leader>on", function()
+        terminal.next()
+      end, { silent = true, desc = "Next terminal" })
+
+      map("n", "<leader>op", function()
+        terminal.previous()
+      end, { silent = true, desc = "Previous terminal" })
 
       map({ "n", "t" }, "]T", function()
         terminal.next()

@@ -47,6 +47,37 @@ local function terminal_index(terms, terminal_id)
     return nil
 end
 
+local function terminal_by_id(terms, terminal_id)
+    if terminal_id == nil then
+        return nil
+    end
+
+    for _, term in ipairs(terms) do
+        if term.id == terminal_id then
+            return term
+        end
+    end
+
+    return nil
+end
+
+local function terminal_label(term)
+    local name = term.display_name or ("Terminal " .. term.id)
+    local direction = term.direction or "horizontal"
+
+    return ("[%d] %s (%s)"):format(term.id, name, direction)
+end
+
+local function default_size(term, direction)
+    direction = direction or term.direction
+
+    if direction == "vertical" then
+        return vertical_size(0.4)
+    end
+
+    return 10
+end
+
 local function close_other_terminals(excluded_id)
     local _, terms = sorted_terminals()
 
@@ -77,6 +108,16 @@ function M.show(term, opts)
     return term
 end
 
+local function show_existing(term, opts)
+    opts = opts or {}
+    local direction = opts.direction or term.direction or "horizontal"
+
+    return M.show(term, {
+        size = opts.size or default_size(term, direction),
+        direction = direction,
+    })
+end
+
 function M.new(opts)
     opts = opts or {}
 
@@ -93,6 +134,40 @@ function M.new(opts)
 
     M.show(term, { size = opts.size or 10, direction = direction })
     return term
+end
+
+function M.toggle(id, opts)
+    opts = opts or {}
+
+    if id == nil or id == 0 then
+        return M.toggle_shell(opts)
+    end
+
+    local terminal, terms = sorted_terminals()
+    local term = terminal_by_id(terms, id)
+    local direction = opts.direction or (term and term.direction) or "horizontal"
+
+    if term == nil then
+        term = terminal.Terminal:new({
+            id = id,
+            count = id,
+            dir = opts.dir or project_root(),
+            direction = direction,
+            display_name = opts.display_name or ("Shell " .. id),
+        })
+    else
+        term.dir = opts.dir or project_root()
+    end
+
+    if term:is_open() then
+        term:close()
+        return term
+    end
+
+    return show_existing(term, {
+        size = opts.size,
+        direction = direction,
+    })
 end
 
 function M.toggle_shell(opts)
@@ -207,14 +282,14 @@ function M.select()
     vim.ui.select(terms, {
         prompt = "Select terminal",
         format_item = function(term)
-            return term.display_name or ("Terminal " .. term.id)
+            return terminal_label(term)
         end,
     }, function(choice)
         if choice == nil then
             return
         end
 
-        M.show(choice, { size = 10, direction = "horizontal" })
+        show_existing(choice)
     end)
 end
 
@@ -232,10 +307,15 @@ function M.cycle(step)
 
     local current_index = terminal_index(terms, terminal.get_focused_id())
         or terminal_index(terms, terminal.get_toggled_id())
-        or 1
+
+    if current_index == nil then
+        show_existing(terms[step > 0 and 1 or #terms])
+        return
+    end
+
     local target_index = ((current_index - 1 + step) % #terms) + 1
 
-    M.show(terms[target_index], { size = 10, direction = "horizontal" })
+    show_existing(terms[target_index])
 end
 
 function M.next()

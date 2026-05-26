@@ -36,6 +36,8 @@ return {
                 { "<leader>pm", desc = "Open PlatformIO monitor" },
                 { "<leader>pu", desc = "Upload PlatformIO project" },
                 { "<leader>oa", desc = "Toggle all terminals" },
+                { "<leader>on", desc = "Next terminal" },
+                { "<leader>op", desc = "Previous terminal" },
                 { "<leader>ot", desc = "New terminal" },
                 { "<leader>oT", desc = "Select terminal" },
                 { "<leader>f/", desc = "Search current buffer" },
