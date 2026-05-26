@@ -56,7 +56,9 @@ This command requires an interactive TTY. It prompts through `collect-cli` for I
 
 If the user wants to avoid typing or pasting the username in chat, tell them to set `IMOOCS_USERNAME` in their own shell before running `imoocs slide collect`. Do not write the actual username into `SKILL.md`, dotfiles, commands shown in final output, or repo files.
 
-If the user does not specify a download directory, choose a stable local directory for the task and report it.
+If the user only asks to read, inspect, summarize, or verify PDFs, use a temporary directory from `mktemp -d` for `imoocs slide collect`, read the PDFs from there, and remove that directory in the same turn after extracting the needed information. Do not leave PDFs in `Downloads`, the repo, or another stable local directory for read-only tasks.
+
+If the user explicitly asks to download, save, keep, organize, or reuse the PDFs later, choose a stable local directory for the task and report it.
 
 ## Assignments
 
@@ -93,6 +95,6 @@ Always state one of these outcomes clearly:
 - `stage だけした`: a local assignment draft was staged, but nothing was sent to the server.
 - `push で確定した`: only if a real user-confirmed `imoocs assignment push <courseId> <problemId>` completed successfully.
 
-For normal slide/material work, report downloaded paths or counts and state that no assignment submission was performed.
+For normal slide/material work, report downloaded paths or counts and state that no assignment submission was performed. If PDFs were only read from a temporary directory, state that the temporary PDFs were deleted instead of reporting them as saved materials.
 
 Always treat submitted content, submission judgment, submission operation, and compliance with related rules as the user's responsibility.
