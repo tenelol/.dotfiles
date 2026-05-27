@@ -6,7 +6,7 @@
 )
 
 (defsrc
-  caps f h j k l
+  caps f h j k l u i o p m comm .
 )
 
 (defalias
@@ -15,9 +15,9 @@
 )
 
 (deflayer base
-  @capctl @fnav h j k l
+  @capctl @fnav h j k l u i o p m comm .
 )
 
 (deflayer navigation
-  XX XX left down up rght
+  XX XX left down up rght lbrc rbrc S-lbrc S-rbrc / bksl S-/
 )
