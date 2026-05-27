@@ -15,12 +15,6 @@ delib.module {
   # media keys and, in failure modes, duplicate regular key input.
   options = delib.singleEnableOption false;
 
-  darwin.always = lib.mkIf isDarwinDesktop {
-    homebrew.casks = [
-      "karabiner-elements"
-    ];
-  };
-
   darwin.ifDisabled = lib.mkIf isDarwinDesktop {
     system.activationScripts.postActivation.text = lib.mkAfter ''
       /bin/launchctl bootout system/org.nixos.kanata >/dev/null 2>&1 || true
@@ -31,6 +25,10 @@ delib.module {
   };
 
   darwin.ifEnabled = lib.mkIf isDarwinDesktop {
+    homebrew.casks = [
+      "karabiner-elements"
+    ];
+
     environment.systemPackages = [
       pkgs.kanata
     ];
