@@ -41,6 +41,13 @@ delib.module {
     };
 
     system.activationScripts.postActivation.text = lib.mkAfter ''
+      for label in \
+        org.nixos.start_karabiner_daemons \
+        org.nixos.setsuid_karabiner_session_monitor; do
+        /bin/launchctl bootout "system/$label" >/dev/null 2>&1 || true
+      done
+
+      /usr/bin/pkill -f '/Applications/.Nix-Karabiner/.Karabiner-VirtualHIDDevice-Manager.app' >/dev/null 2>&1 || true
       /bin/launchctl kickstart -k system/org.nixos.kanata >/dev/null 2>&1 || true
     '';
   };
