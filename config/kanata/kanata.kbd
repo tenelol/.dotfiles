@@ -1,0 +1,19 @@
+(defcfg
+  process-unmapped-keys yes
+)
+
+(defsrc
+  f h j k l
+)
+
+(defalias
+  fnav (tap-hold 200 180 f (layer-while-held navigation))
+)
+
+(deflayer base
+  @fnav h j k l
+)
+
+(deflayer navigation
+  XX left down up rght
+)
