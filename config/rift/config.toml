@@ -5,6 +5,7 @@ animation_fps = 100.0
 default_disable = false
 
 focus_follows_mouse = true
+focus_follows_mouse_disable_hotkey = "Alt"
 mouse_follows_focus = true
 mouse_hides_on_focus = false
 auto_focus_blacklist = [
