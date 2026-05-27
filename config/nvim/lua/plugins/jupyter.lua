@@ -158,6 +158,9 @@ return {
 			window_overlap_clear_enabled = true,
 			window_overlap_clear_ft_ignore = { "cmp_menu", "cmp_docs", "snacks_notif", "" },
 		},
+		config = function(_, opts)
+			require("image").setup(opts)
+		end,
 	}),
 
 	plugin.spec("molten-nvim", {
