@@ -1,7 +1,4 @@
 local eventTypes = hs.eventtap.event.types
-local keycodes = hs.keycodes
-local keyDownEvent = eventTypes.keyDown
-local flagsChangedEvent = eventTypes.flagsChanged
 local leftMouseDraggedEvent = eventTypes.leftMouseDragged
 local pressureEvent = eventTypes.pressure
 local forcePressActive = false
@@ -15,134 +12,10 @@ pcall(function()
 end)
 local accessibilityEnabled = hs.accessibilityState(true)
 
-local tmuxPrefixConfig = {
-  tapThresholdSeconds = 0.25,
-  doubleTapThresholdSeconds = 0.35,
-  terminalBundleIDs = {
-    ["com.mitchellh.ghostty"] = true,
-    ["com.apple.Terminal"] = true,
-    ["com.googlecode.iterm2"] = true,
-  },
-  terminalAppNames = {
-    Ghostty = true,
-    Terminal = true,
-    iTerm2 = true,
-  },
-}
-
 local zoomPressConfig = {
   zoomOutStepsOnPress = 24,
   zoomInStepsOnPress = 7,
 }
-
-local leftControlKeyCode = keycodes.map.ctrl or 59
-local rightControlKeyCode = keycodes.map.rightctrl or 62
-
-local function frontmostAppIsTerminal()
-  local app = hs.application.frontmostApplication()
-  if not app then
-    return false
-  end
-
-  return tmuxPrefixConfig.terminalBundleIDs[app:bundleID()]
-    or tmuxPrefixConfig.terminalAppNames[app:name()]
-    or false
-end
-
-local controlTapState = {
-  active = false,
-  pressedAt = 0,
-  usedAsModifier = false,
-  lastTappedAt = 0,
-}
-
-local function resetTapState(state)
-  state.active = false
-  state.pressedAt = 0
-  state.usedAsModifier = false
-end
-
-local function resetControlTapState()
-  resetTapState(controlTapState)
-  controlTapState.lastTappedAt = 0
-end
-
-local function sendTmuxPrefixOnControlDoubleTap()
-  if frontmostAppIsTerminal() then
-    hs.eventtap.keyStroke({}, "f12", 0)
-  end
-end
-
--- Double-tap Control in terminals to send the tmux prefix (F12).
-_G.controlDoubleTapTmuxPrefix = hs.eventtap.new({ flagsChangedEvent, keyDownEvent }, function(event)
-  local eventType = event:getType()
-
-  if eventType == keyDownEvent then
-    if controlTapState.active then
-      controlTapState.usedAsModifier = true
-    end
-
-    return false
-  end
-
-  local keyCode = event:getKeyCode()
-  if keyCode ~= leftControlKeyCode and keyCode ~= rightControlKeyCode then
-    if controlTapState.active then
-      controlTapState.usedAsModifier = true
-    end
-
-    return false
-  end
-
-  local controlPressed = event:getFlags().ctrl
-
-  if controlPressed and not controlTapState.active then
-    controlTapState.active = true
-    controlTapState.usedAsModifier = false
-    controlTapState.pressedAt = hs.timer.secondsSinceEpoch()
-    return false
-  end
-
-  if (not controlPressed) and controlTapState.active then
-    local now = hs.timer.secondsSinceEpoch()
-    local tapped = not controlTapState.usedAsModifier
-      and (now - controlTapState.pressedAt) <= tmuxPrefixConfig.tapThresholdSeconds
-
-    resetTapState(controlTapState)
-
-    if tapped then
-      if (now - controlTapState.lastTappedAt) <= tmuxPrefixConfig.doubleTapThresholdSeconds then
-        controlTapState.lastTappedAt = 0
-        sendTmuxPrefixOnControlDoubleTap()
-      else
-        controlTapState.lastTappedAt = now
-      end
-    end
-  end
-
-  return false
-end)
-
-local function syncControlDoubleTapTmuxPrefix()
-  if not _G.controlDoubleTapTmuxPrefix then
-    return
-  end
-
-  if frontmostAppIsTerminal() then
-    if not _G.controlDoubleTapTmuxPrefix:isEnabled() then
-      _G.controlDoubleTapTmuxPrefix:start()
-    end
-  else
-    if _G.controlDoubleTapTmuxPrefix:isEnabled() then
-      _G.controlDoubleTapTmuxPrefix:stop()
-    end
-    resetControlTapState()
-  end
-end
-
-_G.terminalFocusWatcher = hs.application.watcher.new(function()
-  syncControlDoubleTapTmuxPrefix()
-end)
 
 local function systemZoomHotkeysEnabled()
   local output, ok = hs.execute("/usr/bin/defaults read com.apple.universalaccess closeViewHotkeysEnabled 2>/dev/null", true)
@@ -220,8 +93,6 @@ _G.forcePressDragSuppressor = hs.eventtap.new({ leftMouseDraggedEvent }, functio
 end)
 
 if accessibilityEnabled then
-  _G.terminalFocusWatcher:start()
-  syncControlDoubleTapTmuxPrefix()
   _G.forcePressZoomTap:start()
   _G.forcePressDragSuppressor:start()
 else

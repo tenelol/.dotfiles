@@ -10,7 +10,7 @@
 )
 
 (defalias
-  capctl (tap-hold 200 180 esc lctl)
+  capctl (tap-hold 200 180 (tap-dance-eager 200 (esc f12)) lctl)
   fnav (tap-hold 200 180 f (layer-while-held navigation))
 )
 
