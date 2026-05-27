@@ -82,7 +82,16 @@ delib.module {
           settings = {
             main = {
               capslock = "layer(control)";
+              # Hold f briefly to enter a Vim-style navigation layer without
+              # swallowing quick rolling text like "fa".
+              f = "overloadt(navigation, f, 180)";
               # space = "overload(shift, space)"; # SandS disabled for games
+            };
+            navigation = {
+              h = "left";
+              j = "down";
+              k = "up";
+              l = "right";
             };
             # Use Super as the "Command" key for app shortcuts.
             meta = {
