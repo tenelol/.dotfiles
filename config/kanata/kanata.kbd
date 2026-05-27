@@ -6,17 +6,18 @@
 )
 
 (defsrc
-  f h j k l
+  caps f h j k l
 )
 
 (defalias
+  capctl (tap-hold 200 180 esc lctl)
   fnav (tap-hold 200 180 f (layer-while-held navigation))
 )
 
 (deflayer base
-  @fnav h j k l
+  @capctl @fnav h j k l
 )
 
 (deflayer navigation
-  XX left down up rght
+  XX XX left down up rght
 )
