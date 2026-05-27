@@ -172,7 +172,7 @@ delib.module {
 
     system.keyboard = {
       enableKeyMapping = true;
-      remapCapsLockToControl = true;
+      remapCapsLockToControl = false;
     };
 
     system.activationScripts.ensureScreenshotDirectory.text = ''
