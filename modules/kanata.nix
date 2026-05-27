@@ -28,7 +28,7 @@ delib.module {
     launchd.daemons.kanata = {
       serviceConfig = {
         ProgramArguments = [
-          "${pkgs.kanata}/bin/kanata"
+          "/Applications/Kanata.app/Contents/MacOS/kanata"
           "--cfg"
           "/etc/kanata/kanata.kbd"
           "--no-wait"
@@ -41,6 +41,40 @@ delib.module {
     };
 
     system.activationScripts.postActivation.text = lib.mkAfter ''
+      if [ "$(/usr/bin/readlink /usr/local/bin/kanata 2>/dev/null || true)" = "/run/current-system/sw/bin/kanata" ]; then
+        /bin/rm -f /usr/local/bin/kanata
+      fi
+
+      if [ -e /Applications/Kanata.app ] && ! /usr/bin/grep -q 'local.nix-kanata' /Applications/Kanata.app/Contents/Info.plist 2>/dev/null; then
+        echo "warning: /Applications/Kanata.app exists and is not managed by this module; leaving it unchanged" >&2
+      else
+        /bin/rm -rf /Applications/Kanata.app
+        /usr/bin/install -d -m 0755 /Applications/Kanata.app/Contents/MacOS
+        /bin/cp /run/current-system/sw/bin/kanata /Applications/Kanata.app/Contents/MacOS/kanata
+        /bin/chmod 0755 /Applications/Kanata.app/Contents/MacOS/kanata
+        /bin/chmod 0755 /Applications/Kanata.app/Contents/MacOS
+        /bin/cat > /Applications/Kanata.app/Contents/Info.plist <<'EOF'
+      <?xml version="1.0" encoding="UTF-8"?>
+      <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+      <plist version="1.0">
+      <dict>
+        <key>CFBundleDisplayName</key>
+        <string>Kanata</string>
+        <key>CFBundleExecutable</key>
+        <string>kanata</string>
+        <key>CFBundleIdentifier</key>
+        <string>local.nix-kanata</string>
+        <key>CFBundleName</key>
+        <string>Kanata</string>
+        <key>CFBundlePackageType</key>
+        <string>APPL</string>
+        <key>CFBundleVersion</key>
+        <string>1</string>
+      </dict>
+      </plist>
+      EOF
+      fi
+
       for label in \
         org.nixos.start_karabiner_daemons \
         org.nixos.setsuid_karabiner_session_monitor; do
