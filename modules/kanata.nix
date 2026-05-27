@@ -5,20 +5,32 @@
   pkgs,
   ...
 }:
+let
+  isDarwinDesktop = !host.isServer && builtins.match ".*-darwin" host.system != null;
+in
 delib.module {
   name = "kanata";
 
-  options = delib.singleEnableOption (
-    !host.isServer && builtins.match ".*-darwin" host.system != null
-  );
+  # Prefer native macOS handling for the function row; Kanata can intercept
+  # media keys and, in failure modes, duplicate regular key input.
+  options = delib.singleEnableOption false;
 
-  darwin.ifEnabled = {
-    # Kanata uses the Karabiner VirtualHID driver on macOS. Keep the cask
-    # installed, but leave key remapping itself to Kanata.
+  darwin.always = lib.mkIf isDarwinDesktop {
     homebrew.casks = [
       "karabiner-elements"
     ];
+  };
 
+  darwin.ifDisabled = lib.mkIf isDarwinDesktop {
+    system.activationScripts.postActivation.text = lib.mkAfter ''
+      /bin/launchctl bootout system/org.nixos.kanata >/dev/null 2>&1 || true
+      /usr/bin/pkill -f '/Applications/Kanata.app/Contents/MacOS/kanata' >/dev/null 2>&1 || true
+      /bin/rm -rf /Applications/Kanata.app
+      /bin/rm -f /Library/LaunchDaemons/org.nixos.kanata.plist
+    '';
+  };
+
+  darwin.ifEnabled = lib.mkIf isDarwinDesktop {
     environment.systemPackages = [
       pkgs.kanata
     ];
