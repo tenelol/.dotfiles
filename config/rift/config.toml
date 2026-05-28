@@ -112,12 +112,12 @@ workspace_names = [
 app_rules = [
   { app_id = "com.anthropic.claudefordesktop", workspace = 0 },
   { app_id = "com.mitchellh.ghostty", workspace = 0 },
+  { app_id = "com.openai.codex", workspace = 0 },
+  { app_id = "company.thebrowser.dia", workspace = 1 },
   { app_id = "com.tinyspeck.slackmacgap", workspace = 2 },
   { app_id = "dev.vencord.vesktop", workspace = 2 },
   { app_id = "jp.naver.line.mac", workspace = 2 },
   { app_id = "com.spotify.client", workspace = 3 },
-  # Dia is used across multiple workspaces; add title-specific rules if it
-  # needs stable placement without forcing every browser window together.
   { app_name = "System Settings", manage = false },
   { app_name = "System Preferences", manage = false },
   { app_name = "App Store", manage = false },
