@@ -12,7 +12,7 @@ assign_app() {
   app_id="$1"
   workspace="$2"
 
-  "$AEROSPACE" list-windows --all --app-bundle-id "$app_id" --format '%{window-id}' 2>/dev/null |
+  "$AEROSPACE" list-windows --monitor all --app-bundle-id "$app_id" --format '%{window-id}' 2>/dev/null |
     while IFS= read -r window_id; do
       case "$window_id" in
         '' | *[!0-9]*) continue ;;
@@ -23,7 +23,7 @@ assign_app() {
 }
 
 assign_app com.mitchellh.ghostty 1
-assign_app com.apple.mail 1
+assign_app com.apple.mail 8
 assign_app org.pqrs.Karabiner-Elements.Settings 1
 assign_app company.thebrowser.dia 2
 assign_app com.anthropic.claudefordesktop 3
