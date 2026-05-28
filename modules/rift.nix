@@ -101,7 +101,14 @@ delib.module {
       $DRY_RUN_CMD /usr/bin/pkill -u ${profile.username} -x AutoRaise >/dev/null 2>&1 || true
       $DRY_RUN_CMD /usr/bin/pkill -u ${profile.username} -f '[A]pplications/AeroSpace.app/Contents/MacOS/AeroSpace' >/dev/null 2>&1 || true
       $DRY_RUN_CMD /usr/bin/pkill -u ${profile.username} -f '[a]utoraise.*/bin/autoraise' >/dev/null 2>&1 || true
-      $DRY_RUN_CMD /bin/launchctl kickstart -k "gui/$uid/git.acsandmann.rift" >/dev/null 2>&1 || true
+
+      if [ -x /opt/homebrew/bin/rift-cli ] && /opt/homebrew/bin/rift-cli query metrics >/dev/null 2>&1; then
+        $DRY_RUN_CMD /opt/homebrew/bin/rift-cli execute config reload >/dev/null 2>&1 \
+          || $DRY_RUN_CMD /bin/launchctl kickstart -k "gui/$uid/git.acsandmann.rift" >/dev/null 2>&1 \
+          || true
+      else
+        $DRY_RUN_CMD /bin/launchctl kickstart -k "gui/$uid/git.acsandmann.rift" >/dev/null 2>&1 || true
+      fi
 
       if [ -x "$HOME/.config/rift/sketchybar-workspace-subscribe" ]; then
         $DRY_RUN_CMD "$HOME/.config/rift/sketchybar-workspace-subscribe" >/dev/null 2>&1 || true
