@@ -112,7 +112,6 @@ workspace_names = [
 app_rules = [
   { app_id = "com.anthropic.claudefordesktop", workspace = 0 },
   { app_id = "com.mitchellh.ghostty", workspace = 0 },
-  { app_id = "com.openai.codex", workspace = 0 },
   { app_id = "com.tinyspeck.slackmacgap", workspace = 2 },
   { app_id = "dev.vencord.vesktop", workspace = 2 },
   { app_id = "jp.naver.line.mac", workspace = 2 },
