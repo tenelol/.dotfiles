@@ -42,6 +42,7 @@ window-save-state = "always"
 
 # macOS window behavior
 macos-titlebar-style = "hidden"
+macos-hidden = "always"
 macos-window-buttons = "visible"
 macos-window-shadow = true
 macos-option-as-alt = "left"
