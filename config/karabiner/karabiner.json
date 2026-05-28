@@ -12,8 +12,31 @@
                 },
                 "rules": [
                     {
-                        "description": "Caps Lock: escape when tapped, control when held",
+                        "description": "Caps Lock: escape when tapped, F12 when double-tapped, control when held",
                         "manipulators": [
+                            {
+                                "type": "basic",
+                                "conditions": [
+                                    {
+                                        "type": "variable_if",
+                                        "name": "dotfiles_caps_lock_tap_pending",
+                                        "value": 1
+                                    }
+                                ],
+                                "from": {
+                                    "key_code": "caps_lock",
+                                    "modifiers": { "optional": ["any"] }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "dotfiles_caps_lock_tap_pending",
+                                            "value": 0
+                                        }
+                                    },
+                                    { "key_code": "f12" }
+                                ]
+                            },
                             {
                                 "type": "basic",
                                 "from": {
@@ -26,9 +49,55 @@
                                         "lazy": true
                                     }
                                 ],
-                                "to_if_alone": [{ "key_code": "escape" }],
+                                "to_if_alone": [
+                                    {
+                                        "set_variable": {
+                                            "name": "dotfiles_caps_lock_tap_pending",
+                                            "value": 1
+                                        }
+                                    }
+                                ],
                                 "to_if_held_down": [{ "key_code": "left_control" }],
+                                "to_delayed_action": {
+                                    "to_if_invoked": [
+                                        {
+                                            "key_code": "escape",
+                                            "conditions": [
+                                                {
+                                                    "type": "variable_if",
+                                                    "name": "dotfiles_caps_lock_tap_pending",
+                                                    "value": 1
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "set_variable": {
+                                                "name": "dotfiles_caps_lock_tap_pending",
+                                                "value": 0
+                                            }
+                                        }
+                                    ],
+                                    "to_if_canceled": [
+                                        {
+                                            "key_code": "escape",
+                                            "conditions": [
+                                                {
+                                                    "type": "variable_if",
+                                                    "name": "dotfiles_caps_lock_tap_pending",
+                                                    "value": 1
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "set_variable": {
+                                                "name": "dotfiles_caps_lock_tap_pending",
+                                                "value": 0
+                                            }
+                                        }
+                                    ]
+                                },
                                 "parameters": {
+                                    "basic.to_delayed_action_delay_milliseconds": 200,
                                     "basic.to_if_alone_timeout_milliseconds": 100,
                                     "basic.to_if_held_down_threshold_milliseconds": 100
                                 }
