@@ -274,9 +274,13 @@ check_darwin_desktop() {
   if has pgrep && pgrep -qx AeroSpace >/dev/null 2>&1; then
     target="macbook-aerospace"
     status ok "window manager" "AeroSpace is running"
-  elif has pgrep && pgrep -qx Rift >/dev/null 2>&1; then
+  elif has pgrep && { pgrep -qx rift >/dev/null 2>&1 || pgrep -qx Rift >/dev/null 2>&1; }; then
     target="macbook-rift"
     status ok "window manager" "Rift is running"
+  elif [ -e "$HOME/.config/theme/wallpaper.png" ] \
+    && [ "$(readlink "$HOME/.config/theme/wallpaper.png" 2>/dev/null | sed 's#.*/##')" = "wallpaper.png" ]; then
+    target="macbook-mac"
+    status ok "window manager" "native macOS rice"
   elif [ -e "$HOME/.config/aerospace/aerospace.toml" ]; then
     target="macbook-aerospace"
     status warn "window manager" "AeroSpace config exists, but process is not running"
