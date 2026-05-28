@@ -1,0 +1,38 @@
+#!/bin/sh
+set -eu
+
+AEROSPACE="${AEROSPACE:-/opt/homebrew/bin/aerospace}"
+
+[ -x "$AEROSPACE" ] || exit 0
+
+# Give AeroSpace a moment to finish registering windows that were already open.
+sleep 1
+
+assign_app() {
+  app_id="$1"
+  workspace="$2"
+
+  "$AEROSPACE" list-windows --all --app-bundle-id "$app_id" --format '%{window-id}' 2>/dev/null |
+    while IFS= read -r window_id; do
+      case "$window_id" in
+        '' | *[!0-9]*) continue ;;
+      esac
+
+      "$AEROSPACE" move-node-to-workspace --window-id "$window_id" "$workspace" >/dev/null 2>&1 || true
+    done
+}
+
+assign_app com.mitchellh.ghostty 1
+assign_app com.apple.mail 1
+assign_app org.pqrs.Karabiner-Elements.Settings 1
+assign_app company.thebrowser.dia 2
+assign_app com.anthropic.claudefordesktop 3
+assign_app com.openai.codex 3
+assign_app com.tinyspeck.slackmacgap 4
+assign_app com.spotify.client 5
+assign_app dev.vencord.vesktop 6
+assign_app jp.naver.line.mac 7
+
+if [ -x /opt/homebrew/bin/sketchybar ]; then
+  /opt/homebrew/bin/sketchybar --trigger workspace_change REFRESH=all >/dev/null 2>&1 || true
+fi

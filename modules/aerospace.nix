@@ -73,6 +73,10 @@ delib.module {
       source = ../config/aerospace/workspace-local;
       executable = true;
     };
+    xdg.configFile."aerospace/assign-windows" = {
+      source = ../config/aerospace/assign-windows;
+      executable = true;
+    };
 
     home.activation.prepareAerospaceApp = hm.dag.entryAfter [ "linkGeneration" ] ''
       if [ ! -d /Applications/AeroSpace.app ] && [ -x /opt/homebrew/bin/brew ]; then
@@ -94,7 +98,13 @@ delib.module {
       fi
     '';
 
-    home.activation.refreshAerospaceSketchybar = hm.dag.entryAfter [ "prepareAerospaceApp" ] ''
+    home.activation.assignAerospaceWindows = hm.dag.entryAfter [ "prepareAerospaceApp" ] ''
+      if [ -x ${homeDir}/.config/aerospace/assign-windows ]; then
+        $DRY_RUN_CMD ${homeDir}/.config/aerospace/assign-windows >/dev/null 2>&1 || true
+      fi
+    '';
+
+    home.activation.refreshAerospaceSketchybar = hm.dag.entryAfter [ "assignAerospaceWindows" ] ''
       if [ -x /opt/homebrew/bin/sketchybar ]; then
         $DRY_RUN_CMD /opt/homebrew/bin/sketchybar --trigger workspace_change REFRESH=all >/dev/null 2>&1 || true
       fi
