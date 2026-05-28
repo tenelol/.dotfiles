@@ -52,10 +52,6 @@ delib.module {
       managedBy = "aerospace";
     };
 
-    # Disable "Displays have separate Spaces" for AeroSpace. Separate macOS
-    # Spaces can make same-app windows on different monitors raise together.
-    system.defaults.spaces.spans-displays = lib.mkForce true;
-
     system.activationScripts.stopRiftForAerospace.text = ''
       uid="$(/usr/bin/id -u ${profile.username})"
 
