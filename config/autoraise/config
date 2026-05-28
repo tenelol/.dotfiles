@@ -5,4 +5,4 @@ requireMouseStop=true
 ignoreSpaceChanged=true
 disableKey="control"
 mouseDelta=0.1
-ignoreApps="Codex,Codex App,Hammerspoon"
+ignoreApps="Codex,Codex App"
