@@ -159,7 +159,10 @@ delib.module {
         type = "png";
       };
 
-      spaces.spans-displays = false;
+      # Keep this stable across Rift/AeroSpace. macOS applies this setting at
+      # the login/session boundary, so changing it during a WM handoff can
+      # leave both window managers inert until logout.
+      spaces.spans-displays = true;
 
       trackpad = {
         Clicking = true;
