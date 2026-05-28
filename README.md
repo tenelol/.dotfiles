@@ -27,6 +27,7 @@ NixOS と `nix-darwin` を 1 つの flake で管理し、Home Manager は各 sys
 NixOS host の `hosts/*/hardware-configuration.nix` は `flake.nix` 側で自動除外しているので、host 追加時に除外リストを手で更新する必要はありません。
 Darwin の共通土台は [modules/darwin-base.nix](./modules/darwin-base.nix)、`macbook` 固有の UX 調整は [modules/darwin-host-macbook.nix](./modules/darwin-host-macbook.nix) に寄せています。
 macOS の GUI アプリは「cross-platform なものは Nix、App Store / cask-first なものは Homebrew」を目安に分けています。
+`macbook-mac` は Rift / AeroSpace を使わない native macOS fallback rice です。
 
 ## Codex
 
@@ -135,6 +136,7 @@ rice を切り替えて build:
 ```sh
 nh darwin build . -H macbook-rift
 nh darwin build . -H macbook-aerospace
+nh darwin build . -H macbook-mac
 ```
 
 `nh` を使う前提で書いています。`nixos-rebuild` や `darwin-rebuild` を直接叩くより、普段の運用では `nh` を優先します。
@@ -149,7 +151,7 @@ nh darwin build . -H macbook-aerospace
 - bootloader のような machine 固有前提は host metadata で明示し、共通 base module に埋め込まない
 - 外部バイナリに依存する integration は explicit allowlist に寄せ、将来 host を足しても暗黙に広げない
 - Linux desktop は `niri` 前提
-- macOS desktop は通常 `Rift` 前提。外部ディスプレイで Rift が不安定なときは `macbook-aerospace` rice で AeroSpace に切り替える
+- macOS desktop は通常 `Rift` 前提。外部ディスプレイで Rift が不安定なときは `macbook-aerospace` rice で AeroSpace に切り替える。WM を使わず素の macOS に戻したいときは `macbook-mac` を使う
 - Rift は `scrolling` を既定にして niri 風の column workflow に寄せる。`Alt+h/l` で column 間 focus、`Alt+Ctrl+Left/Right` で strip scroll、`Alt+Ctrl+Up/Down` で center/snap。3 本指 horizontal swipe は Rift の virtual workspace 移動に使う
 - 外部ディスプレイで `scrolling` が不安定なときは `Alt+b` で一時的に `bsp` へ戻す
 - `nixos.base` は全 NixOS host 共通、desktop 前提は host 非 server の module に分離

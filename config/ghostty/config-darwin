@@ -65,8 +65,12 @@ custom-shader-animation = true
 
 # Quick terminal
 keybind = "ctrl+shift+space=toggle_quick_terminal"
-quick-terminal-position = "bottom"
-quick-terminal-size = "34%"
+quick-terminal-position = "right"
+quick-terminal-size = "38%"
+quick-terminal-screen = "mouse"
+quick-terminal-animation-duration = 0.16
+quick-terminal-autohide = false
+quick-terminal-space-behavior = "move"
 
 # Familiar macOS clipboard shortcuts
 keybind = "super+c=copy_to_clipboard"
