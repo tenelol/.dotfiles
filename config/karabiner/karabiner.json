@@ -34,7 +34,10 @@
                                             "value": 0
                                         }
                                     },
-                                    { "key_code": "f12" }
+                                    {
+                                        "key_code": "f12",
+                                        "modifiers": ["fn"]
+                                    }
                                 ]
                             },
                             {
