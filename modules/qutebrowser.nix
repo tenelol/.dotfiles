@@ -87,6 +87,7 @@ delib.module {
           open_base_url = true;
           start_pages = [ "https://www.google.com" ];
         };
+        window.hide_decoration = true;
       };
 
       keyBindings = {
