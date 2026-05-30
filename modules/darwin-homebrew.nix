@@ -54,6 +54,12 @@ delib.module {
         "macskk"
         "microsoft-office"
         "notion"
+        {
+          # Temporary: Homebrew marks this cask deprecated because it does not
+          # pass the macOS Gatekeeper check.
+          name = "qutebrowser";
+          args.no_quarantine = true;
+        }
         "raycast"
         "slack"
         "spotify"
