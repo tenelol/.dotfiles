@@ -102,7 +102,6 @@ let
     wtype
     ydotool
     obsidian
-    qutebrowser
     vesktop
     slack
     libreoffice-fresh
@@ -125,7 +124,6 @@ let
     sqlitebrowser
     unicode-emoji
     obsidian
-    qutebrowser
     vesktop
     zathura
   ];
