@@ -114,6 +114,7 @@ app_rules = [
   { app_id = "com.mitchellh.ghostty", workspace = 0 },
   { app_id = "com.openai.codex", workspace = 0 },
   { app_id = "company.thebrowser.dia", workspace = 1 },
+  { app_id = "org.qutebrowser.qutebrowser", workspace = 1 },
   { app_id = "com.apple.mail", workspace = 2 },
   { app_id = "com.tinyspeck.slackmacgap", workspace = 2 },
   { app_id = "dev.vencord.vesktop", workspace = 2 },
