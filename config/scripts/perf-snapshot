@@ -46,6 +46,20 @@ fi
 section "memory"
 free -h
 
+section "swap"
+swapon --show || true
+
+if compgen -G "/sys/block/zram*" >/dev/null; then
+  echo "zram:"
+  for device in /sys/block/zram*; do
+    [ -d "$device" ] || continue
+    name="$(basename "$device")"
+    disksize="$(cat "$device/disksize" 2>/dev/null || echo unknown)"
+    algorithm="$(cat "$device/comp_algorithm" 2>/dev/null || echo unknown)"
+    printf '%s disksize=%s algorithm=%s\n' "$name" "$disksize" "$algorithm"
+  done
+fi
+
 section "session"
 printf 'XDG_CURRENT_DESKTOP=%s\n' "${XDG_CURRENT_DESKTOP:-}"
 printf 'XDG_SESSION_TYPE=%s\n' "${XDG_SESSION_TYPE:-}"
