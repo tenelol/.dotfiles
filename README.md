@@ -76,7 +76,7 @@ dotfiles doctor
 `dotfiles doctor` は repo の場所、Git の dirty 状態、`nix` / `nh`、flake metadata / configuration 名の軽量評価、実行中の rebuild/switch process、macOS では active rice 推定・Raycast script・SketchyBar・switch log をまとめて確認します。更新、build、switch は実行しません。warning も失敗扱いにしたいときは `dotfiles doctor --strict`、flake 評価を省くときは `dotfiles doctor --no-eval` を使います。
 
 Darwin 実機がまだ無い段階でも `macbook` host を腐らせないため、普段の軽量チェックは Linux / Darwin をまとめて見る `./scripts/validate eval` を基準にします。
-このコマンドは各 configuration の `system.build.toplevel.drvPath` を直接評価して、全 host と rice 派生 config が壊れていないかを build なしで確認します。
+このコマンドは `nix flake check --all-systems --no-build` で flake checks をまとめて評価して、全 host と rice 派生 config が壊れていないかを build なしで確認します。
 CI の pull request では `nix fmt --ci` と `./scripts/validate eval` だけを走らせ、GitHub 上の待ち時間を軽くしています。Linux host の実 build は `main` への push と `workflow_dispatch` で `checks.x86_64-linux.build-*` を個別に build します。ローカルの実運用は引き続き `nh os build` / `nh darwin build` を使います。Darwin は GitHub Actions の Linux runner では build せず、ローカルで `./scripts/validate darwin` を回す運用です。
 
 整形確認:

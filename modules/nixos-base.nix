@@ -19,6 +19,20 @@ delib.module {
     };
     nix.settings.ssl-cert-file = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
 
+    # All active Linux hosts have no disk swap configured. zram keeps the
+    # desktop and small server responsive under memory pressure without adding
+    # persistent swap IO.
+    zramSwap = {
+      enable = true;
+      algorithm = "zstd";
+      memoryPercent = 25;
+      priority = 100;
+    };
+    boot.kernel.sysctl = {
+      "vm.swappiness" = 100;
+      "vm.page-cluster" = 0;
+    };
+
     time.timeZone = "Asia/Tokyo";
 
     i18n.defaultLocale = "en_US.UTF-8";

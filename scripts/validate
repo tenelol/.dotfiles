@@ -8,35 +8,14 @@ usage() {
   cat <<'EOF'
 Usage: ./scripts/validate <eval|linux|darwin>
 
-  eval    Evaluate every nixos/darwin configuration without building
-  linux   Run lightweight evaluation, then build all Linux hosts with nh
-  darwin  Run lightweight evaluation, then build the macOS host with nh
+  eval    Run flake checks without building outputs
+  linux   Run no-build flake checks, then build all Linux hosts with nh
+  darwin  Run no-build flake checks, then build the macOS host with nh
 EOF
 }
 
-list_configurations() {
-  local config_attr="$1"
-
-  nix eval --raw ".#${config_attr}" --apply 'configs: builtins.concatStringsSep "\n" (builtins.attrNames configs)'
-}
-
-eval_configuration() {
-  local config_attr="$1"
-  local config_name="$2"
-  local drv_path
-
-  drv_path="$(nix eval --raw ".#${config_attr}.${config_name}.config.system.build.toplevel.drvPath")"
-  printf '%s: %s\n' "$config_name" "$drv_path"
-}
-
-eval_configurations() {
-  local config_attr="$1"
-  local config_name
-
-  while IFS= read -r config_name; do
-    [ -n "$config_name" ] || continue
-    eval_configuration "$config_attr" "$config_name"
-  done < <(list_configurations "$config_attr")
+run_eval_check() {
+  nix flake check --all-systems --no-build
 }
 
 mode="${1:-linux}"
@@ -54,8 +33,7 @@ case "$mode" in
     ;;
 esac
 
-eval_configurations "nixosConfigurations"
-eval_configurations "darwinConfigurations"
+run_eval_check
 
 case "$mode" in
   eval)
