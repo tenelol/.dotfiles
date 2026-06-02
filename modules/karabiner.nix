@@ -11,7 +11,7 @@ in
 delib.module {
   name = "karabiner";
 
-  options = delib.singleEnableOption isDarwinDesktop;
+  options = delib.singleEnableOption false;
 
   darwin.ifEnabled = lib.mkIf isDarwinDesktop {
     homebrew.casks = [

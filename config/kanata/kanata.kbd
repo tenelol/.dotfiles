@@ -1,12 +1,13 @@
 (defcfg
-  process-unmapped-keys (all-except f1 f2 f3 f4 f5 f6 f7 f8 f9 f10 f11 f12)
+  process-unmapped-keys yes
   macos-dev-names-include (
     "Apple Internal Keyboard / Trackpad"
   )
 )
 
 (defsrc
-  caps f h j k l u i o p m comm .
+  caps f h j k l u i o p m comm . scln
+  f1 f2 f3 f4 f5 f6 f7 f8 f9 f10 f11 f12
 )
 
 (defalias
@@ -15,9 +16,11 @@
 )
 
 (deflayer base
-  @capctl @fnav h j k l u i o p m comm .
+  @capctl @fnav h j k l u i o p m comm . scln
+  brdn brup mctl sls dtn dnd prev pp next mute vold volu
 )
 
 (deflayer navigation
-  XX XX left down up rght lbrc rbrc S-lbrc S-rbrc / bksl S-/
+  XX XX left down up rght lbrc rbrc S-lbrc S-rbrc / bksl S-/ bspc
+  brdn brup mctl sls dtn dnd prev pp next mute vold volu
 )

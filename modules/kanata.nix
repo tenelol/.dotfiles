@@ -3,6 +3,7 @@
   host,
   lib,
   pkgs,
+  profile,
   ...
 }:
 let
@@ -11,9 +12,9 @@ in
 delib.module {
   name = "kanata";
 
-  # Prefer native macOS handling for the function row; Kanata can intercept
-  # media keys and, in failure modes, duplicate regular key input.
-  options = delib.singleEnableOption false;
+  # Keep keyboard remapping in Kanata. The config maps the macOS function row
+  # explicitly so F10/F11/F12 keep behaving as media keys.
+  options = delib.singleEnableOption isDarwinDesktop;
 
   darwin.ifDisabled = lib.mkIf isDarwinDesktop {
     system.activationScripts.postActivation.text = lib.mkAfter ''
@@ -25,6 +26,8 @@ delib.module {
   };
 
   darwin.ifEnabled = lib.mkIf isDarwinDesktop {
+    # Kanata uses the Karabiner VirtualHID driver on macOS, but the
+    # Karabiner-Elements app itself should not manage key mappings.
     homebrew.casks = [
       "karabiner-elements"
     ];
@@ -51,6 +54,8 @@ delib.module {
     };
 
     system.activationScripts.postActivation.text = lib.mkAfter ''
+      uid="$(id -u ${profile.username})"
+
       if [ "$(/usr/bin/readlink /usr/local/bin/kanata 2>/dev/null || true)" = "/run/current-system/sw/bin/kanata" ]; then
         /bin/rm -f /usr/local/bin/kanata
       fi
@@ -90,8 +95,33 @@ delib.module {
         org.nixos.setsuid_karabiner_session_monitor; do
         /bin/launchctl bootout "system/$label" >/dev/null 2>&1 || true
       done
+      /bin/rm -f \
+        /Library/LaunchDaemons/org.nixos.start_karabiner_daemons.plist \
+        /Library/LaunchDaemons/org.nixos.setsuid_karabiner_session_monitor.plist
+
+      for label in \
+        org.nixos.karabiner-elements \
+        org.nixos.activate_karabiner_system_ext \
+        org.pqrs.service.agent.Karabiner-Menu \
+        org.pqrs.service.agent.Karabiner-Core-Service \
+        org.pqrs.service.agent.Karabiner-Core-Service-rev2 \
+        org.pqrs.service.agent.Karabiner-NotificationWindow \
+        org.pqrs.service.agent.karabiner_console_user_server \
+        org.pqrs.service.agent.karabiner_session_monitor; do
+        /bin/launchctl bootout "gui/$uid/$label" >/dev/null 2>&1 || true
+      done
+
+      for label in \
+        org.pqrs.karabiner.karabiner_grabber \
+        org.pqrs.karabiner.karabiner_observer \
+        org.pqrs.service.daemon.Karabiner-Core-Service; do
+        /bin/launchctl bootout "system/$label" >/dev/null 2>&1 || true
+      done
 
       /usr/bin/pkill -f '/Applications/.Nix-Karabiner/.Karabiner-VirtualHIDDevice-Manager.app' >/dev/null 2>&1 || true
+      /usr/bin/pkill -f '/Applications/Karabiner-Elements.app/Contents/MacOS/Karabiner-Elements' >/dev/null 2>&1 || true
+      /usr/bin/pkill -f '/Library/Application Support/org.pqrs/Karabiner-Elements/bin/karabiner_' >/dev/null 2>&1 || true
+      /usr/bin/pkill -f '/Library/Application Support/org.pqrs/Karabiner-Elements/Karabiner-' >/dev/null 2>&1 || true
       /bin/launchctl kickstart -k system/org.nixos.kanata >/dev/null 2>&1 || true
     '';
   };
