@@ -20,6 +20,9 @@
     zen-browser.url = "github:0xc000022070/zen-browser-flake";
     zen-browser.inputs.nixpkgs.follows = "nixpkgs";
 
+    codex-desktop-linux.url = "github:ilysenko/codex-desktop-linux";
+    codex-desktop-linux.inputs.nixpkgs.follows = "nixpkgs";
+
     nix-hazkey.url = "github:aster-void/nix-hazkey";
     nix-hazkey.inputs.nixpkgs.follows = "nixpkgs";
 
