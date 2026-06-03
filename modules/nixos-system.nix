@@ -39,21 +39,20 @@ delib.module {
       networking.useNetworkd = usesIwdNetworkd;
       networking.resolvconf.enable = lib.mkForce (!usesResolved);
       networking.wireless.iwd.enable = true;
-      networking.wireless.iwd.settings =
-        {
-          General = {
-            EnableNetworkConfiguration = usesIwdNetworkd;
-          };
-          Settings = {
-            AutoConnect = true;
-          };
-        }
-        // lib.optionalAttrs usesIwdNetworkd {
-          Network = {
-            # iwd defaults to systemd-resolved when it configures links itself.
-            NameResolvingService = "systemd";
-          };
+      networking.wireless.iwd.settings = {
+        General = {
+          EnableNetworkConfiguration = usesIwdNetworkd;
         };
+        Settings = {
+          AutoConnect = true;
+        };
+      }
+      // lib.optionalAttrs usesIwdNetworkd {
+        Network = {
+          # iwd defaults to systemd-resolved when it configures links itself.
+          NameResolvingService = "systemd";
+        };
+      };
       services.resolved.enable = usesResolved;
 
       services.pulseaudio.enable = false;

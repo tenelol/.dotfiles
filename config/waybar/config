@@ -1,12 +1,12 @@
 {
   "layer": "top",
   "position": "top",
-  "height": 30,
-  "spacing": 8,
+  "height": 42,
+  "spacing": 6,
   "margin-top": 0,
   "margin-right": 0,
   "margin-left": 0,
-  "modules-left": ["custom/launcher", "niri/window"],
+  "modules-left": ["custom/launcher", "niri/workspaces", "niri/window"],
   "modules-center": [],
   "modules-right": ["tray", "pulseaudio", "network", "battery", "custom/clock"],
   "custom/launcher": {
@@ -14,9 +14,13 @@
     "tooltip": false,
     "on-click": "fuzzel"
   },
+  "niri/workspaces": {
+    "format": "{index}",
+    "on-click": "activate"
+  },
   "niri/window": {
     "format": "{title}",
-    "max-length": 42,
+    "max-length": 28,
     "swap-icon-label": false
   },
   "custom/clock": {
