@@ -321,7 +321,7 @@ binds {
     // in the end. To find an XKB name for a particular key, you may use a program
     // like wev.
     //
-    // Keep Super available for app-level "Command" shortcuts via Kanata.
+    // Keep Super available for app-level "Command" shortcuts.
     // Use Alt for the window manager layer.
     //
     // Most actions that you can bind here can also be invoked programmatically with
@@ -524,7 +524,7 @@ binds {
     // Expel the bottom window from the focused column to the right.
     Alt+Period { expel-window-from-column; }
 
-    // Keep common Super-letter combos free for app shortcuts via Kanata.
+    // Keep common Super-letter combos free for app shortcuts.
     Alt+R { switch-preset-column-width; }
     Alt+Backslash { switch-preset-column-width; }
     // Cycling through the presets in reverse order is also possible.
