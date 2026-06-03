@@ -19,9 +19,6 @@ let
   ccpocketBridgePackage = import ../packages/ccpocket-bridge.nix {
     inherit pkgs lib;
   };
-  mygdrivePackage = import ../packages/mygdrive.nix {
-    inherit pkgs lib;
-  };
   moocsCollectPackage = import ../packages/moocs-collect.nix {
     inherit pkgs lib;
   };
@@ -50,7 +47,6 @@ let
     eza
     bat
     gomi
-    mygdrivePackage
     tre-command
     ripgrep
     prettierd
