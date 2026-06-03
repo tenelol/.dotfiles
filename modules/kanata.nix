@@ -8,13 +8,16 @@
 }:
 let
   isDarwinDesktop = !host.isServer && builtins.match ".*-darwin" host.system != null;
+  isLinuxDesktop = !host.isServer && builtins.match ".*-linux" host.system != null;
+  isDesktop = isDarwinDesktop || isLinuxDesktop;
+  commonConfig = builtins.readFile ../config/kanata/common.kbd;
 in
 delib.module {
   name = "kanata";
 
   # Keep keyboard remapping in Kanata. The config maps the macOS function row
   # explicitly so F10/F11/F12 keep behaving as media keys.
-  options = delib.singleEnableOption isDarwinDesktop;
+  options = delib.singleEnableOption isDesktop;
 
   darwin.ifDisabled = lib.mkIf isDarwinDesktop {
     system.activationScripts.postActivation.text = lib.mkAfter ''
@@ -23,6 +26,22 @@ delib.module {
       /bin/rm -rf /Applications/Kanata.app
       /bin/rm -f /Library/LaunchDaemons/org.nixos.kanata.plist
     '';
+  };
+
+  nixos.ifDisabled = lib.mkIf isLinuxDesktop {
+    services.kanata.enable = false;
+  };
+
+  nixos.ifEnabled = lib.mkIf isLinuxDesktop {
+    services.keyd.enable = lib.mkForce false;
+
+    services.kanata = {
+      enable = true;
+      keyboards.default = {
+        extraDefCfg = "process-unmapped-keys yes";
+        config = commonConfig;
+      };
+    };
   };
 
   darwin.ifEnabled = lib.mkIf isDarwinDesktop {
@@ -37,6 +56,7 @@ delib.module {
     ];
 
     environment.etc."kanata/kanata.kbd".source = ../config/kanata/kanata.kbd;
+    environment.etc."kanata/common.kbd".source = ../config/kanata/common.kbd;
 
     launchd.daemons.kanata = {
       serviceConfig = {

@@ -236,7 +236,6 @@ spawn-sh-at-startup "dbus-update-activation-environment --systemd XDG_CURRENT_DE
 spawn-sh-at-startup "PATH=$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PATH; wl-paste --type text --watch cliphist store"
 spawn-sh-at-startup "PATH=$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PATH; wl-paste --type image --watch cliphist store"
 spawn-sh-at-startup "fcitx5 -d"
-spawn-sh-at-startup "PATH=$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PATH; pkill -x keyd-application-mapper; keyd-application-mapper -d"
 spawn-sh-at-startup "PATH=$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PATH; waybar"
 // Apply the current denix wallpaper through the shared helper script.
 spawn-sh-at-startup "PATH=$HOME/.local/bin:$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PATH; apply-theme-wallpaper"
@@ -322,7 +321,7 @@ binds {
     // in the end. To find an XKB name for a particular key, you may use a program
     // like wev.
     //
-    // Keep Super available for app-level "Command" shortcuts via keyd.
+    // Keep Super available for app-level "Command" shortcuts via Kanata.
     // Use Alt for the window manager layer.
     //
     // Most actions that you can bind here can also be invoked programmatically with
@@ -529,7 +528,7 @@ binds {
     // Expel the bottom window from the focused column to the right.
     Alt+Period { expel-window-from-column; }
 
-    // Keep common Super-letter combos free for app shortcuts via keyd.
+    // Keep common Super-letter combos free for app shortcuts via Kanata.
     Alt+R { switch-preset-column-width; }
     Alt+Backslash { switch-preset-column-width; }
     // Cycling through the presets in reverse order is also possible.
