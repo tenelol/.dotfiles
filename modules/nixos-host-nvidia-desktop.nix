@@ -2,6 +2,7 @@
   delib,
   host,
   pkgs,
+  profile,
   ...
 }:
 delib.module {
@@ -16,5 +17,17 @@ delib.module {
       "8.8.8.8"
     ];
     boot.kernelPackages = pkgs.linuxPackages_latest;
+
+    security.sudo.extraRules = [
+      {
+        users = [ profile.username ];
+        commands = [
+          {
+            command = "ALL";
+            options = [ "NOPASSWD" ];
+          }
+        ];
+      }
+    ];
   };
 }
