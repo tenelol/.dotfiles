@@ -33,6 +33,11 @@ macOS の GUI アプリは「cross-platform なものは Nix、App Store / cask-
 
 `macbook` では Homebrew cask で `codex-app` に加えて `codex` CLI も入れる運用です。
 `nh darwin switch . -H macbook-rift` 後は terminal から `codex` をそのまま叩けます。
+`nvidia-desktop` では Nixpkgs の `codex` CLI を Home Manager で入れ、fish の `codex` function で `-a never -s danger-full-access` を既定にしています。
+この host では `tener` の sudo も passwordless にしているので、Codex からの `sudo` 実行でパスワード入力を求められません。
+
+Codex app は公式には macOS / Windows 向けの desktop app として案内されており、現時点では Linux 用の `codex-app` Nix package は使っていません。
+Linux では `codex` CLI を通常の入口にします。
 
 初回ログインだけは別途必要です。ブラウザ認証を使うなら:
 
