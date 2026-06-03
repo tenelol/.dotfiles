@@ -212,15 +212,6 @@ in
     };
 
   xdg.configFile = lib.optionalAttrs (!isServer && isLinux) {
-    "keyd/app.conf".text = ''
-      [com-mitchellh-ghostty]
-      meta.c = C-S-c
-      meta.v = C-S-v
-
-      [*ghostty*]
-      meta.c = C-S-c
-      meta.v = C-S-v
-    '';
     "fcitx5/conf/classicui.conf".source = ../config/fcitx5/classicui.conf;
   };
 }

@@ -74,48 +74,6 @@ delib.module {
       # バッテリー残量取得
       services.upower.enable = true;
 
-      services.keyd = {
-        enable = true;
-        keyboards.default = {
-          ids = [ "*" ];
-          settings = {
-            main = {
-              capslock = "layer(control)";
-              # Hold f briefly to enter a Vim-style navigation layer without
-              # swallowing quick rolling text like "fa".
-              f = "overloadt(navigation, f, 180)";
-              # space = "overload(shift, space)"; # SandS disabled for games
-            };
-            navigation = {
-              h = "left";
-              j = "down";
-              k = "up";
-              l = "right";
-            };
-            # Use Super as the "Command" key for app shortcuts.
-            meta = {
-              a = "C-a";
-              c = "C-c";
-              f = "C-f";
-              r = "C-r";
-              s = "C-s";
-              t = "C-t";
-              v = "C-v";
-              w = "C-w";
-              x = "C-x";
-              y = "C-y";
-              z = "C-z";
-            };
-          };
-        };
-      };
-      users.groups.keyd = { };
-      systemd.services.keyd.serviceConfig = {
-        Group = "keyd";
-        # Keep keyd's socket readable by the keyd group for keyd-application-mapper.
-        UMask = lib.mkForce "0007";
-      };
-
       services.xserver.desktopManager.runXdgAutostartIfNone = true;
 
       environment.variables = {
@@ -179,15 +137,10 @@ delib.module {
 
       security.rtkit.enable = true;
 
-      users.users.${profile.username} = {
-        extraGroups = [ "keyd" ];
-      };
-
       # Keep system packages focused on desktop integration and local tooling.
       environment.systemPackages = with pkgs; [
         wget
         gcc
-        keyd
         iwd
         clang
         cl
