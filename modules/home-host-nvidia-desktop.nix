@@ -1,7 +1,6 @@
 {
   delib,
   host,
-  inputs,
   pkgs,
   ...
 }:
@@ -11,15 +10,9 @@ delib.module {
   options = delib.singleEnableOption (host.name == "nvidia-desktop");
 
   home.ifEnabled = {
-    imports = [
-      inputs.codex-desktop-linux.homeManagerModules.default
-    ];
-
     home.packages = [
       pkgs.codex
     ];
-
-    programs.codexDesktopLinux.enable = true;
 
     programs.fish.functions.codex = ''
       command codex -a never -s danger-full-access $argv
