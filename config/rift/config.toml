@@ -1,6 +1,6 @@
 [settings]
 animate = true
-animation_duration = 3.0
+animation_duration = 2.0
 animation_fps = 100.0
 default_disable = false
 
@@ -34,7 +34,7 @@ animate = true
 column_width_ratio = 0.7
 min_column_width_ratio = 0.3
 max_column_width_ratio = 0.9
-alignment = "center"
+alignment = "left"
 focus_navigation_style = "niri"
 
 [settings.layout.scrolling.gestures]

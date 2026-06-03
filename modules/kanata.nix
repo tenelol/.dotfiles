@@ -11,6 +11,7 @@ let
   isLinuxDesktop = !host.isServer && builtins.match ".*-linux" host.system != null;
   isDesktop = isDarwinDesktop || isLinuxDesktop;
   commonConfig = builtins.readFile ../config/kanata/common.kbd;
+  linuxConfig = builtins.readFile ../config/kanata/linux.kbd;
 in
 delib.module {
   name = "kanata";
@@ -39,7 +40,7 @@ delib.module {
       enable = true;
       keyboards.default = {
         extraDefCfg = "process-unmapped-keys yes";
-        config = commonConfig;
+        config = linuxConfig;
       };
     };
   };
