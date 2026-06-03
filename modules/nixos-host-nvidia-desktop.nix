@@ -18,6 +18,8 @@ delib.module {
     ];
     boot.kernelPackages = pkgs.linuxPackages_latest;
 
+    programs.kdeconnect.enable = true;
+
     security.sudo.extraRules = [
       {
         users = [ profile.username ];
