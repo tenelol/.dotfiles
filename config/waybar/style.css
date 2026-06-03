@@ -1,34 +1,29 @@
-@define-color menubar-bg rgba(248, 247, 242, 0.42);
-@define-color menubar-bg-strong rgba(255, 255, 252, 0.58);
-@define-color menubar-edge rgba(255, 255, 255, 0.72);
-@define-color menubar-ink #1d1d1f;
-@define-color menubar-muted rgba(29, 29, 31, 0.74);
-@define-color menubar-hover rgba(255, 255, 255, 0.42);
-@define-color menubar-accent rgba(128, 188, 255, 0.22);
+@define-color menubar-bg rgba(0, 0, 0, 0);
+@define-color menubar-pill rgba(11, 16, 24, 0.15);
+@define-color menubar-border rgba(255, 255, 255, 0.19);
+@define-color menubar-ink #f5f7fa;
+@define-color menubar-muted rgba(245, 247, 250, 0.65);
+@define-color menubar-hover rgba(255, 255, 255, 0.12);
+@define-color menubar-accent #8bd5ff;
 
 * {
     font-family:
-        "IBM Plex Sans", "CaskaydiaCove Nerd Font", "Noto Sans JP", sans-serif;
+        "CaskaydiaCove Nerd Font", "IBM Plex Sans", "Noto Sans JP", sans-serif;
     font-size: 12px;
     min-height: 0;
 }
 
 window#waybar {
-    background:
-        linear-gradient(180deg, @menubar-bg-strong, @menubar-bg),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0));
+    background: @menubar-bg;
     color: @menubar-ink;
-    border-style: solid;
-    border-color: rgba(255, 255, 255, 0.18);
-    border-width: 0 0 1px 0;
+    border: none;
     border-radius: 0;
-    box-shadow:
-        0 8px 24px rgba(106, 122, 144, 0.1),
-        inset 0 1px 0 rgba(255, 255, 255, 0.72);
-    padding: 0 10px;
+    box-shadow: none;
+    padding: 7px 12px;
 }
 
 #custom-launcher,
+#workspaces,
 #window,
 #tray,
 #pulseaudio,
@@ -36,12 +31,12 @@ window#waybar {
 #battery,
 #clock,
 #custom-clock {
-    background: transparent;
+    background: @menubar-pill;
     color: @menubar-ink;
-    border: none;
-    border-radius: 6px;
-    margin: 0 1px;
-    padding: 0 8px;
+    border: 1px solid @menubar-border;
+    border-radius: 14px;
+    margin: 0 3px;
+    padding: 0 10px;
     min-height: 28px;
     transition:
         background-color 0.18s ease,
@@ -51,14 +46,40 @@ window#waybar {
 #custom-launcher {
     font-size: 15px;
     font-weight: 700;
-    padding-left: 6px;
-    padding-right: 10px;
+    padding-left: 10px;
+    padding-right: 12px;
+}
+
+#workspaces {
+    padding: 0 6px;
+}
+
+#workspaces button {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    color: @menubar-muted;
+    margin: 0;
+    min-height: 28px;
+    min-width: 18px;
+    padding: 0 3px 3px 3px;
+}
+
+#workspaces button.active,
+#workspaces button.focused {
+    color: @menubar-ink;
+    border-bottom: 3px solid @menubar-accent;
+}
+
+#workspaces button:hover {
+    background: transparent;
+    color: @menubar-ink;
 }
 
 #window {
     color: @menubar-ink;
     font-weight: 600;
-    padding-left: 2px;
+    padding-left: 10px;
 }
 
 #tray,
@@ -73,10 +94,11 @@ window#waybar {
 #custom-clock {
     color: @menubar-ink;
     font-weight: 600;
-    padding-right: 4px;
+    padding-right: 10px;
 }
 
 #custom-launcher:hover,
+#workspaces:hover,
 #window:hover,
 #tray:hover,
 #pulseaudio:hover,
@@ -84,19 +106,19 @@ window#waybar {
 #battery:hover,
 #clock:hover,
 #custom-clock:hover {
-    background: rgba(255, 255, 255, 0.24);
+    background: @menubar-hover;
 }
 
 #battery.charging {
-    color: #297e53;
+    color: @menubar-ink;
 }
 
 #battery.warning:not(.charging) {
-    color: #a05d10;
+    color: #ffd166;
 }
 
 #battery.critical:not(.charging) {
-    color: #b42318;
+    color: #ff6b6b;
 }
 
 #tray > .passive {
@@ -104,6 +126,6 @@ window#waybar {
 }
 
 #tray > .needs-attention {
-    background: rgba(128, 188, 255, 0.16);
+    background: rgba(139, 213, 255, 0.18);
     border-radius: 6px;
 }

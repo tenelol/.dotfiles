@@ -3,7 +3,7 @@
 
 # Typography
 font-family = "JetBrains Mono"
-font-size = 12
+font-size = 14
 font-feature = "calt"
 
 # Window feel
@@ -29,19 +29,22 @@ palette = 12=7aa2f7
 palette = 13=c7a9ff
 palette = 14=8be9ff
 palette = 15=ffffff
-window-padding-x = 14
-window-padding-y = 12
+window-padding-x = 18
+window-padding-y = 15
 window-padding-balance = true
 window-decoration = "none"
 window-show-tab-bar = "never"
 background-opacity = 0
 background-opacity-cells = false
 background-blur = 64
-unfocused-split-opacity = 0.74
+unfocused-split-opacity = 0.72
 mouse-hide-while-typing = true
 
 # Cursor
-cursor-style = "block"
+cursor-style = "bar"
+cursor-style-blink = false
+cursor-click-to-move = true
+copy-on-select = false
 
 # Custom shaders
 custom-shader = ~/.config/ghostty/shaders/aurora.glsl
@@ -54,10 +57,14 @@ custom-shader-animation = true
 # Quick terminal
 keybind = "ctrl+shift+space=toggle_quick_terminal"
 quick-terminal-position = "right"
-quick-terminal-size = "30%"
+quick-terminal-size = "38%"
+quick-terminal-screen = "mouse"
+quick-terminal-animation-duration = 0.16
+quick-terminal-autohide = false
 
 # Splits
 keybind = "super+n=new_window"
+keybind = "super+t=new_tab"
 keybind = "super+d=new_split:right"
 keybind = "super+shift+d=new_split:down"
 keybind = "super+w=close_surface"
