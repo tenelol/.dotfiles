@@ -82,7 +82,7 @@ layout {
     // - "always", the focused column will always be centered.
     // - "on-overflow", focusing a column will center it if it doesn't fit
     //   together with the previously focused column.
-    center-focused-column "always"
+    center-focused-column "never"
 
     // You can customize the widths that "switch-preset-column-width" (Mod+R) toggles between.
     preset-column-widths {
@@ -372,23 +372,19 @@ binds {
     Alt+Q repeat=false { close-window; }
 
     // Match the Rift layer on macOS: Alt moves focus, Alt+Shift moves windows.
-    Alt+H     { focus-column-left; }
-    Alt+J     { focus-window-down; }
-    Alt+K     { focus-window-up; }
-    Alt+L     { focus-column-right; }
-    Alt+Left  { focus-column-left; }
-    Alt+Down  { focus-window-down; }
-    Alt+Up    { focus-window-up; }
-    Alt+Right { focus-column-right; }
+    Alt+H     { focus-column-or-monitor-left; }
+    Alt+J     { focus-window-or-monitor-down; }
+    Alt+K     { focus-window-or-monitor-up; }
+    Alt+L     { focus-column-or-monitor-right; }
+    Alt+Left  { focus-column-or-monitor-left; }
+    Alt+Down  { focus-window-or-monitor-down; }
+    Alt+Up    { focus-window-or-monitor-up; }
+    Alt+Right { focus-column-or-monitor-right; }
 
-    // Alt+Ctrl+Left  { move-column-left; }
-    // Alt+Ctrl+Down  { move-window-down; }
-    // Alt+Ctrl+Up    { move-window-up; }
-    // Alt+Ctrl+Right { move-column-right; }
-    Alt+Ctrl+H     { move-column-left; }
-    Alt+Ctrl+J     { move-window-down; }
-    Alt+Ctrl+K     { move-window-up; }
-    Alt+Ctrl+L     { move-column-right; }
+    Alt+Ctrl+H { focus-monitor-left; }
+    Alt+Ctrl+J { focus-monitor-down; }
+    Alt+Ctrl+K { focus-monitor-up; }
+    Alt+Ctrl+L { focus-monitor-right; }
     Alt+Shift+H     { move-column-left; }
     Alt+Shift+J     { move-window-down; }
     Alt+Shift+K     { move-window-up; }
