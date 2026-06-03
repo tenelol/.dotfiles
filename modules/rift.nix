@@ -75,7 +75,7 @@ delib.module {
     '';
   };
 
-  home.ifEnabled = {
+  home.ifEnabled = lib.mkIf isDarwinDesktop {
     home.activation.cleanupLegacyYabaiConfig = hm.dag.entryBefore [ "checkLinkTargets" ] ''
       legacy_yabai="$HOME/.config/yabai"
 
