@@ -13,3 +13,6 @@ output "HDMI-A-1" {
 
 // Focus the left monitor (DP-3) after outputs settle.
 spawn-sh-at-startup "sleep 0.3; niri msg action focus-monitor-left"
+
+// KDE Connect provides cross-device clipboard sharing for nvidia-desktop.
+spawn-sh-at-startup "PATH=$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PATH; kdeconnect-indicator"

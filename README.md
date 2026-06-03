@@ -64,6 +64,12 @@ Script Commands は `~/.config/raycast/scripts` に展開されるので、Rayca
 
 `Dotfiles: Rebuild macbook` の実行ログは `~/Library/Logs/dotfiles/macbook-switch-latest.log` に置き、重複起動は lock と実行中の rebuild/switch process 確認で防いでいます。
 
+## Cross-device clipboard
+
+`nvidia-desktop` では KDE Connect を有効化し、niri 起動時に `kdeconnect-indicator` を起動します。KDE Connect の NixOS module が `kdeconnect-kde` を入れ、TCP / UDP `1714-1764` を開けるので、niri/Wayland でも同一 LAN 上の device と clipboard sharing を使えます。
+
+`macbook` 側の KDE Connect は Homebrew cask や Nixpkgs の Darwin package としては管理できないため、公式 nightly の ARM 版を手動で入れます。導入後、`nvidia-desktop` と `macbook` をペアリングし、両側で Clipboard plugin を有効にします。
+
 ## Workflow
 
 軽量評価:
