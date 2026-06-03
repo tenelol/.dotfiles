@@ -36,9 +36,6 @@ macOS の GUI アプリは「cross-platform なものは Nix、App Store / cask-
 `nvidia-desktop` では Nixpkgs の `codex` CLI を Home Manager で入れ、fish の `codex` function で `-a never -s danger-full-access` を既定にしています。
 この host では `tener` の sudo も passwordless にしているので、Codex からの `sudo` 実行でパスワード入力を求められません。
 
-Codex app は公式 Linux 版ではなく、`nvidia-desktop` では `ilysenko/codex-desktop-linux` の Home Manager module で非公式 port を入れます。
-起動コマンドは `codex-desktop` です。
-
 初回ログインだけは別途必要です。ブラウザ認証を使うなら:
 
 ```sh
