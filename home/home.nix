@@ -40,6 +40,7 @@ let
   # User-facing CLI and dev tools live in Home Manager so they stay aligned
   # across Linux and Darwin without bloating system-level package sets.
   commonPackages = with pkgs; [
+    awscli2
     gh
     gdrive
     cowsay
