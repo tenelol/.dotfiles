@@ -6,17 +6,11 @@
   ...
 }:
 let
-  azooKeyBundleID = "dev.ensan.inputmethod.azooKeyMac";
   macSkkBundleID = "net.mtgto.inputmethod.macSKK";
   abcInputSource = {
     InputSourceKind = "Keyboard Layout";
     "KeyboardLayout ID" = 252;
     "KeyboardLayout Name" = "ABC";
-  };
-  azooKeyInputSource = inputMode: {
-    "Bundle ID" = azooKeyBundleID;
-    "Input Mode" = inputMode;
-    InputSourceKind = "Input Mode";
   };
   macSkkInputSource = inputMode: {
     "Bundle ID" = macSkkBundleID;
@@ -27,20 +21,10 @@ let
     "Bundle ID" = macSkkBundleID;
     InputSourceKind = "Keyboard Input Method";
   };
-  azooKeyKeyboardInputMethod = {
-    "Bundle ID" = azooKeyBundleID;
-    InputSourceKind = "Keyboard Input Method";
-  };
   characterPaletteInputSource = {
     "Bundle ID" = "com.apple.CharacterPaletteIM";
     InputSourceKind = "Non Keyboard Input Method";
   };
-  azooKeyJapaneseInputSource = azooKeyInputSource "dev.ensan.inputmethod.azooKeyMac.Japanese";
-  azooKeyRomanInputSource = azooKeyInputSource "dev.ensan.inputmethod.azooKeyMac.Roman";
-  azooKeyInputSources = [
-    azooKeyJapaneseInputSource
-    azooKeyRomanInputSource
-  ];
   macSkkAsciiInputSource = macSkkInputSource "net.mtgto.inputmethod.macSKK.ascii";
   macSkkHiraganaInputSource = macSkkInputSource "net.mtgto.inputmethod.macSKK.hiragana";
   macSkkInputSources = [
@@ -50,15 +34,13 @@ let
   enabledInputSources = [
     abcInputSource
   ]
-  ++ azooKeyInputSources
   ++ macSkkInputSources
   ++ [
-    azooKeyKeyboardInputMethod
     macSkkKeyboardInputMethod
     characterPaletteInputSource
   ];
   selectedInputSources = [
-    azooKeyJapaneseInputSource
+    macSkkHiraganaInputSource
   ];
   enabledInputSourcesPlist = lib.generators.toPlist {
     escape = true;
@@ -66,6 +48,15 @@ let
   selectedInputSourcesPlist = lib.generators.toPlist {
     escape = true;
   } selectedInputSources;
+  macSkkSkkservSettings = {
+    enabled = true;
+    address = "127.0.0.1";
+    port = 1178;
+    encoding = 3;
+    saveToUserDict = false;
+    enableCompletion = true;
+  };
+  macSkkSkkservSettingsJson = builtins.toJSON macSkkSkkservSettings;
   disabledSymbolicHotKey = parameters: {
     enabled = false;
     value = {
@@ -242,6 +233,10 @@ delib.module {
       launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/plutil \
         -replace dictionaries \
         -json '[{"filename":"SKK-JISYO.L","enabled":true,"encoding":3,"type":"traditional","saveToUserDict":true}]' \
+        "$macskk_prefs"
+      launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/plutil \
+        -replace skkserv \
+        -json ${lib.escapeShellArg macSkkSkkservSettingsJson} \
         "$macskk_prefs"
       launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/defaults import \
         ${macSkkBundleID} "$macskk_prefs"
