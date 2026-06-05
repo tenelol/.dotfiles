@@ -52,7 +52,6 @@ delib.module {
         "docker-desktop"
         "ghostty"
         "google-chrome"
-        "macskk"
         "microsoft-office"
         "notion"
         {
