@@ -66,8 +66,8 @@ let
       exit(status)
     }
   '';
-  disabledSymbolicHotKey = parameters: {
-    enabled = false;
+  enabledSymbolicHotKey = parameters: {
+    enabled = true;
     value = {
       inherit parameters;
       type = "standard";
@@ -75,12 +75,12 @@ let
   };
   inputSourceShortcutHotKeys = {
     # 60/61 are the previous/next input source shortcuts.
-    "60" = disabledSymbolicHotKey [
+    "60" = enabledSymbolicHotKey [
       32
       49
       262144
     ];
-    "61" = disabledSymbolicHotKey [
+    "61" = enabledSymbolicHotKey [
       32
       49
       786432
