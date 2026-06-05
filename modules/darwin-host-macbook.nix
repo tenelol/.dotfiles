@@ -6,11 +6,17 @@
   ...
 }:
 let
+  azooKeyBundleID = "dev.ensan.inputmethod.azooKeyMac";
   macSkkBundleID = "net.mtgto.inputmethod.macSKK";
   abcInputSource = {
     InputSourceKind = "Keyboard Layout";
     "KeyboardLayout ID" = 252;
     "KeyboardLayout Name" = "ABC";
+  };
+  azooKeyInputSource = inputMode: {
+    "Bundle ID" = azooKeyBundleID;
+    "Input Mode" = inputMode;
+    InputSourceKind = "Input Mode";
   };
   macSkkInputSource = inputMode: {
     "Bundle ID" = macSkkBundleID;
@@ -21,33 +27,45 @@ let
     "Bundle ID" = macSkkBundleID;
     InputSourceKind = "Keyboard Input Method";
   };
+  azooKeyKeyboardInputMethod = {
+    "Bundle ID" = azooKeyBundleID;
+    InputSourceKind = "Keyboard Input Method";
+  };
   characterPaletteInputSource = {
     "Bundle ID" = "com.apple.CharacterPaletteIM";
     InputSourceKind = "Non Keyboard Input Method";
   };
+  azooKeyJapaneseInputSource = azooKeyInputSource "dev.ensan.inputmethod.azooKeyMac.Japanese";
+  azooKeyRomanInputSource = azooKeyInputSource "dev.ensan.inputmethod.azooKeyMac.Roman";
+  azooKeyInputSources = [
+    azooKeyJapaneseInputSource
+    azooKeyRomanInputSource
+  ];
   macSkkAsciiInputSource = macSkkInputSource "net.mtgto.inputmethod.macSKK.ascii";
   macSkkHiraganaInputSource = macSkkInputSource "net.mtgto.inputmethod.macSKK.hiragana";
   macSkkInputSources = [
     macSkkAsciiInputSource
     macSkkHiraganaInputSource
   ];
-  macSkkEnabledInputSources = [
+  enabledInputSources = [
     abcInputSource
   ]
+  ++ azooKeyInputSources
   ++ macSkkInputSources
   ++ [
+    azooKeyKeyboardInputMethod
     macSkkKeyboardInputMethod
     characterPaletteInputSource
   ];
-  macSkkSelectedInputSources = [
-    macSkkHiraganaInputSource
+  selectedInputSources = [
+    azooKeyJapaneseInputSource
   ];
-  macSkkEnabledInputSourcesPlist = lib.generators.toPlist {
+  enabledInputSourcesPlist = lib.generators.toPlist {
     escape = true;
-  } macSkkEnabledInputSources;
-  macSkkSelectedInputSourcesPlist = lib.generators.toPlist {
+  } enabledInputSources;
+  selectedInputSourcesPlist = lib.generators.toPlist {
     escape = true;
-  } macSkkSelectedInputSources;
+  } selectedInputSources;
   disabledSymbolicHotKey = parameters: {
     enabled = false;
     value = {
@@ -120,8 +138,8 @@ delib.module {
         };
 
         "com.apple.HIToolbox" = {
-          AppleEnabledInputSources = macSkkEnabledInputSources;
-          AppleSelectedInputSources = macSkkSelectedInputSources;
+          AppleEnabledInputSources = enabledInputSources;
+          AppleSelectedInputSources = selectedInputSources;
         };
       };
 
@@ -186,9 +204,9 @@ delib.module {
       uid="$(id -u ${profile.username})"
 
       launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/defaults write \
-        com.apple.HIToolbox AppleEnabledInputSources ${lib.escapeShellArg macSkkEnabledInputSourcesPlist}
+        com.apple.HIToolbox AppleEnabledInputSources ${lib.escapeShellArg enabledInputSourcesPlist}
       launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/defaults write \
-        com.apple.HIToolbox AppleSelectedInputSources ${lib.escapeShellArg macSkkSelectedInputSourcesPlist}
+        com.apple.HIToolbox AppleSelectedInputSources ${lib.escapeShellArg selectedInputSourcesPlist}
 
       ${inputSourceShortcutCommands}
 
