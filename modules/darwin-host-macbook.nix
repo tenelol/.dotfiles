@@ -66,6 +66,84 @@ let
       exit(status)
     }
   '';
+  toggleAzooKeyInputSourceSource = pkgs.writeText "azookey-toggle-ime.c" ''
+    #include <Carbon/Carbon.h>
+    #include <CoreFoundation/CoreFoundation.h>
+
+    static int select_input_source(CFStringRef source_id) {
+      const void *keys[] = { kTISPropertyInputSourceID };
+      const void *values[] = { source_id };
+      CFDictionaryRef query = CFDictionaryCreate(
+        kCFAllocatorDefault,
+        keys,
+        values,
+        1,
+        &kCFTypeDictionaryKeyCallBacks,
+        &kCFTypeDictionaryValueCallBacks
+      );
+      CFArrayRef sources = TISCreateInputSourceList(query, false);
+      CFRelease(query);
+
+      if (!sources || CFArrayGetCount(sources) == 0) {
+        if (sources) {
+          CFRelease(sources);
+        }
+        return 1;
+      }
+
+      TISInputSourceRef source = (TISInputSourceRef)CFArrayGetValueAtIndex(sources, 0);
+      OSStatus status = TISSelectInputSource(source);
+      CFRelease(sources);
+      return status == noErr ? 0 : (int)status;
+    }
+
+    int main(void) {
+      CFStringRef japanese = CFSTR("dev.ensan.inputmethod.azooKeyMac.Japanese");
+      CFStringRef english = CFSTR("com.apple.keylayout.ABC");
+      TISInputSourceRef current = TISCopyCurrentKeyboardInputSource();
+      CFStringRef current_id = NULL;
+
+      if (current) {
+        current_id = TISGetInputSourceProperty(current, kTISPropertyInputSourceID);
+      }
+
+      int status = CFStringCompare(current_id ? current_id : CFSTR(""), japanese, 0) == kCFCompareEqualTo
+        ? select_input_source(english)
+        : select_input_source(japanese);
+
+      if (current) {
+        CFRelease(current);
+      }
+      return status;
+    }
+  '';
+  toggleAzooKeyInputSourceTool = pkgs.stdenv.mkDerivation {
+    pname = "azookey-toggle-ime-tool";
+    version = "1.0.0";
+    dontUnpack = true;
+
+    buildPhase = ''
+      runHook preBuild
+      $CC -framework Carbon -framework CoreFoundation ${toggleAzooKeyInputSourceSource} -o azookey-toggle-ime-tool
+      runHook postBuild
+    '';
+
+    installPhase = ''
+      runHook preInstall
+      install -Dm755 azookey-toggle-ime-tool $out/bin/azookey-toggle-ime-tool
+      runHook postInstall
+    '';
+  };
+  toggleAzooKeyInputSource = pkgs.writeShellScriptBin "azookey-toggle-ime" ''
+    uid="$(id -u ${profile.username})"
+
+    if [ "$(id -u)" = "$uid" ]; then
+      exec ${toggleAzooKeyInputSourceTool}/bin/azookey-toggle-ime-tool
+    fi
+
+    exec /bin/launchctl asuser "$uid" /usr/bin/sudo --user=${profile.username} \
+      ${toggleAzooKeyInputSourceTool}/bin/azookey-toggle-ime-tool
+  '';
   enabledSymbolicHotKey = parameters: {
     enabled = true;
     value = {
@@ -104,6 +182,10 @@ delib.module {
     networking.computerName = "macbook";
     networking.hostName = "macbook";
     networking.localHostName = "macbook";
+
+    environment.systemPackages = [
+      toggleAzooKeyInputSource
+    ];
 
     system.defaults = {
       NSGlobalDomain = {

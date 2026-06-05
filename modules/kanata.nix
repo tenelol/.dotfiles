@@ -53,7 +53,7 @@ delib.module {
     ];
 
     environment.systemPackages = [
-      pkgs.kanata
+      pkgs.kanata-with-cmd
     ];
 
     environment.etc."kanata/kanata.kbd".source = ../config/kanata/kanata.kbd;
@@ -77,7 +77,7 @@ delib.module {
     system.activationScripts.postActivation.text = lib.mkAfter ''
       uid="$(id -u ${profile.username})"
 
-      if [ "$(/usr/bin/readlink /usr/local/bin/kanata 2>/dev/null || true)" = "/run/current-system/sw/bin/kanata" ]; then
+      if [ "$(/usr/bin/readlink /usr/local/bin/kanata 2>/dev/null || true)" = "${pkgs.kanata-with-cmd}/bin/kanata" ]; then
         /bin/rm -f /usr/local/bin/kanata
       fi
 
@@ -86,7 +86,7 @@ delib.module {
       else
         /bin/rm -rf /Applications/Kanata.app
         /usr/bin/install -d -m 0755 /Applications/Kanata.app/Contents/MacOS
-        /bin/cp /run/current-system/sw/bin/kanata /Applications/Kanata.app/Contents/MacOS/kanata
+        /bin/cp ${pkgs.kanata-with-cmd}/bin/kanata /Applications/Kanata.app/Contents/MacOS/kanata
         /bin/chmod 0755 /Applications/Kanata.app/Contents/MacOS/kanata
         /bin/chmod 0755 /Applications/Kanata.app/Contents/MacOS
         /bin/cat > /Applications/Kanata.app/Contents/Info.plist <<'EOF'
