@@ -2,6 +2,7 @@
   delib,
   host,
   lib,
+  pkgs,
   profile,
   ...
 }:
@@ -57,6 +58,23 @@ let
     enableCompletion = true;
   };
   macSkkSkkservSettingsJson = builtins.toJSON macSkkSkkservSettings;
+  selectMacSkkInputSourceScript = pkgs.writeText "select-macskk-input-source.swift" ''
+    import Carbon
+    import Foundation
+
+    let wantedInputSourceID = "net.mtgto.inputmethod.macSKK.hiragana"
+    let query = [kTISPropertyInputSourceID as String: wantedInputSourceID] as CFDictionary
+    let inputSources = TISCreateInputSourceList(query, false).takeRetainedValue() as! [TISInputSource]
+
+    guard let inputSource = inputSources.first else {
+      exit(1)
+    }
+
+    let status = TISSelectInputSource(inputSource)
+    if status != noErr {
+      exit(status)
+    }
+  '';
   disabledSymbolicHotKey = parameters: {
     enabled = false;
     value = {
@@ -198,6 +216,8 @@ delib.module {
         com.apple.HIToolbox AppleEnabledInputSources ${lib.escapeShellArg enabledInputSourcesPlist}
       launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/defaults write \
         com.apple.HIToolbox AppleSelectedInputSources ${lib.escapeShellArg selectedInputSourcesPlist}
+      launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/swift \
+        ${selectMacSkkInputSourceScript}
 
       ${inputSourceShortcutCommands}
 
