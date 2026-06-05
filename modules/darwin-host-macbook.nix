@@ -7,41 +7,41 @@
   ...
 }:
 let
-  macSkkBundleID = "net.mtgto.inputmethod.macSKK";
+  azooKeyBundleID = "dev.ensan.inputmethod.azooKeyMac";
   abcInputSource = {
     InputSourceKind = "Keyboard Layout";
     "KeyboardLayout ID" = 252;
     "KeyboardLayout Name" = "ABC";
   };
-  macSkkInputSource = inputMode: {
-    "Bundle ID" = macSkkBundleID;
+  azooKeyInputSource = inputMode: {
+    "Bundle ID" = azooKeyBundleID;
     "Input Mode" = inputMode;
     InputSourceKind = "Input Mode";
   };
-  macSkkKeyboardInputMethod = {
-    "Bundle ID" = macSkkBundleID;
+  azooKeyKeyboardInputMethod = {
+    "Bundle ID" = azooKeyBundleID;
     InputSourceKind = "Keyboard Input Method";
   };
   characterPaletteInputSource = {
     "Bundle ID" = "com.apple.CharacterPaletteIM";
     InputSourceKind = "Non Keyboard Input Method";
   };
-  macSkkAsciiInputSource = macSkkInputSource "net.mtgto.inputmethod.macSKK.ascii";
-  macSkkHiraganaInputSource = macSkkInputSource "net.mtgto.inputmethod.macSKK.hiragana";
-  macSkkInputSources = [
-    macSkkAsciiInputSource
-    macSkkHiraganaInputSource
+  azooKeyJapaneseInputSource = azooKeyInputSource "dev.ensan.inputmethod.azooKeyMac.Japanese";
+  azooKeyRomanInputSource = azooKeyInputSource "dev.ensan.inputmethod.azooKeyMac.Roman";
+  azooKeyInputSources = [
+    azooKeyJapaneseInputSource
+    azooKeyRomanInputSource
   ];
   enabledInputSources = [
     abcInputSource
   ]
-  ++ macSkkInputSources
+  ++ azooKeyInputSources
   ++ [
-    macSkkKeyboardInputMethod
+    azooKeyKeyboardInputMethod
     characterPaletteInputSource
   ];
   selectedInputSources = [
-    macSkkHiraganaInputSource
+    azooKeyJapaneseInputSource
   ];
   enabledInputSourcesPlist = lib.generators.toPlist {
     escape = true;
@@ -49,20 +49,11 @@ let
   selectedInputSourcesPlist = lib.generators.toPlist {
     escape = true;
   } selectedInputSources;
-  macSkkSkkservSettings = {
-    enabled = true;
-    address = "127.0.0.1";
-    port = 1178;
-    encoding = 4;
-    saveToUserDict = false;
-    enableCompletion = true;
-  };
-  macSkkSkkservSettingsJson = builtins.toJSON macSkkSkkservSettings;
-  selectMacSkkInputSourceScript = pkgs.writeText "select-macskk-input-source.swift" ''
+  selectAzooKeyInputSourceScript = pkgs.writeText "select-azookey-input-source.swift" ''
     import Carbon
     import Foundation
 
-    let wantedInputSourceID = "net.mtgto.inputmethod.macSKK.hiragana"
+    let wantedInputSourceID = "dev.ensan.inputmethod.azooKeyMac.Japanese"
     let query = [kTISPropertyInputSourceID as String: wantedInputSourceID] as CFDictionary
     let inputSources = TISCreateInputSourceList(query, false).takeRetainedValue() as! [TISInputSource]
 
@@ -217,49 +208,9 @@ delib.module {
       launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/defaults write \
         com.apple.HIToolbox AppleSelectedInputSources ${lib.escapeShellArg selectedInputSourcesPlist}
       launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/swift \
-        ${selectMacSkkInputSourceScript}
+        ${selectAzooKeyInputSourceScript}
 
       ${inputSourceShortcutCommands}
-
-      macskk_container="/Users/${profile.username}/Library/Containers/${macSkkBundleID}/Data"
-      macskk_dict_dir="$macskk_container/Documents/Dictionaries"
-      macskk_prefs="$macskk_container/Library/Preferences/${macSkkBundleID}.plist"
-      aquaskk_dir="/Users/${profile.username}/Library/Application Support/AquaSKK"
-
-      mkdir -p "$macskk_dict_dir" "$(dirname "$macskk_prefs")"
-      chown -R ${profile.username} "/Users/${profile.username}/Library/Containers/${macSkkBundleID}" 2>/dev/null || true
-
-      if [ -f "$aquaskk_dir/SKK-JISYO.L" ] && [ ! -f "$macskk_dict_dir/SKK-JISYO.L" ]; then
-        cp "$aquaskk_dir/SKK-JISYO.L" "$macskk_dict_dir/SKK-JISYO.L"
-        chown ${profile.username} "$macskk_dict_dir/SKK-JISYO.L"
-      fi
-
-      if [ -f "$aquaskk_dir/skk-jisyo.utf8" ] && [ ! -f "$macskk_dict_dir/skk-jisyo.utf8" ]; then
-        cp "$aquaskk_dir/skk-jisyo.utf8" "$macskk_dict_dir/skk-jisyo.utf8"
-        chown ${profile.username} "$macskk_dict_dir/skk-jisyo.utf8"
-      fi
-
-      launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/plutil -create xml1 "$macskk_prefs" 2>/dev/null || true
-      launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/plutil \
-        -replace selectedInputSource -string com.apple.keylayout.ABC "$macskk_prefs"
-      launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/plutil \
-        -replace selectCandidateKeys -string 123456789 "$macskk_prefs"
-      launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/defaults write \
-        ${macSkkBundleID} selectCandidateKeys -string 123456789
-      launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/plutil \
-        -replace showInputModePanel -bool false "$macskk_prefs"
-      launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/defaults write \
-        ${macSkkBundleID} showInputModePanel -bool false
-      launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/plutil \
-        -replace dictionaries \
-        -json '[{"filename":"SKK-JISYO.L","enabled":false,"encoding":3,"type":"traditional","saveToUserDict":true}]' \
-        "$macskk_prefs"
-      launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/plutil \
-        -replace skkserv \
-        -json ${lib.escapeShellArg macSkkSkkservSettingsJson} \
-        "$macskk_prefs"
-      launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/defaults import \
-        ${macSkkBundleID} "$macskk_prefs"
     '';
 
     system.activationScripts.reloadNativeBars.text = ''
