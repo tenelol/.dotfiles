@@ -53,7 +53,7 @@ let
     enabled = true;
     address = "127.0.0.1";
     port = 1178;
-    encoding = 3;
+    encoding = 4;
     saveToUserDict = false;
     enableCompletion = true;
   };
@@ -252,7 +252,7 @@ delib.module {
         ${macSkkBundleID} showInputModePanel -bool false
       launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/plutil \
         -replace dictionaries \
-        -json '[{"filename":"SKK-JISYO.L","enabled":true,"encoding":3,"type":"traditional","saveToUserDict":true}]' \
+        -json '[{"filename":"SKK-JISYO.L","enabled":false,"encoding":3,"type":"traditional","saveToUserDict":true}]' \
         "$macskk_prefs"
       launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/plutil \
         -replace skkserv \
