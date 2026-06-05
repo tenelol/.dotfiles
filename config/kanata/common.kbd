@@ -1,21 +1,19 @@
 (defsrc
-  caps f h j k l u i o p m comm . scln lmet
+  caps f h j k l u i o p m comm . scln
   f1 f2 f3 f4 f5 f6 f7 f8 f9 f10 f11 f12
 )
 
 (defalias
   capctl (tap-hold 200 180 (tap-dance-eager 200 (esc f12)) lctl)
   fnav (tap-hold 200 180 f (layer-while-held navigation))
-  ime (cmd-log none error /run/current-system/sw/bin/azookey-toggle-ime)
-  lcmd (tap-hold-press 200 180 @ime lmet)
 )
 
 (deflayer base
-  @capctl @fnav h j k l u i o p m comm . scln @lcmd
+  @capctl @fnav h j k l u i o p m comm . scln
   brdn brup mctl sls dtn dnd prev pp next mute vold volu
 )
 
 (deflayer navigation
-  XX XX left down up rght lbrc rbrc S-lbrc S-rbrc / bksl S-/ bspc lmet
+  XX XX left down up rght lbrc rbrc S-lbrc S-rbrc / bksl S-/ bspc
   brdn brup mctl sls dtn dnd prev pp next mute vold volu
 )

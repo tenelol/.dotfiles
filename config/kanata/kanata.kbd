@@ -1,6 +1,5 @@
 (defcfg
   process-unmapped-keys yes
-  danger-enable-cmd yes
   macos-dev-names-include (
     "Apple Internal Keyboard / Trackpad"
   )

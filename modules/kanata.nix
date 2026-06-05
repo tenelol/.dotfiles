@@ -9,16 +9,13 @@
 let
   isDarwinDesktop = !host.isServer && builtins.match ".*-darwin" host.system != null;
   isLinuxDesktop = !host.isServer && builtins.match ".*-linux" host.system != null;
-  isDesktop = isDarwinDesktop || isLinuxDesktop;
   commonConfig = builtins.readFile ../config/kanata/common.kbd;
   linuxConfig = builtins.readFile ../config/kanata/linux.kbd;
 in
 delib.module {
   name = "kanata";
 
-  # Keep keyboard remapping in Kanata. The config maps the macOS function row
-  # explicitly so F10/F11/F12 keep behaving as media keys.
-  options = delib.singleEnableOption isDesktop;
+  options = delib.singleEnableOption isLinuxDesktop;
 
   darwin.ifDisabled = lib.mkIf isDarwinDesktop {
     system.activationScripts.postActivation.text = lib.mkAfter ''
@@ -53,7 +50,7 @@ delib.module {
     ];
 
     environment.systemPackages = [
-      pkgs.kanata-with-cmd
+      pkgs.kanata
     ];
 
     environment.etc."kanata/kanata.kbd".source = ../config/kanata/kanata.kbd;
@@ -77,7 +74,7 @@ delib.module {
     system.activationScripts.postActivation.text = lib.mkAfter ''
       uid="$(id -u ${profile.username})"
 
-      if [ "$(/usr/bin/readlink /usr/local/bin/kanata 2>/dev/null || true)" = "${pkgs.kanata-with-cmd}/bin/kanata" ]; then
+      if [ "$(/usr/bin/readlink /usr/local/bin/kanata 2>/dev/null || true)" = "/run/current-system/sw/bin/kanata" ]; then
         /bin/rm -f /usr/local/bin/kanata
       fi
 
@@ -86,7 +83,7 @@ delib.module {
       else
         /bin/rm -rf /Applications/Kanata.app
         /usr/bin/install -d -m 0755 /Applications/Kanata.app/Contents/MacOS
-        /bin/cp ${pkgs.kanata-with-cmd}/bin/kanata /Applications/Kanata.app/Contents/MacOS/kanata
+        /bin/cp /run/current-system/sw/bin/kanata /Applications/Kanata.app/Contents/MacOS/kanata
         /bin/chmod 0755 /Applications/Kanata.app/Contents/MacOS/kanata
         /bin/chmod 0755 /Applications/Kanata.app/Contents/MacOS
         /bin/cat > /Applications/Kanata.app/Contents/Info.plist <<'EOF'
