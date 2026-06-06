@@ -56,6 +56,12 @@ local function setup_notebook_commands()
 		complete = "file",
 		desc = "Create a Python Jupyter notebook",
 	})
+
+	vim.api.nvim_create_user_command("JupyterPreview", function()
+		vim.cmd("noautocmd MoltenEnterOutput")
+	end, {
+		desc = "Open current Jupyter output in Neovim",
+	})
 end
 
 local function setup_ipynb_output_sync()
@@ -176,16 +182,18 @@ return {
 			"MoltenImportOutput",
 			"MoltenInfo",
 			"MoltenInit",
-			"MoltenOpenInBrowser",
 			"MoltenReevaluateCell",
 			"MoltenRestart",
+			"MoltenToggleVirtual",
 		},
 		dependencies = {
 			plugin.dep("image-nvim"),
 		},
 		init = function()
+			vim.g.molten_auto_open_html_in_browser = false
 			vim.g.molten_auto_open_output = false
 			vim.g.molten_image_provider = "image.nvim"
+			vim.g.molten_image_location = "both"
 			vim.g.molten_output_win_max_height = 20
 			vim.g.molten_output_win_max_width = 100
 			vim.g.molten_save_path = vim.fn.stdpath("data") .. "/molten"
@@ -205,7 +213,8 @@ return {
 			{ "<leader>jo", molten_cmd("noautocmd MoltenEnterOutput"), desc = "Jupyter open output" },
 			{ "<leader>jh", molten_cmd("MoltenHideOutput"), desc = "Jupyter hide output" },
 			{ "<leader>jd", molten_cmd("MoltenDelete"), desc = "Jupyter delete cell" },
-			{ "<leader>jb", molten_cmd("MoltenOpenInBrowser"), desc = "Jupyter output in browser" },
+			{ "<leader>jp", "<cmd>JupyterPreview<cr>", desc = "Jupyter preview output" },
+			{ "<leader>jt", molten_cmd("MoltenToggleVirtual"), desc = "Jupyter toggle virtual output" },
 			{
 				"<leader>jv",
 				":<C-u>MoltenEvaluateVisual<cr>gv",
