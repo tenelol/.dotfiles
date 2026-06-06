@@ -65,6 +65,18 @@ local function setup_notebook_commands()
 end
 
 local function setup_ipynb_output_sync()
+	local function is_ipynb(path)
+		return path and vim.fn.fnamemodify(path, ":e") == "ipynb"
+	end
+
+	local function event_path(event)
+		if event.file and event.file ~= "" then
+			return event.file
+		end
+
+		return vim.api.nvim_buf_get_name(event.buf)
+	end
+
 	local function available_kernel_names()
 		local ok, kernels = pcall(vim.fn.MoltenAvailableKernels)
 		if not ok then
@@ -101,7 +113,12 @@ local function setup_ipynb_output_sync()
 
 	local function import_outputs(event)
 		vim.schedule(function()
-			local kernel = notebook_kernel_name(event.file)
+			local path = event_path(event)
+			if not is_ipynb(path) then
+				return
+			end
+
+			local kernel = notebook_kernel_name(path)
 			if not kernel or not has_value(available_kernel_names(), kernel) then
 				return
 			end
@@ -126,6 +143,14 @@ local function setup_ipynb_output_sync()
 			if vim.api.nvim_get_vvar("vim_did_enter") ~= 1 then
 				import_outputs(event)
 			end
+		end,
+	})
+
+	vim.api.nvim_create_autocmd("FileType", {
+		group = group,
+		pattern = "markdown",
+		callback = function(event)
+			import_outputs(event)
 		end,
 	})
 
