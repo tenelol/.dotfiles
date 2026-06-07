@@ -4,6 +4,75 @@ local function molten_cmd(command)
 	return ("<cmd>%s<cr>"):format(command)
 end
 
+local function current_buffer_is_ipynb()
+	return vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ":e") == "ipynb"
+end
+
+local function code_fence_language(line)
+	local language = line:match("^%s*```%s*([^%s`]*)")
+	if not language or language == "" then
+		return nil
+	end
+
+	return language:gsub("^%{", ""):gsub("%}$", "")
+end
+
+local function is_closing_code_fence(line)
+	return line:match("^%s*```%s*$") ~= nil
+end
+
+local function current_markdown_code_cell()
+	local cursor_line = vim.api.nvim_win_get_cursor(0)[1]
+	local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+	local cell_start = nil
+
+	for index, line in ipairs(lines) do
+		if cell_start then
+			if is_closing_code_fence(line) then
+				if cell_start <= cursor_line and cursor_line <= index then
+					return {
+						start_line = cell_start + 1,
+						end_line = index - 1,
+					}
+				end
+
+				cell_start = nil
+			end
+		elseif code_fence_language(line) then
+			cell_start = index
+		end
+	end
+
+	return nil
+end
+
+local function run_current_ipynb_cell()
+	local cell = current_markdown_code_cell()
+	if not cell then
+		vim.notify("No Jupyter code cell under cursor", vim.log.levels.WARN)
+		return
+	end
+
+	if cell.start_line > cell.end_line then
+		vim.notify("Jupyter code cell is empty", vim.log.levels.WARN)
+		return
+	end
+
+	local ok, err = pcall(vim.fn.MoltenEvaluateRange, cell.start_line, cell.end_line)
+	if not ok then
+		vim.notify("Jupyter cell execution failed: " .. tostring(err), vim.log.levels.ERROR)
+	end
+end
+
+local function run_current_cell()
+	if current_buffer_is_ipynb() then
+		run_current_ipynb_cell()
+		return
+	end
+
+	require("quarto.runner").run_cell()
+end
+
 local function setup_notebook_commands()
 	local default_notebook = {
 		cells = {
@@ -61,6 +130,12 @@ local function setup_notebook_commands()
 		vim.cmd("noautocmd MoltenEnterOutput")
 	end, {
 		desc = "Open current Jupyter output in Neovim",
+	})
+
+	vim.api.nvim_create_user_command("JupyterRunCell", function()
+		run_current_cell()
+	end, {
+		desc = "Run current Jupyter cell",
 	})
 end
 
@@ -300,7 +375,7 @@ return {
 			{
 				"<leader>jc",
 				function()
-					require("quarto.runner").run_cell()
+					run_current_cell()
 				end,
 				desc = "Jupyter run cell",
 			},
