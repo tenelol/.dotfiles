@@ -313,6 +313,47 @@ local function export_current_notebook_html(opts)
 	vim.notify(message, vim.log.levels.ERROR)
 end
 
+local function setup_jupytext_metadata_fallback()
+	local ok, utils = pcall(require, "jupytext.utils")
+	if not ok then
+		return
+	end
+
+	local language_extensions = {
+		python = "py",
+		python3 = "py",
+		julia = "jl",
+		r = "r",
+		R = "r",
+		bash = "sh",
+	}
+	local language_names = {
+		python3 = "python",
+	}
+
+	utils.get_ipynb_metadata = function(filename)
+		local file = io.open(filename, "r")
+		if not file then
+			return { language = "python", extension = "py" }
+		end
+
+		local ok_decode, notebook = pcall(vim.json.decode, file:read("*a"))
+		file:close()
+		if not ok_decode or type(notebook) ~= "table" then
+			return { language = "python", extension = "py" }
+		end
+
+		local metadata = notebook.metadata or {}
+		local kernelspec = metadata.kernelspec or {}
+		local language_info = metadata.language_info or {}
+		local language = kernelspec.language or language_info.name or language_names[kernelspec.name] or "python"
+		local extension = language_extensions[language] or language_info.file_extension or "py"
+		extension = extension:gsub("^%.", "")
+
+		return { language = language, extension = extension }
+	end
+end
+
 local function setup_notebook_commands()
 	local default_notebook = {
 		cells = {
@@ -504,6 +545,7 @@ return {
 	plugin.spec("jupytext-nvim", {
 		lazy = false,
 		config = function()
+			setup_jupytext_metadata_fallback()
 			require("jupytext").setup({
 				style = "markdown",
 				output_extension = "md",
