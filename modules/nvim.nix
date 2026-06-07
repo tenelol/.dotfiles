@@ -32,6 +32,21 @@ let
   ];
   jupyterPython = pkgs.python3.withPackages jupyterPythonPackages;
   jupyterPythonBinPath = pkgs.lib.makeBinPath [ jupyterPython ];
+  jupyterKernelSpec = {
+    argv = [
+      "${jupyterPython}/bin/python3"
+      "-m"
+      "ipykernel_launcher"
+      "-f"
+      "{connection_file}"
+    ];
+    display_name = "Python 3 (Nix)";
+    language = "python";
+    metadata = {
+      debugger = true;
+    };
+  };
+  jupyterKernelSpecJson = builtins.toJSON jupyterKernelSpec;
   nvimPythonHost =
     pkgs.runCommand "nvim-jupyter-python-host" { nativeBuildInputs = [ pkgs.makeWrapper ]; }
       ''
@@ -221,6 +236,8 @@ delib.module {
       }
     '';
     xdg.configFile."nvim/nix-managed-plugins.lua".text = nixManagedPluginsLua;
+    xdg.dataFile."jupyter/kernels/nix-python3/kernel.json".text = jupyterKernelSpecJson;
+    home.file."Library/Jupyter/kernels/nix-python3/kernel.json".text = jupyterKernelSpecJson;
 
     home.activation.cleanupLegacyLazyNvim = hm.dag.entryAfter [ "writeBoundary" ] ''
       if [ -e "$HOME/.local/share/nvim/lazy/lazy.nvim" ]; then
