@@ -61,7 +61,12 @@ local function run_current_ipynb_cell()
 	local ok, err = pcall(vim.fn.MoltenEvaluateRange, cell.start_line, cell.end_line)
 	if not ok then
 		vim.notify("Jupyter cell execution failed: " .. tostring(err), vim.log.levels.ERROR)
+		return
 	end
+
+	vim.defer_fn(function()
+		pcall(vim.cmd, "MoltenShowOutput")
+	end, 100)
 end
 
 local function run_current_cell()
@@ -127,7 +132,7 @@ local function setup_notebook_commands()
 	})
 
 	vim.api.nvim_create_user_command("JupyterPreview", function()
-		vim.cmd("noautocmd MoltenEnterOutput")
+		vim.cmd("MoltenShowOutput")
 	end, {
 		desc = "Open current Jupyter output in Neovim",
 	})
@@ -284,21 +289,22 @@ return {
 			"MoltenInit",
 			"MoltenReevaluateCell",
 			"MoltenRestart",
-			"MoltenToggleVirtual",
+			"MoltenShowOutput",
 		},
 		dependencies = {
 			plugin.dep("image-nvim"),
 		},
 		init = function()
 			vim.g.molten_auto_open_html_in_browser = false
-			vim.g.molten_auto_open_output = false
+			vim.g.molten_auto_open_output = true
 			vim.g.molten_image_provider = "image.nvim"
-			vim.g.molten_image_location = "both"
+			vim.g.molten_image_location = "float"
+			vim.g.molten_output_virt_lines = true
 			vim.g.molten_output_win_max_height = 20
 			vim.g.molten_output_win_max_width = 100
 			vim.g.molten_save_path = vim.fn.stdpath("data") .. "/molten"
 			vim.g.molten_virt_lines_off_by_1 = true
-			vim.g.molten_virt_text_output = true
+			vim.g.molten_virt_text_output = false
 			vim.g.molten_virt_text_max_lines = 20
 			vim.g.molten_wrap_output = true
 
@@ -310,11 +316,10 @@ return {
 			{ "<leader>je", molten_cmd("MoltenEvaluateOperator"), desc = "Jupyter evaluate operator" },
 			{ "<leader>jl", molten_cmd("MoltenEvaluateLine"), desc = "Jupyter evaluate line" },
 			{ "<leader>jr", molten_cmd("MoltenReevaluateCell"), desc = "Jupyter re-evaluate cell" },
-			{ "<leader>jo", molten_cmd("noautocmd MoltenEnterOutput"), desc = "Jupyter open output" },
+			{ "<leader>jo", molten_cmd("MoltenShowOutput"), desc = "Jupyter show output" },
 			{ "<leader>jh", molten_cmd("MoltenHideOutput"), desc = "Jupyter hide output" },
 			{ "<leader>jd", molten_cmd("MoltenDelete"), desc = "Jupyter delete cell" },
 			{ "<leader>jp", "<cmd>JupyterPreview<cr>", desc = "Jupyter preview output" },
-			{ "<leader>jt", molten_cmd("MoltenToggleVirtual"), desc = "Jupyter toggle virtual output" },
 			{
 				"<leader>jv",
 				":<C-u>MoltenEvaluateVisual<cr>gv",
