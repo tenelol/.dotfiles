@@ -8,6 +8,86 @@ local function current_buffer_is_ipynb()
 	return vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ":e") == "ipynb"
 end
 
+local function available_kernel_names()
+	local ok, kernels = pcall(vim.fn.MoltenAvailableKernels)
+	if not ok then
+		return {}
+	end
+
+	return kernels
+end
+
+local function running_buffer_kernel_ids()
+	local ok, kernels = pcall(vim.fn.MoltenRunningKernels, true)
+	if not ok then
+		return {}
+	end
+
+	return kernels
+end
+
+local function has_value(values, needle)
+	for _, value in ipairs(values) do
+		if value == needle then
+			return true
+		end
+	end
+	return false
+end
+
+local function notebook_kernel_name(path)
+	local file = io.open(path, "r")
+	if not file then
+		return nil
+	end
+
+	local ok, notebook = pcall(vim.json.decode, file:read("*a"))
+	file:close()
+	if not ok then
+		return nil
+	end
+
+	local kernelspec = notebook.metadata and notebook.metadata.kernelspec
+	return kernelspec and kernelspec.name or nil
+end
+
+local function preferred_kernel_name()
+	local available = available_kernel_names()
+	local path = vim.api.nvim_buf_get_name(0)
+	local kernel = notebook_kernel_name(path)
+
+	if kernel and has_value(available, kernel) then
+		return kernel
+	end
+	if has_value(available, "python3") then
+		return "python3"
+	end
+
+	return available[1]
+end
+
+local function init_current_buffer_kernel()
+	local running = running_buffer_kernel_ids()
+	if #running > 0 then
+		return running[1]
+	end
+
+	local kernel = preferred_kernel_name()
+	if not kernel then
+		vim.notify("No Jupyter kernel is available", vim.log.levels.ERROR)
+		return nil
+	end
+
+	local ok, err = pcall(vim.cmd, "MoltenInit " .. vim.fn.fnameescape(kernel))
+	if not ok then
+		vim.notify("Jupyter kernel init failed: " .. tostring(err), vim.log.levels.ERROR)
+		return nil
+	end
+
+	local initialized = running_buffer_kernel_ids()
+	return initialized[#initialized] or kernel
+end
+
 local function code_fence_language(line)
 	local language = line:match("^%s*```%s*([^%s`]*)")
 	if not language or language == "" then
@@ -46,6 +126,21 @@ local function current_markdown_code_cell()
 	return nil
 end
 
+local function evaluate_ipynb_cell(cell, kernel_id)
+	local end_line = vim.api.nvim_buf_get_lines(0, cell.end_line - 1, cell.end_line, false)[1] or ""
+	local ok, err = pcall(vim.fn.MoltenEvaluateRange, kernel_id, cell.start_line, cell.end_line, 1, #end_line + 1)
+	if not ok then
+		vim.notify("Jupyter cell execution failed: " .. tostring(err), vim.log.levels.ERROR)
+		return false
+	end
+
+	vim.defer_fn(function()
+		pcall(vim.cmd, "MoltenShowOutput")
+	end, 100)
+
+	return true
+end
+
 local function run_current_ipynb_cell()
 	local cell = current_markdown_code_cell()
 	if not cell then
@@ -58,15 +153,71 @@ local function run_current_ipynb_cell()
 		return
 	end
 
-	local ok, err = pcall(vim.fn.MoltenEvaluateRange, cell.start_line, cell.end_line)
-	if not ok then
-		vim.notify("Jupyter cell execution failed: " .. tostring(err), vim.log.levels.ERROR)
+	local running = running_buffer_kernel_ids()
+	if #running > 0 then
+		evaluate_ipynb_cell(cell, running[1])
 		return
 	end
 
-	vim.defer_fn(function()
-		pcall(vim.cmd, "MoltenShowOutput")
-	end, 100)
+	local bufnr = vim.api.nvim_get_current_buf()
+	local pending = true
+	local group = vim.api.nvim_create_augroup("JupyterKernelReadyRun", { clear = false })
+
+	local function with_notebook_buffer(callback)
+		if not vim.api.nvim_buf_is_valid(bufnr) then
+			pending = false
+			return nil
+		end
+
+		return vim.api.nvim_buf_call(bufnr, callback)
+	end
+
+	local function evaluate_when_ready()
+		if not pending then
+			return
+		end
+
+		pending = false
+		with_notebook_buffer(function()
+			local kernels = running_buffer_kernel_ids()
+			if #kernels == 0 then
+				vim.notify("Jupyter kernel did not become available", vim.log.levels.ERROR)
+				return
+			end
+
+			evaluate_ipynb_cell(cell, kernels[#kernels])
+		end)
+	end
+
+	vim.api.nvim_create_autocmd("User", {
+		group = group,
+		pattern = "MoltenKernelReady",
+		callback = function(event)
+			if not vim.api.nvim_buf_is_valid(bufnr) then
+				pending = false
+				return true
+			end
+
+			local kernel_id = event.data and event.data.kernel_id
+			local matched = with_notebook_buffer(function()
+				return not kernel_id or has_value(running_buffer_kernel_ids(), kernel_id)
+			end)
+			if matched then
+				evaluate_when_ready()
+				return true
+			end
+
+			return false
+		end,
+	})
+
+	local kernel = init_current_buffer_kernel()
+	if not kernel then
+		pending = false
+		return
+	end
+
+	vim.notify("Jupyter kernel is starting; cell will run when ready", vim.log.levels.INFO)
 end
 
 local function run_current_cell()
@@ -149,98 +300,28 @@ local function setup_ipynb_output_sync()
 		return path and vim.fn.fnamemodify(path, ":e") == "ipynb"
 	end
 
-	local function event_path(event)
-		if event.file and event.file ~= "" then
-			return event.file
-		end
-
-		return vim.api.nvim_buf_get_name(event.buf)
-	end
-
-	local function available_kernel_names()
-		local ok, kernels = pcall(vim.fn.MoltenAvailableKernels)
-		if not ok then
-			return {}
-		end
-
-		return kernels
-	end
-
-	local function has_value(values, needle)
-		for _, value in ipairs(values) do
-			if value == needle then
-				return true
-			end
-		end
-		return false
-	end
-
-	local function notebook_kernel_name(path)
-		local file = io.open(path, "r")
-		if not file then
-			return nil
-		end
-
-		local ok, notebook = pcall(vim.json.decode, file:read("*a"))
-		file:close()
-		if not ok then
-			return nil
-		end
-
-		local kernelspec = notebook.metadata and notebook.metadata.kernelspec
-		return kernelspec and kernelspec.name or nil
-	end
-
-	local function import_outputs(event)
-		vim.schedule(function()
-			local path = event_path(event)
-			if not is_ipynb(path) then
-				return
-			end
-
-			local kernel = notebook_kernel_name(path)
-			if not kernel or not has_value(available_kernel_names(), kernel) then
-				return
-			end
-
-			pcall(vim.cmd, "MoltenInit " .. vim.fn.fnameescape(kernel))
-			pcall(vim.cmd, "MoltenImportOutput")
-		end)
-	end
-
 	local group = vim.api.nvim_create_augroup("JupyterNotebookOutput", { clear = true })
-
-	vim.api.nvim_create_autocmd("BufAdd", {
-		group = group,
-		pattern = "*.ipynb",
-		callback = import_outputs,
-	})
-
-	vim.api.nvim_create_autocmd("BufEnter", {
-		group = group,
-		pattern = "*.ipynb",
-		callback = function(event)
-			if vim.api.nvim_get_vvar("vim_did_enter") ~= 1 then
-				import_outputs(event)
-			end
-		end,
-	})
-
-	vim.api.nvim_create_autocmd("FileType", {
-		group = group,
-		pattern = "markdown",
-		callback = function(event)
-			import_outputs(event)
-		end,
-	})
 
 	vim.api.nvim_create_autocmd("BufWritePost", {
 		group = group,
 		pattern = "*.ipynb",
-		callback = function()
+		callback = function(event)
+			if not is_ipynb(event.file) then
+				return
+			end
+
 			local ok, status = pcall(require, "molten.status")
 			if ok and status.initialized() == "Molten" then
-				pcall(vim.cmd, "MoltenExportOutput!")
+				local kernels = running_buffer_kernel_ids()
+				if #kernels > 0 then
+					pcall(
+						vim.cmd,
+						("MoltenExportOutput! %s %s"):format(
+							vim.fn.fnameescape(event.file),
+							vim.fn.fnameescape(kernels[1])
+						)
+					)
+				end
 			end
 		end,
 	})
@@ -275,6 +356,7 @@ return {
 	}),
 
 	plugin.spec("molten-nvim", {
+		lazy = false,
 		cmd = {
 			"MoltenDeinit",
 			"MoltenDelete",
