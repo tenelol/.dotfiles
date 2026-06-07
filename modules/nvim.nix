@@ -16,16 +16,21 @@ let
     ps."jupyter-core"
     ps.jupytext
     ps.kaleido
+    ps.matplotlib
     ps.nbformat
+    ps.numpy
+    ps.pandas
     ps.pillow
     ps.plotly
     ps.pnglatex
     ps.pynvim
     ps.pyperclip
     ps.requests
+    ps."scikit-learn"
     ps."websocket-client"
   ];
   jupyterPython = pkgs.python3.withPackages jupyterPythonPackages;
+  jupyterPythonBinPath = pkgs.lib.makeBinPath [ jupyterPython ];
   nvimPythonHost =
     pkgs.runCommand "nvim-jupyter-python-host" { nativeBuildInputs = [ pkgs.makeWrapper ]; }
       ''
@@ -167,6 +172,10 @@ delib.module {
         "--set"
         "NVIM_SYSTEM_RPLUGIN_MANIFEST"
         "${moltenRemotePluginManifest}"
+        "--prefix"
+        "PATH"
+        ":"
+        jupyterPythonBinPath
       ];
       extraPython3Packages = jupyterPythonPackages;
       extraLuaPackages = ps: [
