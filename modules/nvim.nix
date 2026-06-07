@@ -17,6 +17,7 @@ let
     ps.jupytext
     ps.kaleido
     ps.matplotlib
+    ps.nbconvert
     ps.nbformat
     ps.numpy
     ps.pandas

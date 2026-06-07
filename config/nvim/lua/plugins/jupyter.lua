@@ -229,6 +229,90 @@ local function run_current_cell()
 	require("quarto.runner").run_cell()
 end
 
+local function current_notebook_path()
+	local path = vim.api.nvim_buf_get_name(0)
+	if path == "" then
+		vim.notify("Current buffer has no file path", vim.log.levels.ERROR)
+		return nil
+	end
+
+	if vim.fn.fnamemodify(path, ":e") ~= "ipynb" then
+		vim.notify("Current file is not an ipynb notebook", vim.log.levels.WARN)
+		return nil
+	end
+
+	return path
+end
+
+local function remove_remote_html_scripts(path)
+	local lines = vim.fn.readfile(path)
+	local html = table.concat(lines, "\n")
+	local cleaned = html
+	cleaned = cleaned:gsub('<script src=""></script>', "")
+	cleaned = cleaned:gsub(
+		'<script type="module">%s*import mermaid from .-cdnjs%.cloudflare%.com.-;%s*mermaid%.initialize%b()%s*;?%s*</script>',
+		""
+	)
+
+	if cleaned ~= html then
+		vim.fn.writefile(vim.split(cleaned, "\n", { plain = true }), path)
+	end
+end
+
+local function export_current_notebook_html(opts)
+	local path = current_notebook_path()
+	if not path then
+		return
+	end
+
+	if vim.bo.modified then
+		vim.cmd("silent write")
+	end
+
+	local output_dir = opts.args
+	local output_path
+	if output_dir and output_dir ~= "" then
+		if not vim.startswith(output_dir, "/") then
+			output_dir = vim.fs.normalize(vim.fn.getcwd() .. "/" .. output_dir)
+		else
+			output_dir = vim.fs.normalize(output_dir)
+		end
+
+		vim.fn.mkdir(output_dir, "p")
+		output_path = vim.fs.joinpath(output_dir, vim.fn.fnamemodify(path, ":t:r") .. ".html")
+	else
+		output_path = vim.fn.fnamemodify(path, ":r") .. ".html"
+	end
+
+	local cmd = {
+		"jupyter",
+		"nbconvert",
+		"--to",
+		"html",
+		"--template",
+		"classic",
+		"--embed-images",
+		"--HTMLExporter.require_js_url=",
+		"--HTMLExporter.mathjax_url=",
+		"--HTMLExporter.jquery_url=",
+		"--HTMLExporter.jupyter_widgets_base_url=",
+		path,
+	}
+	if output_dir and output_dir ~= "" then
+		vim.list_extend(cmd, { "--output-dir", output_dir })
+	end
+
+	local result = vim.system(cmd):wait()
+	if result.code == 0 then
+		remove_remote_html_scripts(output_path)
+		vim.notify(("Exported notebook HTML: %s"):format(output_path), vim.log.levels.INFO)
+		return
+	end
+
+	local message = result.stderr ~= "" and result.stderr or "Notebook HTML export failed"
+	vim.notify(message, vim.log.levels.ERROR)
+end
+
 local function setup_notebook_commands()
 	local default_notebook = {
 		cells = {
@@ -292,6 +376,12 @@ local function setup_notebook_commands()
 		run_current_cell()
 	end, {
 		desc = "Run current Jupyter cell",
+	})
+
+	vim.api.nvim_create_user_command("IpynbHtml", export_current_notebook_html, {
+		nargs = "?",
+		complete = "dir",
+		desc = "Export current ipynb notebook to HTML",
 	})
 end
 
