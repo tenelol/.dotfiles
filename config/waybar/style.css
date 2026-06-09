@@ -1,131 +1,55 @@
 @define-color menubar-bg rgba(0, 0, 0, 0);
-@define-color menubar-pill rgba(11, 16, 24, 0.15);
-@define-color menubar-border rgba(255, 255, 255, 0.19);
-@define-color menubar-ink #f5f7fa;
-@define-color menubar-muted rgba(245, 247, 250, 0.65);
-@define-color menubar-hover rgba(255, 255, 255, 0.12);
-@define-color menubar-accent #8bd5ff;
+@define-color workspace-active rgba(245, 247, 250, 0.81);
+@define-color workspace-inactive rgba(245, 247, 250, 0.47);
+@define-color workspace-separator rgba(245, 247, 250, 0.27);
+@define-color workspace-hover rgba(245, 247, 250, 0.62);
 
 * {
     font-family:
         "CaskaydiaCove Nerd Font", "IBM Plex Sans", "Noto Sans JP", sans-serif;
-    font-size: 12px;
+    font-size: 13px;
+    font-weight: 400;
     min-height: 0;
 }
 
 window#waybar {
     background: @menubar-bg;
-    color: @menubar-ink;
+    color: @workspace-inactive;
     border: none;
     border-radius: 0;
     box-shadow: none;
-    padding: 7px 12px;
-}
-
-#custom-launcher,
-#workspaces,
-#window,
-#tray,
-#pulseaudio,
-#network,
-#battery,
-#clock,
-#custom-clock {
-    background: @menubar-pill;
-    color: @menubar-ink;
-    border: 1px solid @menubar-border;
-    border-radius: 14px;
-    margin: 0 3px;
-    padding: 0 10px;
-    min-height: 28px;
-    transition:
-        background-color 0.18s ease,
-        color 0.18s ease;
-}
-
-#custom-launcher {
-    font-size: 15px;
-    font-weight: 700;
-    padding-left: 10px;
-    padding-right: 12px;
+    padding: 0 12px;
 }
 
 #workspaces {
-    padding: 0 6px;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    margin: 0;
+    padding: 0;
 }
 
 #workspaces button {
     background: transparent;
     border: none;
     border-radius: 0;
-    color: @menubar-muted;
+    color: @workspace-inactive;
     margin: 0;
-    min-height: 28px;
-    min-width: 18px;
-    padding: 0 3px 3px 3px;
+    min-height: 24px;
+    min-width: 24px;
+    padding: 0 12px;
 }
 
 #workspaces button.active,
 #workspaces button.focused {
-    color: @menubar-ink;
-    border-bottom: 3px solid @menubar-accent;
+    color: @workspace-active;
 }
 
 #workspaces button:hover {
     background: transparent;
-    color: @menubar-ink;
+    color: @workspace-hover;
 }
 
-#window {
-    color: @menubar-ink;
-    font-weight: 600;
-    padding-left: 10px;
-}
-
-#tray,
-#pulseaudio,
-#network,
-#battery {
-    color: @menubar-muted;
-    font-size: 13px;
-}
-
-#clock,
-#custom-clock {
-    color: @menubar-ink;
-    font-weight: 600;
-    padding-right: 10px;
-}
-
-#custom-launcher:hover,
-#workspaces:hover,
-#window:hover,
-#tray:hover,
-#pulseaudio:hover,
-#network:hover,
-#battery:hover,
-#clock:hover,
-#custom-clock:hover {
-    background: @menubar-hover;
-}
-
-#battery.charging {
-    color: @menubar-ink;
-}
-
-#battery.warning:not(.charging) {
-    color: #ffd166;
-}
-
-#battery.critical:not(.charging) {
-    color: #ff6b6b;
-}
-
-#tray > .passive {
-    opacity: 0.56;
-}
-
-#tray > .needs-attention {
-    background: rgba(139, 213, 255, 0.18);
-    border-radius: 6px;
+#workspaces button:not(:last-child) {
+    border-right: 1px solid @workspace-separator;
 }

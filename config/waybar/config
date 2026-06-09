@@ -1,63 +1,16 @@
 {
   "layer": "top",
   "position": "top",
-  "height": 42,
-  "spacing": 6,
+  "height": 24,
+  "spacing": 0,
   "margin-top": 0,
   "margin-right": 0,
   "margin-left": 0,
-  "modules-left": ["custom/launcher", "niri/workspaces", "niri/window"],
+  "modules-left": ["niri/workspaces"],
   "modules-center": [],
-  "modules-right": ["tray", "pulseaudio", "network", "battery", "custom/clock"],
-  "custom/launcher": {
-    "format": "",
-    "tooltip": false,
-    "on-click": "fuzzel"
-  },
+  "modules-right": [],
   "niri/workspaces": {
     "format": "{index}",
     "on-click": "activate"
-  },
-  "niri/window": {
-    "format": "{title}",
-    "max-length": 28,
-    "swap-icon-label": false
-  },
-  "custom/clock": {
-    "exec": "LC_TIME=en_US.UTF-8 LANG=en_US.UTF-8 date '+%a %b %-d %H:%M'",
-    "interval": 30,
-    "tooltip": false
-  },
-  "pulseaudio": {
-    "format": "{icon}",
-    "format-muted": "󰝟",
-    "format-icons": {
-      "headphone": "󰋋",
-      "hands-free": "󰋎",
-      "headset": "󰋎",
-      "phone": "󰏲",
-      "portable": "󰏲",
-      "car": "󰄋",
-      "default": ["󰕿", "󰖀", "󰕾"]
-    },
-    "tooltip-format": "Volume {volume}%",
-    "scroll-step": 5
-  },
-  "network": {
-    "format-wifi": "󰖩",
-    "format-ethernet": "󰈀",
-    "format-disconnected": "󰖪",
-    "tooltip-format": "{ifname} {ipaddr}"
-  },
-  "battery": {
-    "interval": 30,
-    "format": "{icon}",
-    "format-charging": "󰂄",
-    "format-full": "󰁹",
-    "format-icons": ["󰂎", "󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"],
-    "tooltip-format": "{capacity}%"
-  },
-  "tray": {
-    "spacing": 10
   }
 }
