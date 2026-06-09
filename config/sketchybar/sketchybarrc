@@ -6,11 +6,14 @@ PLUGIN_DIR="$CONFIG_DIR/plugins"
 
 TRANSPARENT=0x00000000
 TEXT=0xeef5f7fa
-TEXT_DIM=0xa8f5f7fa
 TEXT_STRONG=0xffffffff
 
 theme_file="${XDG_CONFIG_HOME:-$HOME/.config}/theme/sketchybar.env"
 [ -r "$theme_file" ] && . "$theme_file"
+
+WORKSPACE_ACTIVE="${WORKSPACE_ACTIVE:-0xcff5f7fa}"
+WORKSPACE_INACTIVE="${WORKSPACE_INACTIVE:-0x78f5f7fa}"
+WORKSPACE_SEPARATOR="${WORKSPACE_SEPARATOR:-0x44f5f7fa}"
 
 focused_workspace() {
   if /usr/bin/pgrep -qx AeroSpace >/dev/null 2>&1 && [ -x /opt/homebrew/bin/aerospace ]; then
@@ -39,13 +42,13 @@ add_workspace_item() {
 
   item=(
     "${display_arg[@]}"
-    width=16
-    padding_left=1
-    padding_right=1
+    width=24
+    padding_left=2
+    padding_right=2
     label="$local_workspace"
-    label.width=16
+    label.width=24
     label.align=center
-    label.color="$TEXT_DIM"
+    label.color="$WORKSPACE_INACTIVE"
     label.padding_left=0
     label.padding_right=0
     background.drawing=off
@@ -68,13 +71,13 @@ add_separator_item() {
 
   item=(
     "${display_arg[@]}"
-    width=8
+    width=18
     padding_left=0
     padding_right=0
     label="|"
-    label.width=8
+    label.width=18
     label.align=center
-    label.color="$TEXT_DIM"
+    label.color="$WORKSPACE_SEPARATOR"
     label.padding_left=0
     label.padding_right=0
     background.drawing=off
@@ -110,8 +113,8 @@ bar=(
   color="$TRANSPARENT"
   border_width=0
   border_color="$TRANSPARENT"
-  padding_left=8
-  padding_right=8
+  padding_left=12
+  padding_right=12
   sticky=on
   topmost=window
   shadow=off
