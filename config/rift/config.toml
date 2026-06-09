@@ -51,7 +51,7 @@ stack_offset = 40.0
 default_orientation = "perpendicular"
 
 [settings.layout.gaps.outer]
-top = 42
+top = 50
 left = 10
 bottom = 20
 right = 10
