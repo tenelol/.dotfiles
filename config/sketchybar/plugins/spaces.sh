@@ -4,12 +4,9 @@ SKETCHYBAR_BIN="/opt/homebrew/bin/sketchybar"
 RIFT_CLI="/opt/homebrew/bin/rift-cli"
 STATE_DIR="${TMPDIR:-/tmp}/sketchybar"
 STATE_FILE="$STATE_DIR/focused_workspace"
-ANIMATION=tanh
-ANIMATION_DURATION=12
-TRANSPARENT=0x00000000
 TEXT_DIM=0xa8f5f7fa
 TEXT_STRONG=0xffffffff
-ACCENT=0xff8bd5ff
+
 theme_file="${XDG_CONFIG_HOME:-$HOME/.config}/theme/sketchybar.env"
 [ -r "$theme_file" ] && . "$theme_file"
 
@@ -61,42 +58,14 @@ set_active() {
   is_managed_workspace "$1" || return 0
   item_exists "$1" || return 0
 
-  "$SKETCHYBAR_BIN" --animate "$ANIMATION" 14 --set "$(space_item_name "$1")" \
-    width=18 \
-    padding_left=3 \
-    padding_right=3 \
-    label.width=18 \
-    label.align=center \
-    background.drawing=on \
-    background.height=3 \
-    background.corner_radius=2 \
-    background.padding_left=0 \
-    background.padding_right=0 \
-    background.border_width=0 \
-    background.color="$ACCENT" \
-    background.border_color="$TRANSPARENT" \
-    label.color="$TEXT_STRONG"
+  "$SKETCHYBAR_BIN" --set "$(space_item_name "$1")" label.color="$TEXT_STRONG"
 }
 
 set_inactive() {
   is_managed_workspace "$1" || return 0
   item_exists "$1" || return 0
 
-  "$SKETCHYBAR_BIN" --animate "$ANIMATION" "$ANIMATION_DURATION" --set "$(space_item_name "$1")" \
-    width=18 \
-    padding_left=3 \
-    padding_right=3 \
-    label.width=18 \
-    label.align=center \
-    background.drawing=on \
-    background.height=3 \
-    background.corner_radius=2 \
-    background.padding_left=0 \
-    background.padding_right=0 \
-    background.border_width=0 \
-    background.color="$TRANSPARENT" \
-    background.border_color="$TRANSPARENT" \
-    label.color="$TEXT_DIM"
+  "$SKETCHYBAR_BIN" --set "$(space_item_name "$1")" label.color="$TEXT_DIM"
 }
 
 focused_workspace="$FOCUSED"

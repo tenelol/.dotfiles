@@ -5,13 +5,9 @@ RIFT_CLI="/opt/homebrew/bin/rift-cli"
 PLUGIN_DIR="$CONFIG_DIR/plugins"
 
 TRANSPARENT=0x00000000
-GLASS_BG=0x260b1018
-GLASS_BORDER=0x30ffffff
 TEXT=0xeef5f7fa
 TEXT_DIM=0xa8f5f7fa
-TEXT_MUTED=0xcff5f7fa
 TEXT_STRONG=0xffffffff
-ACCENT=0xff8bd5ff
 
 theme_file="${XDG_CONFIG_HOME:-$HOME/.config}/theme/sketchybar.env"
 [ -r "$theme_file" ] && . "$theme_file"
@@ -43,68 +39,79 @@ add_workspace_item() {
 
   item=(
     "${display_arg[@]}"
-    width=18
-    padding_left=3
-    padding_right=3
+    width=16
+    padding_left=1
+    padding_right=1
     label="$local_workspace"
-    label.width=18
+    label.width=16
     label.align=center
     label.color="$TEXT_DIM"
     label.padding_left=0
     label.padding_right=0
-    background.drawing=on
-    background.height=3
-    background.corner_radius=2
-    background.padding_left=0
-    background.padding_right=0
-    background.color="$TRANSPARENT"
-    background.border_color="$TRANSPARENT"
-    background.y_offset=-11
-    script="$PLUGIN_DIR/workspace.sh"
+    background.drawing=off
     click_script="/bin/sh -lc 'if /usr/bin/pgrep -qx AeroSpace && [ -x /opt/homebrew/bin/aerospace ]; then /opt/homebrew/bin/aerospace workspace $workspace_id; else /opt/homebrew/bin/rift-cli execute workspace switch $workspace_index; fi'"
   )
 
   "$SKETCHYBAR_BIN" --add item "$item_name" left \
-                    --set "$item_name" "${item[@]}" \
-                    --subscribe "$item_name" mouse.entered mouse.exited
+                    --set "$item_name" "${item[@]}"
+}
+
+add_separator_item() {
+  local workspace_id="$1"
+  local display_id="${2:-}"
+  local item_name="space.separator.$workspace_id"
+  local display_arg=()
+
+  if [ -n "$display_id" ]; then
+    display_arg=(display="$display_id")
+  fi
+
+  item=(
+    "${display_arg[@]}"
+    width=8
+    padding_left=0
+    padding_right=0
+    label="|"
+    label.width=8
+    label.align=center
+    label.color="$TEXT_DIM"
+    label.padding_left=0
+    label.padding_right=0
+    background.drawing=off
+  )
+
+  "$SKETCHYBAR_BIN" --add item "$item_name" left \
+                    --set "$item_name" "${item[@]}"
 }
 
 add_workspace_group() {
-  local group_name="$1"
-  local display_id="${2:-}"
-  local offset="$3"
-  local count="${4:-9}"
-  local bracket_display_arg=()
-  local item_names=()
+  local display_id="${1:-}"
+  local offset="$2"
+  local count="${3:-9}"
   local workspace_id
-
-  if [ -n "$display_id" ]; then
-    bracket_display_arg=(display="$display_id")
-  fi
 
   for local_workspace in $(seq 1 "$count"); do
     workspace_id="$((offset + local_workspace))"
-    item_names+=("space.$workspace_id.$local_workspace")
     add_workspace_item "$workspace_id" "$local_workspace" "$display_id"
+    if [ "$local_workspace" -lt "$count" ]; then
+      add_separator_item "$workspace_id" "$display_id"
+    fi
   done
-
-  "$SKETCHYBAR_BIN" --add bracket "spaces.$group_name" "${item_names[@]}" \
-                    --set "spaces.$group_name" "${bracket_display_arg[@]}" "${spaces[@]}"
 }
 
 bar=(
   position=top
   display=all
-  height=42
+  height=24
   margin=0
   y_offset=0
   corner_radius=0
-  blur_radius=56
+  blur_radius=0
   color="$TRANSPARENT"
   border_width=0
   border_color="$TRANSPARENT"
-  padding_left=12
-  padding_right=12
+  padding_left=8
+  padding_right=8
   sticky=on
   topmost=window
   shadow=off
@@ -118,46 +125,36 @@ default=(
   icon.drawing=off
   label.color="$TEXT"
   label.highlight_color="$TEXT_STRONG"
-  label.font="CaskaydiaCove Nerd Font:Regular:12.0"
-  label.padding_left=10
-  label.padding_right=10
-  background.drawing=on
-  background.height=28
-  background.corner_radius=14
-  background.color="$GLASS_BG"
-  background.border_width=1
-  background.border_color="$GLASS_BORDER"
+  label.font="CaskaydiaCove Nerd Font:Regular:13.0"
+  label.padding_left=0
+  label.padding_right=0
+  background.drawing=off
   blur_radius=0
-  padding_left=3
-  padding_right=3
+  padding_left=0
+  padding_right=0
 )
 "$SKETCHYBAR_BIN" --default "${default[@]}"
 
 "$SKETCHYBAR_BIN" --add event workspace_change
 
-spaces=(
-  background.drawing=on
-  background.height=28
-  background.corner_radius=14
-  background.color="$GLASS_BG"
-  background.border_width=1
-  background.border_color="$GLASS_BORDER"
-  background.padding_left=6
-  background.padding_right=6
-)
-
 if /usr/bin/pgrep -qx AeroSpace >/dev/null 2>&1 && [ -x /opt/homebrew/bin/aerospace ]; then
+  workspace_group_added=0
   while IFS='|' read -r sketchybar_display_id display_name; do
     [ -n "$sketchybar_display_id" ] || continue
     case "$display_name" in
       *Built-in*)
-        add_workspace_group "built_in" "$sketchybar_display_id" "0"
+        add_workspace_group "$sketchybar_display_id" "0" "9"
+        workspace_group_added=1
         break
         ;;
     esac
   done < <(/opt/homebrew/bin/aerospace list-monitors --format '%{monitor-appkit-nsscreen-screens-id}|%{monitor-name}')
+
+  if [ "$workspace_group_added" -eq 0 ]; then
+    add_workspace_group "" "0" "9"
+  fi
 else
-  add_workspace_group "rift" "" "0" "5"
+  add_workspace_group "" "0" "5"
 fi
 
 space_observer=(
@@ -172,76 +169,6 @@ space_observer=(
 "$SKETCHYBAR_BIN" --add item space_observer left \
                   --set space_observer "${space_observer[@]}" \
                   --subscribe space_observer workspace_change
-
-front_app=(
-  width=190
-  label.max_chars=24
-  label.align=left
-  label.color="$TEXT_MUTED"
-  label.font="CaskaydiaCove Nerd Font:SemiBold:12.0"
-  background.drawing=on
-  background.color="$GLASS_BG"
-  background.border_color="$GLASS_BORDER"
-  script="$PLUGIN_DIR/front_app.sh"
-)
-"$SKETCHYBAR_BIN" --add item front_app left \
-                  --set front_app "${front_app[@]}" \
-                  --subscribe front_app front_app_switched
-
-music=(
-  updates=on
-  update_freq=5
-  display=2
-  drawing=off
-  width=260
-  icon.drawing=on
-  icon=""
-  icon.font="CaskaydiaCove Nerd Font:Regular:13.0"
-  icon.color="$TEXT_DIM"
-  icon.padding_left=10
-  icon.padding_right=0
-  label.max_chars=38
-  label.align=left
-  label.color="$TEXT"
-  label.font="CaskaydiaCove Nerd Font:SemiBold:12.0"
-  background.drawing=on
-  background.color="$GLASS_BG"
-  background.border_color="$GLASS_BORDER"
-  script="$PLUGIN_DIR/music.sh"
-)
-"$SKETCHYBAR_BIN" --add item music center \
-                  --set music "${music[@]}"
-
-battery=(
-  update_freq=60
-  background.drawing=on
-  background.height=28
-  background.corner_radius=14
-  background.color="$GLASS_BG"
-  background.border_color="$GLASS_BORDER"
-  background.border_width=1
-  icon.padding_left=8
-  icon.padding_right=3
-  label.padding_left=2
-  label.padding_right=10
-  script="$PLUGIN_DIR/battery.sh"
-)
-"$SKETCHYBAR_BIN" --add item battery right \
-                  --set battery "${battery[@]}" \
-                  --subscribe battery power_source_change system_woke
-
-clock=(
-  update_freq=30
-  background.drawing=on
-  background.color="$GLASS_BG"
-  background.border_color="$GLASS_BORDER"
-  label.color="$TEXT"
-  label.padding_left=10
-  label.padding_right=10
-  script="$PLUGIN_DIR/clock.sh"
-)
-"$SKETCHYBAR_BIN" --add item clock right \
-                  --set clock "${clock[@]}"
 
 "$SKETCHYBAR_BIN" --update
 
