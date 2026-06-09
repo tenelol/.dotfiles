@@ -1,29 +1,42 @@
 (defsrc
-  caps f h j k l u i o p m comm . scln
-  lmet rmet a c r s t v w x y z
+  caps f h j k l u i o p n m comm . scln /
+  lmet rmet a c r s t v w x y z spc
   f1 f2 f3 f4 f5 f6 f7 f8 f9 f10 f11 f12
 )
 
 (defalias
   capctl (tap-hold 200 180 (tap-dance-eager 200 (esc f12)) lctl)
-  fnav (tap-hold-tap-keys 200 150 f (layer-while-held navigation) (a i o u))
+  fsyms (tap-hold-tap-keys 200 150 f (layer-while-held symbols) (a i o u))
+  vnav (tap-hold-tap-keys 200 150 v (layer-while-held navigation) (a i o u))
+  scru (mwheel-up 50 120)
+  scrd (mwheel-down 50 120)
+  mleft (movemouse-accel-left 1 1000 1 12)
+  mdown (movemouse-accel-down 1 1000 1 12)
+  mup (movemouse-accel-up 1 1000 1 12)
+  mright (movemouse-accel-right 1 1000 1 12)
   cmd (layer-while-held command)
 )
 
 (deflayer base
-  @capctl @fnav h j k l u i o p m comm . scln
-  @cmd @cmd a c r s t v w x y z
+  @capctl @fsyms h j k l u i o p n m comm . scln /
+  @cmd @cmd a c r s t @vnav w x y z spc
+  brdn brup mctl sls dtn dnd prev pp next mute vold volu
+)
+
+(deflayer symbols
+  XX XX S-9 lbrc rbrc S-0 S-lbrc S-rbrc S-comm S-. S-= - = bksl bspc S-bksl
+  XX XX XX XX XX XX XX XX XX XX XX XX spc
   brdn brup mctl sls dtn dnd prev pp next mute vold volu
 )
 
 (deflayer navigation
-  XX XX left down up rght lbrc rbrc S-lbrc S-rbrc / bksl S-/ bspc
-  XX XX XX XX XX XX XX XX XX XX XX XX
+  XX XX left down up rght home end @scru @scrd @mleft @mdown @mup @mright XX mrtp
+  XX XX XX XX XX XX XX XX XX XX XX XX mltp
   brdn brup mctl sls dtn dnd prev pp next mute vold volu
 )
 
 (deflayer command
-  XX C-f XX XX XX XX XX XX XX XX XX XX XX XX
-  lmet rmet C-a M-c C-r C-s C-t M-v C-w C-x C-y C-z
+  XX C-f XX XX XX XX XX XX XX XX XX XX XX XX XX XX
+  lmet rmet C-a M-c C-r C-s C-t M-v C-w C-x C-y C-z XX
   f1 f2 f3 f4 f5 f6 f7 f8 f9 f10 f11 f12
 )
