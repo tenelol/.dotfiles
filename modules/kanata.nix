@@ -9,13 +9,14 @@
 let
   isDarwinDesktop = !host.isServer && builtins.match ".*-darwin" host.system != null;
   isLinuxDesktop = !host.isServer && builtins.match ".*-linux" host.system != null;
-  commonConfig = builtins.readFile ../config/kanata/common.kbd;
+  isDesktop = isDarwinDesktop || isLinuxDesktop;
   linuxConfig = builtins.readFile ../config/kanata/linux.kbd;
+  darwinKanataPackage = pkgs.kanata-with-cmd;
 in
 delib.module {
   name = "kanata";
 
-  options = delib.singleEnableOption isLinuxDesktop;
+  options = delib.singleEnableOption isDesktop;
 
   darwin.ifDisabled = lib.mkIf isDarwinDesktop {
     system.activationScripts.postActivation.text = lib.mkAfter ''
@@ -50,7 +51,7 @@ delib.module {
     ];
 
     environment.systemPackages = [
-      pkgs.kanata
+      darwinKanataPackage
     ];
 
     environment.etc."kanata/kanata.kbd".source = ../config/kanata/kanata.kbd;
@@ -74,7 +75,8 @@ delib.module {
     system.activationScripts.postActivation.text = lib.mkAfter ''
       uid="$(id -u ${profile.username})"
 
-      if [ "$(/usr/bin/readlink /usr/local/bin/kanata 2>/dev/null || true)" = "/run/current-system/sw/bin/kanata" ]; then
+      kanata_link_target="$(/usr/bin/readlink /usr/local/bin/kanata 2>/dev/null || true)"
+      if [ "$kanata_link_target" = "/run/current-system/sw/bin/kanata" ] || [ "$kanata_link_target" = "${darwinKanataPackage}/bin/kanata" ]; then
         /bin/rm -f /usr/local/bin/kanata
       fi
 
@@ -83,7 +85,7 @@ delib.module {
       else
         /bin/rm -rf /Applications/Kanata.app
         /usr/bin/install -d -m 0755 /Applications/Kanata.app/Contents/MacOS
-        /bin/cp /run/current-system/sw/bin/kanata /Applications/Kanata.app/Contents/MacOS/kanata
+        /bin/cp ${darwinKanataPackage}/bin/kanata /Applications/Kanata.app/Contents/MacOS/kanata
         /bin/chmod 0755 /Applications/Kanata.app/Contents/MacOS/kanata
         /bin/chmod 0755 /Applications/Kanata.app/Contents/MacOS
         /bin/cat > /Applications/Kanata.app/Contents/Info.plist <<'EOF'
