@@ -12,7 +12,7 @@ let
   isDesktop = isDarwinDesktop || isLinuxDesktop;
   linuxConfig = builtins.readFile ../config/kanata/linux.kbd;
   darwinKanataPackage = pkgs.kanata-with-cmd;
-  darwinKanataVersion = lib.getVersion darwinKanataPackage;
+  kanataBinPath = "/usr/local/bin/kanata";
 in
 delib.module {
   name = "kanata";
@@ -21,10 +21,20 @@ delib.module {
 
   darwin.ifDisabled = lib.mkIf isDarwinDesktop {
     system.activationScripts.postActivation.text = lib.mkAfter ''
+      uid="$(id -u ${profile.username})"
+
       /bin/launchctl bootout system/org.nixos.kanata >/dev/null 2>&1 || true
+      /bin/launchctl bootout "gui/$uid/org.nixos.kanata" >/dev/null 2>&1 || true
       /usr/bin/pkill -f '/Applications/Kanata.app/Contents/MacOS/kanata' >/dev/null 2>&1 || true
+      /usr/bin/pkill -f '${kanataBinPath}' >/dev/null 2>&1 || true
       /bin/rm -rf /Applications/Kanata.app
+      kanata_link_target="$(/usr/bin/readlink ${kanataBinPath} 2>/dev/null || true)"
+      if [ "$kanata_link_target" = "${darwinKanataPackage}/bin/kanata" ] || [ "$kanata_link_target" = "/run/current-system/sw/bin/kanata" ]; then
+        /bin/rm -f ${kanataBinPath}
+      fi
+      /bin/rm -f /Library/PrivilegedHelperTools/local.nix-kanata-root
       /bin/rm -f /Library/LaunchDaemons/org.nixos.kanata.plist
+      /bin/rm -f /Library/LaunchAgents/org.nixos.kanata.plist
     '';
   };
 
@@ -61,7 +71,7 @@ delib.module {
     launchd.daemons.kanata = {
       serviceConfig = {
         ProgramArguments = [
-          "/Applications/Kanata.app/Contents/MacOS/kanata"
+          kanataBinPath
           "--cfg"
           "/etc/kanata/kanata.kbd"
           "--no-wait"
@@ -76,52 +86,20 @@ delib.module {
     system.activationScripts.postActivation.text = lib.mkAfter ''
       uid="$(id -u ${profile.username})"
 
-      kanata_link_target="$(/usr/bin/readlink /usr/local/bin/kanata 2>/dev/null || true)"
-      if [ "$kanata_link_target" = "/run/current-system/sw/bin/kanata" ] || [ "$kanata_link_target" = "${darwinKanataPackage}/bin/kanata" ]; then
-        /bin/rm -f /usr/local/bin/kanata
+      # macOS Input Monitoring grants are tied to the launched binary. Keep this
+      # path stable and add it to Privacy & Security > Input Monitoring once.
+      if [ -e ${kanataBinPath} ] && [ ! -L ${kanataBinPath} ]; then
+        echo "warning: ${kanataBinPath} exists and is not a symlink; leaving it unchanged" >&2
+      else
+        /usr/bin/install -d -m 0755 /usr/local/bin
+        /bin/ln -sfn ${darwinKanataPackage}/bin/kanata ${kanataBinPath}
       fi
 
-      kanata_app_needs_install=false
-      if [ ! -x /Applications/Kanata.app/Contents/MacOS/kanata ]; then
-        kanata_app_needs_install=true
-      elif ! /usr/bin/grep -q 'local.nix-kanata' /Applications/Kanata.app/Contents/Info.plist 2>/dev/null; then
-        kanata_app_needs_install=true
-      elif ! /usr/bin/grep -q '<string>${darwinKanataVersion}</string>' /Applications/Kanata.app/Contents/Info.plist 2>/dev/null; then
-        kanata_app_needs_install=true
-      elif [ "$(/usr/bin/codesign -dv /Applications/Kanata.app 2>&1 | /usr/bin/sed -n 's/^Identifier=//p')" != "local.nix-kanata" ]; then
-        kanata_app_needs_install=true
-      fi
-
-      if [ -e /Applications/Kanata.app ] && ! /usr/bin/grep -q 'local.nix-kanata' /Applications/Kanata.app/Contents/Info.plist 2>/dev/null; then
-        echo "warning: /Applications/Kanata.app exists and is not managed by this module; leaving it unchanged" >&2
-      elif [ "$kanata_app_needs_install" = true ]; then
+      if [ -e /Applications/Kanata.app ] && /usr/bin/grep -q 'local.nix-kanata' /Applications/Kanata.app/Contents/Info.plist 2>/dev/null; then
         /bin/rm -rf /Applications/Kanata.app
-        /usr/bin/install -d -m 0755 /Applications/Kanata.app/Contents/MacOS
-        /bin/cp ${darwinKanataPackage}/bin/kanata /Applications/Kanata.app/Contents/MacOS/kanata
-        /bin/chmod 0755 /Applications/Kanata.app/Contents/MacOS/kanata
-        /bin/chmod 0755 /Applications/Kanata.app/Contents/MacOS
-        /bin/cat > /Applications/Kanata.app/Contents/Info.plist <<'EOF'
-      <?xml version="1.0" encoding="UTF-8"?>
-      <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-      <plist version="1.0">
-      <dict>
-        <key>CFBundleDisplayName</key>
-        <string>Kanata</string>
-        <key>CFBundleExecutable</key>
-        <string>kanata</string>
-        <key>CFBundleIdentifier</key>
-        <string>local.nix-kanata</string>
-        <key>CFBundleName</key>
-        <string>Kanata</string>
-        <key>CFBundlePackageType</key>
-        <string>APPL</string>
-        <key>CFBundleVersion</key>
-        <string>${darwinKanataVersion}</string>
-      </dict>
-      </plist>
-      EOF
-        /usr/bin/codesign --force --deep --sign - --identifier local.nix-kanata /Applications/Kanata.app
       fi
+
+      /bin/rm -f /Library/PrivilegedHelperTools/local.nix-kanata-root
 
       for label in \
         org.nixos.start_karabiner_daemons \
@@ -134,6 +112,7 @@ delib.module {
 
       for label in \
         org.nixos.karabiner-elements \
+        org.nixos.kanata \
         org.nixos.activate_karabiner_system_ext \
         org.pqrs.service.agent.Karabiner-Menu \
         org.pqrs.service.agent.Karabiner-Core-Service \
@@ -156,18 +135,7 @@ delib.module {
       /usr/bin/pkill -f '/Library/Application Support/org.pqrs/Karabiner-Elements/bin/karabiner_' >/dev/null 2>&1 || true
       /usr/bin/pkill -f '/Library/Application Support/org.pqrs/Karabiner-Elements/Karabiner-' >/dev/null 2>&1 || true
 
-      kanata_tcc_count="$(
-        {
-          /usr/bin/sqlite3 "/Users/${profile.username}/Library/Application Support/com.apple.TCC/TCC.db" \
-            "select count(*) from access where service = 'kTCCServiceListenEvent' and (client like '%Kanata%' or client like '%kanata%' or client like '%local.nix-kanata%');" || true
-          /usr/bin/sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db" \
-            "select count(*) from access where service = 'kTCCServiceListenEvent' and (client like '%Kanata%' or client like '%kanata%' or client like '%local.nix-kanata%');" || true
-        } 2>/dev/null | /usr/bin/awk '{total += $1} END {print total + 0}'
-      )"
-      if [ "$kanata_tcc_count" = 0 ]; then
-        echo "warning: Kanata has no Input Monitoring permission; enable /Applications/Kanata.app in System Settings > Privacy & Security > Input Monitoring" >&2
-      fi
-
+      /bin/rm -f "/Users/${profile.username}/Library/LaunchAgents/org.nixos.kanata.plist"
       /bin/launchctl kickstart -k system/org.nixos.kanata >/dev/null 2>&1 || true
     '';
   };
