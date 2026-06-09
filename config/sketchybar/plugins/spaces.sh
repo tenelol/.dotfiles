@@ -4,11 +4,12 @@ SKETCHYBAR_BIN="/opt/homebrew/bin/sketchybar"
 RIFT_CLI="/opt/homebrew/bin/rift-cli"
 STATE_DIR="${TMPDIR:-/tmp}/sketchybar"
 STATE_FILE="$STATE_DIR/focused_workspace"
-TEXT_DIM=0xa8f5f7fa
-TEXT_STRONG=0xffffffff
 
 theme_file="${XDG_CONFIG_HOME:-$HOME/.config}/theme/sketchybar.env"
 [ -r "$theme_file" ] && . "$theme_file"
+
+WORKSPACE_ACTIVE="${WORKSPACE_ACTIVE:-0xcff5f7fa}"
+WORKSPACE_INACTIVE="${WORKSPACE_INACTIVE:-0x78f5f7fa}"
 
 aerospace_running() {
   /usr/bin/pgrep -qx AeroSpace >/dev/null 2>&1 && [ -x /opt/homebrew/bin/aerospace ]
@@ -58,14 +59,14 @@ set_active() {
   is_managed_workspace "$1" || return 0
   item_exists "$1" || return 0
 
-  "$SKETCHYBAR_BIN" --set "$(space_item_name "$1")" label.color="$TEXT_STRONG"
+  "$SKETCHYBAR_BIN" --set "$(space_item_name "$1")" label.color="$WORKSPACE_ACTIVE"
 }
 
 set_inactive() {
   is_managed_workspace "$1" || return 0
   item_exists "$1" || return 0
 
-  "$SKETCHYBAR_BIN" --set "$(space_item_name "$1")" label.color="$TEXT_DIM"
+  "$SKETCHYBAR_BIN" --set "$(space_item_name "$1")" label.color="$WORKSPACE_INACTIVE"
 }
 
 focused_workspace="$FOCUSED"
