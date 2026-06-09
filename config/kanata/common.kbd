@@ -6,7 +6,7 @@
 
 (defalias
   capctl (tap-hold 200 180 (tap-dance-eager 200 (esc f12)) lctl)
-  fnav (tap-hold-tap-keys 200 120 f (layer-while-held navigation) (a e i o u))
+  fnav (tap-hold-tap-keys 200 150 f (layer-while-held navigation) (a e i o u))
   ime (cmd-log none error /run/current-system/sw/bin/azookey-toggle-ime)
   lcmd (tap-hold-press 200 180 @ime lmet)
 )
