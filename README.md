@@ -10,6 +10,7 @@ NixOS と `nix-darwin` を 1 つの flake で管理し、Home Manager は各 sys
 - `nixos`: x86_64 Linux laptop
 - `nvidia-desktop`: x86_64 Linux desktop
 - `nixos-server`: x86_64 Linux headless server
+- `wsl`: x86_64 Linux NixOS-WSL environment
 - `macbook`: aarch64 Darwin laptop
 
 ## Architecture
@@ -47,6 +48,38 @@ codex login
 ```sh
 printenv OPENAI_API_KEY | codex login --with-api-key
 ```
+
+## NixOS-WSL
+
+Windows 側で NixOS-WSL を入れたら、この repo の `wsl` host で初回 boot します。
+`wsl.defaultUser` を `nixos` から `tener` に変える初回だけは、NixOS-WSL の手順に合わせて `switch` ではなく `boot` を使います。
+
+初回の NixOS shell はまだ `nixos` user なので、一時 clone から boot generation を作ります。
+
+```sh
+nix --extra-experimental-features 'nix-command flakes' shell nixpkgs#git -c git clone https://github.com/tenelol/.dotfiles.git /tmp/dotfiles
+cd /tmp/dotfiles
+sudo nix --extra-experimental-features 'nix-command flakes' run nixpkgs#nh -- os boot . -H wsl
+```
+
+PowerShell 側で一度止めて、root で新 generation を通してからもう一度止めます。
+
+```powershell
+wsl -t NixOS
+wsl -d NixOS --user root exit
+wsl -t NixOS
+```
+
+次回からは `tener` user で入れるので、通常の場所に clone して `nh` で運用します。
+
+```sh
+git clone https://github.com/tenelol/.dotfiles.git ~/.dotfiles
+cd ~/.dotfiles
+nh os switch . -H wsl
+```
+
+`wsl` host は NixOS-WSL module を import し、Windows interop、Windows PATH、Windows ssh-agent passthrough、`/mnt` automount を有効にします。
+WSL では不要な常駐 service を避けるため、共通 Linux base の `zramSwap` と `tailscale` はこの host だけ無効化しています。
 
 ## Raycast
 
@@ -105,6 +138,7 @@ Linux host を switch:
 nh os switch . -H nixos
 nh os switch . -H nvidia-desktop
 nh os switch . -H nixos-server
+nh os switch . -H wsl
 ```
 
 macOS host を build / switch:
@@ -150,7 +184,7 @@ nh darwin build . -H macbook-mac
 `nh` を使う前提で書いています。`nixos-rebuild` や `darwin-rebuild` を直接叩くより、普段の運用では `nh` を優先します。
 共通の評価入口として `./scripts/validate` を置いていて、`eval` / `linux` / `darwin` の 3 モードを使い分けます。
 手動で rebuild / switch するときも、実行前に既存の rebuild/switch process がないか確認し、AeroSpace process/config や現在の wallpaper から組み立てた config 名を `-H` に渡して現在の rice を保ちます。
-通常の `nixos` / `nvidia-desktop` は `indigo` rice を使い、`macbook` の通常運用は `macbook-rift` として明示します。`macbook-rift` は `img/rift.png`、`macbook-aerospace` は `img/aerospace.png` を使い、SketchyBar の文字色/accent、Ghostty foreground、JankyBorders の色も rice から切り替えます。Linux desktop では `switch` 後に Home Manager activation が `apply-theme-wallpaper` を叩くので、`niri` 上でも wallpaper が即時反映されます。headless な `nixos-server` にも rice 名は付きますが、今のところ見た目には影響しません。
+通常の `nixos` / `nvidia-desktop` は `indigo` rice を使い、`macbook` の通常運用は `macbook-rift` として明示します。`macbook-rift` は `img/rift.png`、`macbook-aerospace` は `img/aerospace.png` を使い、SketchyBar の文字色/accent、Ghostty foreground、JankyBorders の色も rice から切り替えます。Linux desktop では `switch` 後に Home Manager activation が `apply-theme-wallpaper` を叩くので、`niri` 上でも wallpaper が即時反映されます。headless な `nixos-server` と NixOS-WSL の `wsl` にも rice 名は付きますが、今のところ見た目には影響しません。
 
 ## Design Notes
 
@@ -163,6 +197,7 @@ nh darwin build . -H macbook-mac
 - Rift は `scrolling` を既定にして niri 風の column workflow に寄せる。`Alt+h/l` で column 間 focus、`Alt+Ctrl+Left/Right` で strip scroll、`Alt+Ctrl+Up/Down` で center/snap。3 本指 horizontal swipe は Rift の virtual workspace 移動に使う
 - 外部ディスプレイで `scrolling` が不安定なときは `Alt+b` で一時的に `bsp` へ戻す
 - `nixos.base` は全 NixOS host 共通、desktop 前提は host 非 server の module に分離
+- `wsl` は NixOS-WSL 前提の server host として扱い、GUI/desktop module を避けて CLI と Home Manager を共有する
 - macOS でも同じ Neovim 設定を使う。clipboard や language toolchain は Nix 側で揃える
 
 ## Editing Notes

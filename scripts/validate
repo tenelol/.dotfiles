@@ -42,6 +42,7 @@ case "$mode" in
     nh os build . -H nixos
     nh os build . -H nvidia-desktop
     nh os build . -H nixos-server
+    nh os build . -H wsl
     ;;
   darwin)
     nh darwin build . -H macbook-rift
