@@ -71,6 +71,7 @@ jobs:
           - build-nixos
           - build-nvidia-desktop
           - build-nixos-server
+          - build-wsl
 
     steps:
       - name: Checkout repository

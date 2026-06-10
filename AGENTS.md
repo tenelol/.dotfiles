@@ -12,6 +12,7 @@
   - `nh os build . -H nixos`
   - `nh os build . -H nvidia-desktop`
   - `nh os build . -H nixos-server`
+  - `nh os build . -H wsl`
 - Preferred Darwin build command:
   - `nh darwin build . -H macbook-rift`
 - Preferred switch commands mirror the build commands with `switch` instead of `build`.
@@ -30,6 +31,7 @@
 - `nixos`: x86_64-linux laptop
 - `nvidia-desktop`: x86_64-linux desktop
 - `nixos-server`: x86_64-linux server
+- `wsl`: x86_64-linux NixOS-WSL environment
 - `macbook`: aarch64-darwin laptop
 
 ## Documentation expectations

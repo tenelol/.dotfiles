@@ -9,6 +9,9 @@
     nix-darwin.url = "github:nix-darwin/nix-darwin";
     nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
 
+    nixos-wsl.url = "github:nix-community/NixOS-WSL";
+    nixos-wsl.inputs.nixpkgs.follows = "nixpkgs";
+
     denix.url = "github:yunfachi/denix";
     denix.inputs.nixpkgs.follows = "nixpkgs";
     denix.inputs.home-manager.follows = "home-manager";

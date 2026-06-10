@@ -11,6 +11,7 @@
   - `nh os build . -H nixos`
   - `nh os build . -H nvidia-desktop`
   - `nh os build . -H nixos-server`
+  - `nh os build . -H wsl`
 - Preferred Darwin build command:
   - `nh darwin build . -H macbook`
 - Preferred switch commands mirror the build commands with `switch` instead of `build`.
@@ -35,11 +36,13 @@
 - `nixos`: x86_64-linux laptop
 - `nvidia-desktop`: x86_64-linux desktop
 - `nixos-server`: x86_64-linux headless server
+- `wsl`: x86_64-linux NixOS-WSL environment
 - `macbook`: aarch64-darwin laptop
 
 ## Flake inputs
 - `nixpkgs`: nixos-unstable
 - `home-manager`, `nix-darwin`: follow nixpkgs
+- `nixos-wsl`: NixOS module for WSL2; follows nixpkgs
 - `denix`: framework that auto-discovers hosts/modules/rices
 - `spicetify-nix`, `zen-browser`, `nix-hazkey`: feature-specific inputs
 
