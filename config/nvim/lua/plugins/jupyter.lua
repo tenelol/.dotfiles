@@ -487,7 +487,7 @@ return {
 	}),
 
 	plugin.spec("molten-nvim", {
-		lazy = false,
+		lazy = true,
 		cmd = {
 			"MoltenDeinit",
 			"MoltenDelete",

@@ -25,7 +25,32 @@ vim.opt.undofile = true
 vim.opt.updatetime = 250
 vim.opt.winblend = 12
 
-if vim.fn.has("mac") == 1 then
+if vim.fn.has("wsl") == 1 and vim.fn.executable("clip.exe") == 1 and vim.fn.executable("powershell.exe") == 1 then
+    vim.g.clipboard = {
+        name = "wsl-clipboard",
+        copy = {
+            ["+"] = { "clip.exe" },
+            ["*"] = { "clip.exe" },
+        },
+        paste = {
+            ["+"] = {
+                "powershell.exe",
+                "-NoLogo",
+                "-NoProfile",
+                "-Command",
+                "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; Get-Clipboard -Raw",
+            },
+            ["*"] = {
+                "powershell.exe",
+                "-NoLogo",
+                "-NoProfile",
+                "-Command",
+                "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; Get-Clipboard -Raw",
+            },
+        },
+        cache_enabled = 0,
+    }
+elseif vim.fn.has("mac") == 1 then
     vim.g.clipboard = {
         name = "pbcopy",
         copy = {
