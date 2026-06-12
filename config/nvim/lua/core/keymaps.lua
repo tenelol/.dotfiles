@@ -10,7 +10,9 @@ vim.api.nvim_create_user_command("SelectAll", "normal! ggVG", {
   desc = "Select the entire buffer",
 })
 
-map("i", "kj", "<Esc>", { silent = true })
+if not is_wsl then
+  map("i", "kj", "<Esc>", { silent = true })
+end
 map("t", "<C-s>", [[<C-\><C-n>]], { noremap = true, silent = true })
 map({ "n", "i", "v" }, "<leader>va", select_all, { silent = true, desc = "Select all" })
 
