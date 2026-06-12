@@ -22,6 +22,7 @@ end
 
 return {
 	plugin.spec("skkeleton", {
+		enabled = vim.fn.has("wsl") ~= 1,
 		lazy = false,
 		dependencies = {
 			plugin.dep("denops-vim", {

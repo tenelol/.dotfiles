@@ -6,8 +6,36 @@ return {
         config = function()
             local cmp = require("cmp")
             local luasnip = require("luasnip")
+            local is_wsl = vim.fn.has("wsl") == 1
 
             require("luasnip.loaders.from_vscode").lazy_load()
+
+            local mappings = {
+                ["<C-Space>"] = cmp.mapping.complete(),
+                ["<C-b>"] = cmp.mapping.scroll_docs(-4),
+                ["<C-f>"] = cmp.mapping.scroll_docs(4),
+                ["<C-n>"] = cmp.mapping.select_next_item({ behavior = cmp.SelectBehavior.Select }),
+                ["<C-p>"] = cmp.mapping.select_prev_item({ behavior = cmp.SelectBehavior.Select }),
+                ["<CR>"] = cmp.mapping.confirm({ select = true }),
+            }
+
+            if not is_wsl then
+                mappings["<C-j>"] = cmp.mapping(function(fallback)
+                    if luasnip.expand_or_jumpable() then
+                        luasnip.expand_or_jump()
+                    else
+                        fallback()
+                    end
+                end, { "i", "s" })
+
+                mappings["<C-k>"] = cmp.mapping(function(fallback)
+                    if luasnip.jumpable(-1) then
+                        luasnip.jump(-1)
+                    else
+                        fallback()
+                    end
+                end, { "i", "s" })
+            end
 
             cmp.setup({
                 snippet = {
@@ -15,28 +43,7 @@ return {
                         luasnip.lsp_expand(args.body)
                     end,
                 },
-                mapping = cmp.mapping.preset.insert({
-                    ["<C-Space>"] = cmp.mapping.complete(),
-                    ["<C-b>"] = cmp.mapping.scroll_docs(-4),
-                    ["<C-f>"] = cmp.mapping.scroll_docs(4),
-                    ["<C-n>"] = cmp.mapping.select_next_item({ behavior = cmp.SelectBehavior.Select }),
-                    ["<C-p>"] = cmp.mapping.select_prev_item({ behavior = cmp.SelectBehavior.Select }),
-                    ["<CR>"] = cmp.mapping.confirm({ select = true }),
-                    ["<C-j>"] = cmp.mapping(function(fallback)
-                        if luasnip.expand_or_jumpable() then
-                            luasnip.expand_or_jump()
-                        else
-                            fallback()
-                        end
-                    end, { "i", "s" }),
-                    ["<C-k>"] = cmp.mapping(function(fallback)
-                        if luasnip.jumpable(-1) then
-                            luasnip.jump(-1)
-                        else
-                            fallback()
-                        end
-                    end, { "i", "s" }),
-                }),
+                mapping = cmp.mapping.preset.insert(mappings),
                 sources = cmp.config.sources({
                     { name = "nvim_lsp" },
                     { name = "luasnip" },
