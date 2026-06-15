@@ -9,10 +9,13 @@ Usage:
   imoocs open <moocs-url>
   imoocs slide collect --path <dir> --year <year>
   imoocs course|lesson|drive <action> [args...]
+  imoocs assignment show <moocs-url>
   imoocs assignment submit --confirm --course-id <id> --problem-id <id> [--file <path>] [--text <text>]
   imoocs assignment upload --confirm --course-id <id> --problem-id <id> --file <path>
   imoocs assignment push <courseId> <problemId>
   imoocs auth status
+  imoocs auth login
+  imoocs auth logout
   imoocs reset
 
 Notes:
@@ -148,39 +151,632 @@ simple_unsupported() {
     "$data_json"
 }
 
+moocs_http_cmd() {
+  local action="$1"
+  shift
+
+  IMOOCS_HTTP_ACTION="$action" BACKEND="$backend" python3 - "$@" <<'PY'
+import getpass
+import html
+import http.cookiejar
+import json
+import os
+import re
+import sys
+import urllib.error
+import urllib.parse
+import urllib.request
+from http.cookiejar import Cookie
+
+SERVICE = "imoocs"
+ACCOUNT = "moocs-session-cookies"
+BASE_URL = "https://moocs.iniad.org"
+SIGN_IN_URL = f"{BASE_URL}/auth/iniad"
+BACKEND = os.environ["BACKEND"]
+
+try:
+    import keyring
+except Exception as exc:  # pragma: no cover - depends on host keyring backend.
+    keyring = None
+    KEYRING_ERROR = str(exc)
+else:
+    KEYRING_ERROR = ""
+
+
+def print_json(payload):
+    print(json.dumps(payload, ensure_ascii=False, separators=(",", ":")))
+
+
+def envelope(ok, kind, action, status, data=None, code="", message="", submission_state="none"):
+    payload = {
+        "ok": ok,
+        "kind": kind,
+        "action": action,
+        "backend": BACKEND,
+        "status": status,
+        "data": data or {},
+        "submission": {"state": submission_state},
+    }
+    if code or message:
+        payload["error"] = {"code": code or "error", "message": message}
+    return payload
+
+
+def fail_text(message, code=1):
+    print(message, file=sys.stderr)
+    raise SystemExit(code)
+
+
+def require_keyring():
+    if keyring is None:
+        fail_text(f"keyring support is unavailable: {KEYRING_ERROR}", 69)
+
+
+def cookie_to_dict(cookie):
+    return {
+        "version": cookie.version,
+        "name": cookie.name,
+        "value": cookie.value,
+        "port": cookie.port,
+        "port_specified": cookie.port_specified,
+        "domain": cookie.domain,
+        "domain_specified": cookie.domain_specified,
+        "domain_initial_dot": cookie.domain_initial_dot,
+        "path": cookie.path,
+        "path_specified": cookie.path_specified,
+        "secure": cookie.secure,
+        "expires": cookie.expires,
+        "discard": cookie.discard,
+        "comment": cookie.comment,
+        "comment_url": cookie.comment_url,
+        "rest": cookie._rest,
+        "rfc2109": cookie.rfc2109,
+    }
+
+
+def cookie_from_dict(data):
+    return Cookie(
+        version=data.get("version", 0),
+        name=data["name"],
+        value=data["value"],
+        port=data.get("port"),
+        port_specified=data.get("port_specified", False),
+        domain=data.get("domain", "moocs.iniad.org"),
+        domain_specified=data.get("domain_specified", True),
+        domain_initial_dot=data.get("domain_initial_dot", False),
+        path=data.get("path", "/"),
+        path_specified=data.get("path_specified", True),
+        secure=data.get("secure", True),
+        expires=data.get("expires"),
+        discard=data.get("discard", False),
+        comment=data.get("comment"),
+        comment_url=data.get("comment_url"),
+        rest=data.get("rest", {}),
+        rfc2109=data.get("rfc2109", False),
+    )
+
+
+def load_cookie_jar():
+    jar = http.cookiejar.CookieJar()
+    if keyring is None:
+        return jar, "missing_keyring"
+    try:
+        raw = keyring.get_password(SERVICE, ACCOUNT)
+    except Exception:
+        return jar, "keyring_unavailable"
+    if not raw:
+        return jar, "empty"
+    try:
+        for item in json.loads(raw):
+            jar.set_cookie(cookie_from_dict(item))
+    except Exception:
+        return http.cookiejar.CookieJar(), "invalid"
+    return jar, "loaded"
+
+
+def save_cookie_jar(jar):
+    require_keyring()
+    cookies = [
+        cookie_to_dict(cookie)
+        for cookie in jar
+        if cookie.domain.lstrip(".").lower().endswith("moocs.iniad.org")
+    ]
+    keyring.set_password(SERVICE, ACCOUNT, json.dumps(cookies, ensure_ascii=False))
+
+
+def delete_cookie_jar():
+    require_keyring()
+    try:
+        keyring.delete_password(SERVICE, ACCOUNT)
+    except Exception:
+        pass
+
+
+def browser_headers(accept="text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"):
+    return {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15",
+        "Accept": accept,
+        "Accept-Language": "ja,en-US;q=0.9,en;q=0.8",
+    }
+
+
+def opener_for(jar):
+    return urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
+
+
+def decode_body(data):
+    for encoding in ("utf-8", "shift_jis", "cp932"):
+        try:
+            return data.decode(encoding)
+        except UnicodeDecodeError:
+            continue
+    return data.decode("utf-8", errors="replace")
+
+
+def request(jar, url, *, method="GET", data=None, headers=None, timeout=30):
+    request_headers = browser_headers()
+    if headers:
+        request_headers.update(headers)
+    req = urllib.request.Request(url, data=data, headers=request_headers, method=method)
+    try:
+        with opener_for(jar).open(req, timeout=timeout) as response:
+            body = response.read()
+            return response.geturl(), response.status, dict(response.headers), body
+    except urllib.error.HTTPError as exc:
+        body = exc.read()
+        return exc.geturl(), exc.code, dict(exc.headers), body
+
+
+def attr(name, text):
+    match = re.search(rf"""(?is)\b{re.escape(name)}\s*=\s*["']([^"']*)["']""", text)
+    return html.unescape(match.group(1)) if match else None
+
+
+def csrf_token(page_html):
+    for match in re.finditer(r"(?is)<meta\b([^>]*)>", page_html):
+        attrs = match.group(1)
+        if (attr("name", attrs) or "").lower() == "csrf-token":
+            value = attr("content", attrs)
+            if value:
+                return value
+    return None
+
+
+def looks_like_login_page(page_html, final_url=""):
+    lower = page_html.lower()
+    parsed = urllib.parse.urlparse(final_url)
+    return (
+        "kc-form-login" in lower
+        or "login-actions/authenticate" in lower
+        or "/auth/iniad" in parsed.path.lower()
+        or 'href="/auth/iniad"' in lower
+        or "ログインしてください" in page_html
+    )
+
+
+def login_form(page_html, page_url):
+    for match in re.finditer(r"(?is)<form\b([^>]*)>(.*?)</form>", page_html):
+        attrs = match.group(1)
+        body = match.group(2)
+        form_html = match.group(0)
+        normalized = form_html.lower()
+        if "kc-form-login" not in normalized and "login-actions/authenticate" not in normalized:
+            continue
+        action = attr("action", attrs) or page_url
+        action_url = urllib.parse.urljoin(page_url, action)
+        fields = {}
+        for input_match in re.finditer(r"(?is)<input\b([^>]*)>", body):
+            input_attrs = input_match.group(1)
+            name = attr("name", input_attrs)
+            input_type = (attr("type", input_attrs) or "text").lower()
+            if name and input_type == "hidden":
+                fields[name] = attr("value", input_attrs) or ""
+        return action_url, fields
+    return None
+
+
+def normalize_text(value):
+    value = re.sub(r"[ \t\f\v]+", " ", value)
+    value = re.sub(r"\n{3,}", "\n\n", value)
+    return value.strip()
+
+
+def text_from_html(fragment):
+    value = re.sub(r"(?is)<(script|style|iframe|object|embed)\b.*?</\1>", " ", fragment)
+    value = re.sub(r"(?is)<button\b[^>]*>.*?</button>", " ", value)
+    value = re.sub(r"(?i)<br\s*/?>", "\n", value)
+    value = re.sub(r"(?i)</(p|div|h[1-6]|li|tr|section)>", "\n", value)
+    value = re.sub(r"(?is)<[^>]+>", " ", value)
+    lines = [normalize_text(html.unescape(line)) for line in value.splitlines()]
+    ignored = ("Toggle navigation", "Copyright")
+    clean_lines = []
+    seen = set()
+    for line in lines:
+        if not line or any(token in line for token in ignored):
+            continue
+        if line in seen:
+            continue
+        seen.add(line)
+        clean_lines.append(line)
+    return "\n\n".join(clean_lines)
+
+
+def page_title(page_html, fallback):
+    candidates = []
+    match = re.search(r"(?is)<title\b[^>]*>(.*?)</title>", page_html)
+    if match:
+        title = re.sub(r"(?i)\s*:?\s*iniad\s+moocs\s*$", "", html.unescape(match.group(1)))
+        candidates.append(title)
+    for pattern in (r"(?is)<h1\b[^>]*>(.*?)</h1>", r"(?is)<h2\b[^>]*>(.*?)</h2>"):
+        match = re.search(pattern, page_html)
+        if match:
+            candidates.append(text_from_html(match.group(1)))
+    candidates.append(fallback)
+    for candidate in candidates:
+        cleaned = normalize_text(candidate)
+        if cleaned:
+            return cleaned
+    return fallback
+
+
+def main_content(page_html):
+    for pattern in (
+        r"(?is)<section\b[^>]*class\s*=\s*['\"][^'\"]*\bcontent\b[^'\"]*['\"][^>]*>(.*?)</section>",
+        r"(?is)<div\b[^>]*class\s*=\s*['\"][^'\"]*\bcontent-wrapper\b[^'\"]*['\"][^>]*>(.*?)</div>\s*</div>",
+    ):
+        match = re.search(pattern, page_html)
+        if match:
+            return match.group(1)
+    return page_html
+
+
+def route_from_url(url):
+    parsed = urllib.parse.urlparse(url)
+    parts = [urllib.parse.unquote(part) for part in parsed.path.split("/") if part]
+    route = {"url": url}
+    if len(parts) >= 3 and parts[0] == "courses":
+        route.update({
+            "year": parts[1],
+            "courseCode": parts[2],
+            "courseId": f"{parts[1]}/{parts[2]}",
+        })
+    if len(parts) >= 4:
+        route["lessonId"] = parts[3]
+    if len(parts) >= 5:
+        route["pageId"] = "/".join(parts[4:])
+    return route
+
+
+def validate_moocs_url(url):
+    parsed = urllib.parse.urlparse(url)
+    if parsed.scheme not in ("http", "https") or parsed.hostname != "moocs.iniad.org":
+        raise ValueError("only https://moocs.iniad.org URLs are supported")
+    if parsed.username or parsed.password:
+        raise ValueError("URLs containing userinfo are not supported")
+
+
+def problem_descriptor(page_html, page_url):
+    for match in re.finditer(r"(?is)<div\b([^>]*)>", page_html):
+        attrs = match.group(1)
+        class_name = attr("class", attrs) or ""
+        url_prefix = attr("data-urlprefix", attrs)
+        if "problem-container" in class_name and url_prefix:
+            return {
+                "urlPrefix": urllib.parse.urljoin(page_url, url_prefix),
+                "language": attr("data-lang", attrs) or "",
+                "attributes": attrs,
+            }
+    return None
+
+
+def fetch_problem_json(jar, url, page_url, token):
+    headers = {
+        "Accept": "application/json",
+        "X-Requested-With": "XMLHttpRequest",
+        "Referer": page_url,
+    }
+    if token:
+        headers["X-CSRF-Token"] = token
+    final_url, status, _headers, body = request(jar, url, headers=headers)
+    if not (200 <= status < 400):
+        raise RuntimeError(f"problem endpoint returned HTTP {status}")
+    text = decode_body(body)
+    if looks_like_login_page(text, final_url):
+        raise PermissionError("authentication required")
+    return json.loads(text)
+
+
+def json_string(value):
+    if value is None:
+        return ""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, (int, float)):
+        return str(value)
+    if isinstance(value, str):
+        return value
+    return json.dumps(value, ensure_ascii=False)
+
+
+def current_answers_from_json(value):
+    if not isinstance(value, dict):
+        return {}
+    answers = {}
+    for name, answer in value.items():
+        if isinstance(answer, dict):
+            answers[name] = json_string(answer.get("data"))
+        else:
+            answers[name] = json_string(answer)
+    return answers
+
+
+def labels_by_id(fragment):
+    labels = {}
+    for match in re.finditer(r"(?is)<label\b([^>]*)>(.*?)</label>", fragment):
+        label_for = attr("for", match.group(1))
+        if label_for:
+            labels[label_for] = text_from_html(match.group(2))
+    return labels
+
+
+def form_fields(fragment, answers):
+    labels = labels_by_id(fragment)
+    fields = []
+    for match in re.finditer(r"(?is)<input\b([^>]*)>", fragment):
+        attrs = match.group(1)
+        name = attr("name", attrs) or ""
+        input_type = (attr("type", attrs) or "text").lower()
+        if not name or input_type in ("hidden", "submit", "button"):
+            continue
+        field_id = attr("id", attrs) or name
+        if input_type == "file":
+            kind = "file"
+            current = ""
+        elif input_type == "checkbox":
+            kind = "checkbox"
+            current = answers.get(name, "true" if re.search(r"(?is)\bchecked\b", attrs) else "false")
+        else:
+            kind = "singleLineText"
+            current = answers.get(name, attr("value", attrs) or "")
+        fields.append({
+            "pid": name,
+            "name": name,
+            "label": labels.get(field_id) or labels.get(name) or name,
+            "kind": kind,
+            "currentValue": current,
+            "required": bool(re.search(r"(?is)\brequired\b", attrs)),
+        })
+    for match in re.finditer(r"(?is)<textarea\b([^>]*)>(.*?)</textarea>", fragment):
+        attrs = match.group(1)
+        name = attr("name", attrs) or ""
+        if not name:
+            continue
+        field_id = attr("id", attrs) or name
+        fields.append({
+            "pid": name,
+            "name": name,
+            "label": labels.get(field_id) or labels.get(name) or name,
+            "kind": "multiLineText",
+            "currentValue": answers.get(name, text_from_html(match.group(2))),
+            "required": bool(re.search(r"(?is)\brequired\b", attrs)),
+        })
+    return fields
+
+
+def auth_required_payload(url, store_status):
+    return envelope(
+        False,
+        "open",
+        "route",
+        "auth_required",
+        {
+            "url": url,
+            "cookieStore": store_status,
+            "next": [
+                "Run `imoocs auth login` in an interactive TTY, then retry `imoocs open <url>`.",
+                "No BrowserUse, Playwright, or manual browser fallback was performed.",
+            ],
+        },
+        "auth_required",
+        "MOOCs authentication is required or the stored session expired.",
+    )
+
+
+def open_url(url):
+    try:
+        validate_moocs_url(url)
+    except ValueError as exc:
+        print_json(envelope(False, "open", "route", "invalid_args", {"url": url}, "invalid_url", str(exc)))
+        return 64
+
+    jar, store_status = load_cookie_jar()
+    if store_status != "loaded":
+        print_json(auth_required_payload(url, store_status))
+        return 2
+
+    final_url, status, _headers, body = request(jar, url)
+    page_html = decode_body(body)
+    if not (200 <= status < 400):
+        print_json(envelope(False, "open", "route", "http_error", {"url": url, "httpStatus": status}, "http_error", f"MOOCs returned HTTP {status}"))
+        return 2
+    if looks_like_login_page(page_html, final_url):
+        print_json(auth_required_payload(url, "expired"))
+        return 2
+
+    save_cookie_jar(jar)
+    token = csrf_token(page_html)
+    content_html = main_content(page_html)
+    title = page_title(page_html, urllib.parse.unquote(urllib.parse.urlparse(final_url).path.rstrip("/").split("/")[-1] or "MOOCs"))
+    body_text = text_from_html(content_html)
+    route = route_from_url(final_url)
+    descriptor = problem_descriptor(page_html, final_url)
+    problem = None
+
+    if descriptor:
+        prefix = descriptor["urlPrefix"].rstrip("/")
+        answer_state = "unknown"
+        answers = {}
+        problem_html = ""
+        endpoint_errors = []
+        try:
+            status_json = fetch_problem_json(jar, f"{prefix}/status", final_url, token)
+            if isinstance(status_json, str):
+                answer_state = status_json
+            elif isinstance(status_json, dict):
+                answer_state = status_json.get("state") or status_json.get("answer_state") or status_json.get("status") or "unknown"
+        except Exception as exc:
+            endpoint_errors.append({"endpoint": "status", "message": str(exc)})
+        try:
+            problem_url = f"{prefix}/problem"
+            if descriptor.get("language"):
+                problem_url += "?" + urllib.parse.urlencode({"lang": descriptor["language"]})
+            problem_json = fetch_problem_json(jar, problem_url, final_url, token)
+            if isinstance(problem_json, dict):
+                problem_html = problem_json.get("html") or ""
+        except Exception as exc:
+            endpoint_errors.append({"endpoint": "problem", "message": str(exc)})
+        try:
+            answers_json = fetch_problem_json(jar, f"{prefix}/answers", final_url, token)
+            answers = current_answers_from_json(answers_json)
+        except Exception as exc:
+            endpoint_errors.append({"endpoint": "answers", "message": str(exc)})
+
+        problem_text = text_from_html(problem_html) if problem_html else ""
+        fields = form_fields(problem_html, answers) if problem_html else []
+        problem_id = urllib.parse.unquote(urllib.parse.urlparse(prefix).path.rstrip("/").split("/")[-1] or prefix)
+        problem = {
+            "problemId": problem_id,
+            "urlPrefix": prefix,
+            "status": answer_state,
+            "isSubmittable": answer_state == "open",
+            "bodyText": problem_text,
+            "fields": fields,
+            "currentAnswers": answers,
+        }
+        if endpoint_errors:
+            problem["endpointErrors"] = endpoint_errors
+        if problem_text:
+            body_text = "\n\n".join(part for part in [body_text, problem_text] if part)
+        route["problemId"] = problem_id
+
+    data = {
+        "url": url,
+        "finalUrl": final_url,
+        "route": route,
+        "title": title,
+        "bodyText": body_text,
+        "problem": problem,
+        "assignments": [{
+            "courseId": route.get("courseId"),
+            "lessonId": route.get("lessonId"),
+            "pageId": route.get("pageId"),
+            "problemId": route.get("problemId"),
+            "title": title,
+            "fields": problem.get("fields", []) if problem else [],
+            "status": problem.get("status") if problem else None,
+            "isSubmittable": problem.get("isSubmittable") if problem else None,
+        }] if problem else [],
+    }
+    print_json(envelope(True, "open", "route", "resolved", data))
+    return 0
+
+
+def auth_login():
+    username = os.environ.get("IMOOCS_USERNAME", "").strip()
+    if not username:
+        username = input("ユーザー名: ").strip()
+    password = getpass.getpass("パスワード: ")
+    if not username or not password:
+        fail_text("username and password are required", 64)
+
+    jar = http.cookiejar.CookieJar()
+    final_url, status, _headers, body = request(jar, SIGN_IN_URL)
+    page_html = decode_body(body)
+    form = login_form(page_html, final_url)
+    if form is None:
+        if not looks_like_login_page(page_html, final_url):
+            save_cookie_jar(jar)
+            print("auth login completed; existing session is already valid")
+            return 0
+        fail_text("login form was not found", 2)
+
+    action_url, fields = form
+    fields["username"] = username
+    fields["password"] = password
+    fields["login"] = fields.get("login", "LOG IN")
+    encoded = urllib.parse.urlencode(fields).encode()
+    headers = {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Referer": final_url,
+        "Origin": urllib.parse.urlunparse(urllib.parse.urlparse(action_url)._replace(path="", params="", query="", fragment="")),
+    }
+    final_url, status, _headers, body = request(jar, action_url, method="POST", data=encoded, headers=headers)
+    page_html = decode_body(body)
+    if not (200 <= status < 400):
+        fail_text(f"login failed: HTTP {status}", 2)
+    if looks_like_login_page(page_html, final_url):
+        fail_text("login failed: credentials were rejected or additional verification is required", 2)
+
+    final_url, status, _headers, body = request(jar, f"{BASE_URL}/courses")
+    page_html = decode_body(body)
+    if not (200 <= status < 400) or looks_like_login_page(page_html, final_url):
+        fail_text("login did not produce an authenticated MOOCs session", 2)
+    save_cookie_jar(jar)
+    print("auth login completed")
+    return 0
+
+
+def auth_status():
+    jar, store_status = load_cookie_jar()
+    if store_status == "loaded" and any(True for _ in jar):
+        print("auth session cookies are stored in the keyring")
+    elif store_status in ("missing_keyring", "keyring_unavailable"):
+        print("auth keyring is unavailable")
+        return 1
+    else:
+        print("auth session cookies are not stored")
+    return 0
+
+
+def auth_logout():
+    delete_cookie_jar()
+    print("auth session cookies were removed from the keyring")
+    return 0
+
+
+def main():
+    action = os.environ["IMOOCS_HTTP_ACTION"]
+    args = sys.argv[1:]
+    if action == "open":
+        if len(args) != 1:
+            print_json(envelope(False, "open", "route", "invalid_args", {}, "invalid_args", "usage: imoocs open <moocs-url>"))
+            return 64
+        return open_url(args[0])
+    if action == "auth-login":
+        return auth_login()
+    if action == "auth-status":
+        return auth_status()
+    if action == "auth-logout":
+        return auth_logout()
+    print_json(envelope(False, "internal", action, "invalid_args", {}, "invalid_action", f"unknown internal action: {action}"))
+    return 64
+
+
+try:
+    raise SystemExit(main())
+except KeyboardInterrupt:
+    print("interrupted", file=sys.stderr)
+    raise SystemExit(130)
+PY
+}
+
 open_cmd() {
   if [[ $# -ne 1 ]]; then
     json_envelope false open route invalid_args "invalid_args" "usage: imoocs open <moocs-url>"
     return 64
   fi
 
-  local url="$1"
-  local data_json
-  data_json="$(
-    URL="$url" python3 - <<'PY'
-import json
-import os
-
-print(json.dumps({
-    "url": os.environ["URL"],
-    "next": [
-        "For slide PDFs, use: imoocs slide collect --path <dir> --year <year>",
-        "For unsupported course, lesson, assignment, drive, or attendance operations, report the unsupported JSON envelope.",
-    ],
-}, ensure_ascii=False))
-PY
-  )"
-
-  json_envelope \
-    false \
-    open \
-    route \
-    "unsupported" \
-    "unsupported_by_moocs_collect" \
-    "moocs-collect has no direct URL router; use this envelope instead of parsing the URL manually." \
-    "none" \
-    "$data_json"
-  return 2
+  moocs_http_cmd open "$1"
 }
 
 slide_collect_cmd() {
@@ -434,6 +1030,14 @@ assignment_cmd() {
   shift || true
 
   case "$action" in
+    show)
+      if [[ $# -eq 1 && "$1" == http*://moocs.iniad.org/* ]]; then
+        moocs_http_cmd open "$1"
+      else
+        simple_unsupported assignment show
+        return 2
+      fi
+      ;;
     submit|upload)
       assignment_stage_cmd "$action" "$@"
       ;;
@@ -467,6 +1071,7 @@ PY
     ""|-h|--help)
       cat <<'EOF'
 Usage:
+  imoocs assignment show <moocs-url>
   imoocs assignment submit --confirm --course-id <id> --problem-id <id> [--file <path>] [--text <text>]
   imoocs assignment upload --confirm --course-id <id> --problem-id <id> --file <path>
   imoocs assignment push <courseId> <problemId>
@@ -483,10 +1088,16 @@ auth_cmd() {
   local action="${1:-status}"
   case "$action" in
     status)
-      echo "auth is handled by collect-cli interactive prompts and the OS keyring service me.yu7400ki.moocs-collect"
+      moocs_http_cmd auth-status
+      ;;
+    login)
+      moocs_http_cmd auth-login
+      ;;
+    logout)
+      moocs_http_cmd auth-logout
       ;;
     *)
-      echo "auth $action is not implemented by moocs-collect; no credentials were changed" >&2
+      echo "auth $action is not implemented; no credentials were changed" >&2
       return 2
       ;;
   esac
@@ -506,7 +1117,7 @@ main() {
       usage
       ;;
     --version)
-      echo "imoocs 0.1.1 ($backend wrapper)"
+      echo "imoocs 0.2.0 ($backend wrapper)"
       ;;
     open)
       open_cmd "$@"
