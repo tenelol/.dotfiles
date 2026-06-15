@@ -50,7 +50,13 @@ If the user cannot type into the Codex TTY, use the macOS hidden password dialog
 imoocs auth login --gui
 ```
 
-`imoocs auth login` prompts for the password in the user's TTY, while `--gui` opens a macOS hidden-answer dialog. Both modes store only the resulting MOOCs session cookies in the local keyring. Do not ask the user to paste the password into chat. `imoocs auth logout` removes those stored session cookies.
+If the user explicitly allows using the existing moocs-collect Keychain credential, prefer the non-interactive Keychain path:
+
+```bash
+imoocs auth login --keychain
+```
+
+`imoocs auth login` prompts for the password in the user's TTY, `--gui` opens a macOS hidden-answer dialog, and `--keychain` reads the existing `me.yu7400ki.moocs-collect` Keychain item for the current username without printing it. `imoocs` itself stores only the resulting MOOCs session cookies in the local keyring. Do not ask the user to paste the password into chat. `imoocs auth logout` removes those stored session cookies.
 
 Never ask the user to paste credentials into chat. If the user wants to avoid typing a username repeatedly, tell them to set `IMOOCS_USERNAME` in their own shell. Use the `username` value in this skill only for `imoocs` commands in the current task; do not copy it into unrelated repo files or final-output command examples unless the user asks.
 
@@ -105,9 +111,10 @@ Only handle assignment submit/upload/push when the user explicitly asks for that
 
 ### Inspect Before Writing
 
+Start from the URL router or an explicit `courseId` / `problemId`, then inspect the assignment with whatever detail command the local CLI supports:
+
 ```bash
 imoocs open '<lesson-url>'
-imoocs assignment show <courseId> <problemId>
 imoocs assignment show '<lesson-url>'
 ```
 
@@ -138,13 +145,28 @@ imoocs assignment submit --confirm --course-id <courseId> --problem-id <problemI
 imoocs assignment upload --confirm --course-id <courseId> --problem-id <problemId> --file <path>
 ```
 
-Parse the JSON envelope after every submit/upload. In confirm mode, submit/upload is not a server submission. It only writes a local draft under `.imoocs/drafts` and returns a JSON envelope with `submission.state: "staged"`.
+If the local CLI advertises the newer field-based interface, text answers are submitted as JSON keyed by `pid` and files are uploaded by field `pid`. In this mode the CLI uses MOOCs' assignment autosave API directly and reports `submission.state: "auto"` when the server accepted the write:
+
+```bash
+printf '%s\n' '{"p1":"answer text"}' > /tmp/imoocs-answers.json
+imoocs assignment submit <courseId> <problemId> --data @/tmp/imoocs-answers.json
+imoocs assignment upload <courseId> <problemId> --pid ipynb <notebook.ipynb>
+imoocs assignment upload <courseId> <problemId> --pid html <notebook.html>
+```
+
+Parse the JSON envelope after every submit/upload. The CLI submission mode determines the result:
+
+| Mode | Meaning |
+|---|---|
+| `confirm` | No server submission yet. The operation only stages a local draft, typically under `.imoocs/drafts`. |
+| `auto` | The operation sends to the MOOCs server immediately. Treat this as a real submission. |
+| unset/invalid | Treat `VALIDATION_ERROR` as no submission and run `imoocs setup` or report the required setup. |
 
 Prefer `confirm` mode for agent-assisted work unless the user explicitly asked for immediate server submission and the local CLI clearly supports it. In confirm mode, never report completion as a submission until `push` has succeeded and the reflected values can be verified.
 
 ### Push Confirmed Drafts
 
-Final server confirmation is reserved for the user in a real TTY:
+In confirm mode, final server confirmation is reserved for the user in a real TTY:
 
 ```bash
 imoocs assignment push <courseId> <problemId>
@@ -160,11 +182,11 @@ After any server submission attempt or user-confirmed push, verify the reflected
 imoocs assignment show '<lesson-url>'
 ```
 
-Check that required text fields have `currentValue`, required file fields have `uploadedFile.filename`, and the assignment status is submitted or equivalent. If verification is unsupported, say verification was not possible and do not claim the reflected server state was confirmed. Local file generation or confirm-mode staging alone is not submission completion.
+Check that required text fields have `currentValue`, required file fields have `uploadedFile.filename`, and the assignment status is submitted or equivalent. If `assignment show` is unsupported, say verification was not possible and do not claim the reflected server state was confirmed. Local file generation or confirm-mode staging alone is not submission completion.
 
 ## Unsupported Surfaces
 
-Some surfaces may still be unsupported by the local CLI backend. Commands for course, lesson, drive, attendance, assignment submit/upload, or assignment push may return JSON envelopes with an unsupported reason such as `unsupported_by_moocs_collect`.
+Some surfaces may still be unsupported by the local CLI backend. Commands for course, lesson, drive, attendance, direct URL routing, assignment submit/upload, or assignment push may return JSON envelopes with an unsupported reason such as `unsupported_by_moocs_collect`.
 
 Use those envelopes as authoritative. Do not replace them with browser inspection or Playwright unless the user explicitly authorizes that fallback.
 
