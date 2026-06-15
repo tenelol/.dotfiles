@@ -10,6 +10,8 @@ Usage:
   imoocs slide collect --path <dir> --year <year>
   imoocs course|lesson|drive <action> [args...]
   imoocs assignment show <moocs-url>
+  imoocs assignment submit <courseId> <problemId> --data <json|@file>
+  imoocs assignment upload <courseId> <problemId> --pid <pid> <file>
   imoocs assignment submit --confirm --course-id <id> --problem-id <id> [--file <path>] [--text <text>]
   imoocs assignment upload --confirm --course-id <id> --problem-id <id> --file <path>
   imoocs assignment push <courseId> <problemId>
@@ -160,14 +162,17 @@ import getpass
 import html
 import http.cookiejar
 import json
+import mimetypes
 import os
 import re
 import subprocess
 import sys
+import uuid
 import urllib.error
 import urllib.parse
 import urllib.request
 from http.cookiejar import Cookie
+from pathlib import Path
 
 SERVICE = "imoocs"
 ACCOUNT = "moocs-session-cookies"
@@ -518,6 +523,27 @@ def current_answers_from_json(value):
     return answers
 
 
+def answer_summary(value):
+    if not isinstance(value, dict):
+        return {}
+    summary = {}
+    for name, answer in value.items():
+        if not isinstance(answer, dict):
+            continue
+        item = {"data": json_string(answer.get("data"))}
+        file_info = answer.get("file")
+        if isinstance(file_info, dict):
+            item["file"] = {
+                key: file_info.get(key)
+                for key in ("filename", "filetype", "timestamp")
+                if file_info.get(key) is not None
+            }
+        elif file_info:
+            item["file"] = file_info
+        summary[name] = item
+    return summary
+
+
 def labels_by_id(fragment):
     labels = {}
     for match in re.finditer(r"(?is)<label\b([^>]*)>(.*?)</label>", fragment):
@@ -527,7 +553,8 @@ def labels_by_id(fragment):
     return labels
 
 
-def form_fields(fragment, answers):
+def form_fields(fragment, answers, answer_details=None):
+    answer_details = answer_details or {}
     labels = labels_by_id(fragment)
     fields = []
     for match in re.finditer(r"(?is)<input\b([^>]*)>", fragment):
@@ -537,23 +564,28 @@ def form_fields(fragment, answers):
         if not name or input_type in ("hidden", "submit", "button"):
             continue
         field_id = attr("id", attrs) or name
+        detail = answer_details.get(name, {})
+        uploaded_file = detail.get("file") if isinstance(detail, dict) else None
         if input_type == "file":
             kind = "file"
-            current = ""
+            current = answers.get(name, "")
         elif input_type == "checkbox":
             kind = "checkbox"
             current = answers.get(name, "true" if re.search(r"(?is)\bchecked\b", attrs) else "false")
         else:
             kind = "singleLineText"
             current = answers.get(name, attr("value", attrs) or "")
-        fields.append({
+        field = {
             "pid": name,
             "name": name,
             "label": labels.get(field_id) or labels.get(name) or name,
             "kind": kind,
             "currentValue": current,
             "required": bool(re.search(r"(?is)\brequired\b", attrs)),
-        })
+        }
+        if uploaded_file:
+            field["uploadedFile"] = uploaded_file
+        fields.append(field)
     for match in re.finditer(r"(?is)<textarea\b([^>]*)>(.*?)</textarea>", fragment):
         attrs = match.group(1)
         name = attr("name", attrs) or ""
@@ -623,6 +655,7 @@ def open_url(url):
         prefix = descriptor["urlPrefix"].rstrip("/")
         answer_state = "unknown"
         answers = {}
+        answer_details = {}
         problem_html = ""
         endpoint_errors = []
         try:
@@ -645,11 +678,12 @@ def open_url(url):
         try:
             answers_json = fetch_problem_json(jar, f"{prefix}/answers", final_url, token)
             answers = current_answers_from_json(answers_json)
+            answer_details = answer_summary(answers_json)
         except Exception as exc:
             endpoint_errors.append({"endpoint": "answers", "message": str(exc)})
 
         problem_text = text_from_html(problem_html) if problem_html else ""
-        fields = form_fields(problem_html, answers) if problem_html else []
+        fields = form_fields(problem_html, answers, answer_details) if problem_html else []
         problem_id = urllib.parse.unquote(urllib.parse.urlparse(prefix).path.rstrip("/").split("/")[-1] or prefix)
         problem = {
             "problemId": problem_id,
@@ -659,6 +693,7 @@ def open_url(url):
             "bodyText": problem_text,
             "fields": fields,
             "currentAnswers": answers,
+            "currentAnswerDetails": answer_details,
         }
         if endpoint_errors:
             problem["endpointErrors"] = endpoint_errors
@@ -680,11 +715,308 @@ def open_url(url):
             "problemId": route.get("problemId"),
             "title": title,
             "fields": problem.get("fields", []) if problem else [],
+            "currentAnswers": problem.get("currentAnswers") if problem else None,
+            "currentAnswerDetails": problem.get("currentAnswerDetails") if problem else None,
             "status": problem.get("status") if problem else None,
             "isSubmittable": problem.get("isSubmittable") if problem else None,
         }] if problem else [],
     }
     print_json(envelope(True, "open", "route", "resolved", data))
+    return 0
+
+
+def assignment_url_prefix(course_id, problem_id):
+    if not course_id or not problem_id:
+        raise ValueError("courseId and problemId are required")
+    if any(part in ("", ".", "..") for part in course_id.split("/")):
+        raise ValueError("invalid courseId")
+    if "/" in problem_id or problem_id in ("", ".", ".."):
+        raise ValueError("invalid problemId")
+    course_path = "/".join(urllib.parse.quote(part, safe="") for part in course_id.split("/"))
+    return f"{BASE_URL}/assignments/{course_path}/{urllib.parse.quote(problem_id, safe='')}"
+
+
+def load_authenticated_jar(kind, action, course_id="", problem_id=""):
+    jar, store_status = load_cookie_jar()
+    if store_status != "loaded":
+        print_json(envelope(
+            False,
+            kind,
+            action,
+            "auth_required",
+            {
+                "courseId": course_id,
+                "problemId": problem_id,
+                "cookieStore": store_status,
+                "serverSubmitted": False,
+            },
+            "auth_required",
+            "MOOCs authentication is required or the stored session expired.",
+        ))
+        raise SystemExit(2)
+    return jar
+
+
+def ensure_assignment_open(jar, prefix, course_id, problem_id, action):
+    try:
+        status_json = fetch_problem_json(jar, f"{prefix}/status", prefix, None)
+    except PermissionError:
+        print_json(envelope(
+            False,
+            "assignment",
+            action,
+            "auth_required",
+            {"courseId": course_id, "problemId": problem_id, "serverSubmitted": False},
+            "auth_required",
+            "MOOCs authentication is required or the stored session expired.",
+        ))
+        raise SystemExit(2)
+    except Exception as exc:
+        print_json(envelope(
+            False,
+            "assignment",
+            action,
+            "status_check_failed",
+            {"courseId": course_id, "problemId": problem_id, "serverSubmitted": False},
+            "status_check_failed",
+            str(exc),
+        ))
+        raise SystemExit(2)
+    answer_state = status_json.get("status") if isinstance(status_json, dict) else str(status_json)
+    if answer_state != "open":
+        print_json(envelope(
+            False,
+            "assignment",
+            action,
+            "not_submittable",
+            {
+                "courseId": course_id,
+                "problemId": problem_id,
+                "assignmentStatus": answer_state,
+                "serverSubmitted": False,
+            },
+            "not_submittable",
+            "assignment is not open for submission",
+        ))
+        raise SystemExit(2)
+    return answer_state
+
+
+def session_csrf_token(jar):
+    final_url, status, _headers, body = request(jar, f"{BASE_URL}/courses")
+    if not (200 <= status < 400):
+        return None
+    page_html = decode_body(body)
+    if looks_like_login_page(page_html, final_url):
+        return None
+    return csrf_token(page_html)
+
+
+def parse_assignment_target(args, *, require_pid=False, require_data=False, action="submit"):
+    course_id = ""
+    problem_id = ""
+    pid = ""
+    data_arg = ""
+    file_path = ""
+    positionals = []
+    idx = 0
+    while idx < len(args):
+        arg = args[idx]
+        if arg == "--course-id":
+            idx += 1
+            course_id = args[idx] if idx < len(args) else ""
+        elif arg == "--problem-id":
+            idx += 1
+            problem_id = args[idx] if idx < len(args) else ""
+        elif arg == "--pid":
+            idx += 1
+            pid = args[idx] if idx < len(args) else ""
+        elif arg == "--data":
+            idx += 1
+            data_arg = args[idx] if idx < len(args) else ""
+        elif arg.startswith("--"):
+            raise ValueError(f"unknown assignment argument: {arg}")
+        else:
+            positionals.append(arg)
+        idx += 1
+    if not course_id and positionals:
+        course_id = positionals.pop(0)
+    if not problem_id and positionals:
+        problem_id = positionals.pop(0)
+    if require_pid and not file_path and positionals:
+        file_path = positionals.pop(0)
+    if positionals:
+        raise ValueError(f"unexpected assignment argument: {positionals[0]}")
+    if not course_id or not problem_id:
+        raise ValueError(f"usage: imoocs assignment {action} <courseId> <problemId>")
+    if require_pid and not pid:
+        raise ValueError("assignment upload requires --pid")
+    if require_pid and not file_path:
+        raise ValueError("assignment upload requires a file path")
+    if require_data and not data_arg:
+        raise ValueError("assignment submit requires --data")
+    return course_id, problem_id, pid, data_arg, file_path
+
+
+def read_json_arg(value):
+    source = value
+    if value.startswith("@"):
+        source = Path(value[1:]).read_text()
+    data = json.loads(source)
+    if not isinstance(data, dict):
+        raise ValueError("assignment submit data must be a JSON object keyed by pid")
+    return data
+
+
+def put_assignment_answers(args):
+    try:
+        course_id, problem_id, _pid, data_arg, _file_path = parse_assignment_target(args, require_data=True, action="submit")
+        data = read_json_arg(data_arg)
+        prefix = assignment_url_prefix(course_id, problem_id)
+    except Exception as exc:
+        print_json(envelope(False, "assignment", "submit", "invalid_args", {}, "invalid_args", str(exc)))
+        return 64
+
+    jar = load_authenticated_jar("assignment", "submit", course_id, problem_id)
+    ensure_assignment_open(jar, prefix, course_id, problem_id, "submit")
+    body = json.dumps({"data": data}, ensure_ascii=False).encode()
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json;charset=UTF-8",
+        "X-Requested-With": "XMLHttpRequest",
+        "Referer": prefix,
+    }
+    token = session_csrf_token(jar)
+    if token:
+        headers["X-CSRF-TOKEN"] = token
+    final_url, status, _headers, response_body = request(jar, f"{prefix}/answers", method="PUT", data=body, headers=headers)
+    if not (200 <= status < 400):
+        print_json(envelope(
+            False,
+            "assignment",
+            "submit",
+            "http_error",
+            {"courseId": course_id, "problemId": problem_id, "httpStatus": status, "serverSubmitted": False},
+            "http_error",
+            f"MOOCs returned HTTP {status}",
+        ))
+        return 2
+    response_text = decode_body(response_body)
+    if looks_like_login_page(response_text, final_url):
+        print_json(envelope(
+            False,
+            "assignment",
+            "submit",
+            "auth_required",
+            {"courseId": course_id, "problemId": problem_id, "serverSubmitted": False},
+            "auth_required",
+            "MOOCs authentication is required or the stored session expired.",
+        ))
+        return 2
+    answers_json = fetch_problem_json(jar, f"{prefix}/answers", prefix, None)
+    summary = answer_summary(answers_json)
+    print_json(envelope(
+        True,
+        "assignment",
+        "submit",
+        "submitted",
+        {
+            "courseId": course_id,
+            "problemId": problem_id,
+            "urlPrefix": prefix,
+            "submittedPids": list(data.keys()),
+            "currentAnswers": {pid: summary.get(pid, {}) for pid in data.keys()},
+            "serverSubmitted": True,
+        },
+        submission_state="auto",
+    ))
+    return 0
+
+
+def multipart_file_body(pid, path):
+    file_path = Path(path)
+    if not file_path.is_file():
+        raise ValueError(f"file does not exist: {path}")
+    filename = file_path.name
+    content_type = mimetypes.guess_type(filename)[0] or "application/octet-stream"
+    boundary = f"----imoocs-{uuid.uuid4().hex}"
+    chunks = [
+        f"--{boundary}\r\n".encode(),
+        f'Content-Disposition: form-data; name="file"; filename="{filename}"\r\n'.encode(),
+        f"Content-Type: {content_type}\r\n\r\n".encode(),
+        file_path.read_bytes(),
+        f"\r\n--{boundary}--\r\n".encode(),
+    ]
+    return boundary, b"".join(chunks), filename
+
+
+def post_assignment_file(args):
+    try:
+        course_id, problem_id, pid, _data_arg, file_path = parse_assignment_target(args, require_pid=True, action="upload")
+        prefix = assignment_url_prefix(course_id, problem_id)
+        boundary, body, filename = multipart_file_body(pid, file_path)
+    except Exception as exc:
+        print_json(envelope(False, "assignment", "upload", "invalid_args", {}, "invalid_args", str(exc)))
+        return 64
+
+    jar = load_authenticated_jar("assignment", "upload", course_id, problem_id)
+    ensure_assignment_open(jar, prefix, course_id, problem_id, "upload")
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": f"multipart/form-data; boundary={boundary}",
+        "X-Requested-With": "XMLHttpRequest",
+        "Referer": prefix,
+    }
+    token = session_csrf_token(jar)
+    if token:
+        headers["X-CSRF-TOKEN"] = token
+    final_url, status, _headers, response_body = request(jar, f"{prefix}/file/{urllib.parse.quote(pid, safe='')}", method="POST", data=body, headers=headers, timeout=60)
+    response_text = decode_body(response_body)
+    if not (200 <= status < 400):
+        print_json(envelope(
+            False,
+            "assignment",
+            "upload",
+            "http_error",
+            {"courseId": course_id, "problemId": problem_id, "pid": pid, "filename": filename, "httpStatus": status, "serverSubmitted": False},
+            "http_error",
+            f"MOOCs returned HTTP {status}",
+        ))
+        return 2
+    if looks_like_login_page(response_text, final_url):
+        print_json(envelope(
+            False,
+            "assignment",
+            "upload",
+            "auth_required",
+            {"courseId": course_id, "problemId": problem_id, "pid": pid, "filename": filename, "serverSubmitted": False},
+            "auth_required",
+            "MOOCs authentication is required or the stored session expired.",
+        ))
+        return 2
+    try:
+        uploaded = json.loads(response_text) if response_text.strip() else {}
+    except json.JSONDecodeError:
+        uploaded = {"raw": response_text[:200]}
+    answers_json = fetch_problem_json(jar, f"{prefix}/answers", prefix, None)
+    summary = answer_summary(answers_json)
+    print_json(envelope(
+        True,
+        "assignment",
+        "upload",
+        "submitted",
+        {
+            "courseId": course_id,
+            "problemId": problem_id,
+            "urlPrefix": prefix,
+            "pid": pid,
+            "filename": filename,
+            "uploadedFile": uploaded,
+            "currentAnswers": {pid: summary.get(pid, {})},
+            "serverSubmitted": True,
+        },
+        submission_state="auto",
+    ))
     return 0
 
 
@@ -835,6 +1167,10 @@ def main():
         return auth_status()
     if action == "auth-logout":
         return auth_logout()
+    if action == "assignment-submit":
+        return put_assignment_answers(args)
+    if action == "assignment-upload":
+        return post_assignment_file(args)
     print_json(envelope(False, "internal", action, "invalid_args", {}, "invalid_action", f"unknown internal action: {action}"))
     return 64
 
@@ -1116,7 +1452,11 @@ assignment_cmd() {
       fi
       ;;
     submit|upload)
-      assignment_stage_cmd "$action" "$@"
+      if [[ " $* " == *" --confirm "* || "${1:-}" == "--confirm" ]]; then
+        assignment_stage_cmd "$action" "$@"
+      else
+        moocs_http_cmd "assignment-$action" "$@"
+      fi
       ;;
     push)
       local course_id="${1:-}"
@@ -1149,6 +1489,8 @@ PY
       cat <<'EOF'
 Usage:
   imoocs assignment show <moocs-url>
+  imoocs assignment submit <courseId> <problemId> --data <json|@file>
+  imoocs assignment upload <courseId> <problemId> --pid <pid> <file>
   imoocs assignment submit --confirm --course-id <id> --problem-id <id> [--file <path>] [--text <text>]
   imoocs assignment upload --confirm --course-id <id> --problem-id <id> --file <path>
   imoocs assignment push <courseId> <problemId>
@@ -1195,7 +1537,7 @@ main() {
       usage
       ;;
     --version)
-      echo "imoocs 0.2.7 ($backend wrapper)"
+      echo "imoocs 0.2.8 ($backend wrapper)"
       ;;
     open)
       open_cmd "$@"
