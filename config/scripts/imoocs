@@ -14,7 +14,7 @@ Usage:
   imoocs assignment upload --confirm --course-id <id> --problem-id <id> --file <path>
   imoocs assignment push <courseId> <problemId>
   imoocs auth status
-  imoocs auth login [--gui]
+  imoocs auth login [--gui|--keychain]
   imoocs auth logout
   imoocs reset
 
@@ -171,6 +171,7 @@ from http.cookiejar import Cookie
 
 SERVICE = "imoocs"
 ACCOUNT = "moocs-session-cookies"
+COLLECT_KEYCHAIN_SERVICE = "me.yu7400ki.moocs-collect"
 BASE_URL = "https://moocs.iniad.org"
 SIGN_IN_URL = f"{BASE_URL}/auth/iniad"
 BACKEND = os.environ["BACKEND"]
@@ -283,14 +284,12 @@ def save_cookie_jar(jar):
         if cookie.domain.lstrip(".").lower().endswith("moocs.iniad.org")
     ]
     value = json.dumps(cookies, ensure_ascii=False)
-    try:
-        keyring.set_password(SERVICE, ACCOUNT, value)
-    except Exception:
+    for _ in range(5):
         try:
             keyring.delete_password(SERVICE, ACCOUNT)
         except Exception:
-            pass
-        keyring.set_password(SERVICE, ACCOUNT, value)
+            break
+    keyring.set_password(SERVICE, ACCOUNT, value)
 
 
 def delete_cookie_jar():
@@ -710,17 +709,60 @@ text returned of dialogResult
     return result.stdout.rstrip("\n")
 
 
+def password_from_keychain(username):
+    security = "/usr/bin/security"
+    if os.path.exists(security):
+        try:
+            result = subprocess.run(
+                [
+                    security,
+                    "find-generic-password",
+                    "-s",
+                    COLLECT_KEYCHAIN_SERVICE,
+                    "-a",
+                    username,
+                    "-w",
+                ],
+                check=False,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                text=True,
+                timeout=30,
+            )
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            result = None
+        if result is not None and result.returncode == 0:
+            return result.stdout.rstrip("\n")
+
+    require_keyring()
+    try:
+        password = keyring.get_password(COLLECT_KEYCHAIN_SERVICE, username)
+    except Exception:
+        return None
+    return password
+
+
 def auth_login(args):
     use_gui = False
+    use_keychain = False
     if args == ["--gui"]:
         use_gui = True
+    elif args == ["--keychain"]:
+        use_keychain = True
     elif args:
-        fail_text("usage: imoocs auth login [--gui]", 64)
+        fail_text("usage: imoocs auth login [--gui|--keychain]", 64)
 
     username = os.environ.get("IMOOCS_USERNAME", "").strip()
     if not username:
         username = input("ユーザー名: ").strip()
-    password = password_from_gui() if use_gui else getpass.getpass("パスワード: ")
+    if use_keychain:
+        password = password_from_keychain(username)
+        if not password:
+            fail_text("password was not found in the moocs-collect keychain; use `imoocs auth login --gui` instead", 69)
+    elif use_gui:
+        password = password_from_gui()
+    else:
+        password = getpass.getpass("パスワード: ")
     if not username or not password:
         fail_text("username and password are required", 64)
 
@@ -1153,7 +1195,7 @@ main() {
       usage
       ;;
     --version)
-      echo "imoocs 0.2.4 ($backend wrapper)"
+      echo "imoocs 0.2.7 ($backend wrapper)"
       ;;
     open)
       open_cmd "$@"
