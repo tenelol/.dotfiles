@@ -44,7 +44,13 @@ If auth status reports an expired or missing session, recover through the CLI in
 imoocs auth login
 ```
 
-`imoocs auth login` prompts for the password in the user's TTY and stores only the resulting MOOCs session cookies in the local keyring. Do not ask the user to paste the password into chat. `imoocs auth logout` removes those stored session cookies.
+If the user cannot type into the Codex TTY, use the macOS hidden password dialog instead:
+
+```bash
+imoocs auth login --gui
+```
+
+`imoocs auth login` prompts for the password in the user's TTY, while `--gui` opens a macOS hidden-answer dialog. Both modes store only the resulting MOOCs session cookies in the local keyring. Do not ask the user to paste the password into chat. `imoocs auth logout` removes those stored session cookies.
 
 Never ask the user to paste credentials into chat. If the user wants to avoid typing a username repeatedly, tell them to set `IMOOCS_USERNAME` in their own shell. Use the `username` value in this skill only for `imoocs` commands in the current task; do not copy it into unrelated repo files or final-output command examples unless the user asks.
 

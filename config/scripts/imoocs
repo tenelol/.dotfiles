@@ -14,7 +14,7 @@ Usage:
   imoocs assignment upload --confirm --course-id <id> --problem-id <id> --file <path>
   imoocs assignment push <courseId> <problemId>
   imoocs auth status
-  imoocs auth login
+  imoocs auth login [--gui]
   imoocs auth logout
   imoocs reset
 
@@ -162,6 +162,7 @@ import http.cookiejar
 import json
 import os
 import re
+import subprocess
 import sys
 import urllib.error
 import urllib.parse
@@ -281,7 +282,15 @@ def save_cookie_jar(jar):
         for cookie in jar
         if cookie.domain.lstrip(".").lower().endswith("moocs.iniad.org")
     ]
-    keyring.set_password(SERVICE, ACCOUNT, json.dumps(cookies, ensure_ascii=False))
+    value = json.dumps(cookies, ensure_ascii=False)
+    try:
+        keyring.set_password(SERVICE, ACCOUNT, value)
+    except Exception:
+        try:
+            keyring.delete_password(SERVICE, ACCOUNT)
+        except Exception:
+            pass
+        keyring.set_password(SERVICE, ACCOUNT, value)
 
 
 def delete_cookie_jar():
@@ -603,7 +612,6 @@ def open_url(url):
         print_json(auth_required_payload(url, "expired"))
         return 2
 
-    save_cookie_jar(jar)
     token = csrf_token(page_html)
     content_html = main_content(page_html)
     title = page_title(page_html, urllib.parse.unquote(urllib.parse.urlparse(final_url).path.rstrip("/").split("/")[-1] or "MOOCs"))
@@ -681,11 +689,38 @@ def open_url(url):
     return 0
 
 
-def auth_login():
+def password_from_gui():
+    script = """
+tell application "System Events" to activate
+set dialogResult to display dialog "INIAD MOOCs パスワードを入力してください" default answer "" with hidden answer buttons {"Cancel", "OK"} default button "OK" cancel button "Cancel"
+text returned of dialogResult
+""".strip()
+    try:
+        result = subprocess.run(
+            ["/usr/bin/osascript", "-e", script],
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+    except FileNotFoundError:
+        fail_text("macOS osascript is not available; use interactive `imoocs auth login` instead", 69)
+    if result.returncode != 0:
+        fail_text("password prompt was cancelled", 130)
+    return result.stdout.rstrip("\n")
+
+
+def auth_login(args):
+    use_gui = False
+    if args == ["--gui"]:
+        use_gui = True
+    elif args:
+        fail_text("usage: imoocs auth login [--gui]", 64)
+
     username = os.environ.get("IMOOCS_USERNAME", "").strip()
     if not username:
         username = input("ユーザー名: ").strip()
-    password = getpass.getpass("パスワード: ")
+    password = password_from_gui() if use_gui else getpass.getpass("パスワード: ")
     if not username or not password:
         fail_text("username and password are required", 64)
 
@@ -753,7 +788,7 @@ def main():
             return 64
         return open_url(args[0])
     if action == "auth-login":
-        return auth_login()
+        return auth_login(args)
     if action == "auth-status":
         return auth_status()
     if action == "auth-logout":
@@ -1091,7 +1126,8 @@ auth_cmd() {
       moocs_http_cmd auth-status
       ;;
     login)
-      moocs_http_cmd auth-login
+      shift || true
+      moocs_http_cmd auth-login "$@"
       ;;
     logout)
       moocs_http_cmd auth-logout
@@ -1117,7 +1153,7 @@ main() {
       usage
       ;;
     --version)
-      echo "imoocs 0.2.0 ($backend wrapper)"
+      echo "imoocs 0.2.4 ($backend wrapper)"
       ;;
     open)
       open_cmd "$@"
