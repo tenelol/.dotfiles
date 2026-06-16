@@ -11,6 +11,7 @@ let
     home-manager.backupFileExtension = "hm-backup";
     home-manager.extraSpecialArgs = { inherit inputs; };
     home-manager.sharedModules = [
+      inputs.nixvim.homeModules.nixvim
       inputs.spicetify-nix.homeManagerModules.spicetify
     ];
 

@@ -10,7 +10,7 @@ delib.module {
   options = delib.singleEnableOption (!host.isServer);
 
   home.ifEnabled = {
-    programs.neovim.extraPackages = with pkgs; [
+    programs.nixvim.extraPackages = with pkgs; [
       typescript-language-server
       eslint
       typescript
