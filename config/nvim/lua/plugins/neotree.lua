@@ -19,6 +19,41 @@ return {
       local project = require("core.project")
       local command = require("neo-tree.command")
 
+      local transparent_groups = {
+        "NeoTreeNormal",
+        "NeoTreeNormalNC",
+        "NeoTreeEndOfBuffer",
+        "NeoTreeWinSeparator",
+        "NeoTreeVertSplit",
+        "NeoTreeFloatNormal",
+        "NeoTreeFloatBorder",
+        "NeoTreeTitleBar",
+        "NeoTreeTabActive",
+        "NeoTreeTabInactive",
+        "NeoTreeTabSeparatorActive",
+        "NeoTreeTabSeparatorInactive",
+      }
+
+      local function clear_group_background(group)
+        local ok, highlight = pcall(vim.api.nvim_get_hl, 0, {
+          name = group,
+          link = false,
+        })
+        if not ok then
+          return
+        end
+
+        highlight.bg = "NONE"
+        highlight.ctermbg = nil
+        vim.api.nvim_set_hl(0, group, highlight)
+      end
+
+      local function apply_transparent_highlights()
+        for _, group in ipairs(transparent_groups) do
+          clear_group_background(group)
+        end
+      end
+
       require("neo-tree").setup({
         close_if_last_window = true,
         popup_border_style = "rounded",
@@ -47,6 +82,29 @@ return {
           width = 34,
         },
       })
+
+      local highlight_group = vim.api.nvim_create_augroup("NeoTreeTransparentHighlights", { clear = true })
+
+      vim.api.nvim_create_autocmd("ColorScheme", {
+        group = highlight_group,
+        callback = apply_transparent_highlights,
+      })
+      vim.api.nvim_create_autocmd("FileType", {
+        group = highlight_group,
+        pattern = "neo-tree",
+        callback = function()
+          vim.schedule(apply_transparent_highlights)
+        end,
+      })
+      vim.api.nvim_create_autocmd("BufWinEnter", {
+        group = highlight_group,
+        callback = function(event)
+          if vim.bo[event.buf].filetype == "neo-tree" then
+            vim.schedule(apply_transparent_highlights)
+          end
+        end,
+      })
+      apply_transparent_highlights()
 
       local function open_filesystem_tree()
         command.execute({
