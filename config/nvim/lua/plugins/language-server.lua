@@ -52,7 +52,6 @@ return {
         config = function()
             local function telescope_picker(name, opts)
                 return function()
-                    require("lazy").load({ plugins = { "telescope-nvim" } })
                     require("telescope.builtin")[name](opts or {})
                 end
             end
@@ -115,7 +114,6 @@ return {
                 map("n", "<leader>ls", telescope_picker("lsp_document_symbols"), "Document symbols")
                 map("n", "<leader>lS", telescope_picker("lsp_dynamic_workspace_symbols"), "Workspace symbols")
                 map("n", "<leader>lf", function()
-                    require("lazy").load({ plugins = { "conform-nvim" } })
                     require("conform").format({
                         async = true,
                         lsp_format = "fallback",

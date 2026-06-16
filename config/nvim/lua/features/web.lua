@@ -24,8 +24,18 @@ local web_filetypes = {
     "javascriptreact",
     "astro",
 }
-local preview_script = vim.fs.normalize(vim.fn.stdpath("config") .. "/lua/live_preview_server.py")
-local scss_watch_script = vim.fs.normalize(vim.fn.stdpath("config") .. "/lua/scss_watch.py")
+
+local function runtime_file(path)
+    local matches = vim.api.nvim_get_runtime_file(path, false)
+    if matches[1] ~= nil then
+        return vim.fs.normalize(matches[1])
+    end
+
+    return vim.fs.normalize(vim.fn.stdpath("config") .. "/" .. path)
+end
+
+local preview_script = runtime_file("lua/live_preview_server.py")
+local scss_watch_script = runtime_file("lua/scss_watch.py")
 
 local function open_in_browser(target)
     local opener = vim.fn.has("mac") == 1 and "open" or "xdg-open"

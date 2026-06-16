@@ -1,4 +1,4 @@
-local plugin_paths = dofile(vim.fn.stdpath("config") .. "/nix-managed-plugins.lua")
+local plugin_paths = require("nix-managed-plugins")
 
 local M = {}
 

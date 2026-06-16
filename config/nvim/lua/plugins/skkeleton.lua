@@ -1,8 +1,7 @@
 local plugin = require("nix-plugin")
 
 local function load_dictionaries()
-	local path = vim.fn.stdpath("config") .. "/skkeleton-dictionaries.lua"
-	local ok, dictionaries = pcall(dofile, path)
+	local ok, dictionaries = pcall(require, "skkeleton-dictionaries")
 
 	if ok and type(dictionaries) == "table" then
 		return dictionaries.global_dictionaries or {}

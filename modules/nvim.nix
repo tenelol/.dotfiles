@@ -170,6 +170,136 @@ let
       ${builtins.concatStringsSep ",\n" (map renderEntry (builtins.attrNames nixManagedPluginPaths))}
       }
     '';
+  skkeletonDictionariesLua = ''
+    return {
+      global_dictionaries = {
+        { ${builtins.toJSON skkDictionary}, "euc-jp" },
+      },
+    }
+  '';
+  nvimPluginModuleNames =
+    let
+      pluginFiles = pkgs.lib.filterAttrs (
+        name: type: type == "regular" && pkgs.lib.hasSuffix ".lua" name
+      ) (builtins.readDir ../config/nvim/lua/plugins);
+    in
+    map (name: "plugins.${pkgs.lib.removeSuffix ".lua" name}") (builtins.attrNames pluginFiles);
+  luaList = values: "{ ${builtins.concatStringsSep ", " (map builtins.toJSON values)} }";
+  nvimLuaConfig = pkgs.runCommand "nvim-lua-config" { } ''
+    mkdir -p "$out"
+    cp -R ${../config/nvim/lua}/. "$out/"
+    chmod -R u+w "$out"
+    cat > "$out/nix-managed-plugins.lua" <<'EOF'
+    ${nixManagedPluginsLua}
+    EOF
+    cat > "$out/skkeleton-dictionaries.lua" <<'EOF'
+    ${skkeletonDictionariesLua}
+    EOF
+  '';
+  nvimPluginLoaderLua = ''
+    require("core.input-source")
+    require("features.web")
+    require("features.platformio")
+
+    local plugin_modules = ${luaList nvimPluginModuleNames}
+    local specs = {}
+
+    local function is_enabled(spec)
+      return type(spec) == "table" and spec.enabled ~= false
+    end
+
+    local function add_spec(spec)
+      if not is_enabled(spec) then
+        return
+      end
+
+      if type(spec.dependencies) == "table" then
+        for _, dep in ipairs(spec.dependencies) do
+          add_spec(dep)
+        end
+      end
+
+      if spec.init or spec.config or spec.keys or spec.priority then
+        table.insert(specs, {
+          spec = spec,
+          index = #specs + 1,
+        })
+      end
+    end
+
+    for _, module in ipairs(plugin_modules) do
+      local ok, result = pcall(require, module)
+      if ok and type(result) == "table" then
+        for _, spec in ipairs(result) do
+          add_spec(spec)
+        end
+      elseif not ok then
+        vim.schedule(function()
+          vim.notify(("nixvim plugin module failed: %s\n%s"):format(module, result), vim.log.levels.ERROR)
+        end)
+      end
+    end
+
+    table.sort(specs, function(left, right)
+      local left_priority = left.spec.priority or 0
+      local right_priority = right.spec.priority or 0
+      if left_priority == right_priority then
+        return left.index < right.index
+      end
+      return left_priority > right_priority
+    end)
+
+    local function spec_name(spec)
+      return spec.name or spec[1] or spec.dir or "unknown"
+    end
+
+    local function run_hook(kind, spec)
+      local hook = spec[kind]
+      if type(hook) ~= "function" then
+        return
+      end
+
+      local ok, err = pcall(hook, spec, spec.opts or {})
+      if not ok then
+        vim.schedule(function()
+          vim.notify(
+            ("nixvim plugin %s %s failed:\n%s"):format(spec_name(spec), kind, err),
+            vim.log.levels.ERROR
+          )
+        end)
+      end
+    end
+
+    local function apply_keys(spec)
+      if type(spec.keys) ~= "table" then
+        return
+      end
+
+      for _, mapping in ipairs(spec.keys) do
+        if type(mapping) == "table" and mapping[1] and mapping[2] ~= nil then
+          local opts = {}
+          for key, value in pairs(mapping) do
+            if type(key) == "string" and key ~= "mode" then
+              opts[key] = value
+            end
+          end
+          vim.keymap.set(mapping.mode or "n", mapping[1], mapping[2], opts)
+        end
+      end
+    end
+
+    for _, entry in ipairs(specs) do
+      run_hook("init", entry.spec)
+    end
+
+    for _, entry in ipairs(specs) do
+      apply_keys(entry.spec)
+    end
+
+    for _, entry in ipairs(specs) do
+      run_hook("config", entry.spec)
+    end
+  '';
 in
 delib.module {
   name = "nvim";
@@ -187,7 +317,312 @@ delib.module {
       withPython3 = true;
       withRuby = false;
       env.NVIM_SYSTEM_RPLUGIN_MANIFEST = "${moltenRemotePluginManifest}";
-      extraConfigLua = builtins.readFile ../config/nvim/init.lua;
+      extraConfigLuaPre =
+        ''
+          if vim.fn.has("wsl") == 1 and vim.fn.executable("clip.exe") == 1 and vim.fn.executable("powershell.exe") == 1 then
+            vim.g.clipboard = {
+              name = "wsl-clipboard",
+              copy = {
+                ["+"] = { "clip.exe" },
+                ["*"] = { "clip.exe" },
+              },
+              paste = {
+                ["+"] = {
+                  "powershell.exe",
+                  "-NoLogo",
+                  "-NoProfile",
+                  "-Command",
+                  "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; Get-Clipboard -Raw",
+                },
+                ["*"] = {
+                  "powershell.exe",
+                  "-NoLogo",
+                  "-NoProfile",
+                  "-Command",
+                  "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; Get-Clipboard -Raw",
+                },
+              },
+              cache_enabled = 0,
+            }
+          end
+
+          local is_wsl = vim.fn.has("wsl") == 1
+          if is_wsl then
+            vim.keymap.set({ "n", "i", "v" }, "<C-h>", "<Left>", { noremap = true, silent = true, desc = "Move left" })
+            vim.keymap.set({ "n", "i", "v" }, "<C-j>", "<Down>", { noremap = true, silent = true, desc = "Move down" })
+            vim.keymap.set({ "n", "i", "v" }, "<C-k>", "<Up>", { noremap = true, silent = true, desc = "Move up" })
+            vim.keymap.set({ "n", "i", "v" }, "<C-l>", "<Right>", { noremap = true, silent = true, desc = "Move right" })
+          else
+            vim.keymap.set("n", "<C-h>", "<C-w>h", { noremap = true, silent = true })
+            vim.keymap.set("n", "<C-j>", "<C-w>j", { noremap = true, silent = true })
+            vim.keymap.set("n", "<C-k>", "<C-w>k", { noremap = true, silent = true })
+            vim.keymap.set("n", "<C-l>", "<C-w>l", { noremap = true, silent = true })
+            vim.keymap.set("t", "<C-h>", "<Cmd>wincmd h<CR>", { noremap = true, silent = true })
+            vim.keymap.set("t", "<C-j>", "<Cmd>wincmd j<CR>", { noremap = true, silent = true })
+            vim.keymap.set("t", "<C-k>", "<Cmd>wincmd k<CR>", { noremap = true, silent = true })
+            vim.keymap.set("t", "<C-l>", "<Cmd>wincmd l<CR>", { noremap = true, silent = true })
+          end
+        ''
+        + pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isDarwin ''
+          vim.g.clipboard = {
+            name = "pbcopy",
+            copy = {
+              ["+"] = "/usr/bin/pbcopy",
+              ["*"] = "/usr/bin/pbcopy",
+            },
+            paste = {
+              ["+"] = { "/usr/bin/pbpaste" },
+              ["*"] = { "/usr/bin/pbpaste" },
+            },
+            cache_enabled = 0,
+          }
+        ''
+        + ''
+          vim.opt.fillchars:append({ eob = " " })
+        '';
+      extraConfigLua = nvimPluginLoaderLua;
+      extraPlugins = builtins.attrValues nixManagedPlugins;
+      extraFiles."lua".source = nvimLuaConfig;
+      globals = {
+        mapleader = " ";
+        maplocalleader = " ";
+      };
+      opts = {
+        autoindent = true;
+        clipboard = "unnamedplus";
+        completeopt = [
+          "menu"
+          "menuone"
+          "noselect"
+        ];
+        cursorline = true;
+        expandtab = true;
+        hidden = true;
+        ignorecase = true;
+        number = true;
+        pumblend = 12;
+        relativenumber = false;
+        scrolloff = 8;
+        shiftwidth = 2;
+        signcolumn = "yes";
+        smartcase = true;
+        smartindent = true;
+        softtabstop = 2;
+        splitbelow = true;
+        splitright = true;
+        sidescrolloff = 8;
+        tabstop = 2;
+        termguicolors = true;
+        timeoutlen = 300;
+        undofile = true;
+        updatetime = 250;
+        winblend = 12;
+      };
+      diagnostic.settings = {
+        severity_sort = true;
+        signs = true;
+        underline = true;
+        update_in_insert = false;
+        virtual_text = false;
+        virtual_lines = false;
+        float = {
+          border = "rounded";
+          header = "";
+          prefix = "";
+          source = "if_many";
+        };
+      };
+      filetype.extension = {
+        js = "javascript";
+        mjs = "javascript";
+        cjs = "javascript";
+        jsx = "javascriptreact";
+        tsx = "typescriptreact";
+        ino = "cpp";
+      };
+      userCommands.SelectAll = {
+        command = "normal! ggVG";
+        desc = "Select the entire buffer";
+      };
+      autoGroups.IndentSettings.clear = true;
+      autoCmd = [
+        {
+          event = "FileType";
+          group = "IndentSettings";
+          pattern = [ "python" ];
+          callback.__raw = ''
+            function()
+              vim.opt_local.expandtab = true
+              vim.opt_local.shiftwidth = 4
+              vim.opt_local.tabstop = 4
+              vim.opt_local.softtabstop = 4
+            end
+          '';
+        }
+        {
+          event = "FileType";
+          group = "IndentSettings";
+          pattern = [
+            "html"
+            "css"
+            "sass"
+            "scss"
+            "javascript"
+            "typescript"
+            "typescriptreact"
+            "javascriptreact"
+            "astro"
+            "nix"
+            "json"
+            "jsonc"
+            "markdown"
+          ];
+          callback.__raw = ''
+            function()
+              vim.opt_local.expandtab = true
+              vim.opt_local.shiftwidth = 2
+              vim.opt_local.tabstop = 2
+              vim.opt_local.softtabstop = 2
+            end
+          '';
+        }
+        {
+          event = "FileType";
+          group = "IndentSettings";
+          pattern = [ "go" ];
+          callback.__raw = ''
+            function()
+              vim.opt_local.expandtab = false
+              vim.opt_local.shiftwidth = 4
+              vim.opt_local.tabstop = 4
+              vim.opt_local.softtabstop = 0
+            end
+          '';
+        }
+      ];
+      keymaps = [
+        {
+          mode = "i";
+          key = "kj";
+          action = "<Esc>";
+          options.silent = true;
+        }
+        {
+          mode = "t";
+          key = "<C-s>";
+          action = "<C-\\><C-n>";
+          options = {
+            noremap = true;
+            silent = true;
+          };
+        }
+        {
+          mode = [
+            "n"
+            "i"
+            "v"
+          ];
+          key = "<leader>va";
+          action = "<Esc>ggVG";
+          options = {
+            silent = true;
+            desc = "Select all";
+          };
+        }
+        {
+          mode = "n";
+          key = "K";
+          action.__raw = ''
+            function()
+              for _, client in ipairs(vim.lsp.get_clients({ bufnr = 0 })) do
+                if client:supports_method("textDocument/hover") then
+                  vim.lsp.buf.hover({
+                    border = "rounded",
+                    focus = false,
+                    focusable = false,
+                    max_width = math.min(80, math.floor(vim.o.columns * 0.6)),
+                    max_height = math.min(12, math.floor(vim.o.lines * 0.35)),
+                  })
+                  return
+                end
+              end
+            end
+          '';
+          options = {
+            silent = true;
+            desc = "Hover";
+          };
+        }
+        {
+          mode = "n";
+          key = "<C-Tab>";
+          action = "<Cmd>BufferLineCycleNext<CR>";
+          options = {
+            silent = true;
+            desc = "Next buffer";
+          };
+        }
+        {
+          mode = "n";
+          key = "<C-S-Tab>";
+          action = "<Cmd>BufferLineCyclePrev<CR>";
+          options = {
+            silent = true;
+            desc = "Previous buffer";
+          };
+        }
+        {
+          mode = "t";
+          key = "<C-Tab>";
+          action.__raw = ''function() vim.cmd("BufferLineCycleNext") end'';
+          options = {
+            silent = true;
+            desc = "Next buffer";
+          };
+        }
+        {
+          mode = "t";
+          key = "<C-S-Tab>";
+          action.__raw = ''function() vim.cmd("BufferLineCyclePrev") end'';
+          options = {
+            silent = true;
+            desc = "Previous buffer";
+          };
+        }
+        {
+          mode = "t";
+          key = "]b";
+          action.__raw = ''function() vim.cmd("BufferLineCycleNext") end'';
+          options = {
+            silent = true;
+            desc = "Next buffer";
+          };
+        }
+        {
+          mode = "t";
+          key = "[b";
+          action.__raw = ''function() vim.cmd("BufferLineCyclePrev") end'';
+          options = {
+            silent = true;
+            desc = "Previous buffer";
+          };
+        }
+      ]
+      ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isDarwin [
+        {
+          mode = [
+            "n"
+            "i"
+            "v"
+          ];
+          key = "<D-a>";
+          action = "<Esc>ggVG";
+          options = {
+            silent = true;
+            desc = "Select all";
+          };
+        }
+      ];
       extraPython3Packages = jupyterPythonPackages;
       extraLuaPackages = ps: [
         ps.magick
@@ -218,19 +653,6 @@ delib.module {
         ];
     };
 
-    xdg.configFile."nvim/init.lua".source = ../config/nvim/init.lua;
-    xdg.configFile."nvim/lua".source = ../config/nvim/lua;
-    xdg.configFile."nvim/lazy-path.lua".text = ''
-      return ${builtins.toJSON (toString pkgs.vimPlugins.lazy-nvim)}
-    '';
-    xdg.configFile."nvim/skkeleton-dictionaries.lua".text = ''
-      return {
-        global_dictionaries = {
-          { ${builtins.toJSON skkDictionary}, "euc-jp" },
-        },
-      }
-    '';
-    xdg.configFile."nvim/nix-managed-plugins.lua".text = nixManagedPluginsLua;
     xdg.dataFile."jupyter/kernels/nix-python3/kernel.json".text = jupyterKernelSpecJson;
     home.file."Library/Jupyter/kernels/nix-python3/kernel.json".text = jupyterKernelSpecJson;
 
