@@ -8,8 +8,6 @@ return {
             plugin.dep("nvim-nio"),
         },
         config = function()
-            require("lazy").load({ plugins = { "nvim-nio", "nvim-dap-ui", "nvim-dap-python" } })
-
             local dap = require("dap")
             local dapui = require("dapui")
 
