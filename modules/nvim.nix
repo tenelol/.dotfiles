@@ -31,7 +31,6 @@ let
     ps."websocket-client"
   ];
   jupyterPython = pkgs.python3.withPackages jupyterPythonPackages;
-  jupyterPythonBinPath = pkgs.lib.makeBinPath [ jupyterPython ];
   jupyterKernelSpec = {
     argv = [
       "${jupyterPython}/bin/python3"
@@ -176,23 +175,19 @@ delib.module {
   name = "nvim";
 
   home.always = {
-    programs.neovim = {
+    programs.nixvim = {
       enable = true;
       defaultEditor = true;
       viAlias = true;
       vimAlias = true;
+      wrapRc = true;
+      nixpkgs.useGlobalPackages = true;
+      version.enableNixpkgsReleaseCheck = false;
       withNodeJs = true;
       withPython3 = true;
       withRuby = false;
-      extraWrapperArgs = [
-        "--set"
-        "NVIM_SYSTEM_RPLUGIN_MANIFEST"
-        "${moltenRemotePluginManifest}"
-        "--prefix"
-        "PATH"
-        ":"
-        jupyterPythonBinPath
-      ];
+      env.NVIM_SYSTEM_RPLUGIN_MANIFEST = "${moltenRemotePluginManifest}";
+      extraConfigLua = builtins.readFile ../config/nvim/init.lua;
       extraPython3Packages = jupyterPythonPackages;
       extraLuaPackages = ps: [
         ps.magick
