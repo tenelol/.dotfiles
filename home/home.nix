@@ -41,6 +41,7 @@ let
   # across Linux and Darwin without bloating system-level package sets.
   commonPackages = with pkgs; [
     awscli2
+    cloudflared
     gh
     gdrive
     cowsay
