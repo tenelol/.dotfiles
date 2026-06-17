@@ -13,8 +13,12 @@
   - `nh os build . -H nixos-server`
   - `nh os build . -H wsl`
 - Preferred Darwin build command:
-  - `nh darwin build . -H macbook`
+  - `nh darwin build . -H macbook-rift`
 - Preferred switch commands mirror the build commands with `switch` instead of `build`.
+- For rebuild/switch on rice-enabled hosts, preserve the active rice by targeting the rice-specific configuration. On `macbook`, infer the active rice from the current desktop state, such as the AeroSpace process/config or active wallpaper, and prefer names such as `macbook-rift` or `macbook-aerospace` instead of bare `macbook`.
+- Before running any rebuild/switch command, check that another `nh ... build`, `nh ... switch`, `darwin-rebuild`, or `nixos-rebuild` process is not already running. If one is active, do not start a conflicting activation.
+- If a host-specific `nh ... build` succeeds and the user has not asked to avoid activation, follow it with the matching `nh ... switch` in the same turn.
+- After completing a requested fix or change, create a commit in the same turn unless the user asks not to commit.
 
 ## denix structure
 - `hosts/<name>/default.nix` should stay thin: host metadata plus hardware imports.
@@ -50,6 +54,7 @@
 - GUI apps: cross-platform tools via Nix, App Store / cask-first tools via Homebrew.
 - Darwin common base: `modules/darwin-base.nix`
 - macbook-specific UX tweaks: `modules/darwin-host-macbook.nix`
+- Darwin local build target: `macbook-rift` by default, or the active rice-specific target when switching.
 - Raycast is installed via Homebrew cask; Script Commands are deployed to `~/.config/raycast/scripts`.
 
 ## Validation scripts

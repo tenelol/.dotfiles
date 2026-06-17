@@ -54,7 +54,7 @@ Title rules:
 1. Check the actual diff instead of guessing from the request.
 2. Run the smallest relevant validation:
    - always start with `nix flake check --all-systems --no-build`
-   - add `nh os build . -H <host>` or `nh darwin build . -H macbook` when the change touches host/module behavior
+   - add `nh os build . -H <host>` or `nh darwin build . -H macbook-rift` when the change touches host/module behavior
 3. Make sure the final message reflects the dominant change, not every touched file.
 
 ## Examples
