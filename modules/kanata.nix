@@ -138,8 +138,21 @@ delib.module {
       /bin/rm -f "/Users/${profile.username}/Library/LaunchAgents/org.nixos.kanata.plist"
       # Clear launchd's stale crash/penalty state before starting Kanata.
       /bin/launchctl bootout system/org.nixos.kanata >/dev/null 2>&1 || true
-      /bin/launchctl bootstrap system /Library/LaunchDaemons/org.nixos.kanata.plist >/dev/null 2>&1 || true
-      /bin/launchctl kickstart -k system/org.nixos.kanata >/dev/null 2>&1 || true
+      kanata_bootstrapped=0
+      kanata_attempts=0
+      while [ "$kanata_attempts" -lt 5 ]; do
+        kanata_attempts=$((kanata_attempts + 1))
+        if /bin/launchctl bootstrap system /Library/LaunchDaemons/org.nixos.kanata.plist >/dev/null 2>&1; then
+          kanata_bootstrapped=1
+          break
+        fi
+        /bin/sleep 0.2
+      done
+      if [ "$kanata_bootstrapped" = 1 ]; then
+        /bin/launchctl kickstart -k system/org.nixos.kanata >/dev/null 2>&1 || true
+      else
+        echo "warning: failed to bootstrap org.nixos.kanata" >&2
+      fi
     '';
   };
 }
