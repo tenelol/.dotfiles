@@ -535,69 +535,68 @@ delib.module {
       withPython3 = true;
       withRuby = false;
       env.NVIM_SYSTEM_RPLUGIN_MANIFEST = "${moltenRemotePluginManifest}";
-      extraConfigLuaPre =
-        ''
-          if vim.fn.has("wsl") == 1 and vim.fn.executable("clip.exe") == 1 and vim.fn.executable("powershell.exe") == 1 then
-            vim.g.clipboard = {
-              name = "wsl-clipboard",
-              copy = {
-                ["+"] = { "clip.exe" },
-                ["*"] = { "clip.exe" },
-              },
-              paste = {
-                ["+"] = {
-                  "powershell.exe",
-                  "-NoLogo",
-                  "-NoProfile",
-                  "-Command",
-                  "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; Get-Clipboard -Raw",
-                },
-                ["*"] = {
-                  "powershell.exe",
-                  "-NoLogo",
-                  "-NoProfile",
-                  "-Command",
-                  "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; Get-Clipboard -Raw",
-                },
-              },
-              cache_enabled = 0,
-            }
-          end
-
-          local is_wsl = vim.fn.has("wsl") == 1
-          if is_wsl then
-            vim.keymap.set({ "n", "i", "v" }, "<C-h>", "<Left>", { noremap = true, silent = true, desc = "Move left" })
-            vim.keymap.set({ "n", "i", "v" }, "<C-j>", "<Down>", { noremap = true, silent = true, desc = "Move down" })
-            vim.keymap.set({ "n", "i", "v" }, "<C-k>", "<Up>", { noremap = true, silent = true, desc = "Move up" })
-            vim.keymap.set({ "n", "i", "v" }, "<C-l>", "<Right>", { noremap = true, silent = true, desc = "Move right" })
-          else
-            vim.keymap.set("n", "<C-h>", "<C-w>h", { noremap = true, silent = true })
-            vim.keymap.set("n", "<C-j>", "<C-w>j", { noremap = true, silent = true })
-            vim.keymap.set("n", "<C-k>", "<C-w>k", { noremap = true, silent = true })
-            vim.keymap.set("n", "<C-l>", "<C-w>l", { noremap = true, silent = true })
-            vim.keymap.set("t", "<C-h>", "<Cmd>wincmd h<CR>", { noremap = true, silent = true })
-            vim.keymap.set("t", "<C-j>", "<Cmd>wincmd j<CR>", { noremap = true, silent = true })
-            vim.keymap.set("t", "<C-k>", "<Cmd>wincmd k<CR>", { noremap = true, silent = true })
-            vim.keymap.set("t", "<C-l>", "<Cmd>wincmd l<CR>", { noremap = true, silent = true })
-          end
-        ''
-        + pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isDarwin ''
+      extraConfigLuaPre = ''
+        if vim.fn.has("wsl") == 1 and vim.fn.executable("clip.exe") == 1 and vim.fn.executable("powershell.exe") == 1 then
           vim.g.clipboard = {
-            name = "pbcopy",
+            name = "wsl-clipboard",
             copy = {
-              ["+"] = "/usr/bin/pbcopy",
-              ["*"] = "/usr/bin/pbcopy",
+              ["+"] = { "clip.exe" },
+              ["*"] = { "clip.exe" },
             },
             paste = {
-              ["+"] = { "/usr/bin/pbpaste" },
-              ["*"] = { "/usr/bin/pbpaste" },
+              ["+"] = {
+                "powershell.exe",
+                "-NoLogo",
+                "-NoProfile",
+                "-Command",
+                "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; Get-Clipboard -Raw",
+              },
+              ["*"] = {
+                "powershell.exe",
+                "-NoLogo",
+                "-NoProfile",
+                "-Command",
+                "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; Get-Clipboard -Raw",
+              },
             },
             cache_enabled = 0,
           }
-        ''
-        + ''
-          vim.opt.fillchars:append({ eob = " " })
-        '';
+        end
+
+        local is_wsl = vim.fn.has("wsl") == 1
+        if is_wsl then
+          vim.keymap.set({ "n", "i", "v" }, "<C-h>", "<Left>", { noremap = true, silent = true, desc = "Move left" })
+          vim.keymap.set({ "n", "i", "v" }, "<C-j>", "<Down>", { noremap = true, silent = true, desc = "Move down" })
+          vim.keymap.set({ "n", "i", "v" }, "<C-k>", "<Up>", { noremap = true, silent = true, desc = "Move up" })
+          vim.keymap.set({ "n", "i", "v" }, "<C-l>", "<Right>", { noremap = true, silent = true, desc = "Move right" })
+        else
+          vim.keymap.set("n", "<C-h>", "<C-w>h", { noremap = true, silent = true })
+          vim.keymap.set("n", "<C-j>", "<C-w>j", { noremap = true, silent = true })
+          vim.keymap.set("n", "<C-k>", "<C-w>k", { noremap = true, silent = true })
+          vim.keymap.set("n", "<C-l>", "<C-w>l", { noremap = true, silent = true })
+          vim.keymap.set("t", "<C-h>", "<Cmd>wincmd h<CR>", { noremap = true, silent = true })
+          vim.keymap.set("t", "<C-j>", "<Cmd>wincmd j<CR>", { noremap = true, silent = true })
+          vim.keymap.set("t", "<C-k>", "<Cmd>wincmd k<CR>", { noremap = true, silent = true })
+          vim.keymap.set("t", "<C-l>", "<Cmd>wincmd l<CR>", { noremap = true, silent = true })
+        end
+      ''
+      + pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isDarwin ''
+        vim.g.clipboard = {
+          name = "pbcopy",
+          copy = {
+            ["+"] = "/usr/bin/pbcopy",
+            ["*"] = "/usr/bin/pbcopy",
+          },
+          paste = {
+            ["+"] = { "/usr/bin/pbpaste" },
+            ["*"] = { "/usr/bin/pbpaste" },
+          },
+          cache_enabled = 0,
+        }
+      ''
+      + ''
+        vim.opt.fillchars:append({ eob = " " })
+      '';
       extraConfigLua = nvimPluginLoaderLua;
       extraPlugins = builtins.attrValues nixManagedPlugins;
       extraFiles."lua".source = nvimLuaConfig;
