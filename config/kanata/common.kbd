@@ -14,7 +14,7 @@
   mdown (movemouse-accel-down 1 1000 1 12)
   mup (movemouse-accel-up 1 1000 1 12)
   mright (movemouse-accel-right 1 1000 1 12)
-  ime (cmd-log none error /run/current-system/sw/bin/azookey-toggle-ime)
+  ime C-spc
   lcmd (tap-hold-press 200 180 @ime lmet)
 )
 
