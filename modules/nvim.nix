@@ -6,8 +6,6 @@
 }:
 let
   winresizer = import ../packages/winresizer.nix { inherit pkgs; };
-  skkeleton = import ../packages/skkeleton.nix { inherit pkgs; };
-  skkDictionary = "${pkgs.skkDictionaries.l}/share/skk/SKK-JISYO.L";
   jupyterPythonPackages = ps: [
     ps.cairosvg
     ps.debugpy
@@ -127,7 +125,6 @@ let
     tokyonight-nvim = pkgs.vimPlugins.tokyonight-nvim;
     noice-nvim = pkgs.vimPlugins.noice-nvim;
     nvim-notify = pkgs.vimPlugins.nvim-notify;
-    denops-vim = pkgs.vimPlugins.denops-vim;
     luasnip = pkgs.vimPlugins.luasnip;
     friendly-snippets = pkgs.vimPlugins.friendly-snippets;
     telescope-nvim = pkgs.vimPlugins.telescope-nvim;
@@ -158,7 +155,7 @@ let
     lazygit-nvim = pkgs.vimPlugins.lazygit-nvim;
     codecompanion-nvim = pkgs.vimPlugins.codecompanion-nvim;
     yazi-nvim = pkgs.vimPlugins.yazi-nvim;
-    inherit skkeleton winresizer;
+    inherit winresizer;
   };
   nixManagedPluginPaths = builtins.mapAttrs (_: plugin: toString plugin) nixManagedPlugins;
   nixManagedPluginsLua =
@@ -170,13 +167,6 @@ let
       ${builtins.concatStringsSep ",\n" (map renderEntry (builtins.attrNames nixManagedPluginPaths))}
       }
     '';
-  skkeletonDictionariesLua = ''
-    return {
-      global_dictionaries = {
-        { ${builtins.toJSON skkDictionary}, "euc-jp" },
-      },
-    }
-  '';
   nvimPluginModuleNames =
     let
       pluginFiles = pkgs.lib.filterAttrs (
@@ -192,12 +182,8 @@ let
     cat > "$out/nix-managed-plugins.lua" <<'EOF'
     ${nixManagedPluginsLua}
     EOF
-    cat > "$out/skkeleton-dictionaries.lua" <<'EOF'
-    ${skkeletonDictionariesLua}
-    EOF
   '';
   nvimPluginLoaderLua = ''
-    require("core.input-source")
     require("features.web")
     require("features.platformio")
 
@@ -864,9 +850,6 @@ delib.module {
           gofumpt
           gotools
           deno
-        ]
-        ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isDarwin [
-          macism
         ];
     };
 
