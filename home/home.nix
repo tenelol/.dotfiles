@@ -36,6 +36,9 @@ let
   iniadCommitPackage = import ../packages/iniad-commit.nix {
     inherit pkgs lib;
   };
+  palmierProPackage = import ../packages/palmier-pro.nix {
+    inherit pkgs lib;
+  };
 
   # User-facing CLI and dev tools live in Home Manager so they stay aligned
   # across Linux and Darwin without bloating system-level package sets.
@@ -119,6 +122,7 @@ let
   darwinDesktopPackages = with pkgs; [
     gijirokuPackage
     moocsCollectPackage
+    palmierProPackage
     sqlitebrowser
     unicode-emoji
     obsidian
