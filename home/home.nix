@@ -11,6 +11,7 @@ let
   isServer = host.isServer or false;
   isLinux = pkgs.stdenv.hostPlatform.isLinux;
   isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
+  hermesAgentPackages = inputs.hermes-agent.packages.${pkgs.stdenv.hostPlatform.system};
   homeDir = config.home.homeDirectory;
 
   codexBarPackage = import ../packages/codexbar.nix {
@@ -78,6 +79,7 @@ let
   linuxDesktopPackages = with pkgs; [
     adwaita-icon-theme
     codexBarPackage
+    hermesAgentPackages.desktop
     acpi
     alsa-utils
     brightnessctl
@@ -120,6 +122,7 @@ let
   # Prefer Nix here when the package is cross-platform or when keeping the
   # same binary/toolchain as Linux is useful.
   darwinDesktopPackages = with pkgs; [
+    hermesAgentPackages.desktop
     gijirokuPackage
     moocsCollectPackage
     palmierProPackage
