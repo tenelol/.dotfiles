@@ -29,6 +29,9 @@
     nix-hazkey.url = "github:aster-void/nix-hazkey";
     nix-hazkey.inputs.nixpkgs.follows = "nixpkgs";
 
+    hermes-agent.url = "github:NousResearch/hermes-agent";
+    hermes-agent.inputs.nixpkgs.follows = "nixpkgs";
+
     gijiroku.url = "git+ssh://git@github.com/tenelol/gijiroku.git";
     gijiroku.flake = false;
   };
