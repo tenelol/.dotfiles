@@ -1,11 +1,15 @@
 local plugin = require("nix-plugin")
+local copilot_enabled = vim.env.NVIM_COPILOT == "1"
+
+vim.g.copilot_enabled = copilot_enabled and 1 or 0
+vim.g.copilot_no_tab_map = true
 
 return {
     plugin.spec("copilot-vim", {
+        enabled = copilot_enabled,
         cmd = "Copilot",
         event = "InsertEnter",
         config = function()
-            vim.g.copilot_no_tab_map = true
             local accept_key = vim.fn.has("wsl") == 1 and "<M-l>" or "<C-l>"
 
             vim.keymap.set("i", accept_key, function()
