@@ -2,7 +2,7 @@
 
 ## Project
 
-- Root: `/Users/tener/project/blog`
+- Root: `/Users/tener/projects/blog`
 - Engine: Hugo with Blowfish-style content organization
 - Post path: `content/posts/<slug>/index.md`
 - Default archetype: `archetypes/posts.md`

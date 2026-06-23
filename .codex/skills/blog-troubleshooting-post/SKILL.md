@@ -1,6 +1,6 @@
 ---
 name: blog-troubleshooting-post
-description: Use when turning a debugging session, painful troubleshooting story, AI-assisted development failure, dotfiles/Nix incident, or technical worklog into a readable Japanese draft post for the user's Hugo blog at ~/project/blog.
+description: Use when turning a debugging session, painful troubleshooting story, AI-assisted development failure, dotfiles/Nix incident, or technical worklog into a readable Japanese draft post for the user's Hugo blog at ~/projects/blog.
 ---
 
 # Blog Troubleshooting Post
@@ -11,7 +11,7 @@ Create readable Japanese draft posts for the user's Hugo blog from messy debuggi
 
 ## Workflow
 
-1. Use the blog root `/Users/tener/project/blog`.
+1. Use the blog root `/Users/tener/projects/blog`.
 2. Before editing, inspect the current blog conventions:
    - `AGENTS.md` or `README.md` if present
    - `hugo.toml`, `config/_default/*.toml`, and `archetypes/posts.md`
