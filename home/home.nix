@@ -12,6 +12,10 @@ let
   isLinux = pkgs.stdenv.hostPlatform.isLinux;
   isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
   hermesAgentPackages = inputs.hermes-agent.packages.${pkgs.stdenv.hostPlatform.system};
+  hermesAgentDesktopAppPackage = import ../packages/hermes-agent-desktop-app.nix {
+    inherit pkgs lib;
+    hermesDesktop = hermesAgentPackages.desktop;
+  };
   homeDir = config.home.homeDirectory;
 
   codexBarPackage = import ../packages/codexbar.nix {
@@ -122,7 +126,7 @@ let
   # Prefer Nix here when the package is cross-platform or when keeping the
   # same binary/toolchain as Linux is useful.
   darwinDesktopPackages = with pkgs; [
-    hermesAgentPackages.desktop
+    hermesAgentDesktopAppPackage
     gijirokuPackage
     moocsCollectPackage
     palmierProPackage
