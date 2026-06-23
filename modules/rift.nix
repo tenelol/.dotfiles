@@ -120,5 +120,9 @@ delib.module {
       source = ../config/rift/sketchybar-workspace-subscribe;
       executable = true;
     };
+    xdg.configFile."rift/apply-horizontal-fullscreen" = {
+      source = ../config/rift/apply-horizontal-fullscreen;
+      executable = true;
+    };
   };
 }
