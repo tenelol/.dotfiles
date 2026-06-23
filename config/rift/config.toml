@@ -107,7 +107,7 @@ workspace_rules = [
   { workspace = 3, layout = "traditional" },
   { workspace = 4, layout = "traditional" },
 ]
-default_workspace = 0
+default_workspace = 3
 workspace_names = [
   "1",
   "2",
@@ -118,6 +118,8 @@ workspace_names = [
 
 app_rules = [
   { app_id = "com.anthropic.claudefordesktop", workspace = 0 },
+  { app_id = "com.nousresearch.hermes-agent-desktop", workspace = 0 },
+  { app_id = "com.github.Electron", workspace = 0 },
   { app_id = "com.mitchellh.ghostty", workspace = 0 },
   { app_id = "com.openai.codex", workspace = 0 },
   { app_id = "company.thebrowser.dia", workspace = 1 },
@@ -127,6 +129,7 @@ app_rules = [
   { app_id = "dev.vencord.vesktop", workspace = 2 },
   { app_id = "jp.naver.line.mac", workspace = 2 },
   { app_id = "com.spotify.client", workspace = 3 },
+  { app_id = "com.apple.Preview", workspace = 4 },
   { app_name = "System Settings", manage = false },
   { app_name = "System Preferences", manage = false },
   { app_name = "App Store", manage = false },
