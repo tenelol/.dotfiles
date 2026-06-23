@@ -1,0 +1,131 @@
+#!/bin/sh
+set -u
+
+RIFT_CLI="${RIFT_CLI:-/opt/homebrew/bin/rift-cli}"
+JQ="${JQ:-/usr/bin/jq}"
+SLEEP="${SLEEP:-/bin/sleep}"
+
+usage() {
+  echo "usage: $0 [--current|--all-workspaces]" >&2
+  exit 2
+}
+
+mode="${1:---all-workspaces}"
+case "$mode" in
+  --current | --all-workspaces) ;;
+  *) usage ;;
+esac
+
+if [ ! -x "$RIFT_CLI" ] || [ ! -x "$JQ" ]; then
+  exit 0
+fi
+
+wait_for_rift() {
+  tries=0
+  while [ "$tries" -lt 30 ]; do
+    if "$RIFT_CLI" query metrics >/dev/null 2>&1; then
+      return 0
+    fi
+
+    tries=$((tries + 1))
+    "$SLEEP" 0.1
+  done
+
+  return 1
+}
+
+workspace_indexes() {
+  "$RIFT_CLI" query workspace-layout 2>/dev/null | "$JQ" -r '.[].index'
+}
+
+active_workspace_index() {
+  "$RIFT_CLI" query workspace-layout 2>/dev/null \
+    | "$JQ" -r '.[] | select(.is_active == true) | .index' \
+    | head -n 1
+}
+
+set_horizontal_layout() {
+  workspace="$1"
+
+  # Force a rebuild even when the workspace is already traditional; Rift no-ops
+  # set-layout if the mode is unchanged, which would leave old vertical splits.
+  "$RIFT_CLI" execute workspace set-layout --workspace-id "$workspace" bsp >/dev/null 2>&1 || true
+  "$RIFT_CLI" execute workspace set-layout --workspace-id "$workspace" traditional >/dev/null 2>&1 || true
+}
+
+focused_window_fills_tiling_area() {
+  config_json="$("$RIFT_CLI" execute config get 2>/dev/null)" || return 1
+  displays_json="$("$RIFT_CLI" query displays 2>/dev/null)" || return 1
+  windows_json="$("$RIFT_CLI" query windows 2>/dev/null)" || return 1
+
+  "$JQ" -e -n \
+    --argjson config "$config_json" \
+    --argjson displays "$displays_json" \
+    --argjson windows "$windows_json" '
+      def absval: if . < 0 then -. else . end;
+      def near(a; b): ((a - b) | absval) <= 2;
+
+      ($displays[] | select(.is_active_context == true) | .frame) as $screen
+      | ($config.settings.layout.gaps.outer // {}) as $g
+      | ($windows[] | select(.is_focused == true) | .frame) as $window
+      | ($screen.origin.x + ($g.left // 0)) as $x
+      | ($screen.origin.y + ($g.top // 0)) as $y
+      | ($screen.size.width - ($g.left // 0) - ($g.right // 0)) as $width
+      | ($screen.size.height - ($g.top // 0) - ($g.bottom // 0)) as $height
+      | near($window.origin.x; $x)
+        and near($window.origin.y; $y)
+        and near($window.size.width; $width)
+        and near($window.size.height; $height)
+    ' >/dev/null
+}
+
+fullscreen_current_workspace() {
+  count="$("$RIFT_CLI" query windows 2>/dev/null | "$JQ" 'length')" || return 0
+  [ "$count" -gt 0 ] || return 0
+
+  i=0
+  while [ "$i" -lt "$count" ]; do
+    if ! focused_window_fills_tiling_area; then
+      "$RIFT_CLI" execute window toggle-fullscreen-within-gaps >/dev/null 2>&1 || true
+      "$SLEEP" 0.05
+    fi
+
+    "$RIFT_CLI" execute window next >/dev/null 2>&1 || true
+    "$SLEEP" 0.03
+    i=$((i + 1))
+  done
+}
+
+apply_current_workspace() {
+  workspace="$(active_workspace_index)"
+  [ -n "$workspace" ] || return 0
+
+  set_horizontal_layout "$workspace"
+  fullscreen_current_workspace
+}
+
+apply_all_workspaces() {
+  active="$(active_workspace_index)"
+  workspaces="$(workspace_indexes)"
+
+  for workspace in $workspaces; do
+    set_horizontal_layout "$workspace"
+  done
+
+  for workspace in $workspaces; do
+    "$RIFT_CLI" execute workspace switch "$workspace" >/dev/null 2>&1 || true
+    "$SLEEP" 0.08
+    fullscreen_current_workspace
+  done
+
+  if [ -n "$active" ]; then
+    "$RIFT_CLI" execute workspace switch "$active" >/dev/null 2>&1 || true
+  fi
+}
+
+wait_for_rift || exit 0
+
+case "$mode" in
+  --current) apply_current_workspace ;;
+  --all-workspaces) apply_all_workspaces ;;
+esac
