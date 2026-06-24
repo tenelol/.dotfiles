@@ -23,15 +23,18 @@ assign_app() {
 }
 
 assign_app com.mitchellh.ghostty 1
-assign_app com.apple.mail 8
-assign_app org.pqrs.Karabiner-Elements.Settings 1
+assign_app com.anthropic.claudefordesktop 1
+assign_app com.nousresearch.hermes-agent-desktop 1
+assign_app com.github.Electron 1
+assign_app com.openai.codex 1
 assign_app company.thebrowser.dia 2
-assign_app com.anthropic.claudefordesktop 3
-assign_app com.openai.codex 3
-assign_app com.tinyspeck.slackmacgap 4
-assign_app com.spotify.client 5
-assign_app dev.vencord.vesktop 6
-assign_app jp.naver.line.mac 7
+assign_app org.qutebrowser.qutebrowser 2
+assign_app com.apple.mail 3
+assign_app com.tinyspeck.slackmacgap 3
+assign_app dev.vencord.vesktop 3
+assign_app jp.naver.line.mac 3
+assign_app com.spotify.client 4
+assign_app com.apple.Preview 5
 
 if [ -x /opt/homebrew/bin/sketchybar ]; then
   /opt/homebrew/bin/sketchybar --trigger workspace_change REFRESH=all >/dev/null 2>&1 || true
