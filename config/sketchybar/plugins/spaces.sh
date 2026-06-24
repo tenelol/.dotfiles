@@ -2,8 +2,9 @@
 
 SKETCHYBAR_BIN="/opt/homebrew/bin/sketchybar"
 RIFT_CLI="/opt/homebrew/bin/rift-cli"
-STATE_DIR="${TMPDIR:-/tmp}/sketchybar"
-STATE_FILE="$STATE_DIR/focused_workspace"
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/sketchybar"
+FOCUSED_STATE_FILE="$STATE_DIR/focused_workspace"
+PREVIOUS_STATE_FILE="$STATE_DIR/previous_workspace"
 
 theme_file="${XDG_CONFIG_HOME:-$HOME/.config}/theme/sketchybar.env"
 [ -r "$theme_file" ] && . "$theme_file"
@@ -68,12 +69,15 @@ focused_workspace="$FOCUSED"
 [ -n "$focused_workspace" ] || exit 0
 
 previous_workspace="$PREVIOUS"
-if [ -z "$previous_workspace" ] && [ -r "$STATE_FILE" ]; then
-  IFS= read -r previous_workspace < "$STATE_FILE"
+if [ -z "$previous_workspace" ] && [ -r "$FOCUSED_STATE_FILE" ]; then
+  IFS= read -r previous_workspace < "$FOCUSED_STATE_FILE"
 fi
 
 mkdir -p "$STATE_DIR"
-printf '%s\n' "$focused_workspace" > "$STATE_FILE"
+if [ -n "$previous_workspace" ] && [ "$previous_workspace" != "$focused_workspace" ]; then
+  printf '%s\n' "$previous_workspace" > "$PREVIOUS_STATE_FILE"
+fi
+printf '%s\n' "$focused_workspace" > "$FOCUSED_STATE_FILE"
 
 if [ "$REFRESH" = "all" ] || [ -z "$previous_workspace" ]; then
   for sid in $(managed_workspaces); do

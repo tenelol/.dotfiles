@@ -52,7 +52,7 @@ add_workspace_item() {
     label.padding_left=0
     label.padding_right=0
     background.drawing=off
-    click_script="/bin/sh -lc 'if /usr/bin/pgrep -qx AeroSpace && [ -x /opt/homebrew/bin/aerospace ]; then /opt/homebrew/bin/aerospace workspace $workspace_id; else /opt/homebrew/bin/rift-cli execute workspace switch $workspace_index; fi'"
+    click_script="/bin/sh -lc 'if /usr/bin/pgrep -qx AeroSpace && [ -x /opt/homebrew/bin/aerospace ] && [ -x \"$HOME/.config/aerospace/workspace-local\" ]; then \"$HOME/.config/aerospace/workspace-local\" focus-absolute $workspace_id; else /opt/homebrew/bin/rift-cli execute workspace switch $workspace_index; fi'"
   )
 
   "$SKETCHYBAR_BIN" --add item "$item_name" left \
