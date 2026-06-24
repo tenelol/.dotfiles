@@ -22,7 +22,7 @@ assign_app() {
     done
 }
 
-assign_app com.mitchellh.ghostty 1
+assign_app com.mitchellh.ghostty 2
 assign_app com.anthropic.claudefordesktop 1
 assign_app com.nousresearch.hermes-agent-desktop 1
 assign_app com.github.Electron 1

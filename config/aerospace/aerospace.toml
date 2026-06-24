@@ -52,7 +52,7 @@ persistent-workspaces = [
 exec-on-workspace-change = [
   '/bin/bash',
   '-lc',
-  '/opt/homebrew/bin/sketchybar --trigger workspace_change FOCUSED="$AEROSPACE_FOCUSED_WORKSPACE" PREVIOUS="$AEROSPACE_PREV_WORKSPACE"',
+  '/opt/homebrew/bin/sketchybar --trigger workspace_change FOCUSED="$AEROSPACE_FOCUSED_WORKSPACE" PREVIOUS="$AEROSPACE_PREV_WORKSPACE" >/dev/null 2>&1 &',
 ]
 
 [exec]
@@ -137,7 +137,7 @@ alt-u = 'workspace --wrap-around prev'
 alt-i = 'workspace --wrap-around next'
 alt-shift-space = 'layout floating tiling'
 alt-shift-x = 'layout horizontal vertical'
-alt-shift-f = 'fullscreen'
+alt-shift-f = 'fullscreen --no-outer-gaps'
 alt-shift-r = 'reload-config'
 alt-shift-semicolon = 'mode service'
 
@@ -185,7 +185,7 @@ l = ['join-with right', 'mode main']
 
 [[on-window-detected]]
 if.app-id = 'com.mitchellh.ghostty'
-run = 'move-node-to-workspace 1'
+run = 'move-node-to-workspace 2'
 
 [[on-window-detected]]
 if.app-id = 'com.anthropic.claudefordesktop'

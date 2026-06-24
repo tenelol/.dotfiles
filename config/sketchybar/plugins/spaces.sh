@@ -30,10 +30,6 @@ space_item_name() {
   printf 'space.%s.%s\n' "$workspace_id" "$local_workspace"
 }
 
-item_exists() {
-  "$SKETCHYBAR_BIN" --query "$(space_item_name "$1")" >/dev/null 2>&1
-}
-
 query_focused_workspace() {
   if aerospace_running; then
     /opt/homebrew/bin/aerospace list-workspaces --focused 2>/dev/null | head -n 1
@@ -57,14 +53,12 @@ is_managed_workspace() {
 
 set_active() {
   is_managed_workspace "$1" || return 0
-  item_exists "$1" || return 0
 
   "$SKETCHYBAR_BIN" --set "$(space_item_name "$1")" label.color="$WORKSPACE_ACTIVE"
 }
 
 set_inactive() {
   is_managed_workspace "$1" || return 0
-  item_exists "$1" || return 0
 
   "$SKETCHYBAR_BIN" --set "$(space_item_name "$1")" label.color="$WORKSPACE_INACTIVE"
 }

@@ -163,7 +163,6 @@ fi
 space_observer=(
   drawing=off
   updates=on
-  update_freq=1
   width=0
   padding_left=0
   padding_right=0
