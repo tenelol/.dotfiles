@@ -3,18 +3,33 @@ set -eu
 
 RIFT_CLI="${RIFT_CLI:-/opt/homebrew/bin/rift-cli}"
 
-if "$RIFT_CLI" subscribe list-cli 2>/dev/null | /usr/bin/grep -Fq 'sketchybar --trigger workspace_change'; then
+subscription="$("$RIFT_CLI" subscribe list-cli 2>/dev/null || true)"
+if printf '%s\n' "$subscription" | /usr/bin/grep -Fq 'workspace_id' &&
+  printf '%s\n' "$subscription" | /usr/bin/grep -Fq 'sketchybar --trigger workspace_change'; then
   exit 0
 fi
+
+"$RIFT_CLI" subscribe unsub-cli workspace_changed >/dev/null 2>&1 || true
 
 exec "$RIFT_CLI" subscribe cli \
   --event workspace_changed \
   --command /bin/sh \
   --args -c \
   --args '
-focused="$RIFT_WORKSPACE_NAME"
+event_json="${1:-}"
+focused="$(printf "%s\n" "$event_json" | /usr/bin/sed -nE "s/.*\"workspace_id\"[[:space:]]*:[[:space:]]*\\{[^}]*\"idx\"[[:space:]]*:[[:space:]]*([0-9]+).*/\\1/p" | /usr/bin/head -n 1)"
+
+if [ -z "$focused" ] && [ -x /opt/homebrew/bin/rift-cli ]; then
+  focused="$(/opt/homebrew/bin/rift-cli query workspaces 2>/dev/null \
+    | /usr/bin/tr "{" "\n" \
+    | /usr/bin/sed -nE "s/.*\"index\"[[:space:]]*:[[:space:]]*([0-9]+).*\"is_active\"[[:space:]]*:[[:space:]]*true.*/\\1/p" \
+    | /usr/bin/head -n 1 \
+    | /usr/bin/awk "{ print \$1 + 1 }")"
+fi
+
 case "$focused" in
   ""|*[!0-9]*) exit 0 ;;
 esac
 /opt/homebrew/bin/sketchybar --trigger workspace_change FOCUSED="$focused"
-'
+' \
+  --args sh
