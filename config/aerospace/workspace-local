@@ -3,50 +3,153 @@
 set -eu
 
 AEROSPACE="${AEROSPACE:-/opt/homebrew/bin/aerospace}"
+SKETCHYBAR_SPACES="${SKETCHYBAR_SPACES:-${XDG_CONFIG_HOME:-$HOME/.config}/sketchybar/plugins/spaces.sh}"
 
 action="${1:-}"
-local_workspace="${2:-}"
 
-case "$action" in
-  focus | move) ;;
-  *)
-    printf 'usage: %s focus|move 1..9\n' "$0" >&2
-    exit 2
-    ;;
-esac
+usage() {
+  printf 'usage: %s focus|move 1..9\n' "$0" >&2
+  printf '       %s focus-absolute WORKSPACE\n' "$0" >&2
+  printf '       %s focus-relative prev|next\n' "$0" >&2
+  printf '       %s back-and-forth\n' "$0" >&2
+}
 
-case "$local_workspace" in
-  1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9) ;;
-  *)
-    printf 'usage: %s focus|move 1..9\n' "$0" >&2
-    exit 2
-    ;;
-esac
+valid_workspace() {
+  case "$1" in
+    '' | *[!0-9]*) return 1 ;;
+    *) return 0 ;;
+  esac
+}
 
-monitor_name="$("$AEROSPACE" list-monitors --focused --format '%{monitor-name}' | head -n 1)"
+current_workspace() {
+  "$AEROSPACE" list-workspaces --focused 2>/dev/null | head -n 1
+}
 
-case "$monitor_name" in
-  *Built-in*)
-    offset=0
-    ;;
-  *VZ249*)
-    offset=9
-    ;;
-  *Sidecar*)
-    offset=18
-    ;;
-  *)
-    offset=9
-    ;;
-esac
+notify_workspace() {
+  focused="$1"
+  previous="${2:-}"
 
-workspace="$((offset + local_workspace))"
+  [ -n "$focused" ] || return 0
+  [ "$focused" != "$previous" ] || return 0
+  [ -x "$SKETCHYBAR_SPACES" ] || return 0
+
+  FOCUSED="$focused" PREVIOUS="$previous" "$SKETCHYBAR_SPACES" >/dev/null 2>&1 &
+}
+
+focused_monitor_offset() {
+  monitor_name="$("$AEROSPACE" list-monitors --focused --format '%{monitor-name}' | head -n 1)"
+
+  case "$monitor_name" in
+    *Built-in*)
+      printf '%s\n' 0
+      ;;
+    *VZ249*)
+      printf '%s\n' 9
+      ;;
+    *Sidecar*)
+      printf '%s\n' 18
+      ;;
+    *)
+      printf '%s\n' 9
+      ;;
+  esac
+}
+
+local_to_workspace() {
+  local_workspace="$1"
+
+  case "$local_workspace" in
+    1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9) ;;
+    *)
+      usage
+      exit 2
+      ;;
+  esac
+
+  offset="$(focused_monitor_offset)"
+  printf '%s\n' "$((offset + local_workspace))"
+}
+
+relative_workspace() {
+  direction="$1"
+  current="$2"
+
+  valid_workspace "$current" || return 1
+
+  offset="$(((current - 1) / 9 * 9))"
+  local_workspace="$(((current - offset - 1) % 9 + 1))"
+
+  case "$direction" in
+    prev)
+      next_local="$(((local_workspace + 7) % 9 + 1))"
+      ;;
+    next)
+      next_local="$((local_workspace % 9 + 1))"
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+
+  printf '%s\n' "$((offset + next_local))"
+}
+
+focus_workspace() {
+  workspace="$1"
+  previous="$(current_workspace)"
+
+  notify_workspace "$workspace" "$previous"
+  exec "$AEROSPACE" workspace "$workspace"
+}
+
+move_workspace() {
+  workspace="$1"
+  previous="$(current_workspace)"
+
+  notify_workspace "$workspace" "$previous"
+  exec "$AEROSPACE" move-node-to-workspace --focus-follows-window "$workspace"
+}
 
 case "$action" in
   focus)
-    exec "$AEROSPACE" workspace "$workspace"
+    focus_workspace "$(local_to_workspace "${2:-}")"
     ;;
   move)
-    exec "$AEROSPACE" move-node-to-workspace --focus-follows-window "$workspace"
+    move_workspace "$(local_to_workspace "${2:-}")"
+    ;;
+  focus-absolute)
+    workspace="${2:-}"
+    if ! valid_workspace "$workspace"; then
+      usage
+      exit 2
+    fi
+    focus_workspace "$workspace"
+    ;;
+  focus-relative)
+    direction="${2:-}"
+    workspace="$(relative_workspace "$direction" "$(current_workspace)")" || {
+      usage
+      exit 2
+    }
+    focus_workspace "$workspace"
+    ;;
+  back-and-forth)
+    state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/sketchybar"
+    previous_state="$state_dir/previous_workspace"
+    if [ -r "$previous_state" ]; then
+      IFS= read -r workspace < "$previous_state"
+    else
+      workspace=""
+    fi
+
+    if valid_workspace "$workspace"; then
+      focus_workspace "$workspace"
+    fi
+
+    exec "$AEROSPACE" workspace-back-and-forth
+    ;;
+  *)
+    usage
+    exit 2
     ;;
 esac
