@@ -63,6 +63,7 @@ delib.module {
         "raycast"
         "slack"
         "spotify"
+        "steam"
         "tailscale-app"
         "thebrowsercompany-dia"
         "zed"
