@@ -582,6 +582,12 @@ delib.module {
       ''
       + ''
         vim.opt.fillchars:append({ eob = " " })
+
+        if vim.fn.exists(":lsp") == 2 and vim.fn.exists(":LspInfo") == 0 then
+          vim.api.nvim_create_user_command("LspInfo", "checkhealth vim.lsp", {
+            desc = "Show LSP health and client status",
+          })
+        end
       '';
       extraConfigLua = nvimPluginLoaderLua;
       extraPlugins = builtins.attrValues nixManagedPlugins;
