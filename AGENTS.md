@@ -25,6 +25,7 @@
 - `hosts/<name>/default.nix` should stay thin: host metadata plus hardware imports.
 - Shared and host-specific behavior belongs in `modules/`.
 - `denix` auto-discovers `hosts/` and `modules/`, so new `.nix` files should be committed to Git if they are meant to participate in flake evaluation.
+- `lib/` is for explicitly imported helpers and generated-data builders; keep bloat-prone implementation details there instead of growing auto-discovered modules.
 - `legacy/` is not part of the active flake unless the user explicitly asks to revive or compare it.
 
 ## Host inventory

@@ -20,11 +20,13 @@ NixOS と `nix-darwin` を 1 つの flake で管理し、Home Manager は各 sys
 - [modules](./modules): denix が自動発見する shared / host-specific module
 - [rices](./rices): denix の rice 定義。共通 wallpaper と macOS の WM variant を切り替える
 - [home/home.nix](./home/home.nix): 共通 Home Manager 設定
+- [lib](./lib): denix が自動発見しない内部 helper。大きくなりやすい package 群、生成ロジック、host 固有 helper を module から明示 import する
 - [config](./config): Neovim、fish、niri、Rift、waybar などの実ファイル
 - [packages](./packages): 軽い独自 package 定義
 - [legacy](./legacy): 退避した旧構成。現行 flake では未使用
 
 `hosts/` と `modules/` と `rices/` は `denix` が自動で読むので、新しい `.nix` を足したら Git 管理下に置く前提です。
+`lib/` は自動発見されないので、module を肥大化させる実装詳細や package 集約を置き、必要な module から明示的に `import` します。
 NixOS host の `hosts/*/hardware-configuration.nix` は `flake.nix` 側で自動除外しているので、host 追加時に除外リストを手で更新する必要はありません。
 Darwin の共通土台は [modules/darwin-base.nix](./modules/darwin-base.nix)、`macbook` 固有の UX 調整は [modules/darwin-host-macbook.nix](./modules/darwin-host-macbook.nix) に寄せています。
 macOS の GUI アプリは「cross-platform なものは Nix、App Store / cask-first なものは Homebrew」を目安に分けています。
@@ -108,6 +110,12 @@ Script Commands は `~/.config/raycast/scripts` に展開されるので、Rayca
 ./scripts/validate eval
 ```
 
+構造チェックだけを先に見る:
+
+```sh
+./scripts/validate structure
+```
+
 ローカル環境の診断:
 
 ```sh
@@ -117,13 +125,13 @@ dotfiles doctor
 `dotfiles doctor` は repo の場所、Git の dirty 状態、`nix` / `nh`、flake metadata / configuration 名の軽量評価、実行中の rebuild/switch process、macOS では active rice 推定・Raycast script・SketchyBar・switch log をまとめて確認します。更新、build、switch は実行しません。warning も失敗扱いにしたいときは `dotfiles doctor --strict`、flake 評価を省くときは `dotfiles doctor --no-eval` を使います。
 
 Darwin 実機がまだ無い段階でも `macbook` host を腐らせないため、普段の軽量チェックは Linux / Darwin をまとめて見る `./scripts/validate eval` を基準にします。
-このコマンドは `nix flake check --all-systems --no-build` で flake checks をまとめて評価して、全 host と rice 派生 config が壊れていないかを build なしで確認します。
+このコマンドは active Nix ファイルの肥大化チェックを通してから、`nix flake check --all-systems --no-build` で flake checks をまとめて評価して、全 host と rice 派生 config が壊れていないかを build なしで確認します。
 CI の pull request では `nix fmt --ci` と `./scripts/validate eval` だけを走らせ、GitHub 上の待ち時間を軽くしています。Linux host の実 build は `main` への push と `workflow_dispatch` で `checks.x86_64-linux.build-*` を個別に build します。ローカルの実運用は引き続き `nh os build` / `nh darwin build` を使います。Darwin は GitHub Actions の Linux runner では build せず、ローカルで `./scripts/validate darwin` を回す運用です。
 
 整形確認:
 
 ```sh
-nix fmt -- flake.nix hosts modules rices home packages --ci --excludes 'hosts/*/hardware-configuration.nix' --excludes 'legacy/**'
+nix fmt -- flake.nix hosts modules rices home packages lib --ci --excludes 'hosts/*/hardware-configuration.nix' --excludes 'legacy/**'
 ```
 
 Linux host を build:
@@ -199,9 +207,11 @@ nh darwin build . -H macbook-mac
 - `nixos.base` は全 NixOS host 共通、desktop 前提は host 非 server の module に分離
 - `wsl` は NixOS-WSL 前提の server host として扱い、GUI/desktop module を避けて CLI と Home Manager を共有する
 - macOS でも同じ Neovim 設定を使う。clipboard や language toolchain は Nix 側で揃える
+- active Nix ファイルは 500 行を上限にし、超えそうな package 群、生成ロジック、inline script は `lib/` や `config/` へ逃がす
 
 ## Editing Notes
 
 - repo の説明を書くときは「個人用」「denix で host/module を自動発見」「`nh` で build/switch」を前提にする
 - 新しい host を追加するときは `hosts/<name>/default.nix` を作り、必要なら hardware config を同階層に置く
 - 新しい module は `modules/` に置けば denix が拾う
+- 新しい helper は `lib/` に置き、denix に自動発見させたい module だけを `modules/` に置く

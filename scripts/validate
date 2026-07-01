@@ -6,12 +6,45 @@ cd "$repo_root"
 
 usage() {
   cat <<'EOF'
-Usage: ./scripts/validate <eval|linux|darwin>
+Usage: ./scripts/validate <structure|eval|linux|darwin>
 
+  structure
+          Check active Nix files for bloat-prone oversized modules
   eval    Run flake checks without building outputs
   linux   Run no-build flake checks, then build all Linux hosts with nh
   darwin  Run no-build flake checks, then build the macOS host with nh
 EOF
+}
+
+run_structure_check() {
+  local max_nix_lines=500
+  local failed=0
+  local file
+  local lines
+
+  while IFS= read -r file; do
+    case "$file" in
+      hosts/*/hardware-configuration.nix | legacy/*)
+        continue
+        ;;
+    esac
+
+    lines="$(wc -l <"$file")"
+    if (( lines > max_nix_lines )); then
+      printf '%s has %s lines; split active Nix files before they exceed %s lines\n' \
+        "$file" "$lines" "$max_nix_lines" >&2
+      failed=1
+    fi
+  done < <(
+    find flake.nix hosts modules rices home packages lib \
+      -type f \
+      -name '*.nix' \
+      -print 2>/dev/null | sort
+  )
+
+  if (( failed )); then
+    exit 1
+  fi
 }
 
 run_eval_check() {
@@ -32,7 +65,7 @@ ensure_no_rebuild_running() {
 mode="${1:-linux}"
 
 case "$mode" in
-  eval|linux|darwin)
+  structure|eval|linux|darwin)
     ;;
   -h|--help|help)
     usage
@@ -43,6 +76,12 @@ case "$mode" in
     exit 1
     ;;
 esac
+
+run_structure_check
+
+if [[ "$mode" == "structure" ]]; then
+  exit 0
+fi
 
 run_eval_check
 
