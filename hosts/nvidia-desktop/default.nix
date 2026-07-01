@@ -6,7 +6,7 @@ delib.host {
 
   myconfig.boot.efiSystemdBoot = true;
   myconfig.nixbuild.enable = true;
-  rice = "rift";
+  rice = "persona";
 
   myconfig.nixos.desktop.networkBackend = "dhcpcd-resolved";
 
