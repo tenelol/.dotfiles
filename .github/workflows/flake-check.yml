@@ -9,6 +9,7 @@ on:
       - "hosts/**"
       - "modules/**"
       - "home/**"
+      - "lib/**"
       - "rices/**"
       - "config/**"
       - "packages/**"
@@ -27,6 +28,7 @@ on:
       - "hosts/**"
       - "modules/**"
       - "home/**"
+      - "lib/**"
       - "rices/**"
       - "config/**"
       - "packages/**"
@@ -56,7 +58,7 @@ jobs:
         uses: DeterminateSystems/determinate-nix-action@v3
 
       - name: Check Nix formatting
-        run: nix fmt -- flake.nix hosts modules rices home packages --ci --excludes 'hosts/*/hardware-configuration.nix' --excludes 'legacy/**'
+        run: nix fmt -- flake.nix hosts modules rices home packages lib --ci --excludes 'hosts/*/hardware-configuration.nix' --excludes 'legacy/**'
 
       - name: Evaluate all supported systems
         run: ./scripts/validate eval
