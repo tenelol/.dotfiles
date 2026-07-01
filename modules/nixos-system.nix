@@ -18,5 +18,5 @@ delib.module {
       networkBackend = strOption "iwd-networkd";
     };
 
-  nixos.ifEnabled = { myconfig, ... }: desktop.mkConfig myconfig.nixos.desktop.networkBackend;
+  nixos.ifEnabled = { myconfig, ... }: desktop.mkConfig myconfig;
 }
