@@ -1,7 +1,6 @@
 {
   pkgs,
   lib,
-  collectCli ? import ./moocs-collect-cli.nix { inherit pkgs lib; },
 }:
 let
   pythonWithKeyring = pkgs.python3.withPackages (pythonPackages: [
@@ -11,7 +10,7 @@ in
 
 pkgs.stdenvNoCC.mkDerivation {
   pname = "imoocs";
-  version = "0.2.8";
+  version = "0.3.3";
 
   src = ../config/scripts/imoocs;
   dontUnpack = true;
@@ -27,11 +26,10 @@ pkgs.stdenvNoCC.mkDerivation {
     wrapProgram "$out/bin/imoocs" \
       --prefix PATH : ${
         lib.makeBinPath [
-          collectCli
           pkgs.coreutils
-          pkgs.expect
           pkgs.findutils
           pythonWithKeyring
+          pkgs.resvg
         ]
       }
 
@@ -40,9 +38,9 @@ pkgs.stdenvNoCC.mkDerivation {
 
   meta = {
     description = "Agent-safe wrapper for INIAD MOOCs operations";
-    homepage = "https://github.com/yu7400ki/moocs-collect";
+    homepage = "https://moocs.iniad.org";
     license = lib.licenses.mit;
     mainProgram = "imoocs";
-    platforms = collectCli.meta.platforms or lib.platforms.unix;
+    platforms = lib.platforms.unix;
   };
 }

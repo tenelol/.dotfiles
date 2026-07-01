@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
-backend="yu7400ki/moocs-collect"
+backend="imoocs-native"
 
 usage() {
   cat <<'EOF'
@@ -23,8 +23,8 @@ Usage:
 Notes:
   course, lesson, assignment, slide, drive, and open print JSON envelopes.
   auth and reset print text and use the exit code for status.
-  The moocs-collect backend supports interactive slide PDF collection through collect-cli.
-  If IMOOCS_USERNAME is set, slide collect fills only the username prompt from it.
+  slide collect uses the stored imoocs auth session; run `imoocs auth login` once first.
+  In non-interactive shells, pass --course/--lecture/--page or explicit --all.
 EOF
 }
 
@@ -84,55 +84,6 @@ print(json.dumps(payload, ensure_ascii=False, separators=(",", ":")))
 PY
 }
 
-run_collect_cli() {
-  local path="$1"
-  local year="$2"
-
-  if [[ -z "${IMOOCS_USERNAME:-}" ]]; then
-    collect-cli --path "$path" --year "$year" </dev/tty >/dev/tty 2>/dev/tty
-    return $?
-  fi
-
-  if ! command -v expect >/dev/null 2>&1; then
-    echo "expect is required when IMOOCS_USERNAME is set" >&2
-    return 69
-  fi
-
-  COLLECT_PATH="$path" COLLECT_YEAR="$year" expect <<'EXPECT'
-set timeout -1
-spawn collect-cli --path $env(COLLECT_PATH) --year $env(COLLECT_YEAR)
-expect {
-  -re "ユーザー名:" {
-    log_user 0
-    send -- "$env(IMOOCS_USERNAME)\r"
-    expect {
-      -re "パスワード:?" {
-        log_user 1
-        send_user -- "パスワード: "
-        interact
-        catch wait result
-        exit [lindex $result 3]
-      }
-      -re "ログイン中|科目を取得中|科目を選択" {
-        log_user 1
-        interact
-        catch wait result
-        exit [lindex $result 3]
-      }
-      eof {
-        catch wait result
-        exit [lindex $result 3]
-      }
-    }
-  }
-  eof {
-    catch wait result
-    exit [lindex $result 3]
-  }
-}
-EXPECT
-}
-
 simple_unsupported() {
   local kind="$1"
   local action="${2:-unknown}"
@@ -147,8 +98,8 @@ simple_unsupported() {
     "$kind" \
     "$action" \
     "unsupported" \
-    "unsupported_by_moocs_collect" \
-    "moocs-collect does not provide this operation; no browser fallback or manual URL parsing was performed." \
+    "unsupported_by_imoocs" \
+    "imoocs does not provide this operation; no browser fallback or manual URL parsing was performed." \
     "none" \
     "$data_json"
 }
@@ -159,26 +110,38 @@ moocs_http_cmd() {
 
   IMOOCS_HTTP_ACTION="$action" BACKEND="$backend" python3 - "$@" <<'PY'
 import getpass
+import ast
+import base64
 import html
 import http.cookiejar
 import json
 import mimetypes
 import os
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 import uuid
 import urllib.error
 import urllib.parse
 import urllib.request
+import zlib
 from http.cookiejar import Cookie
 from pathlib import Path
 
 SERVICE = "imoocs"
 ACCOUNT = "moocs-session-cookies"
 COLLECT_KEYCHAIN_SERVICE = "me.yu7400ki.moocs-collect"
+INIAD_WIFI_KEYCHAIN_SERVICE = "com.apple.network.eap.user.item.wlan.ssid.iniad"
+KEYCHAIN_PASSWORD_SERVICES = (
+    COLLECT_KEYCHAIN_SERVICE,
+    INIAD_WIFI_KEYCHAIN_SERVICE,
+)
+KEYCHAIN_SECURITY_TIMEOUT_SECONDS = 5
 BASE_URL = "https://moocs.iniad.org"
 SIGN_IN_URL = f"{BASE_URL}/auth/iniad"
+GOOGLE_SIGN_IN_URL = "https://accounts.google.com/samlredirect?domain=iniad.org"
 BACKEND = os.environ["BACKEND"]
 
 try:
@@ -283,10 +246,16 @@ def load_cookie_jar():
 
 def save_cookie_jar(jar):
     require_keyring()
+    allowed_domains = (
+        "moocs.iniad.org",
+        "iniad.org",
+        "google.com",
+        "googleusercontent.com",
+    )
     cookies = [
         cookie_to_dict(cookie)
         for cookie in jar
-        if cookie.domain.lstrip(".").lower().endswith("moocs.iniad.org")
+        if any(cookie.domain.lstrip(".").lower().endswith(domain) for domain in allowed_domains)
     ]
     value = json.dumps(cookies, ensure_ascii=False)
     for _ in range(5):
@@ -361,6 +330,7 @@ def looks_like_login_page(page_html, final_url=""):
     return (
         "kc-form-login" in lower
         or "login-actions/authenticate" in lower
+        or parsed.path.lower() == "/signin"
         or "/auth/iniad" in parsed.path.lower()
         or 'href="/auth/iniad"' in lower
         or "ログインしてください" in page_html
@@ -386,6 +356,37 @@ def login_form(page_html, page_url):
                 fields[name] = attr("value", input_attrs) or ""
         return action_url, fields
     return None
+
+
+def form_hidden_fields(body):
+    fields = {}
+    for input_match in re.finditer(r"(?is)<input\b([^>]*)>", body):
+        input_attrs = input_match.group(1)
+        name = attr("name", input_attrs)
+        input_type = (attr("type", input_attrs) or "text").lower()
+        if name and input_type == "hidden":
+            fields[name] = attr("value", input_attrs) or ""
+    return fields
+
+
+def find_form(page_html, page_url, predicate):
+    for match in re.finditer(r"(?is)<form\b([^>]*)>(.*?)</form>", page_html):
+        attrs = match.group(1)
+        body = match.group(2)
+        form_html = match.group(0)
+        if not predicate(attrs, body, form_html):
+            continue
+        action = attr("action", attrs) or page_url
+        return urllib.parse.urljoin(page_url, action), form_hidden_fields(body), attrs, body
+    return None
+
+
+def named_form(page_html, page_url, name):
+    return find_form(
+        page_html,
+        page_url,
+        lambda attrs, _body, _form_html: (attr("name", attrs) or "") == name,
+    )
 
 
 def normalize_text(value):
@@ -603,6 +604,1069 @@ def form_fields(fragment, answers, answer_details=None):
     return fields
 
 
+class AuthRequired(Exception):
+    pass
+
+
+class GoogleAuthRequired(Exception):
+    pass
+
+
+class HttpStatusError(Exception):
+    def __init__(self, url, status):
+        super().__init__(f"MOOCs returned HTTP {status} for {url}")
+        self.url = url
+        self.status = status
+
+
+class SelectionRequired(Exception):
+    pass
+
+
+class SelectionError(Exception):
+    pass
+
+
+def safe_filename(value, fallback="untitled"):
+    value = normalize_text(str(value or fallback))
+    value = re.sub(r"[\\/\0:]+", "_", value)
+    value = re.sub(r"\s+", " ", value).strip(" .")
+    return (value or fallback)[:160]
+
+
+def course_url(course_id):
+    parts = [urllib.parse.quote(part, safe="") for part in course_id.split("/")]
+    return f"{BASE_URL}/courses/{'/'.join(parts)}"
+
+
+def lecture_url(course_id, lesson_id):
+    return f"{course_url(course_id)}/{urllib.parse.quote(lesson_id, safe='')}"
+
+
+def page_url(course_id, lesson_id, page_id):
+    page_path = "/".join(urllib.parse.quote(part, safe="") for part in page_id.split("/"))
+    return f"{lecture_url(course_id, lesson_id)}/{page_path}"
+
+
+def authenticated_html(jar, url):
+    final_url, status, _headers, body = request(jar, url)
+    page_html = decode_body(body)
+    if not (200 <= status < 400):
+        raise HttpStatusError(final_url, status)
+    if looks_like_login_page(page_html, final_url):
+        raise AuthRequired()
+    return final_url, page_html
+
+
+def is_moocs_authenticated(jar):
+    final_url, status, _headers, body = request(jar, f"{BASE_URL}/courses", timeout=30)
+    if not (200 <= status < 400):
+        return False
+    return not looks_like_login_page(decode_body(body), final_url)
+
+
+def ensure_moocs_authenticated(jar):
+    if is_moocs_authenticated(jar):
+        return True
+
+    final_url, status, _headers, body = request(jar, SIGN_IN_URL, timeout=60)
+    if not (200 <= status < 400):
+        return False
+    page_html = decode_body(body)
+
+    # If Keycloak shows the username/password form, stored SSO cookies cannot
+    # refresh the MOOCs session and a real login is required.
+    if login_form(page_html, final_url) is not None:
+        return False
+    if looks_like_login_page(page_html, final_url):
+        return False
+    return is_moocs_authenticated(jar)
+
+
+def extract_anchor_links(page_html, page_url):
+    links = []
+    for match in re.finditer(r"(?is)<a\b([^>]*)>(.*?)</a>", page_html):
+        attrs = match.group(1)
+        href = attr("href", attrs)
+        if not href:
+            continue
+        href = html.unescape(href).strip()
+        lower_href = href.lower()
+        if href.startswith("#") or lower_href.startswith(("javascript:", "mailto:", "tel:")):
+            continue
+        url = urllib.parse.urljoin(page_url, href)
+        title = attr("title", attrs) or ""
+        text = text_from_html(match.group(2)) or title or href
+        links.append({
+            "url": url,
+            "text": normalize_text(text),
+            "title": normalize_text(title),
+        })
+    return links
+
+
+def dedupe_items(items, key_name):
+    seen = set()
+    deduped = []
+    for item in items:
+        key = item.get(key_name)
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        item["index"] = len(deduped)
+        deduped.append(item)
+    return deduped
+
+
+def route_if_moocs(url):
+    parsed = urllib.parse.urlparse(url)
+    if parsed.hostname != "moocs.iniad.org":
+        return None
+    return route_from_url(url)
+
+
+def list_courses(jar, year):
+    final_url, page_html = authenticated_html(jar, f"{BASE_URL}/courses/{year}")
+    courses = []
+    for link in extract_anchor_links(page_html, final_url):
+        route = route_if_moocs(link["url"])
+        if not route:
+            continue
+        if route.get("year") != str(year) or not route.get("courseCode") or route.get("lessonId"):
+            continue
+        name = link["text"] or route["courseCode"]
+        courses.append({
+            "courseId": route["courseId"],
+            "slug": route["courseCode"],
+            "name": name,
+            "url": course_url(route["courseId"]),
+        })
+    return dedupe_items(courses, "courseId")
+
+
+def list_lectures(jar, course):
+    final_url, page_html = authenticated_html(jar, course["url"])
+    lectures = []
+    for link in extract_anchor_links(page_html, final_url):
+        route = route_if_moocs(link["url"])
+        if not route:
+            continue
+        if route.get("courseId") != course["courseId"] or not route.get("lessonId") or route.get("pageId"):
+            continue
+        name = link["text"] or route["lessonId"]
+        lectures.append({
+            "courseId": course["courseId"],
+            "lessonId": route["lessonId"],
+            "slug": route["lessonId"],
+            "name": name,
+            "url": lecture_url(course["courseId"], route["lessonId"]),
+        })
+    return dedupe_items(lectures, "lessonId")
+
+
+def list_pages(jar, lecture):
+    final_url, page_html = authenticated_html(jar, lecture["url"])
+    pages = []
+
+    current_route = route_if_moocs(final_url)
+    if (
+        current_route
+        and current_route.get("courseId") == lecture["courseId"]
+        and current_route.get("lessonId") == lecture["lessonId"]
+        and current_route.get("pageId")
+    ):
+        pages.append({
+            "courseId": lecture["courseId"],
+            "lessonId": lecture["lessonId"],
+            "pageId": current_route["pageId"],
+            "slug": current_route["pageId"],
+            "title": page_title(page_html, current_route["pageId"]),
+            "url": page_url(lecture["courseId"], lecture["lessonId"], current_route["pageId"]),
+        })
+
+    for link in extract_anchor_links(page_html, final_url):
+        route = route_if_moocs(link["url"])
+        if not route:
+            continue
+        if (
+            route.get("courseId") != lecture["courseId"]
+            or route.get("lessonId") != lecture["lessonId"]
+            or not route.get("pageId")
+        ):
+            continue
+        title = link["title"] or link["text"] or route["pageId"]
+        pages.append({
+            "courseId": lecture["courseId"],
+            "lessonId": lecture["lessonId"],
+            "pageId": route["pageId"],
+            "slug": route["pageId"],
+            "title": title,
+            "url": page_url(lecture["courseId"], lecture["lessonId"], route["pageId"]),
+        })
+
+    return dedupe_items(pages, "pageId")
+
+
+def is_google_presentation_url(url):
+    parsed = urllib.parse.urlparse(url)
+    return parsed.hostname == "docs.google.com" and "/presentation/d/" in parsed.path
+
+
+def extract_slide_embeds(page_html, page_url):
+    embeds = []
+    for match in re.finditer(r"(?is)<iframe\b([^>]*)>", page_html):
+        src = attr("src", match.group(1))
+        if not src:
+            continue
+        src = urllib.parse.urljoin(page_url, html.unescape(src))
+        if is_google_presentation_url(src):
+            embeds.append({"url": src, "index": len(embeds)})
+    return embeds
+
+
+def google_pdf_candidates(embed_url):
+    parsed = urllib.parse.urlparse(html.unescape(embed_url))
+    parts = [urllib.parse.unquote(part) for part in parsed.path.split("/") if part]
+    candidates = []
+    try:
+        pres_index = parts.index("presentation")
+        d_index = pres_index + 1
+        if parts[d_index] != "d":
+            return candidates
+    except (ValueError, IndexError):
+        return candidates
+
+    prefix = parts[:pres_index]
+    after_d = parts[d_index + 1 :]
+    if len(after_d) >= 2 and after_d[0] == "e":
+        published_id = after_d[1]
+        pub_path = "/" + "/".join(
+            urllib.parse.quote(part, safe="")
+            for part in [*prefix, "presentation", "d", "e", published_id, "pub"]
+        )
+        query = [
+            (key, value)
+            for key, value in urllib.parse.parse_qsl(parsed.query, keep_blank_values=True)
+            if key.lower() != "output"
+        ]
+        query.append(("output", "pdf"))
+        candidates.append(urllib.parse.urlunparse((parsed.scheme, parsed.netloc, pub_path, "", urllib.parse.urlencode(query), "")))
+        candidates.append(urllib.parse.urlunparse((parsed.scheme, parsed.netloc, pub_path, "", "output=pdf", "")))
+        return list(dict.fromkeys(candidates))
+
+    if after_d:
+        doc_id = after_d[0]
+        export_path = "/" + "/".join(
+            urllib.parse.quote(part, safe="")
+            for part in [*prefix, "presentation", "d", doc_id, "export", "pdf"]
+        )
+        candidates.append(urllib.parse.urlunparse((parsed.scheme, parsed.netloc, export_path, "", "", "")))
+    return list(dict.fromkeys(candidates))
+
+
+def is_pdf_response(headers, body):
+    content_type = ""
+    for key, value in headers.items():
+        if key.lower() == "content-type":
+            content_type = value.lower()
+            break
+    return body.startswith(b"%PDF") or "application/pdf" in content_type
+
+
+def normalize_google_js_text(value):
+    return (
+        value
+        .replace("\\u003d", "=")
+        .replace("\\u0026", "&")
+        .replace("\\/", "/")
+        .replace("\\x3d", "=")
+        .replace("\\x26", "&")
+    )
+
+
+def extract_published_slide_image_urls(page_html):
+    normalized = normalize_google_js_text(page_html)
+    urls = []
+    for match in re.finditer(r"""https://docs\.google\.com/slides-images-rt/[^"'<>\s\\]+""", normalized):
+        url = html.unescape(match.group(0))
+        if url not in urls:
+            urls.append(url)
+    return urls
+
+
+def extract_published_slide_svgs(page_html):
+    svgs = []
+    for match in re.finditer(r"SK_svgData\s*=\s*'((?:\\.|[^'])*)';", page_html):
+        raw = match.group(1).replace("\\/", "/")
+        try:
+            svg = ast.literal_eval("'" + raw + "'")
+        except (SyntaxError, ValueError):
+            continue
+        if svg.lstrip().startswith("<svg"):
+            svgs.append(svg)
+    return svgs
+
+
+def svg_remote_image_urls(svg):
+    urls = []
+    for match in re.finditer(r"""(?i)(?:href|xlink:href)=["'](https://[^"']+)["']""", svg):
+        url = html.unescape(match.group(1))
+        if url.startswith("https://docs.google.com/slides-images-rt/") and url not in urls:
+            urls.append(url)
+    return urls
+
+
+def content_type_for_image(headers, body):
+    content_type = next((value for key, value in headers.items() if key.lower() == "content-type"), "")
+    content_type = content_type.split(";", 1)[0].strip().lower()
+    if content_type.startswith("image/"):
+        return content_type
+    if body.startswith(b"\xff\xd8"):
+        return "image/jpeg"
+    if body.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "image/png"
+    return "application/octet-stream"
+
+
+def inline_svg_remote_images(jar, svg, page_url):
+    replacements = {}
+    for image_url in svg_remote_image_urls(svg):
+        final_url, status, headers, image_body = request(
+            jar,
+            image_url,
+            headers={"Accept": "image/png,image/jpeg,image/*,*/*;q=0.8", "Referer": page_url},
+            timeout=120,
+        )
+        if not (200 <= status < 400):
+            raise RuntimeError(f"slide SVG image returned HTTP {status}: {final_url}")
+        content_type = content_type_for_image(headers, image_body)
+        if not content_type.startswith("image/"):
+            raise RuntimeError(f"slide SVG image was not an image: {final_url} ({content_type})")
+        replacements[image_url] = f"data:{content_type};base64,{base64.b64encode(image_body).decode('ascii')}"
+
+    for image_url, data_url in replacements.items():
+        svg = svg.replace(image_url, data_url)
+        svg = svg.replace(html.escape(image_url, quote=True), data_url)
+    return svg
+
+
+def jpeg_dimensions(data):
+    if not data.startswith(b"\xff\xd8"):
+        raise ValueError("slide image is not JPEG")
+    idx = 2
+    while idx + 9 < len(data):
+        while idx < len(data) and data[idx] == 0xFF:
+            idx += 1
+        if idx >= len(data):
+            break
+        marker = data[idx]
+        idx += 1
+        if marker in (0x01, 0xD0, 0xD1, 0xD2, 0xD3, 0xD4, 0xD5, 0xD6, 0xD7, 0xD8, 0xD9):
+            continue
+        if idx + 2 > len(data):
+            break
+        length = int.from_bytes(data[idx:idx + 2], "big")
+        if length < 2 or idx + length > len(data):
+            break
+        if marker in (0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7, 0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF):
+            height = int.from_bytes(data[idx + 3:idx + 5], "big")
+            width = int.from_bytes(data[idx + 5:idx + 7], "big")
+            if width > 0 and height > 0:
+                return width, height
+            break
+        idx += length
+    raise ValueError("JPEG dimensions were not found")
+
+
+def png_info(data):
+    if not data.startswith(b"\x89PNG\r\n\x1a\n"):
+        raise ValueError("slide image is not PNG")
+    if data[12:16] != b"IHDR":
+        raise ValueError("PNG IHDR chunk was not found")
+    width = int.from_bytes(data[16:20], "big")
+    height = int.from_bytes(data[20:24], "big")
+    bit_depth = data[24]
+    color_type = data[25]
+    compression = data[26]
+    filter_method = data[27]
+    interlace = data[28]
+    if compression != 0 or filter_method != 0 or interlace != 0:
+        raise ValueError("unsupported PNG compression/filter/interlace")
+    idx = 8
+    idat = bytearray()
+    palette = b""
+    transparency = b""
+    while idx + 12 <= len(data):
+        length = int.from_bytes(data[idx:idx + 4], "big")
+        kind = data[idx + 4:idx + 8]
+        chunk_data = data[idx + 8:idx + 8 + length]
+        if kind == b"IDAT":
+            idat.extend(chunk_data)
+        elif kind == b"PLTE":
+            palette = chunk_data
+        elif kind == b"tRNS":
+            transparency = chunk_data
+        elif kind == b"IEND":
+            break
+        idx += 12 + length
+    if not idat:
+        raise ValueError("PNG IDAT chunk was not found")
+
+    if color_type == 0:
+        color_space = "/DeviceGray"
+        colors = 1
+    elif color_type == 3:
+        return flatten_png_palette(width, height, bit_depth, bytes(idat), palette, transparency)
+    elif color_type == 2:
+        color_space = "/DeviceRGB"
+        colors = 3
+    elif color_type == 4:
+        if bit_depth != 8:
+            raise ValueError(f"unsupported PNG grayscale alpha bit depth: {bit_depth}")
+        return flatten_png_alpha(width, height, bytes(idat), channels=2, output_colors=1)
+    elif color_type == 6:
+        if bit_depth != 8:
+            raise ValueError(f"unsupported PNG RGBA bit depth: {bit_depth}")
+        return flatten_png_alpha(width, height, bytes(idat), channels=4, output_colors=3)
+    else:
+        raise ValueError(f"unsupported PNG color type: {color_type}")
+
+    return {
+        "width": width,
+        "height": height,
+        "bitDepth": bit_depth,
+        "colorSpace": color_space,
+        "colors": colors,
+        "data": bytes(idat),
+    }
+
+
+def paeth_predictor(left, up, up_left):
+    prediction = left + up - up_left
+    left_distance = abs(prediction - left)
+    up_distance = abs(prediction - up)
+    up_left_distance = abs(prediction - up_left)
+    if left_distance <= up_distance and left_distance <= up_left_distance:
+        return left
+    if up_distance <= up_left_distance:
+        return up
+    return up_left
+
+
+def png_unfilter_rows(compressed, width, height, channels, bit_depth=8):
+    row_length = (width * channels * bit_depth + 7) // 8
+    bytes_per_pixel = max(1, (channels * bit_depth + 7) // 8)
+    raw = zlib.decompress(compressed)
+    expected = height * (row_length + 1)
+    if len(raw) != expected:
+        raise ValueError("PNG decompressed data length was unexpected")
+
+    rows = []
+    previous = bytearray(row_length)
+    pos = 0
+    for _row_index in range(height):
+        filter_type = raw[pos]
+        pos += 1
+        current = bytearray(raw[pos:pos + row_length])
+        pos += row_length
+        for idx, value in enumerate(current):
+            left = current[idx - bytes_per_pixel] if idx >= bytes_per_pixel else 0
+            up = previous[idx]
+            up_left = previous[idx - bytes_per_pixel] if idx >= bytes_per_pixel else 0
+            if filter_type == 0:
+                decoded = value
+            elif filter_type == 1:
+                decoded = value + left
+            elif filter_type == 2:
+                decoded = value + up
+            elif filter_type == 3:
+                decoded = value + ((left + up) // 2)
+            elif filter_type == 4:
+                decoded = value + paeth_predictor(left, up, up_left)
+            else:
+                raise ValueError(f"unsupported PNG row filter: {filter_type}")
+            current[idx] = decoded & 0xFF
+        rows.append(bytes(current))
+        previous = current
+    return rows
+
+
+def flatten_png_alpha(width, height, compressed, channels, output_colors):
+    rows = png_unfilter_rows(compressed, width, height, channels)
+    filtered = bytearray()
+    for row in rows:
+        filtered.append(0)
+        if channels == 2:
+            for idx in range(0, len(row), 2):
+                gray = row[idx]
+                alpha = row[idx + 1]
+                filtered.append((gray * alpha + 255 * (255 - alpha) + 127) // 255)
+        elif channels == 4:
+            for idx in range(0, len(row), 4):
+                alpha = row[idx + 3]
+                filtered.extend(
+                    (row[idx + channel] * alpha + 255 * (255 - alpha) + 127) // 255
+                    for channel in range(3)
+                )
+        else:
+            raise ValueError(f"unsupported PNG alpha channel count: {channels}")
+
+    return {
+        "width": width,
+        "height": height,
+        "bitDepth": 8,
+        "colorSpace": "/DeviceGray" if output_colors == 1 else "/DeviceRGB",
+        "colors": output_colors,
+        "data": zlib.compress(bytes(filtered)),
+    }
+
+
+def unpack_palette_indices(row, width, bit_depth):
+    if bit_depth == 8:
+        return row[:width]
+    if bit_depth == 4:
+        indices = []
+        for value in row:
+            indices.append(value >> 4)
+            if len(indices) >= width:
+                break
+            indices.append(value & 0x0F)
+            if len(indices) >= width:
+                break
+        return indices
+    if bit_depth == 2:
+        indices = []
+        for value in row:
+            for shift in (6, 4, 2, 0):
+                indices.append((value >> shift) & 0x03)
+                if len(indices) >= width:
+                    return indices
+        return indices
+    if bit_depth == 1:
+        indices = []
+        for value in row:
+            for shift in range(7, -1, -1):
+                indices.append((value >> shift) & 0x01)
+                if len(indices) >= width:
+                    return indices
+        return indices
+    raise ValueError(f"unsupported PNG palette bit depth: {bit_depth}")
+
+
+def flatten_png_palette(width, height, bit_depth, compressed, palette, transparency):
+    if bit_depth not in (1, 2, 4, 8):
+        raise ValueError(f"unsupported PNG palette bit depth: {bit_depth}")
+    if not palette or len(palette) % 3 != 0:
+        raise ValueError("PNG palette chunk was invalid or missing")
+
+    palette_entries = [
+        (
+            palette[idx],
+            palette[idx + 1],
+            palette[idx + 2],
+            transparency[idx // 3] if idx // 3 < len(transparency) else 255,
+        )
+        for idx in range(0, len(palette), 3)
+    ]
+    rows = png_unfilter_rows(compressed, width, height, channels=1, bit_depth=bit_depth)
+    filtered = bytearray()
+    for row in rows:
+        filtered.append(0)
+        for palette_index in unpack_palette_indices(row, width, bit_depth):
+            if palette_index >= len(palette_entries):
+                raise ValueError(f"PNG palette index out of range: {palette_index}")
+            red, green, blue, alpha = palette_entries[palette_index]
+            filtered.extend((
+                (red * alpha + 255 * (255 - alpha) + 127) // 255,
+                (green * alpha + 255 * (255 - alpha) + 127) // 255,
+                (blue * alpha + 255 * (255 - alpha) + 127) // 255,
+            ))
+
+    return {
+        "width": width,
+        "height": height,
+        "bitDepth": 8,
+        "colorSpace": "/DeviceRGB",
+        "colors": 3,
+        "data": zlib.compress(bytes(filtered)),
+    }
+
+
+def pdf_image_info(data):
+    if data.startswith(b"\xff\xd8"):
+        width, height = jpeg_dimensions(data)
+        return {
+            "width": width,
+            "height": height,
+            "bits": 8,
+            "colorSpace": "/DeviceRGB",
+            "filter": "/DCTDecode",
+            "decodeParms": "",
+            "data": data,
+        }
+    if data.startswith(b"\x89PNG\r\n\x1a\n"):
+        png = png_info(data)
+        return {
+            "width": png["width"],
+            "height": png["height"],
+            "bits": png["bitDepth"],
+            "colorSpace": png["colorSpace"],
+            "filter": "/FlateDecode",
+            "decodeParms": (
+                f"/DecodeParms << /Predictor 15 /Colors {png['colors']} "
+                f"/BitsPerComponent {png['bitDepth']} /Columns {png['width']} >> "
+            ),
+            "data": png["data"],
+        }
+    raise ValueError("unsupported slide image format")
+
+
+def pdf_escape(value):
+    return value.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+
+
+def pdf_from_images(images, title="Google Slides"):
+    if not images:
+        raise ValueError("no slide images were found")
+    objects = []
+
+    def add_object(body):
+        objects.append(body)
+        return len(objects)
+
+    catalog_id = add_object(b"<< /Type /Catalog /Pages 2 0 R >>")
+    pages_id = add_object(None)
+    page_ids = []
+
+    for index, image_body in enumerate(images, start=1):
+        image = pdf_image_info(image_body)
+        width = image["width"]
+        height = image["height"]
+        page_id = 3 + (index - 1) * 3
+        image_id = page_id + 1
+        content_id = page_id + 2
+        page_ids.append(page_id)
+        image_name = f"Im{index}"
+        content = f"q\n{width} 0 0 {height} 0 0 cm\n/{image_name} Do\nQ\n".encode()
+        add_object(
+            f"<< /Type /Page /Parent {pages_id} 0 R /MediaBox [0 0 {width} {height}] "
+            f"/Resources << /XObject << /{image_name} {image_id} 0 R >> >> "
+            f"/Contents {content_id} 0 R >>"
+            .encode()
+        )
+        add_object(
+            f"<< /Type /XObject /Subtype /Image /Width {width} /Height {height} "
+            f"/ColorSpace {image['colorSpace']} /BitsPerComponent {image['bits']} "
+            f"/Filter {image['filter']} {image['decodeParms']}/Length {len(image['data'])} >>\n"
+            .encode()
+            + b"stream\n"
+            + image["data"]
+            + b"\nendstream"
+        )
+        add_object(
+            f"<< /Length {len(content)} >>\n".encode()
+            + b"stream\n"
+            + content
+            + b"endstream"
+        )
+
+    objects[pages_id - 1] = (
+        f"<< /Type /Pages /Kids [{' '.join(f'{page_id} 0 R' for page_id in page_ids)}] "
+        f"/Count {len(page_ids)} >>"
+    ).encode()
+
+    info_id = add_object(f"<< /Title ({pdf_escape(title)}) /Producer (imoocs-native) >>".encode())
+    output = bytearray(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
+    offsets = [0]
+    for obj_id, body in enumerate(objects, start=1):
+        offsets.append(len(output))
+        output.extend(f"{obj_id} 0 obj\n".encode())
+        output.extend(body)
+        output.extend(b"\nendobj\n")
+    xref_offset = len(output)
+    output.extend(f"xref\n0 {len(objects) + 1}\n".encode())
+    output.extend(b"0000000000 65535 f \n")
+    for offset in offsets[1:]:
+        output.extend(f"{offset:010d} 00000 n \n".encode())
+    output.extend(
+        f"trailer\n<< /Size {len(objects) + 1} /Root {catalog_id} 0 R /Info {info_id} 0 R >>\n"
+        f"startxref\n{xref_offset}\n%%EOF\n"
+        .encode()
+    )
+    return bytes(output)
+
+
+def published_slides_pdf_from_html(jar, page_url, body):
+    page_html = decode_body(body)
+    title = page_title(page_html, "Google Slides")
+    svgs = extract_published_slide_svgs(page_html)
+    if svgs:
+        rendered_pdf = published_slides_pdf_from_svgs(jar, page_url, svgs, title)
+        if rendered_pdf:
+            return rendered_pdf
+
+    image_urls = extract_published_slide_image_urls(page_html)
+    if not image_urls:
+        return None
+    images = []
+    for image_url in image_urls:
+        final_url, status, headers, image_body = request(
+            jar,
+            image_url,
+            headers={"Accept": "image/avif,image/webp,image/png,image/jpeg,image/*,*/*;q=0.8", "Referer": page_url},
+            timeout=120,
+        )
+        content_type = next((value for key, value in headers.items() if key.lower() == "content-type"), "")
+        if not (200 <= status < 400):
+            raise RuntimeError(f"slide image returned HTTP {status}: {final_url}")
+        if not (image_body.startswith(b"\xff\xd8") or image_body.startswith(b"\x89PNG\r\n\x1a\n")):
+            raise RuntimeError(f"slide image was not JPEG/PNG: {final_url} ({content_type})")
+        images.append(image_body)
+    return pdf_from_images(images, title)
+
+
+def published_slides_pdf_from_svgs(jar, page_url, svgs, title):
+    resvg = shutil.which("resvg")
+    if not resvg:
+        return None
+
+    images = []
+    with tempfile.TemporaryDirectory(prefix="imoocs-slides-") as tmp:
+        tmp_path = Path(tmp)
+        for index, svg in enumerate(svgs, start=1):
+            svg_path = tmp_path / f"slide-{index:03d}.svg"
+            png_path = tmp_path / f"slide-{index:03d}.png"
+            svg_path.write_text(inline_svg_remote_images(jar, svg, page_url), encoding="utf-8")
+            result = subprocess.run(
+                [resvg, str(svg_path), str(png_path)],
+                check=False,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=120,
+            )
+            if result.returncode != 0:
+                raise RuntimeError(f"resvg failed for slide {index}: {result.stderr.strip() or result.stdout.strip()}")
+            images.append(png_path.read_bytes())
+    return pdf_from_images(images, title)
+
+
+def fetch_slide_pdf(jar, embed_url):
+    errors = []
+    refreshed = False
+    while True:
+        errors = []
+        login_redirect_seen = False
+        for candidate in google_pdf_candidates(embed_url):
+            final_url, status, headers, body = request(
+                jar,
+                candidate,
+                headers={"Accept": "application/pdf,*/*;q=0.8", "Referer": embed_url},
+                timeout=120,
+            )
+            if 200 <= status < 400 and is_pdf_response(headers, body):
+                return final_url, body
+            parsed_final = urllib.parse.urlparse(final_url)
+            content_type = next((value for key, value in headers.items() if key.lower() == "content-type"), "")
+            if (
+                200 <= status < 400
+                and parsed_final.hostname == "docs.google.com"
+                and "text/html" in content_type.lower()
+            ):
+                published_pdf = published_slides_pdf_from_html(jar, final_url, body)
+                if published_pdf:
+                    return final_url, published_pdf
+            if parsed_final.hostname == "accounts.google.com" and "servicelogin" in parsed_final.path.lower():
+                login_redirect_seen = True
+            errors.append({
+                "url": candidate,
+                "finalUrl": final_url,
+                "httpStatus": status,
+                "contentType": next((value for key, value in headers.items() if key.lower() == "content-type"), ""),
+            })
+        if not refreshed and (login_redirect_seen or (errors and all(error.get("httpStatus") in (401, 403) for error in errors))):
+            refreshed = True
+            if ensure_google_docs_authenticated(jar):
+                continue
+        break
+    if errors and (
+        all(error.get("httpStatus") in (401, 403) for error in errors)
+        or any(urllib.parse.urlparse(error.get("finalUrl", "")).hostname == "accounts.google.com" for error in errors)
+    ):
+        raise GoogleAuthRequired("Google Slides authentication is required or the stored Google session expired")
+    raise RuntimeError(f"Google Slides PDF export did not return a PDF: {errors}")
+
+
+def item_label(item):
+    return item.get("name") or item.get("title") or item.get("slug") or item.get("courseId") or item.get("lessonId") or item.get("pageId") or "unknown"
+
+
+def prompt_selection(items, label):
+    print(f"{label}を選択", file=sys.stderr)
+    print("0: all", file=sys.stderr)
+    for index, item in enumerate(items, start=1):
+        print(f"{index}: {item_label(item)}", file=sys.stderr)
+    print("> ", end="", file=sys.stderr, flush=True)
+    return sys.stdin.readline().strip()
+
+
+def select_items(items, selector, option_name, label):
+    if not items:
+        return []
+    if not selector:
+        if not sys.stdin.isatty():
+            raise SelectionRequired(f"{label} selection is required in non-interactive mode; pass --{option_name} or --all")
+        selector = prompt_selection(items, label)
+
+    normalized = selector.strip().lower()
+    if normalized == "all" or normalized == "0":
+        return items
+    if normalized.isdigit():
+        index = int(normalized) - 1
+        if 0 <= index < len(items):
+            return [items[index]]
+        raise SelectionError(f"{label} index is out of range: {selector}")
+
+    exact = []
+    partial = []
+    for item in items:
+        candidates = [
+            item.get("slug", ""),
+            item.get("courseId", ""),
+            item.get("lessonId", ""),
+            item.get("pageId", ""),
+            item_label(item),
+        ]
+        lowered = [candidate.lower() for candidate in candidates if candidate]
+        if normalized in lowered:
+            exact.append(item)
+        elif any(normalized in candidate for candidate in lowered):
+            partial.append(item)
+    matches = exact or partial
+    if len(matches) == 1:
+        return matches
+    if not matches:
+        raise SelectionError(f"{label} was not found: {selector}")
+    raise SelectionError(f"{label} selector is ambiguous: {selector}")
+
+
+def parse_slide_collect_args(args):
+    options = {
+        "path": "",
+        "year": "",
+        "course": "",
+        "lecture": "",
+        "page": "",
+        "all": False,
+    }
+    idx = 0
+    while idx < len(args):
+        arg = args[idx]
+        if arg in ("-h", "--help"):
+            print("""Usage:
+  imoocs slide collect --path <dir> --year <year> [--course <selector>] [--lecture <selector>] [--page <selector>] [--all]
+
+Selectors accept 1-based indexes, slugs, names, or "all".
+In non-interactive shells, pass each needed selector or --all.
+""".rstrip())
+            raise SystemExit(0)
+        if arg == "--all":
+            options["all"] = True
+            idx += 1
+            continue
+        if arg in ("--path", "--year", "--course", "--lecture", "--page"):
+            idx += 1
+            if idx >= len(args):
+                raise ValueError(f"{arg} requires a value")
+            options[arg[2:]] = args[idx]
+            idx += 1
+            continue
+        raise ValueError(f"unknown argument for slide collect: {arg}")
+    if not options["path"] or not options["year"]:
+        raise ValueError("slide collect requires --path and --year")
+    if not re.fullmatch(r"\d{4}", options["year"]):
+        raise ValueError("--year must be a 4-digit year")
+    return options
+
+
+def slide_auth_required_payload(path, year, store_status):
+    return envelope(
+        False,
+        "slide",
+        "collect",
+        "auth_required",
+        {
+            "path": path,
+            "year": year,
+            "cookieStore": store_status,
+            "next": [
+                "Run `imoocs auth login`, then retry `imoocs slide collect`.",
+                "No collect-cli, BrowserUse, Playwright, or manual browser fallback was performed.",
+            ],
+        },
+        "auth_required",
+        "MOOCs or Google Slides authentication is required or the stored session expired.",
+    )
+
+
+def slide_collect(args):
+    try:
+        options = parse_slide_collect_args(args)
+    except SystemExit:
+        raise
+    except Exception as exc:
+        print_json(envelope(False, "slide", "collect", "invalid_args", {}, "invalid_args", str(exc)))
+        return 64
+
+    out_dir = Path(options["path"]).expanduser()
+    year = options["year"]
+    jar, store_status = load_cookie_jar()
+    if store_status != "loaded":
+        print_json(slide_auth_required_payload(str(out_dir), year, store_status))
+        return 2
+    if not ensure_moocs_authenticated(jar):
+        print_json(slide_auth_required_payload(str(out_dir), year, "expired"))
+        return 2
+    try:
+        save_cookie_jar(jar)
+    except Exception:
+        pass
+
+    all_selector = "all" if options["all"] else ""
+    downloaded = []
+    skipped = []
+    errors = []
+    selected = {"courses": [], "lectures": [], "pages": []}
+
+    try:
+        courses = list_courses(jar, year)
+        course_selector = options["course"] or all_selector
+        selected_courses = select_items(courses, course_selector, "course", "course")
+        for course in selected_courses:
+            selected["courses"].append({"courseId": course["courseId"], "name": course["name"]})
+            lectures = list_lectures(jar, course)
+            lecture_selector = options["lecture"] or all_selector
+            selected_lectures = select_items(lectures, lecture_selector, "lecture", "lecture")
+            for lecture in selected_lectures:
+                selected["lectures"].append({
+                    "courseId": course["courseId"],
+                    "lessonId": lecture["lessonId"],
+                    "name": lecture["name"],
+                })
+                pages = list_pages(jar, lecture)
+                page_selector = options["page"] or all_selector
+                selected_pages = select_items(pages, page_selector, "page", "page")
+                for page in selected_pages:
+                    selected["pages"].append({
+                        "courseId": course["courseId"],
+                        "lessonId": lecture["lessonId"],
+                        "pageId": page["pageId"],
+                        "title": page["title"],
+                    })
+                    final_url, page_html = authenticated_html(jar, page["url"])
+                    embeds = extract_slide_embeds(page_html, final_url)
+                    if not embeds:
+                        skipped.append({
+                            "courseId": course["courseId"],
+                            "lessonId": lecture["lessonId"],
+                            "pageId": page["pageId"],
+                            "reason": "no_google_slide_embed",
+                        })
+                        continue
+                    lecture_dir = out_dir / safe_filename(course["name"], course["slug"]) / safe_filename(lecture["name"], lecture["slug"])
+                    lecture_dir.mkdir(parents=True, exist_ok=True)
+                    for embed in embeds:
+                        try:
+                            pdf_url, pdf_body = fetch_slide_pdf(jar, embed["url"])
+                        except GoogleAuthRequired:
+                            raise
+                        except Exception as exc:
+                            errors.append({
+                                "courseId": course["courseId"],
+                                "lessonId": lecture["lessonId"],
+                                "pageId": page["pageId"],
+                                "embedUrl": embed["url"],
+                                "message": str(exc),
+                            })
+                            continue
+                        suffix = "" if len(embeds) == 1 else f" ({embed['index'] + 1})"
+                        filename = f"{safe_filename(page['slug'])} - {safe_filename(page['title'], page['slug'])}{suffix}.pdf"
+                        pdf_path = lecture_dir / filename
+                        pdf_path.write_bytes(pdf_body)
+                        downloaded.append({
+                            "path": str(pdf_path),
+                            "bytes": len(pdf_body),
+                            "sourceUrl": pdf_url,
+                        })
+        try:
+            save_cookie_jar(jar)
+        except Exception:
+            pass
+    except AuthRequired:
+        print_json(slide_auth_required_payload(str(out_dir), year, "expired"))
+        return 2
+    except GoogleAuthRequired:
+        print_json(slide_auth_required_payload(str(out_dir), year, "google_expired"))
+        return 2
+    except HttpStatusError as exc:
+        print_json(envelope(
+            False,
+            "slide",
+            "collect",
+            "http_error",
+            {"path": str(out_dir), "year": year, "url": exc.url, "httpStatus": exc.status},
+            "http_error",
+            str(exc),
+        ))
+        return 2
+    except (SelectionRequired, SelectionError) as exc:
+        print_json(envelope(
+            False,
+            "slide",
+            "collect",
+            "requires_selection",
+            {"path": str(out_dir), "year": year},
+            "requires_selection",
+            str(exc),
+        ))
+        return 2
+    except Exception as exc:
+        print_json(envelope(
+            False,
+            "slide",
+            "collect",
+            "failed",
+            {"path": str(out_dir), "year": year},
+            "slide_collect_failed",
+            str(exc),
+        ))
+        return 2
+
+    status = "partial" if errors else "completed"
+    print_json(envelope(
+        not errors,
+        "slide",
+        "collect",
+        status,
+        {
+            "path": str(out_dir),
+            "year": year,
+            "mode": "native",
+            "downloadedPdfCount": len(downloaded),
+            "downloadedPdfPaths": [item["path"] for item in downloaded],
+            "downloadedPdfDetails": downloaded,
+            "skippedPageCount": len(skipped),
+            "skippedPages": skipped,
+            "errors": errors,
+            "selected": selected,
+            "command": ["imoocs", "slide", "collect", "--path", str(out_dir), "--year", year],
+        },
+        "slide_collect_failed" if errors else "",
+        "one or more slide PDFs failed to download" if errors else "",
+    ))
+    return 2 if errors else 0
+
+
 def auth_required_payload(url, store_status):
     return envelope(
         False,
@@ -613,7 +1677,7 @@ def auth_required_payload(url, store_status):
             "url": url,
             "cookieStore": store_status,
             "next": [
-                "Run `imoocs auth login` in an interactive TTY, then retry `imoocs open <url>`.",
+                "Run `imoocs auth login`, then retry `imoocs open <url>`.",
                 "No BrowserUse, Playwright, or manual browser fallback was performed.",
             ],
         },
@@ -633,6 +1697,13 @@ def open_url(url):
     if store_status != "loaded":
         print_json(auth_required_payload(url, store_status))
         return 2
+    if not ensure_moocs_authenticated(jar):
+        print_json(auth_required_payload(url, "expired"))
+        return 2
+    try:
+        save_cookie_jar(jar)
+    except Exception:
+        pass
 
     final_url, status, _headers, body = request(jar, url)
     page_html = decode_body(body)
@@ -754,6 +1825,26 @@ def load_authenticated_jar(kind, action, course_id="", problem_id=""):
             "MOOCs authentication is required or the stored session expired.",
         ))
         raise SystemExit(2)
+    if not ensure_moocs_authenticated(jar):
+        print_json(envelope(
+            False,
+            kind,
+            action,
+            "auth_required",
+            {
+                "courseId": course_id,
+                "problemId": problem_id,
+                "cookieStore": "expired",
+                "serverSubmitted": False,
+            },
+            "auth_required",
+            "MOOCs authentication is required or the stored session expired.",
+        ))
+        raise SystemExit(2)
+    try:
+        save_cookie_jar(jar)
+    except Exception:
+        pass
     return jar
 
 
@@ -800,6 +1891,21 @@ def ensure_assignment_open(jar, prefix, course_id, problem_id, action):
         ))
         raise SystemExit(2)
     return answer_state
+
+
+def assignment_status_value(status_json):
+    if isinstance(status_json, dict):
+        return (
+            status_json.get("state")
+            or status_json.get("answer_state")
+            or status_json.get("status")
+            or "unknown"
+        )
+    return str(status_json)
+
+
+def assignment_status(jar, prefix):
+    return assignment_status_value(fetch_problem_json(jar, f"{prefix}/status", prefix, None))
 
 
 def session_csrf_token(jar):
@@ -1020,6 +2126,174 @@ def post_assignment_file(args):
     return 0
 
 
+def push_assignment(args):
+    try:
+        course_id, problem_id, _pid, _data_arg, _file_path = parse_assignment_target(args, action="push")
+        prefix = assignment_url_prefix(course_id, problem_id)
+    except Exception as exc:
+        print_json(envelope(False, "assignment", "push", "invalid_args", {}, "invalid_args", str(exc)))
+        return 64
+
+    jar = load_authenticated_jar("assignment", "push", course_id, problem_id)
+    try:
+        before_status = assignment_status(jar, prefix)
+    except PermissionError:
+        print_json(envelope(
+            False,
+            "assignment",
+            "push",
+            "auth_required",
+            {"courseId": course_id, "problemId": problem_id, "serverSubmitted": False},
+            "auth_required",
+            "MOOCs authentication is required or the stored session expired.",
+        ))
+        return 2
+    except Exception as exc:
+        if "HTTP 401" in str(exc) or "HTTP 403" in str(exc):
+            print_json(envelope(
+                False,
+                "assignment",
+                "push",
+                "auth_required",
+                {"courseId": course_id, "problemId": problem_id, "serverSubmitted": False},
+                "auth_required",
+                "MOOCs authentication is required or the stored session expired.",
+            ))
+            return 2
+        print_json(envelope(
+            False,
+            "assignment",
+            "push",
+            "status_check_failed",
+            {"courseId": course_id, "problemId": problem_id, "serverSubmitted": False},
+            "status_check_failed",
+            str(exc),
+        ))
+        return 2
+
+    if before_status != "open":
+        print_json(envelope(
+            False,
+            "assignment",
+            "push",
+            "not_submittable",
+            {
+                "courseId": course_id,
+                "problemId": problem_id,
+                "assignmentStatus": before_status,
+                "serverSubmitted": False,
+            },
+            "not_submittable",
+            "assignment is not open for submission",
+        ))
+        return 2
+
+    token = session_csrf_token(jar)
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json;charset=UTF-8",
+        "X-Requested-With": "XMLHttpRequest",
+        "Referer": prefix,
+    }
+    if token:
+        headers["X-CSRF-TOKEN"] = token
+
+    # The MOOCs frontend stores answers with PUT /answers, then finalizes the
+    # answer state. Prefer the status endpoint; keep submit endpoints as
+    # compatibility fallbacks for older frontend revisions.
+    candidates = [
+        ("PUT", f"{prefix}/status", {"status": "submitted"}),
+        ("PUT", f"{prefix}/status", {"data": "submitted"}),
+        ("PUT", f"{prefix}/status", {"answer_state": "submitted"}),
+        ("POST", f"{prefix}/submit", {}),
+        ("PUT", f"{prefix}/submit", {}),
+    ]
+    errors = []
+
+    for method, url, payload in candidates:
+        body = json.dumps(payload, ensure_ascii=False).encode()
+        final_url, status, _headers, response_body = request(jar, url, method=method, data=body, headers=headers)
+        response_text = decode_body(response_body)
+        path = urllib.parse.urlparse(url).path
+        if looks_like_login_page(response_text, final_url):
+            print_json(envelope(
+                False,
+                "assignment",
+                "push",
+                "auth_required",
+                {"courseId": course_id, "problemId": problem_id, "serverSubmitted": False},
+                "auth_required",
+                "MOOCs authentication is required or the stored session expired.",
+            ))
+            return 2
+
+        if not (200 <= status < 400):
+            errors.append({
+                "method": method,
+                "path": path,
+                "httpStatus": status,
+                "responsePreview": response_text[:200],
+            })
+            continue
+
+        try:
+            after_status = assignment_status(jar, prefix)
+        except Exception as exc:
+            errors.append({
+                "method": method,
+                "path": path,
+                "httpStatus": status,
+                "message": f"status verification failed: {exc}",
+            })
+            continue
+
+        if after_status != "open":
+            answers_json = fetch_problem_json(jar, f"{prefix}/answers", prefix, None)
+            print_json(envelope(
+                True,
+                "assignment",
+                "push",
+                "submitted",
+                {
+                    "courseId": course_id,
+                    "problemId": problem_id,
+                    "urlPrefix": prefix,
+                    "previousStatus": before_status,
+                    "assignmentStatus": after_status,
+                    "method": method,
+                    "path": path,
+                    "currentAnswers": answer_summary(answers_json),
+                    "serverSubmitted": True,
+                },
+                submission_state="push",
+            ))
+            return 0
+
+        errors.append({
+            "method": method,
+            "path": path,
+            "httpStatus": status,
+            "message": "request succeeded but assignment status stayed open",
+        })
+
+    print_json(envelope(
+        False,
+        "assignment",
+        "push",
+        "push_failed",
+        {
+            "courseId": course_id,
+            "problemId": problem_id,
+            "previousStatus": before_status,
+            "attempts": errors,
+            "serverSubmitted": False,
+        },
+        "push_failed",
+        "assignment push endpoint did not confirm submission",
+    ))
+    return 2
+
+
 def password_from_gui():
     script = """
 tell application "System Events" to activate
@@ -1044,34 +2318,305 @@ text returned of dialogResult
 def password_from_keychain(username):
     security = "/usr/bin/security"
     if os.path.exists(security):
-        try:
-            result = subprocess.run(
-                [
-                    security,
-                    "find-generic-password",
-                    "-s",
-                    COLLECT_KEYCHAIN_SERVICE,
-                    "-a",
-                    username,
-                    "-w",
-                ],
-                check=False,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.DEVNULL,
-                text=True,
-                timeout=30,
-            )
-        except (FileNotFoundError, subprocess.TimeoutExpired):
-            result = None
-        if result is not None and result.returncode == 0:
-            return result.stdout.rstrip("\n")
+        for service in KEYCHAIN_PASSWORD_SERVICES:
+            try:
+                result = subprocess.run(
+                    [
+                        security,
+                        "find-generic-password",
+                        "-s",
+                        service,
+                        "-a",
+                        username,
+                        "-w",
+                    ],
+                    check=False,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL,
+                    text=True,
+                    timeout=KEYCHAIN_SECURITY_TIMEOUT_SECONDS,
+                )
+            except (FileNotFoundError, subprocess.TimeoutExpired):
+                result = None
+            if result is not None and result.returncode == 0:
+                return result.stdout.rstrip("\n")
 
-    require_keyring()
+    keyring_helper = """
+import sys
+
+services = (
+    "me.yu7400ki.moocs-collect",
+    "com.apple.network.eap.user.item.wlan.ssid.iniad",
+)
+username = sys.argv[1]
+
+try:
+    import keyring
+except Exception:
+    raise SystemExit(1)
+
+for service in services:
     try:
-        password = keyring.get_password(COLLECT_KEYCHAIN_SERVICE, username)
+        password = keyring.get_password(service, username)
     except Exception:
+        continue
+    if password:
+        sys.stdout.write(password)
+        raise SystemExit(0)
+
+raise SystemExit(1)
+""".strip()
+    try:
+        result = subprocess.run(
+            [sys.executable, "-c", keyring_helper, username],
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            timeout=KEYCHAIN_SECURITY_TIMEOUT_SECONDS,
+        )
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        result = None
+    if result is not None and result.returncode == 0 and result.stdout:
+        return result.stdout.rstrip("\n")
+    return None
+
+
+def form_origin(url):
+    parsed = urllib.parse.urlparse(url)
+    return urllib.parse.urlunparse((parsed.scheme, parsed.netloc, "", "", "", ""))
+
+
+def post_form(jar, action_url, fields, referer):
+    encoded = urllib.parse.urlencode(fields).encode()
+    headers = {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Referer": referer,
+        "Origin": form_origin(referer),
+    }
+    return request(jar, action_url, method="POST", data=encoded, headers=headers)
+
+
+def google_signin_form(page_html, page_url):
+    def predicate(attrs, body, form_html):
+        class_name = attr("class", attrs) or ""
+        lowered = form_html.lower()
+        return (
+            "form-signin" in class_name
+            or ("name=\"username\"" in lowered and "name=\"password\"" in lowered)
+            or ("name='username'" in lowered and "name='password'" in lowered)
+        )
+
+    return find_form(page_html, page_url, predicate)
+
+
+def html_contains_login_error(page_html):
+    lowered = page_html.lower()
+    return (
+        "invalid username or password" in lowered
+        or "credentials were rejected" in lowered
+        or "ログインに失敗" in page_html
+    )
+
+
+def google_continue_url(page_html, page_url):
+    links = []
+    for match in re.finditer(r"""(?is)<a\s+(?:[^>]*?\s+)?href=["']([^"']*)["']""", page_html):
+        href = html.unescape(match.group(1))
+        lowered = href.lower()
+        if lowered.startswith(("javascript:", "mailto:", "tel:", "#")):
+            continue
+        url = urllib.parse.urljoin(page_url, href)
+        text = text_from_html(match.group(0)).lower()
+        score = 0
+        if "continue" in text or "続行" in text:
+            score += 10
+        parsed = urllib.parse.urlparse(url)
+        if parsed.hostname and parsed.hostname.endswith("google.com"):
+            score += 5
+        links.append((score, url))
+    if not links:
         return None
-    return password
+    links.sort(reverse=True)
+    return links[0][1]
+
+
+def meta_refresh_url(page_html, page_url):
+    match = re.search(
+        r"""(?is)<meta\s+[^>]*http-equiv=["']refresh["'][^>]*content=["'][^"']*\burl=([^"'>]+)["']""",
+        page_html,
+    )
+    if not match:
+        return None
+    return urllib.parse.urljoin(page_url, html.unescape(match.group(1)))
+
+
+def javascript_redirect_url(page_html, page_url):
+    patterns = (
+        r"""(?is)(?:window|document)\.location(?:\.href)?\s*=\s*["']([^"']+)["']""",
+        r"""(?is)(?:window\.)?location\.replace\(\s*["']([^"']+)["']\s*\)""",
+    )
+    for pattern in patterns:
+        match = re.search(pattern, page_html)
+        if match:
+            target = html.unescape(match.group(1)).replace("\\/", "/")
+            if "\\" in target:
+                continue
+            url = urllib.parse.urljoin(page_url, target)
+            parsed = urllib.parse.urlparse(url)
+            if parsed.hostname and parsed.hostname.endswith(("google.com", "googleusercontent.com")):
+                return url
+    return None
+
+
+def google_hidden_post_form(page_html, page_url):
+    candidates = []
+    for match in re.finditer(r"(?is)<form\b([^>]*)>(.*?)</form>", page_html):
+        attrs = match.group(1)
+        body = match.group(2)
+        form_html = match.group(0)
+        lowered = form_html.lower()
+        if "name=\"password\"" in lowered or "name='password'" in lowered:
+            continue
+        if "name=\"username\"" in lowered or "name='username'" in lowered:
+            continue
+
+        fields = form_hidden_fields(body)
+        if not fields:
+            continue
+
+        action = attr("action", attrs) or page_url
+        action_url = urllib.parse.urljoin(page_url, action)
+        parsed = urllib.parse.urlparse(action_url)
+        name = attr("name", attrs) or ""
+
+        score = 0
+        if name in ("saml-post-binding", "hiddenpost"):
+            score += 20
+        if {"SAMLResponse", "RelayState"} <= set(fields):
+            score += 15
+        if parsed.hostname and parsed.hostname.endswith("google.com"):
+            score += 10
+        if "continue" in fields:
+            score += 2
+        candidates.append((score, action_url, fields))
+
+    if not candidates:
+        return None
+    candidates.sort(key=lambda item: item[0], reverse=True)
+    return candidates[0][1], candidates[0][2]
+
+
+GOOGLE_AUTH_COOKIE_NAMES = {
+    "SID",
+    "HSID",
+    "SSID",
+    "APISID",
+    "SAPISID",
+    "__Secure-1PSID",
+    "__Secure-3PSID",
+    "__Secure-1PSIDTS",
+    "__Secure-3PSIDTS",
+    "__Secure-1PSIDCC",
+    "__Secure-3PSIDCC",
+}
+
+
+def has_google_auth_cookie(jar):
+    for cookie in jar:
+        domain = cookie.domain.lstrip(".").lower()
+        if domain.endswith("google.com") and cookie.name in GOOGLE_AUTH_COOKIE_NAMES:
+            return True
+    return False
+
+
+def is_google_authenticated(jar):
+    final_url, status, _headers, body = request(jar, "https://docs.google.com/presentation/u/0/", timeout=30)
+    parsed = urllib.parse.urlparse(final_url)
+    if 200 <= status < 400 and parsed.hostname == "docs.google.com":
+        return True
+
+    return False
+
+
+def follow_google_transitions(jar, final_url, page_html):
+    for _ in range(10):
+        if is_google_authenticated(jar):
+            return True
+
+        form = google_hidden_post_form(page_html, final_url)
+        if form:
+            action_url, fields = form
+            final_url, status, _headers, body = post_form(jar, action_url, fields, final_url)
+            if not (200 <= status < 400):
+                raise RuntimeError(f"Google hidden form returned HTTP {status}")
+            page_html = decode_body(body)
+            continue
+
+        next_url = meta_refresh_url(page_html, final_url) or javascript_redirect_url(page_html, final_url) or google_continue_url(page_html, final_url)
+        if next_url:
+            final_url, status, _headers, body = request(jar, next_url, timeout=60)
+            if not (200 <= status < 400):
+                raise RuntimeError(f"Google continuation returned HTTP {status}")
+            page_html = decode_body(body)
+            continue
+
+        break
+
+    return is_google_authenticated(jar)
+
+
+def ensure_google_docs_authenticated(jar):
+    if is_google_authenticated(jar):
+        return True
+    final_url, status, _headers, body = request(jar, "https://docs.google.com/presentation/u/0/", timeout=60)
+    if not (200 <= status < 400):
+        return False
+    return follow_google_transitions(jar, final_url, decode_body(body))
+
+
+def login_google(jar, username, password):
+    final_url, status, _headers, body = request(jar, GOOGLE_SIGN_IN_URL, timeout=60)
+    if not (200 <= status < 400):
+        raise RuntimeError(f"Google SAML login failed: HTTP {status}")
+    page_html = decode_body(body)
+
+    form = google_signin_form(page_html, final_url)
+    if form:
+        action_url, fields, _attrs, _body = form
+        fields["username"] = username
+        fields["password"] = password
+        final_url, status, _headers, body = post_form(jar, action_url, fields, final_url)
+        if not (200 <= status < 400):
+            raise RuntimeError(f"Google SAML identity provider returned HTTP {status}")
+        page_html = decode_body(body)
+        if html_contains_login_error(page_html):
+            raise RuntimeError("Google SAML login failed: credentials were rejected or additional verification is required")
+
+    saml_form = named_form(page_html, final_url, "saml-post-binding")
+    if not saml_form:
+        if follow_google_transitions(jar, final_url, page_html) and ensure_google_docs_authenticated(jar):
+            return
+        raise RuntimeError("Google SAML login failed: SAML post-binding form was not found")
+
+    action_url, fields, _attrs, _body = saml_form
+    required = ("SAMLResponse", "RelayState")
+    if not all(fields.get(name) for name in required):
+        raise RuntimeError("Google SAML login failed: SAML response fields were not found")
+    final_url, status, _headers, body = post_form(
+        jar,
+        action_url,
+        {name: fields[name] for name in required},
+        final_url,
+    )
+    if not (200 <= status < 400):
+        raise RuntimeError(f"Google SAML post-binding returned HTTP {status}")
+    page_html = decode_body(body)
+
+    if not follow_google_transitions(jar, final_url, page_html):
+        raise RuntimeError("Google login did not produce an authenticated session")
+    if not ensure_google_docs_authenticated(jar):
+        raise RuntimeError("Google login did not produce a Google Docs session")
 
 
 def auth_login(args):
@@ -1090,7 +2635,7 @@ def auth_login(args):
     if use_keychain:
         password = password_from_keychain(username)
         if not password:
-            fail_text("password was not found in the moocs-collect keychain; use `imoocs auth login --gui` instead", 69)
+            fail_text("password was not found in supported INIAD Keychain items", 69)
     elif use_gui:
         password = password_from_gui()
     else:
@@ -1104,32 +2649,37 @@ def auth_login(args):
     form = login_form(page_html, final_url)
     if form is None:
         if not looks_like_login_page(page_html, final_url):
-            save_cookie_jar(jar)
-            print("auth login completed; existing session is already valid")
-            return 0
-        fail_text("login form was not found", 2)
-
-    action_url, fields = form
-    fields["username"] = username
-    fields["password"] = password
-    fields["login"] = fields.get("login", "LOG IN")
-    encoded = urllib.parse.urlencode(fields).encode()
-    headers = {
-        "Content-Type": "application/x-www-form-urlencoded",
-        "Referer": final_url,
-        "Origin": urllib.parse.urlunparse(urllib.parse.urlparse(action_url)._replace(path="", params="", query="", fragment="")),
-    }
-    final_url, status, _headers, body = request(jar, action_url, method="POST", data=encoded, headers=headers)
-    page_html = decode_body(body)
-    if not (200 <= status < 400):
-        fail_text(f"login failed: HTTP {status}", 2)
-    if looks_like_login_page(page_html, final_url):
-        fail_text("login failed: credentials were rejected or additional verification is required", 2)
+            page_html = ""
+        else:
+            fail_text("login form was not found", 2)
+    else:
+        action_url, fields = form
+        fields["username"] = username
+        fields["password"] = password
+        fields["login"] = fields.get("login", "LOG IN")
+        final_url, status, _headers, body = post_form(jar, action_url, fields, final_url)
+        page_html = decode_body(body)
+        if not (200 <= status < 400):
+            fail_text(f"login failed: HTTP {status}", 2)
+        if looks_like_login_page(page_html, final_url):
+            fail_text("login failed: credentials were rejected or additional verification is required", 2)
 
     final_url, status, _headers, body = request(jar, f"{BASE_URL}/courses")
     page_html = decode_body(body)
     if not (200 <= status < 400) or looks_like_login_page(page_html, final_url):
         fail_text("login did not produce an authenticated MOOCs session", 2)
+
+    # Save the MOOCs session before the optional Google Slides session.
+    # Assignments only require MOOCs cookies, so a Google-side SAML change
+    # should not discard a valid MOOCs login.
+    save_cookie_jar(jar)
+
+    try:
+        login_google(jar, username, password)
+    except Exception as exc:
+        print(f"auth login completed for MOOCs; Google session unavailable: {exc}", file=sys.stderr)
+        return 0
+
     save_cookie_jar(jar)
     print("auth login completed")
     return 0
@@ -1138,7 +2688,15 @@ def auth_login(args):
 def auth_status():
     jar, store_status = load_cookie_jar()
     if store_status == "loaded" and any(True for _ in jar):
-        print("auth session cookies are stored in the keyring")
+        if ensure_moocs_authenticated(jar):
+            try:
+                save_cookie_jar(jar)
+            except Exception:
+                pass
+            print("auth session is usable")
+        else:
+            print("auth session cookies are stored but expired")
+            return 2
     elif store_status in ("missing_keyring", "keyring_unavailable"):
         print("auth keyring is unavailable")
         return 1
@@ -1171,6 +2729,10 @@ def main():
         return put_assignment_answers(args)
     if action == "assignment-upload":
         return post_assignment_file(args)
+    if action == "assignment-push":
+        return push_assignment(args)
+    if action == "slide-collect":
+        return slide_collect(args)
     print_json(envelope(False, "internal", action, "invalid_args", {}, "invalid_action", f"unknown internal action: {action}"))
     return 64
 
@@ -1193,108 +2755,7 @@ open_cmd() {
 }
 
 slide_collect_cmd() {
-  local path=""
-  local year=""
-
-  while [[ $# -gt 0 ]]; do
-    case "$1" in
-      --path)
-        path="${2:-}"
-        shift 2
-        ;;
-      --year)
-        year="${2:-}"
-        shift 2
-        ;;
-      -h|--help)
-        cat <<'EOF'
-Usage:
-  imoocs slide collect --path <dir> --year <year>
-
-Runs collect-cli interactively through the user's TTY, then prints one JSON envelope.
-EOF
-        return 0
-        ;;
-      *)
-        json_envelope false slide collect invalid_args "invalid_args" "unknown argument for slide collect: $1"
-        return 64
-        ;;
-    esac
-  done
-
-  if [[ -z "$path" || -z "$year" ]]; then
-    json_envelope false slide collect invalid_args "invalid_args" "slide collect requires --path and --year"
-    return 64
-  fi
-
-  if ! command -v collect-cli >/dev/null 2>&1; then
-    json_envelope false slide collect missing_backend "missing_backend" "collect-cli is not available in PATH"
-    return 69
-  fi
-
-  if ! tty -s; then
-    json_envelope false slide collect requires_tty "requires_tty" "slide collection requires an interactive TTY for INIAD login and selection prompts"
-    return 2
-  fi
-
-  mkdir -p "$path"
-
-  local before
-  local after
-  before="$(mktemp)"
-  after="$(mktemp)"
-
-  find "$path" -type f -name '*.pdf' -print | sort >"$before"
-
-  run_collect_cli "$path" "$year"
-  local exit_code=$?
-
-  find "$path" -type f -name '*.pdf' -print | sort >"$after"
-
-  BEFORE_FILE="$before" \
-    AFTER_FILE="$after" \
-    OUT_PATH="$path" \
-    YEAR="$year" \
-    EXIT_CODE="$exit_code" \
-    BACKEND="$backend" \
-    python3 - <<'PY'
-import json
-import os
-from pathlib import Path
-
-before = set(Path(os.environ["BEFORE_FILE"]).read_text().splitlines())
-after = set(Path(os.environ["AFTER_FILE"]).read_text().splitlines())
-new_paths = sorted(after - before)
-exit_code = int(os.environ["EXIT_CODE"])
-
-payload = {
-    "ok": exit_code == 0,
-    "kind": "slide",
-    "action": "collect",
-    "backend": os.environ["BACKEND"],
-    "status": "completed" if exit_code == 0 else "failed",
-    "data": {
-        "path": os.environ["OUT_PATH"],
-        "year": os.environ["YEAR"],
-        "newPdfCount": len(new_paths),
-        "newPdfPaths": new_paths,
-        "command": ["collect-cli", "--path", os.environ["OUT_PATH"], "--year", os.environ["YEAR"]],
-        "exitCode": exit_code,
-    },
-    "submission": {"state": "none"},
-}
-
-if exit_code != 0:
-    payload["error"] = {
-        "code": "collect_cli_failed",
-        "message": "collect-cli exited with a non-zero status; no assignment submission was performed.",
-    }
-
-print(json.dumps(payload, ensure_ascii=False, separators=(",", ":")))
-PY
-
-  rm -f "$before" "$after"
-  return "$exit_code"
+  moocs_http_cmd slide-collect "$@"
 }
 
 slide_cmd() {
@@ -1309,6 +2770,8 @@ slide_cmd() {
       cat <<'EOF'
 Usage:
   imoocs slide collect --path <dir> --year <year>
+  imoocs slide collect --path <dir> --year <year> --course <selector> --lecture <selector> --page <selector>
+  imoocs slide collect --path <dir> --year <year> --all
 EOF
       ;;
     *)
@@ -1459,31 +2922,7 @@ assignment_cmd() {
       fi
       ;;
     push)
-      local course_id="${1:-}"
-      local problem_id="${2:-}"
-      local data_json
-      data_json="$(
-        COURSE_ID="$course_id" PROBLEM_ID="$problem_id" python3 - <<'PY'
-import json
-import os
-
-print(json.dumps({
-    "courseId": os.environ["COURSE_ID"],
-    "problemId": os.environ["PROBLEM_ID"],
-    "serverSubmitted": False,
-}, ensure_ascii=False))
-PY
-      )"
-      json_envelope \
-        false \
-        assignment \
-        push \
-        unsupported \
-        "unsupported_by_moocs_collect" \
-        "moocs-collect has no assignment submission backend; no push was performed." \
-        "none" \
-        "$data_json"
-      return 2
+      moocs_http_cmd assignment-push "$@"
       ;;
     ""|-h|--help)
       cat <<'EOF'
@@ -1524,7 +2963,7 @@ auth_cmd() {
 }
 
 reset_cmd() {
-  echo "reset is not implemented by moocs-collect; no credentials, drafts, or server state were changed" >&2
+  echo "reset is not implemented by imoocs; no credentials, drafts, or server state were changed" >&2
   return 2
 }
 
@@ -1537,7 +2976,7 @@ main() {
       usage
       ;;
     --version)
-      echo "imoocs 0.2.8 ($backend wrapper)"
+      echo "imoocs 0.3.3 ($backend)"
       ;;
     open)
       open_cmd "$@"

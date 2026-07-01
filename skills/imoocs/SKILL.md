@@ -9,7 +9,7 @@ description: Use when working with INIAD MOOCs (moocs.iniad.org), INIAD course p
 
 Use the local `imoocs` command as the first interface for INIAD MOOCs work. In this dotfiles repo, `imoocs` is an agent-safe CLI for MOOCs operations; it enforces JSON envelopes, URL handling, and submission safety rules. Use it instead of BrowserUse, Playwright, or manual browser operations whenever the requested surface is supported.
 
-`collect-cli` from `yu7400ki/moocs-collect` remains the backend for interactive slide PDF collection.
+Slide PDF collection is implemented in the local `imoocs` CLI. It uses the stored `imoocs auth login` MOOCs and Google session cookies and does not require `collect-cli`.
 
 ## Core Rules
 
@@ -17,10 +17,11 @@ Use the local `imoocs` command as the first interface for INIAD MOOCs work. In t
 2. Do not manually parse MOOCs URLs. Treat `imoocs open` as the URL router, even when the backend reports an unsupported envelope.
 3. Treat `course`, `lesson`, `assignment`, `slide`, `drive`, and `open` command output as JSON envelopes.
 4. Treat `auth *` and `reset` as text output plus exit code, not JSON.
-5. Do not search for, print, save, or ask the user to paste passwords, tokens, cookies, or other credentials. Login happens through the CLI prompt in the user's TTY.
+5. Do not search for, print, save, or ask the user to paste passwords, tokens, cookies, or other credentials. `imoocs auth login` stores resulting MOOCs cookies in the local keyring, then also tries to add Google session cookies for slide collection. Google session failure does not invalidate a saved MOOCs session for assignment operations. In Codex desktop sessions, when auth recovery is needed, try the existing INIAD Keychain credential; this does not require additional user permission. Supported Keychain items are the moocs-collect service `me.yu7400ki.moocs-collect` and, as fallback for the same username, the INIAD 802.1X Wi-Fi service `com.apple.network.eap.user.item.wlan.ssid.iniad`. Keychain reads must use a short timeout; if Keychain auth is unavailable, missing, rejected, or blocked, stop the auth/material operation and report the Keychain blocker instead of automatically using GUI, TTY, browser, or any other password flow.
 6. Assignment submit/upload/push operations require explicit user instruction. Never infer permission from a request to inspect a course or assignment.
-7. For assignments, verify the target `courseId`, `problemId`, `fields[].pid`, current values, files, status, and deadline before any write operation.
-8. Do not use BrowserUse, Playwright, or a manual browser fallback unless the user explicitly authorizes that fallback after the CLI reports the operation is unsupported.
+7. For assignments, verify the target `courseId`, `problemId`, `fields[].pid`, `currentAnswers` / `currentAnswerDetails` keys, current values, files, status, and deadline before any write operation.
+8. Before solving or submitting a lesson assignment, read the lesson's embedded slides, linked slide deck, handouts, PDFs, notebooks, and data files needed to understand the actual questions. Do not rely only on the assignment form body; MOOCs forms often contain only answer fields. If the slide/material content cannot be obtained through supported local/CLI/Keychain-backed paths, stop and report exactly which material is blocked instead of guessing.
+9. Do not use BrowserUse, Playwright, or a manual browser fallback unless the user explicitly authorizes that fallback after the CLI reports the operation is unsupported.
 
 ## username: s1F102501798
 
@@ -38,34 +39,29 @@ imoocs auth status
 
 If `imoocs` is missing, stop the MOOCs operation and report that the `imoocs` package is required. Do not silently switch to browser operation.
 
-If auth status reports an expired or missing session, recover through the CLI in the user's TTY:
-
-```bash
-imoocs auth login
-```
-
-If the user cannot type into the Codex TTY, use the macOS hidden password dialog instead:
-
-```bash
-imoocs auth login --gui
-```
-
-If the user explicitly allows using the existing moocs-collect Keychain credential, prefer the non-interactive Keychain path:
+If auth status reports an expired or missing session in a Codex desktop session, recover with the existing INIAD Keychain credential every time. This path is allowed by default and does not require asking the user for permission. The CLI first checks `me.yu7400ki.moocs-collect`, then falls back to `com.apple.network.eap.user.item.wlan.ssid.iniad` for the same username:
 
 ```bash
 imoocs auth login --keychain
 ```
 
-`imoocs auth login` prompts for the password in the user's TTY, `--gui` opens a macOS hidden-answer dialog, and `--keychain` reads the existing `me.yu7400ki.moocs-collect` Keychain item for the current username without printing it. `imoocs` itself stores only the resulting MOOCs session cookies in the local keyring. Do not ask the user to paste the password into chat. `imoocs auth logout` removes those stored session cookies.
+When running this from Codex and `IMOOCS_USERNAME` is not already set, use the `username` value in this skill as `IMOOCS_USERNAME` for the current MOOCs task only.
 
-Never ask the user to paste credentials into chat. If the user wants to avoid typing a username repeatedly, tell them to set `IMOOCS_USERNAME` in their own shell. Use the `username` value in this skill only for `imoocs` commands in the current task; do not copy it into unrelated repo files or final-output command examples unless the user asks.
-
-`collect-cli` is the backend for interactive slide collection. Check it only when diagnosing backend availability:
+If Keychain auth reports that no password was found, credentials were rejected, additional verification is required, or the command appears blocked on macOS Keychain access for more than a short wait, stop the MOOCs auth/material operation and report that Keychain auth is blocked. Do not launch the macOS hidden password dialog unless the user explicitly asks for GUI password entry in the current turn:
 
 ```bash
-command -v collect-cli
-collect-cli --help
+imoocs auth login --gui
 ```
+
+Use the plain TTY prompt only when the user explicitly asks to type in the terminal:
+
+```bash
+imoocs auth login
+```
+
+`imoocs auth login --gui` opens a macOS hidden-answer dialog, `imoocs auth login` prompts for the password in the user's TTY, and `--keychain` reads an existing supported INIAD Keychain item for the current username without printing it. `imoocs` stores resulting MOOCs cookies in the local keyring before attempting the optional Google Slides session. If login prints `auth login completed for MOOCs; Google session unavailable: ...`, assignment `open`, `show`, `submit`, and `push` may still proceed, but `slide collect` may need separate auth recovery or may return an authoritative failure envelope. Normal `open`, `slide collect`, and `assignment` commands try to refresh an expired MOOCs session from the stored SSO cookies before returning `auth_required`; if that refresh fails, run `imoocs auth login` once again. Do not ask the user to paste the password into chat. Do not use GUI or TTY password flows as an automatic fallback from Keychain failure. `imoocs auth logout` removes those stored session cookies.
+
+Never ask the user to paste credentials into chat. If the user wants to avoid typing a username repeatedly, tell them to set `IMOOCS_USERNAME` in their own shell. Use the `username` value in this skill only for `imoocs` commands in the current task; do not copy it into unrelated repo files or final-output command examples unless the user asks.
 
 ## URLs
 
@@ -75,7 +71,7 @@ imoocs open 'https://moocs.iniad.org/...'
 
 Parse the JSON envelope. If `ok` is false, report the unsupported operation and use the envelope's `data.next` hints where relevant. Do not parse the URL by hand.
 
-For lesson URLs, inspect the resolved `courseId`, `lessonId`, `pageId`, `assignments[].problemId`, and `assignments[].fields[]` when the CLI returns them. If `imoocs open` returns `auth_required`, run `imoocs auth login` in a TTY and retry. If the expected assignment is not present and the local CLI supports assignment listing/detail commands, use the same course's assignment list and then show the matching assignment:
+For lesson URLs, inspect the resolved `courseId`, `lessonId`, `pageId`, `assignments[].problemId`, and `assignments[].fields[]` when the CLI returns them. If `imoocs open` returns `auth_required`, run `imoocs auth login --keychain` in Codex desktop sessions, then retry only if Keychain auth succeeds. If Keychain auth fails or blocks, stop and report the Keychain blocker; do not fall back to GUI/TTY/browser unless the user explicitly authorizes that fallback in the current turn. If the expected assignment is not present and the local CLI supports assignment listing/detail commands, use the same course's assignment list and then show the matching assignment:
 
 ```bash
 imoocs assignment list <courseId> --status pending
@@ -87,19 +83,24 @@ Do not submit a different pending assignment just because it appears in the list
 
 ## Slides
 
-Use the wrapper for slide PDFs:
+Use the native slide PDF collector:
 
 ```bash
 imoocs slide collect --path /path/to/download-dir --year 2025
 ```
 
-This command requires an interactive TTY. It prompts through `collect-cli` for INIAD username, password, course, lecture, and page, then prints one JSON envelope containing the exit code and newly created PDF paths.
+This command uses stored `imoocs auth login` MOOCs and Google session cookies. It never prompts for a password and never calls `collect-cli`. If no valid session is stored, it returns an `auth_required` JSON envelope; recover with `imoocs auth login --keychain` in Codex desktop sessions, then retry only if auth succeeds.
 
-If the user wants to avoid typing or pasting the username in chat, tell them to set `IMOOCS_USERNAME` in their own shell before running `imoocs slide collect`. Use the `username` value in this skill only for `imoocs` commands in the current task; do not copy it into unrelated repo files or final-output command examples unless the user asks.
+In an interactive TTY, missing `--course`, `--lecture`, or `--page` selectors are prompted as numbered menus. In non-interactive shells, pass selectors or explicit `--all`:
 
-Password prompts may be visually quiet: after the username is entered, `collect-cli` can wait for a hidden password entry without printing a clear prompt or echoing characters. Do not ask the user to paste the password into chat. Tell the user to type the password into the active TTY/kernel prompt. If the user says the password is already typed and asks you to continue, wait a few seconds, then send only `Enter` to the existing `exec_command` TTY session with `write_stdin`; do not send any password text yourself.
+```bash
+imoocs slide collect --path /path/to/download-dir --year 2025 --course COS101 --lecture all --page all
+imoocs slide collect --path /path/to/download-dir --year 2025 --all
+```
 
-When `IMOOCS_USERNAME` is used, the wrapper may still show `ユーザー名:` before automation or terminal focus catches up. If the process remains at the username prompt, send only the username value explicitly provided for the current task, then wait for login progress such as `ログイン中...` or course selection. If no progress appears after that, assume it is waiting for hidden password input and ask the user to type it in the TTY.
+Selectors accept 1-based indexes, slugs, names, or `all`. Avoid `--all` for read-only inspection unless the user explicitly asks to collect broad materials.
+
+If Google Slides PDF export fails or no slide iframe is found, treat that JSON envelope as authoritative. Do not fall back to browser, Playwright, manual URL parsing, or `collect-cli` unless the user explicitly authorizes a fallback in the current turn.
 
 If the user only asks to read, inspect, summarize, or verify PDFs, use a temporary directory from `mktemp -d` for `imoocs slide collect`, read the PDFs from there, and remove that directory in the same turn after extracting the needed information. Do not leave PDFs in `Downloads`, the repo, or another stable local directory for read-only tasks.
 
@@ -107,7 +108,11 @@ If the user explicitly asks to download, save, keep, organize, or reuse the PDFs
 
 ## Assignments
 
-Only handle assignment submit/upload/push when the user explicitly asks for that action.
+Only handle assignment submit/upload/push when the user explicitly asks for that action. A request such as "submit this", "finish this", "complete it", or "提出まで終わらせて" is explicit permission to solve, save, upload, push, and verify the matching assignment.
+
+When the user asks to finish or submit an assignment without limiting the scope, complete every visible answer field, not only required fields. Treat optional, challenge, bonus, and file-upload fields as in scope unless the user explicitly asks for required-only work, the field is impossible/unsafe to complete, or the field's instructions clearly require unavailable personal input. If any visible field is skipped, state the exact field and reason before the final report.
+
+Some INIAD MOOCs forms expose select/dropdown or radio-like answers only in `currentAnswers` / `currentAnswerDetails`, while omitting those pids from `fields[]`. Treat placeholder values such as `---`, empty strings, or option-looking current answers for pids not listed in `fields[]` as in-scope visible fields when the page text shows a selector or choice. Infer the pid from the `currentAnswers` key, solve it from the assignment instructions, submit it in the same JSON payload, and verify it after submission.
 
 ### Inspect Before Writing
 
@@ -123,11 +128,16 @@ If `assignment show` is unsupported, use the `imoocs open` envelope and `imoocs 
 Confirm these from the JSON envelope before any write:
 
 - The `courseId`, `lessonId`, `pageId`, and `problemId` match the user's requested target.
-- Each required `fields[].pid` is known.
+- Every visible `fields[].pid` is known, including optional/challenge/bonus fields when the user asked to finish or submit the whole assignment.
+- Every non-system `currentAnswers` / `currentAnswerDetails` key is reviewed, even if it is absent from `fields[]`. Pay special attention to `---` placeholder values: they often represent dropdown/select fields.
 - Each field type is known, such as `text`, `textarea`, `radio`, `checkbox`, or `file`.
 - Existing `currentValue` or `uploadedFile` values are understood before overwriting.
 - The assignment is open/submittable. Treat closed, upcoming, expired, or disabled forms as not safe to submit unless the user gives explicit instructions after being told the risk.
-- Required files exist and have been generated from the current source, not guessed.
+- Required files and in-scope optional/challenge upload files exist and have been generated from the current source, not guessed.
+
+Read the assignment page and any linked exercise PDFs, slides, or handouts needed to understand all visible fields before deciding a field can be left blank.
+
+For slide-backed form assignments, verify the actual question text from the slide deck or downloaded slide PDF before writing answers. If the page has an embedded Google Slides iframe, use the slide deck/material as primary question evidence. The form labels alone are not sufficient evidence for numeric/statistical answers.
 
 For notebooks, execute all cells and generate HTML when required by the fields:
 
@@ -145,7 +155,7 @@ imoocs assignment submit --confirm --course-id <courseId> --problem-id <problemI
 imoocs assignment upload --confirm --course-id <courseId> --problem-id <problemId> --file <path>
 ```
 
-If the local CLI advertises the newer field-based interface, text answers are submitted as JSON keyed by `pid` and files are uploaded by field `pid`. In this mode the CLI uses MOOCs' assignment autosave API directly and reports `submission.state: "auto"` when the server accepted the write:
+If the local CLI advertises the newer field-based interface, text answers are saved as JSON keyed by `pid` and files are uploaded by field `pid`. In this mode the CLI uses MOOCs' assignment autosave API directly and reports `submission.state: "auto"` when the server accepted the write. This is server-side answer storage, not final confirmation by the page's green Submit button:
 
 ```bash
 printf '%s\n' '{"p1":"answer text"}' > /tmp/imoocs-answers.json
@@ -154,25 +164,27 @@ imoocs assignment upload <courseId> <problemId> --pid ipynb <notebook.ipynb>
 imoocs assignment upload <courseId> <problemId> --pid html <notebook.html>
 ```
 
+Include solved dropdown/select pids discovered only from `currentAnswers` in the same JSON payload, for example `{"p5":"option text","p6":"other option"}`. If the server accepts a pid that was absent from `fields[]`, treat the returned `currentAnswers` value as the authoritative confirmation.
+
 Parse the JSON envelope after every submit/upload. The CLI submission mode determines the result:
 
 | Mode | Meaning |
 |---|---|
 | `confirm` | No server submission yet. The operation only stages a local draft, typically under `.imoocs/drafts`. |
-| `auto` | The operation sends to the MOOCs server immediately. Treat this as a real submission. |
+| `auto` | The operation sends/saves answers to the MOOCs server immediately, but it may still require `push` for final confirmation. |
 | unset/invalid | Treat `VALIDATION_ERROR` as no submission and run `imoocs setup` or report the required setup. |
 
-Prefer `confirm` mode for agent-assisted work unless the user explicitly asked for immediate server submission and the local CLI clearly supports it. In confirm mode, never report completion as a submission until `push` has succeeded and the reflected values can be verified.
+Prefer `confirm` mode for agent-assisted work unless the user explicitly asked for immediate server submission and the local CLI clearly supports it. Never report final completion until `push` has succeeded and the reflected values can be verified.
 
-### Push Confirmed Drafts
+### Push Final Confirmation
 
-In confirm mode, final server confirmation is reserved for the user in a real TTY:
+After saving all intended answers, use `push` to perform the final submit-button confirmation through the CLI:
 
 ```bash
 imoocs assignment push <courseId> <problemId>
 ```
 
-The user must review the prompt and confirm the push. If the agent runs `push` in a non-interactive shell and it fails, report that no server submission occurred and give the exact command for the user to run in their terminal. If `push` returns an unsupported envelope, report that no server submission occurred.
+Parse the JSON envelope. Treat `submission.state: "push"` and `data.serverSubmitted: true` as final confirmation. If `push` returns `auth_required`, `push_failed`, `not_submittable`, or any other non-ok envelope, report that no final submit-button confirmation occurred.
 
 ### Verify After Writes
 
@@ -182,11 +194,11 @@ After any server submission attempt or user-confirmed push, verify the reflected
 imoocs assignment show '<lesson-url>'
 ```
 
-Check that required text fields have `currentValue`, required file fields have `uploadedFile.filename`, and the assignment status is submitted or equivalent. If `assignment show` is unsupported, say verification was not possible and do not claim the reflected server state was confirmed. Local file generation or confirm-mode staging alone is not submission completion.
+Check that all intended text fields, including optional/challenge fields, have `currentValue`; all dropdown/select pids discovered from `currentAnswers` / `currentAnswerDetails` have the expected data value instead of `---`; all intended file fields have `uploadedFile.filename`; and the assignment status is submitted or equivalent. If `assignment show` is unsupported, say verification was not possible and do not claim the reflected server state was confirmed. Local file generation or confirm-mode staging alone is not submission completion.
 
 ## Unsupported Surfaces
 
-Some surfaces may still be unsupported by the local CLI backend. Commands for course, lesson, drive, attendance, direct URL routing, assignment submit/upload, or assignment push may return JSON envelopes with an unsupported reason such as `unsupported_by_moocs_collect`.
+Some surfaces may still be unsupported by the local CLI backend. Commands for course, lesson, drive, attendance, direct URL routing, assignment submit/upload, or assignment push may return JSON envelopes with an unsupported reason such as `unsupported_by_imoocs`.
 
 Use those envelopes as authoritative. Do not replace them with browser inspection or Playwright unless the user explicitly authorizes that fallback.
 
@@ -196,10 +208,10 @@ Always state one of these outcomes clearly:
 
 - `何もしていない`: no submission/stage/push was performed.
 - `stage だけした`: a local assignment draft was staged, but nothing was sent to the server.
-- `auto で送信した`: `submit` / `upload` immediately sent to the server because the CLI was in auto mode.
-- `push で確定した`: only if a real user-confirmed `imoocs assignment push <courseId> <problemId>` completed successfully.
+- `auto で保存した`: `submit` / `upload` immediately saved answers/files to the server because the CLI was in auto mode, but final submit-button confirmation did not happen.
+- `push で確定した`: only if `imoocs assignment push <courseId> <problemId>` completed successfully with `submission.state: "push"` and `data.serverSubmitted: true`.
 
-For assignment work, also state whether post-write `imoocs assignment show '<lesson-url>'` confirmed the required `currentValue` and `uploadedFile.filename` values. If verification was not possible, say so clearly.
+For assignment work, also state whether post-write `imoocs assignment show '<lesson-url>'` confirmed the required and in-scope optional/challenge `currentValue` and `uploadedFile.filename` values. If verification was not possible, say so clearly. If a finish/submit request left any visible field blank, list the skipped field and reason.
 
 For normal slide/material work, report downloaded paths or counts and state that no assignment submission was performed. If PDFs were only read from a temporary directory, state that the temporary PDFs were deleted instead of reporting them as saved materials.
 
