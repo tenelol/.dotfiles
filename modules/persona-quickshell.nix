@@ -35,11 +35,6 @@ let
       # Quickshell 0.2.1 does not recognize this upstream pragma.
       perl -0pi -e 's#^//@ pragma QmlImportPath: "\."\n##m' "$out/shell.qml"
 
-      # Upstream imports a custom CavaMonitor QML plugin that is not packaged here.
-      perl -0pi -e 's/\n        CavaVisualizer \{\n            id: s1_cava\n.*?\n        \}\n\n        Image \{\n            id: s1_fg/\n\n        Image {\n            id: s1_fg/s' \
-        "$out/Widgets/WallpaperEngine.qml"
-      rm -f "$out/Widgets/CavaVisualizer.qml"
-
       # Upstream references these local font files but does not vendor them.
       mkdir -p "$out/Assets/fonts"
       ln -sf "${pkgs.montserrat}/share/fonts/ttf/Montserrat-Light.ttf" \
@@ -55,12 +50,54 @@ let
     '';
   };
 
+  cavaMonitor = pkgs.stdenv.mkDerivation {
+    pname = "qt6-cava-plugin";
+    version = "0.1.0-23b108a";
+
+    src = pkgs.fetchFromGitHub {
+      owner = "Yujonpradhananga";
+      repo = "Qt6-Cava-plugin";
+      rev = "23b108a7919da59d4eaaced5f0bf4cbe21867093";
+      hash = "sha256-itoyEEpT3ZeAjzjz8yASU9gXFQg3nF29lkiK7v45OxM=";
+    };
+
+    nativeBuildInputs = with pkgs; [
+      cmake
+      perl
+      pkg-config
+      qt6.wrapQtAppsHook
+    ];
+
+    postPatch = ''
+      perl -0pi -e 's/(class CavaProcessor : public QObject \{.*?~CavaProcessor\(\);\n\n)    void setBars\(int bars\);/$1    Q_INVOKABLE void setBars(int bars);/s' cavamonitor.hpp
+    '';
+
+    buildInputs = with pkgs; [
+      fftw
+      pipewire
+      qt6.qtbase
+      qt6.qtdeclarative
+    ];
+
+    cmakeFlags = [ "-DCMAKE_INSTALL_PREFIX=${builtins.placeholder "out"}/lib/qt6/qml" ];
+  };
+
   qmlModules = with pkgs.qt6; [
     qt5compat
     qtmultimedia
   ];
-  qmlImportPath = lib.makeSearchPath "lib/qt-6/qml" qmlModules;
+  qmlImportPath = lib.concatStringsSep ":" [
+    (lib.makeSearchPath "lib/qt-6/qml" qmlModules)
+    "${cavaMonitor}/lib/qt6/qml"
+  ];
   qtPluginPath = lib.makeSearchPath "lib/qt-6/plugins" qmlModules;
+  cavaLibraryPath = lib.makeLibraryPath [
+    cavaMonitor
+    pkgs.fftw
+    pkgs.pipewire
+    pkgs.qt6.qtbase
+    pkgs.qt6.qtdeclarative
+  ];
 
   personaQuickshell = pkgs.writeShellApplication {
     name = "persona-quickshell";
@@ -70,6 +107,7 @@ let
       brightnessctl
       coreutils
       gnugrep
+      hyprland
       networkmanager
       playerctl
       procps
@@ -80,7 +118,9 @@ let
 
     text = ''
       export NIXPKGS_QT6_QML_IMPORT_PATH="${qmlImportPath}:''${NIXPKGS_QT6_QML_IMPORT_PATH:-}"
+      export QML2_IMPORT_PATH="${qmlImportPath}:''${QML2_IMPORT_PATH:-}"
       export QT_PLUGIN_PATH="${qtPluginPath}:''${QT_PLUGIN_PATH:-}"
+      export LD_LIBRARY_PATH="${cavaMonitor}/lib/qt6/qml/CavaMonitor:${cavaLibraryPath}:''${LD_LIBRARY_PATH:-}"
 
       exec qs --config persona --no-duplicate "$@"
     '';
@@ -134,6 +174,10 @@ let
           --description="Persona Quickshell" \
           --setenv="XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR" \
           --setenv="WAYLAND_DISPLAY=$WAYLAND_DISPLAY" \
+          --setenv="XDG_SESSION_TYPE=''${XDG_SESSION_TYPE:-wayland}" \
+          --setenv="XDG_CURRENT_DESKTOP=''${XDG_CURRENT_DESKTOP:-Hyprland}" \
+          --setenv="DESKTOP_SESSION=''${DESKTOP_SESSION:-hyprland}" \
+          --setenv="HYPRLAND_INSTANCE_SIGNATURE=''${HYPRLAND_INSTANCE_SIGNATURE:-}" \
           ${personaQuickshell}/bin/persona-quickshell >/dev/null 2>&1 \
           && return 0
 

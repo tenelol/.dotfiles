@@ -1,11 +1,14 @@
 { lib, pkgs }:
 {
   mkConfig =
-    networkBackend:
+    myconfig:
     let
+      networkBackend = myconfig.nixos.desktop.networkBackend;
       usesIwdNetworkd = networkBackend == "iwd-networkd";
       usesDhcpcdResolved = networkBackend == "dhcpcd-resolved";
       usesResolved = usesIwdNetworkd || usesDhcpcdResolved;
+      hyprlandEnabled = myconfig.hyprland.enable or false;
+      niriEnabled = myconfig.niri.enable or false;
     in
     {
       assertions = [
@@ -97,13 +100,21 @@
       xdg.portal = {
         enable = true;
         xdgOpenUsePortal = true;
-        configPackages = [ pkgs.niri ];
-        extraPortals = with pkgs; [
-          xdg-desktop-portal-wlr
-          xdg-desktop-portal-gtk
-        ];
+        configPackages = lib.mkIf niriEnabled [ pkgs.niri ];
+        extraPortals =
+          lib.optionals (!hyprlandEnabled) [ pkgs.xdg-desktop-portal-gtk ]
+          ++ lib.optionals niriEnabled [ pkgs.xdg-desktop-portal-wlr ];
         config = {
-          common.default = [ "gtk" ];
+          common.default =
+            if hyprlandEnabled then
+              [
+                "hyprland"
+                "gtk"
+              ]
+            else
+              [ "gtk" ];
+        }
+        // lib.optionalAttrs niriEnabled {
           niri = {
             default = lib.mkForce [
               "wlr"
@@ -115,7 +126,7 @@
         };
       };
 
-      programs.niri.enable = true;
+      programs.niri.enable = niriEnabled;
       security.rtkit.enable = true;
 
       environment.systemPackages = with pkgs; [
