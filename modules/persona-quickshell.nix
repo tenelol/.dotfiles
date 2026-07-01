@@ -46,6 +46,34 @@ let
       perl -0pi -e 's/font\.family: bebasNeue\.name/font.family: "Montserrat ExtraBold"/g' \
         "$out/Layers/Options.qml"
 
+      # Persona's upstream wallpaper drives full-screen shader animation at the
+      # monitor refresh rate. Keep the motion, but cap the update cadence so it
+      # does not pin the GPU on high-refresh multi-monitor setups.
+      perl -0pi -e 's/(    clip: false\n)/$1    property bool active: true\n/' \
+        "$out/Widgets/CavaVisualizer.qml"
+      perl -0pi -e 's/(    property bool active: true\n)/$1    property int fps: 24\n    property bool paintPending: false\n/' \
+        "$out/Widgets/CavaVisualizer.qml"
+      perl -0pi -e 's/(        active): true/$1: root.active/' \
+        "$out/Widgets/CavaVisualizer.qml"
+      perl -0pi -e 's/text: cava\.values\.length > 0 \? cava\.values\[0\]\.toFixed\(3\) : "no data"/text: ""/' \
+        "$out/Widgets/CavaVisualizer.qml"
+      perl -0pi -e 's/(        color: "white"\n)/$1        visible: false\n/' \
+        "$out/Widgets/CavaVisualizer.qml"
+      perl -0pi -e 's#(    Canvas \{\n        id: canvas\n)#    Timer {\n        id: paintTimer\n        interval: Math.max(16, Math.round(1000 / root.fps))\n        repeat: false\n        onTriggered: {\n            root.paintPending = false;\n            canvas.requestPaint();\n        }\n    }\n\n$1#s' \
+        "$out/Widgets/CavaVisualizer.qml"
+      perl -0pi -e 's#function onValuesChanged\(\) \{\n                canvas\.requestPaint\(\);\n            \}#function onValuesChanged() {\n                if (!root.active || root.paintPending)\n                    return;\n                root.paintPending = true;\n                paintTimer.restart();\n            }#' \
+        "$out/Widgets/CavaVisualizer.qml"
+      perl -0pi -e 's#(    property real mouseOffsetY: 0\.0\n)#$1    readonly property real requestedWallpaperFps: parseInt(Quickshell.env("PERSONA_WALLPAPER_FPS") || "30")\n    readonly property int wallpaperFps: isNaN(requestedWallpaperFps) ? 30 : Math.max(1, Math.min(60, requestedWallpaperFps))\n    readonly property int frameInterval: Math.max(16, Math.round(1000 / wallpaperFps))\n    readonly property bool audioVisualizer: String(Quickshell.env("PERSONA_AUDIO_VISUALIZER") || "1") !== "0"\n    readonly property real requestedCavaFps: parseInt(Quickshell.env("PERSONA_CAVA_FPS") || "24")\n    readonly property int cavaFps: isNaN(requestedCavaFps) ? 24 : Math.max(1, Math.min(60, requestedCavaFps))\n#' \
+        "$out/Widgets/WallpaperEngine.qml"
+      perl -0pi -e 's#        NumberAnimation on time \{\n            from: 0\n            to: 10\n            duration: 800000\n            loops: Animation\.Infinite\n            running: true\n        \}#        Timer {\n            interval: root.frameInterval\n            repeat: true\n            running: true\n            onTriggered: s0_bg_clouds.time = (s0_bg_clouds.time + interval * 10 / 800000) % 10\n        }#' \
+        "$out/Widgets/WallpaperEngine.qml"
+      perl -0pi -e 's#        NumberAnimation on time \{\n            from: 0\n            to: 1000\n            duration: 500000\n            loops: Animation\.Infinite\n            running: true\n        \}#        Timer {\n            interval: root.frameInterval\n            repeat: true\n            running: true\n            onTriggered: s0_bg_stars.time = (s0_bg_stars.time + interval * 1000 / 500000) % 1000\n        }#' \
+        "$out/Widgets/WallpaperEngine.qml"
+      perl -0pi -e 's#            NumberAnimation on time \{\n                from: 0\n                to: 10000\n                duration: 10000000\n                loops: Animation\.Infinite\n                running: true\n            \}#            Timer {\n                interval: root.frameInterval\n                repeat: true\n                running: true\n                onTriggered: s1_bars_motion.time = (s1_bars_motion.time + interval * 10000 / 10000000) % 10000\n            }#' \
+        "$out/Widgets/WallpaperEngine.qml"
+      perl -0pi -e 's/(            height: 555\n)/$1            visible: root.audioVisualizer\n            active: root.audioVisualizer\n            fps: root.cavaFps\n/' \
+        "$out/Widgets/WallpaperEngine.qml"
+
       runHook postInstall
     '';
   };
@@ -121,6 +149,9 @@ let
       export QML2_IMPORT_PATH="${qmlImportPath}:''${QML2_IMPORT_PATH:-}"
       export QT_PLUGIN_PATH="${qtPluginPath}:''${QT_PLUGIN_PATH:-}"
       export LD_LIBRARY_PATH="${cavaMonitor}/lib/qt6/qml/CavaMonitor:${cavaLibraryPath}:''${LD_LIBRARY_PATH:-}"
+      export PERSONA_WALLPAPER_FPS="''${PERSONA_WALLPAPER_FPS:-30}"
+      export PERSONA_AUDIO_VISUALIZER="''${PERSONA_AUDIO_VISUALIZER:-1}"
+      export PERSONA_CAVA_FPS="''${PERSONA_CAVA_FPS:-24}"
 
       exec qs --config persona --no-duplicate "$@"
     '';
@@ -178,6 +209,9 @@ let
           --setenv="XDG_CURRENT_DESKTOP=''${XDG_CURRENT_DESKTOP:-Hyprland}" \
           --setenv="DESKTOP_SESSION=''${DESKTOP_SESSION:-hyprland}" \
           --setenv="HYPRLAND_INSTANCE_SIGNATURE=''${HYPRLAND_INSTANCE_SIGNATURE:-}" \
+          --setenv="PERSONA_WALLPAPER_FPS=''${PERSONA_WALLPAPER_FPS:-30}" \
+          --setenv="PERSONA_AUDIO_VISUALIZER=''${PERSONA_AUDIO_VISUALIZER:-1}" \
+          --setenv="PERSONA_CAVA_FPS=''${PERSONA_CAVA_FPS:-24}" \
           ${personaQuickshell}/bin/persona-quickshell >/dev/null 2>&1 \
           && return 0
 
