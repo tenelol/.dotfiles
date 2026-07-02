@@ -102,6 +102,26 @@ Script Commands は `~/.config/raycast/scripts` に展開されるので、Rayca
 
 `macbook` 側の KDE Connect は Homebrew cask や Nixpkgs の Darwin package としては管理できないため、公式 nightly の ARM 版を手動で入れます。導入後、`nvidia-desktop` と `macbook` をペアリングし、両側で Clipboard plugin を有効にします。
 
+## Remote builds
+
+PC の負荷を下げるため、interactive host の `macbook` / `nixos` / `nvidia-desktop` では `nixbuild.net` を Nix remote builder として有効化しています。`nixbuild.net` は Linux target 用なので、Darwin system rebuild 自体はローカル build のままですが、`macbook` から Linux derivation を build するときは `x86_64-linux` / `aarch64-linux` を offload できます。
+
+秘密鍵は repo に置かず、`nix-daemon` を実行する root user から読める場所に置きます。既定の配置:
+
+- NixOS: `/root/.ssh/nixbuild_ed25519`
+- macOS: `/var/root/.ssh/nixbuild_ed25519`
+
+鍵は passphrase なしの Ed25519 で作り、public key を `nixbuild.net` に登録します。
+
+```sh
+sudo mkdir -p /var/root/.ssh
+sudo ssh-keygen -t ed25519 -N "" -f /var/root/.ssh/nixbuild_ed25519 -C macbook-nixbuild
+sudo cat /var/root/.ssh/nixbuild_ed25519.pub
+sudo ssh eu.nixbuild.net shell
+```
+
+NixOS では path だけ `/root/.ssh/nixbuild_ed25519` に置き換えます。`nixbuild.net` を使う host は local build pressure を抑えるため `max-jobs = 1` を既定にしています。host ごとに無効化したい場合は `myconfig.nixbuild.enable = false;`、鍵 path を変える場合は `myconfig.nixbuild.identityFile` を上書きします。
+
 ## Workflow
 
 軽量評価:
