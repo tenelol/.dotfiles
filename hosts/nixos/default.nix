@@ -5,6 +5,7 @@ delib.host {
   system = "x86_64-linux";
 
   myconfig.boot.efiSystemdBoot = true;
+  myconfig.nixbuild.enable = true;
   rice = "indigo";
 
   myconfig.nixos.desktop.networkBackend = "dhcpcd-resolved";
