@@ -32,6 +32,9 @@
     hermes-agent.url = "github:NousResearch/hermes-agent";
     hermes-agent.inputs.nixpkgs.follows = "nixpkgs";
 
+    herdr.url = "github:ogulcancelik/herdr/v0.7.1";
+    herdr.inputs.nixpkgs.follows = "nixpkgs";
+
     gijiroku.url = "git+ssh://git@github.com/tenelol/gijiroku.git";
     gijiroku.flake = false;
   };

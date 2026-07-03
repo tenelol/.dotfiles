@@ -6,6 +6,8 @@
 let
   isLinux = pkgs.stdenv.hostPlatform.isLinux;
   isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
+  system = pkgs.stdenv.hostPlatform.system;
+  herdrPackage = inputs.herdr.packages.${system}.default;
   hermesAgentPackages = inputs.hermes-agent.packages.${pkgs.stdenv.hostPlatform.system};
 
   hermesAgentDesktopAppPackage = import ../packages/hermes-agent-desktop-app.nix {
@@ -61,6 +63,7 @@ let
 
   nonServerPackages = with pkgs; [
     cargo
+    herdrPackage
     imoocsPackage
     platformio
     pnpm
