@@ -4,13 +4,14 @@
 }:
 let
   pythonWithKeyring = pkgs.python3.withPackages (pythonPackages: [
+    pythonPackages.browser-cookie3
     pythonPackages.keyring
   ]);
 in
 
 pkgs.stdenvNoCC.mkDerivation {
   pname = "imoocs";
-  version = "0.3.3";
+  version = "0.3.7";
 
   src = ../config/scripts/imoocs;
   dontUnpack = true;
