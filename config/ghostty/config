@@ -47,12 +47,14 @@ cursor-click-to-move = true
 copy-on-select = false
 
 # Custom shaders
-custom-shader = ~/.config/ghostty/shaders/aurora.glsl
+# Keep Persona usable by default: static glass/readability passes only.
+# The animated aurora and cursor shaders can be re-enabled when GPU headroom is available.
+# custom-shader = ~/.config/ghostty/shaders/aurora.glsl
 custom-shader = ~/.config/ghostty/shaders/liquid_glass_focus.glsl
 custom-shader = ~/.config/ghostty/shaders/readability_scrim.glsl
-custom-shader = ~/.config/ghostty/shaders/cursor_tail.glsl
-custom-shader = ~/.config/ghostty/shaders/ripple_rectangle_cursor.glsl
-custom-shader-animation = true
+# custom-shader = ~/.config/ghostty/shaders/cursor_tail.glsl
+# custom-shader = ~/.config/ghostty/shaders/ripple_rectangle_cursor.glsl
+custom-shader-animation = false
 
 # Quick terminal
 keybind = "ctrl+shift+space=toggle_quick_terminal"

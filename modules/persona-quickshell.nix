@@ -63,7 +63,13 @@ let
         "$out/Widgets/CavaVisualizer.qml"
       perl -0pi -e 's#function onValuesChanged\(\) \{\n                canvas\.requestPaint\(\);\n            \}#function onValuesChanged() {\n                if (!root.active || root.paintPending)\n                    return;\n                root.paintPending = true;\n                paintTimer.restart();\n            }#' \
         "$out/Widgets/CavaVisualizer.qml"
-      perl -0pi -e 's#(    property real mouseOffsetY: 0\.0\n)#$1    readonly property real requestedWallpaperFps: parseInt(Quickshell.env("PERSONA_WALLPAPER_FPS") || "30")\n    readonly property int wallpaperFps: isNaN(requestedWallpaperFps) ? 30 : Math.max(1, Math.min(60, requestedWallpaperFps))\n    readonly property int frameInterval: Math.max(16, Math.round(1000 / wallpaperFps))\n    readonly property bool audioVisualizer: String(Quickshell.env("PERSONA_AUDIO_VISUALIZER") || "1") !== "0"\n    readonly property real requestedCavaFps: parseInt(Quickshell.env("PERSONA_CAVA_FPS") || "24")\n    readonly property int cavaFps: isNaN(requestedCavaFps) ? 24 : Math.max(1, Math.min(60, requestedCavaFps))\n#' \
+      perl -0pi -e 's#(    property real mouseOffsetY: 0\.0\n)#$1    readonly property real requestedWallpaperFps: parseInt(Quickshell.env("PERSONA_WALLPAPER_FPS") || "8")\n    readonly property int wallpaperFps: isNaN(requestedWallpaperFps) ? 8 : Math.max(1, Math.min(60, requestedWallpaperFps))\n    readonly property int frameInterval: Math.max(16, Math.round(1000 / wallpaperFps))\n    readonly property real requestedWallpaperScale: parseFloat(Quickshell.env("PERSONA_WALLPAPER_SCALE") || "0.35")\n    readonly property real wallpaperScale: isNaN(requestedWallpaperScale) ? 0.35 : Math.max(0.25, Math.min(1.0, requestedWallpaperScale))\n    readonly property size wallpaperTextureSize: Qt.size(Math.max(1, Math.round(width * wallpaperScale)), Math.max(1, Math.round(height * wallpaperScale)))\n    readonly property bool audioVisualizer: String(Quickshell.env("PERSONA_AUDIO_VISUALIZER") || "0") !== "0"\n    readonly property real requestedCavaFps: parseInt(Quickshell.env("PERSONA_CAVA_FPS") || "24")\n    readonly property int cavaFps: isNaN(requestedCavaFps) ? 24 : Math.max(1, Math.min(60, requestedCavaFps))\n#' \
+        "$out/Widgets/WallpaperEngine.qml"
+      perl -0pi -e 's#(        id: s0_clouds_out\n        sourceItem: s0_bg_clouds\n        anchors\.fill: parent\n)#$1        textureSize: root.wallpaperTextureSize\n#' \
+        "$out/Widgets/WallpaperEngine.qml"
+      perl -0pi -e 's#(            id: s0_bg_out\n            sourceItem: s0_bg_stars\n            anchors\.fill: parent\n)#$1            textureSize: root.wallpaperTextureSize\n#' \
+        "$out/Widgets/WallpaperEngine.qml"
+      perl -0pi -e 's#(        id: s1_out\n        sourceItem: s1_composite\n        anchors\.fill: parent\n)#$1        textureSize: root.wallpaperTextureSize\n#' \
         "$out/Widgets/WallpaperEngine.qml"
       perl -0pi -e 's#        NumberAnimation on time \{\n            from: 0\n            to: 10\n            duration: 800000\n            loops: Animation\.Infinite\n            running: true\n        \}#        Timer {\n            interval: root.frameInterval\n            repeat: true\n            running: true\n            onTriggered: s0_bg_clouds.time = (s0_bg_clouds.time + interval * 10 / 800000) % 10\n        }#' \
         "$out/Widgets/WallpaperEngine.qml"
@@ -149,8 +155,9 @@ let
       export QML2_IMPORT_PATH="${qmlImportPath}:''${QML2_IMPORT_PATH:-}"
       export QT_PLUGIN_PATH="${qtPluginPath}:''${QT_PLUGIN_PATH:-}"
       export LD_LIBRARY_PATH="${cavaMonitor}/lib/qt6/qml/CavaMonitor:${cavaLibraryPath}:''${LD_LIBRARY_PATH:-}"
-      export PERSONA_WALLPAPER_FPS="''${PERSONA_WALLPAPER_FPS:-30}"
-      export PERSONA_AUDIO_VISUALIZER="''${PERSONA_AUDIO_VISUALIZER:-1}"
+      export PERSONA_WALLPAPER_FPS="''${PERSONA_WALLPAPER_FPS:-8}"
+      export PERSONA_WALLPAPER_SCALE="''${PERSONA_WALLPAPER_SCALE:-0.35}"
+      export PERSONA_AUDIO_VISUALIZER="''${PERSONA_AUDIO_VISUALIZER:-0}"
       export PERSONA_CAVA_FPS="''${PERSONA_CAVA_FPS:-24}"
 
       exec qs --config persona --no-duplicate "$@"
@@ -209,8 +216,9 @@ let
           --setenv="XDG_CURRENT_DESKTOP=''${XDG_CURRENT_DESKTOP:-Hyprland}" \
           --setenv="DESKTOP_SESSION=''${DESKTOP_SESSION:-hyprland}" \
           --setenv="HYPRLAND_INSTANCE_SIGNATURE=''${HYPRLAND_INSTANCE_SIGNATURE:-}" \
-          --setenv="PERSONA_WALLPAPER_FPS=''${PERSONA_WALLPAPER_FPS:-30}" \
-          --setenv="PERSONA_AUDIO_VISUALIZER=''${PERSONA_AUDIO_VISUALIZER:-1}" \
+          --setenv="PERSONA_WALLPAPER_FPS=''${PERSONA_WALLPAPER_FPS:-8}" \
+          --setenv="PERSONA_WALLPAPER_SCALE=''${PERSONA_WALLPAPER_SCALE:-0.35}" \
+          --setenv="PERSONA_AUDIO_VISUALIZER=''${PERSONA_AUDIO_VISUALIZER:-0}" \
           --setenv="PERSONA_CAVA_FPS=''${PERSONA_CAVA_FPS:-24}" \
           ${personaQuickshell}/bin/persona-quickshell >/dev/null 2>&1 \
           && return 0
