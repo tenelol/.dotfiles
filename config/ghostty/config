@@ -34,7 +34,7 @@ window-padding-y = 15
 window-padding-balance = true
 window-decoration = "none"
 window-show-tab-bar = "never"
-background-opacity = 0
+background-opacity = 0.94
 background-opacity-cells = false
 background-blur = 64
 unfocused-split-opacity = 0.72
@@ -47,14 +47,14 @@ cursor-click-to-move = true
 copy-on-select = false
 
 # Custom shaders
-# Keep Persona usable by default: static glass/readability passes only.
-# The animated aurora and cursor shaders can be re-enabled when GPU headroom is available.
-# custom-shader = ~/.config/ghostty/shaders/aurora.glsl
-custom-shader = ~/.config/ghostty/shaders/liquid_glass_focus.glsl
+# Keep the Linux terminal more workstation-like: mostly opaque, crisp, with a
+# low-opacity animated shader pass instead of cursor-lens glass.
+custom-shader = ~/.config/ghostty/shaders/aurora.glsl
+# custom-shader = ~/.config/ghostty/shaders/liquid_glass_focus.glsl
 custom-shader = ~/.config/ghostty/shaders/readability_scrim.glsl
 # custom-shader = ~/.config/ghostty/shaders/cursor_tail.glsl
 # custom-shader = ~/.config/ghostty/shaders/ripple_rectangle_cursor.glsl
-custom-shader-animation = false
+custom-shader-animation = true
 
 # Quick terminal
 keybind = "ctrl+shift+space=toggle_quick_terminal"

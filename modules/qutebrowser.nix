@@ -1,6 +1,7 @@
 {
   delib,
   host,
+  lib,
   pkgs,
   ...
 }:
@@ -15,5 +16,12 @@ delib.module {
   home.ifEnabled = {
     programs.qutebrowser = qutebrowser.program;
     programs.fish.shellAliases = qutebrowser.fishAliases;
+
+    xdg.mimeApps.defaultApplications = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
+      "text/html" = lib.mkForce [ "org.qutebrowser.qutebrowser.desktop" ];
+      "application/xhtml+xml" = lib.mkForce [ "org.qutebrowser.qutebrowser.desktop" ];
+      "x-scheme-handler/http" = lib.mkForce [ "org.qutebrowser.qutebrowser.desktop" ];
+      "x-scheme-handler/https" = lib.mkForce [ "org.qutebrowser.qutebrowser.desktop" ];
+    };
   };
 }
