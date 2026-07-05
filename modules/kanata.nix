@@ -10,9 +10,9 @@ let
   isDarwinDesktop = !host.isServer && builtins.match ".*-darwin" host.system != null;
   isLinuxDesktop = !host.isServer && builtins.match ".*-linux" host.system != null;
   isDesktop = isDarwinDesktop || isLinuxDesktop;
-  # Keep the Linux map aligned with the current macOS Kanata map. This gives a
-  # Kinto-style macOS shortcut layer without running Kinto's mutable installer.
-  macStyleConfig = builtins.readFile ../config/kanata/common.kbd;
+  # Give Linux apps a macOS-style Command layer without running Kinto's mutable
+  # installer. macOS still uses common.kbd unchanged.
+  linuxMacConfig = builtins.readFile ../config/kanata/linux-mac.kbd;
   darwinKanata = import ../lib/darwin/kanata.nix { inherit pkgs profile; };
 in
 delib.module {
@@ -35,7 +35,7 @@ delib.module {
       enable = true;
       keyboards.default = {
         extraDefCfg = "process-unmapped-keys yes";
-        config = macStyleConfig;
+        config = linuxMacConfig;
       };
     };
   };
