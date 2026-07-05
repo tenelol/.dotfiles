@@ -90,7 +90,6 @@ let
     awww
     wofi
     fuzzel
-    floorp-bin
     google-chrome
     sqlitebrowser
     imv

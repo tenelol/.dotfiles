@@ -66,6 +66,14 @@ delib.module {
         })
 
         (lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
+          home.pointerCursor = {
+            gtk.enable = true;
+            x11.enable = true;
+            package = pkgs.adwaita-icon-theme;
+            name = "Adwaita";
+            size = 24;
+          };
+
           home.file.".local/bin/apply-theme-wallpaper" = themeLib.linuxApplyWallpaperBin;
 
           home.activation.applyThemeWallpaper = hm.dag.entryAfter [ "linkGeneration" ] ''
