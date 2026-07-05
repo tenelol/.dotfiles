@@ -5,8 +5,8 @@ delib.rice {
   myconfig = {
     hyprland.enable = true;
     niri.enable = false;
-    persona-quickshell.enable = true;
+    persona-quickshell.enable = false;
     waybar.enable = false;
-    theme.wallpaper = "wallpaper.png";
+    theme.wallpaper = "rift.png";
   };
 }

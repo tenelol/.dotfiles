@@ -23,6 +23,9 @@ input {
 
         // Enable numlock on startup, omitting this setting disables it.
         numlock
+
+        repeat-delay 250
+        repeat-rate 40
     }
 
     // Next sections include libinput settings.
