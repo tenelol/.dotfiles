@@ -8,7 +8,9 @@ usage() {
 Usage:
   imoocs open <moocs-url>
   imoocs slide collect --path <dir> --year <year>
-  imoocs course|lesson|drive <action> [args...]
+  imoocs drive ls [--parent <drive-folder-url-or-id>] [--recursive] [--match <text>]
+  imoocs drive collect --path <dir> [--parent <drive-folder-url-or-id>] [--recursive] [--match <text>]
+  imoocs course|lesson <action> [args...]
   imoocs assignment show <moocs-url>
   imoocs assignment submit <courseId> <problemId> --data <json|@file>
   imoocs assignment upload <courseId> <problemId> --pid <pid> <file>
@@ -17,13 +19,15 @@ Usage:
   imoocs assignment push <courseId> <problemId>
   imoocs auth status
   imoocs auth login [--gui|--keychain]
+  imoocs auth import-browser [--browser auto|chrome|chromium|brave|edge|firefox]
   imoocs auth logout
   imoocs reset
 
 Notes:
   course, lesson, assignment, slide, drive, and open print JSON envelopes.
   auth and reset print text and use the exit code for status.
-  slide collect uses the stored imoocs auth session; run `imoocs auth login` once first.
+  slide collect uses the stored imoocs auth session and can import local browser Google cookies.
+  drive commands use the stored Google cookies and default to the configured INIAD 2026 parent folder.
   In non-interactive shells, pass --course/--lecture/--page or explicit --all.
 EOF
 }
@@ -119,6 +123,7 @@ import mimetypes
 import os
 import re
 import shutil
+import socket
 import subprocess
 import sys
 import tempfile
@@ -142,7 +147,21 @@ KEYCHAIN_SECURITY_TIMEOUT_SECONDS = 5
 BASE_URL = "https://moocs.iniad.org"
 SIGN_IN_URL = f"{BASE_URL}/auth/iniad"
 GOOGLE_SIGN_IN_URL = "https://accounts.google.com/samlredirect?domain=iniad.org"
+DEFAULT_DRIVE_PARENT_FOLDER_ID = "1MDPeeFHJDmqgQeuJQOHPpWPLDyhT3ZSU"
+DEFAULT_DRIVE_PARENT_FOLDER_URL = f"https://drive.google.com/drive/u/0/folders/{DEFAULT_DRIVE_PARENT_FOLDER_ID}"
 BACKEND = os.environ["BACKEND"]
+
+# Python can otherwise hang on this network while connecting to Google ACS
+# IPv6 addresses. Curl succeeds because it races IPv4/IPv6; prefer IPv4 here.
+_ORIGINAL_GETADDRINFO = socket.getaddrinfo
+
+
+def prefer_ipv4_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
+    infos = _ORIGINAL_GETADDRINFO(host, port, family, type, proto, flags)
+    return sorted(infos, key=lambda item: 0 if item[0] == socket.AF_INET else 1)
+
+
+socket.getaddrinfo = prefer_ipv4_getaddrinfo
 
 try:
     import keyring
@@ -151,6 +170,14 @@ except Exception as exc:  # pragma: no cover - depends on host keyring backend.
     KEYRING_ERROR = str(exc)
 else:
     KEYRING_ERROR = ""
+
+try:
+    import browser_cookie3
+except Exception as exc:  # pragma: no cover - depends on optional browser profiles.
+    browser_cookie3 = None
+    BROWSER_COOKIE3_ERROR = str(exc)
+else:
+    BROWSER_COOKIE3_ERROR = ""
 
 
 def print_json(payload):
@@ -276,7 +303,8 @@ def delete_cookie_jar():
 
 def browser_headers(accept="text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"):
     return {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15",
+        # Match the local browser family used for Google cookie import.
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
         "Accept": accept,
         "Accept-Language": "ja,en-US;q=0.9,en;q=0.8",
     }
@@ -1356,6 +1384,7 @@ def fetch_slide_pdf(jar, embed_url):
     refreshed = False
     while True:
         errors = []
+        auth_challenge = None
         login_redirect_seen = False
         for candidate in google_pdf_candidates(embed_url):
             final_url, status, headers, body = request(
@@ -1378,6 +1407,13 @@ def fetch_slide_pdf(jar, embed_url):
                     return final_url, published_pdf
             if parsed_final.hostname == "accounts.google.com" and "servicelogin" in parsed_final.path.lower():
                 login_redirect_seen = True
+            if status in (401, 403) or login_redirect_seen:
+                if auth_challenge is None:
+                    auth_challenge = {
+                        "targetUrl": candidate,
+                        "finalUrl": final_url,
+                        "pageHtml": decode_body(body),
+                    }
             errors.append({
                 "url": candidate,
                 "finalUrl": final_url,
@@ -1386,6 +1422,13 @@ def fetch_slide_pdf(jar, embed_url):
             })
         if not refreshed and (login_redirect_seen or (errors and all(error.get("httpStatus") in (401, 403) for error in errors))):
             refreshed = True
+            if auth_challenge and refresh_google_target_access(
+                jar,
+                auth_challenge["targetUrl"],
+                auth_challenge["finalUrl"],
+                auth_challenge["pageHtml"],
+            ):
+                continue
             if ensure_google_docs_authenticated(jar):
                 continue
         break
@@ -1421,11 +1464,6 @@ def select_items(items, selector, option_name, label):
     normalized = selector.strip().lower()
     if normalized == "all" or normalized == "0":
         return items
-    if normalized.isdigit():
-        index = int(normalized) - 1
-        if 0 <= index < len(items):
-            return [items[index]]
-        raise SelectionError(f"{label} index is out of range: {selector}")
 
     exact = []
     partial = []
@@ -1446,6 +1484,13 @@ def select_items(items, selector, option_name, label):
     if len(matches) == 1:
         return matches
     if not matches:
+        # Numeric selectors are still supported as menu indexes, but exact
+        # ids such as lessonId "13" or pageId "03" must win first.
+        if normalized.isdigit():
+            index = int(normalized) - 1
+            if 0 <= index < len(items):
+                return [items[index]]
+            raise SelectionError(f"{label} index is out of range: {selector}")
         raise SelectionError(f"{label} was not found: {selector}")
     raise SelectionError(f"{label} selector is ambiguous: {selector}")
 
@@ -1466,7 +1511,7 @@ def parse_slide_collect_args(args):
             print("""Usage:
   imoocs slide collect --path <dir> --year <year> [--course <selector>] [--lecture <selector>] [--page <selector>] [--all]
 
-Selectors accept 1-based indexes, slugs, names, or "all".
+Selectors accept ids/slugs, names, 1-based indexes, or "all".
 In non-interactive shells, pass each needed selector or --all.
 """.rstrip())
             raise SystemExit(0)
@@ -1489,27 +1534,42 @@ In non-interactive shells, pass each needed selector or --all.
     return options
 
 
-def slide_auth_required_payload(path, year, store_status):
+def slide_auth_required_payload(path, year, store_status, browser_import=None):
+    auth_scope = "google_slides" if store_status == "google_expired" else "moocs"
+    if auth_scope == "google_slides":
+        next_steps = [
+            "The stored MOOCs session is usable, but Google Slides requires a Google Docs session.",
+            "Run `imoocs auth import-browser --browser auto`, then retry `imoocs slide collect`.",
+            "No Keychain, collect-cli, BrowserUse, Playwright, or manual slide inspection was performed.",
+        ]
+        message = "Google Slides authentication is required or the stored Google session expired."
+    else:
+        next_steps = [
+            "Run `imoocs auth login`, then retry `imoocs slide collect`.",
+            "No collect-cli, BrowserUse, Playwright, or manual browser fallback was performed.",
+        ]
+        message = "MOOCs authentication is required or the stored session expired."
+    data = {
+        "path": path,
+        "year": year,
+        "cookieStore": store_status,
+        "authScope": auth_scope,
+        "next": next_steps,
+    }
+    if browser_import is not None:
+        data["browserCookieImport"] = browser_import
     return envelope(
         False,
         "slide",
         "collect",
         "auth_required",
-        {
-            "path": path,
-            "year": year,
-            "cookieStore": store_status,
-            "next": [
-                "Run `imoocs auth login`, then retry `imoocs slide collect`.",
-                "No collect-cli, BrowserUse, Playwright, or manual browser fallback was performed.",
-            ],
-        },
+        data,
         "auth_required",
-        "MOOCs or Google Slides authentication is required or the stored session expired.",
+        message,
     )
 
 
-def slide_collect(args):
+def slide_collect(args, browser_import_attempted=False, browser_import=None):
     try:
         options = parse_slide_collect_args(args)
     except SystemExit:
@@ -1606,7 +1666,11 @@ def slide_collect(args):
         print_json(slide_auth_required_payload(str(out_dir), year, "expired"))
         return 2
     except GoogleAuthRequired:
-        print_json(slide_auth_required_payload(str(out_dir), year, "google_expired"))
+        if not browser_import_attempted:
+            browser_import = maybe_import_google_cookies_from_browser(jar)
+            if browser_import.get("ok"):
+                return slide_collect(args, browser_import_attempted=True, browser_import=browser_import)
+        print_json(slide_auth_required_payload(str(out_dir), year, "google_expired", browser_import))
         return 2
     except HttpStatusError as exc:
         print_json(envelope(
@@ -1663,6 +1727,698 @@ def slide_collect(args):
         },
         "slide_collect_failed" if errors else "",
         "one or more slide PDFs failed to download" if errors else "",
+    ))
+    return 2 if errors else 0
+
+
+def drive_auth_required_payload(action, parent_id, store_status, browser_import=None):
+    data = {
+        "parentFolderId": parent_id or DEFAULT_DRIVE_PARENT_FOLDER_ID,
+        "parentFolderUrl": drive_folder_url(parent_id or DEFAULT_DRIVE_PARENT_FOLDER_ID),
+        "defaultParentFolderUrl": DEFAULT_DRIVE_PARENT_FOLDER_URL,
+        "cookieStore": store_status,
+        "authScope": "google_drive",
+        "next": [
+            "Run `imoocs auth import-browser --browser auto`, then retry the drive command.",
+            "No Google password, BrowserUse, Playwright, or manual browser fallback was performed.",
+        ],
+    }
+    if browser_import is not None:
+        data["browserCookieImport"] = browser_import
+    return envelope(
+        False,
+        "drive",
+        action,
+        "auth_required",
+        data,
+        "auth_required",
+        "Google Drive authentication is required or the stored Google session expired.",
+    )
+
+
+def drive_folder_id_from_value(value):
+    value = (value or DEFAULT_DRIVE_PARENT_FOLDER_ID).strip()
+    if not value:
+        return DEFAULT_DRIVE_PARENT_FOLDER_ID
+
+    parsed = urllib.parse.urlparse(value)
+    if parsed.scheme and parsed.netloc:
+        parts = [urllib.parse.unquote(part) for part in parsed.path.split("/") if part]
+        for index, part in enumerate(parts[:-1]):
+            if part == "folders":
+                return parts[index + 1]
+        query_id = urllib.parse.parse_qs(parsed.query).get("id", [])
+        if query_id:
+            return query_id[0]
+        raise ValueError("Drive folder URL must contain /folders/<id> or ?id=<id>")
+
+    if re.fullmatch(r"[A-Za-z0-9_-]{10,}", value):
+        return value
+    raise ValueError("Drive folder id was not recognized")
+
+
+def drive_folder_url(folder_id):
+    return f"https://drive.google.com/drive/u/0/folders/{urllib.parse.quote(folder_id, safe='')}"
+
+
+def drive_file_url(file_id):
+    return f"https://drive.google.com/file/d/{urllib.parse.quote(file_id, safe='')}/view"
+
+
+def looks_like_google_login_page(final_url, page_html):
+    parsed = urllib.parse.urlparse(final_url)
+    lower = page_html.lower()
+    return (
+        parsed.hostname == "accounts.google.com"
+        or "servicelogin" in parsed.path.lower()
+        or "signin/v2" in parsed.path.lower()
+        or "identifierid" in lower
+        or "signin" in lower and "accounts.google.com" in lower
+    )
+
+
+def header_value(headers, name):
+    wanted = name.lower()
+    for key, value in headers.items():
+        if key.lower() == wanted:
+            return value
+    return ""
+
+
+def drive_fetch_folder_page(jar, folder_id):
+    url = drive_folder_url(folder_id)
+    final_url, status, headers, body = request(jar, url, timeout=60)
+    page_html = decode_body(body)
+
+    # Existing Google cookies sometimes need one account-selection transition.
+    if looks_like_google_login_page(final_url, page_html):
+        try:
+            if refresh_google_target_access(jar, url, final_url, page_html):
+                final_url, status, headers, body = request(jar, url, timeout=60)
+                page_html = decode_body(body)
+        except Exception:
+            pass
+
+    if not (200 <= status < 400):
+        raise HttpStatusError(final_url, status)
+    if looks_like_google_login_page(final_url, page_html):
+        raise GoogleAuthRequired("Google Drive authentication is required")
+    if "data-id=" not in page_html and "AF_initDataCallback" not in page_html:
+        raise RuntimeError("Google Drive folder listing was not found in the response")
+    return final_url, page_html
+
+
+def drive_mimes_from_page(page_html):
+    mimes = {}
+    pattern = r'''\[\[null,"([A-Za-z0-9_-]{10,})"\],null,null,null,"([^"]+)'''
+    for match in re.finditer(pattern, page_html):
+        mimes.setdefault(match.group(1), html.unescape(match.group(2)))
+    return mimes
+
+
+def drive_clean_tooltip_name(value):
+    value = normalize_text(value)
+    suffixes = (
+        " Shared folder",
+        " Folder",
+        " Google Docs",
+        " Google Slides",
+        " Google Sheets",
+        " PDF",
+        " Compressed archive",
+        " JPEG image",
+        " PNG image",
+        " Microsoft Word",
+        " Microsoft Excel",
+        " Microsoft PowerPoint",
+        " Text",
+    )
+    for suffix in suffixes:
+        if value.endswith(suffix):
+            return value[: -len(suffix)].strip()
+    return value
+
+
+def drive_name_from_row(row):
+    patterns = (
+        r"""(?is)<strong\b[^>]*class=["'][^"']*\bDNoYtb\b[^"']*["'][^>]*>(.*?)</strong>""",
+        r"""(?is)<span\b[^>]*class=["'][^"']*\bWQJtxb\b[^"']*["'][^>]*>(.*?)</span>""",
+    )
+    for pattern in patterns:
+        match = re.search(pattern, row)
+        if match:
+            name = text_from_html(match.group(1))
+            if name:
+                return name
+
+    tooltip = attr("data-tooltip", row) or ""
+    if tooltip:
+        return drive_clean_tooltip_name(tooltip)
+    aria = attr("aria-label", row) or ""
+    if aria:
+        return drive_clean_tooltip_name(aria)
+    return ""
+
+
+def drive_infer_mime(name, row, is_folder):
+    if is_folder:
+        return "application/vnd.google-apps.folder"
+    match = re.search(
+        r"""(?i)application/(?:vnd\.google-apps\.[A-Za-z0-9_.-]+|pdf|zip|x-zip-compressed|octet-stream)|text/[a-z0-9_.+-]+|image/[a-z0-9_.+-]+""",
+        row,
+    )
+    if match:
+        return match.group(0)
+    guessed, _encoding = mimetypes.guess_type(name)
+    return guessed or ""
+
+
+def drive_item_from_row(row, index, mime_by_id):
+    file_id = attr("data-id", row)
+    if not file_id:
+        return None
+
+    name = drive_name_from_row(row) or file_id
+    tooltip = attr("data-tooltip", row) or ""
+    is_folder = (
+        "Shared folder" in tooltip
+        or tooltip.endswith(" Folder")
+        or "application/vnd.google-apps.folder" in row
+    )
+    mime_type = mime_by_id.get(file_id) or drive_infer_mime(name, row, is_folder)
+    if mime_type == "application/vnd.google-apps.folder":
+        is_folder = True
+
+    return {
+        "index": index,
+        "id": file_id,
+        "name": name,
+        "kind": "folder" if is_folder else "file",
+        "mimeType": mime_type,
+        "url": drive_folder_url(file_id) if is_folder else drive_file_url(file_id),
+    }
+
+
+def list_drive_folder(jar, folder_id):
+    final_url, page_html = drive_fetch_folder_page(jar, folder_id)
+    mime_by_id = drive_mimes_from_page(page_html)
+    items = []
+    seen = set()
+    for match in re.finditer(r"""(?is)<tr\b[^>]*\bdata-id=["'][^"']+["'][^>]*>.*?</tr>""", page_html):
+        item = drive_item_from_row(match.group(0), len(items), mime_by_id)
+        if not item or item["id"] in seen:
+            continue
+        seen.add(item["id"])
+        items.append(item)
+    return {
+        "folderId": folder_id,
+        "folderUrl": final_url,
+        "items": items,
+    }
+
+
+def parse_drive_args(args, action):
+    options = {
+        "parent": DEFAULT_DRIVE_PARENT_FOLDER_ID,
+        "path": "",
+        "recursive": False,
+        "max_depth": 8,
+        "limit": 0,
+        "overwrite": False,
+        "matches": [],
+    }
+    idx = 0
+    while idx < len(args):
+        arg = args[idx]
+        if arg in ("-h", "--help"):
+            if action == "collect":
+                print("""Usage:
+  imoocs drive collect --path <dir> [--parent <drive-folder-url-or-id>] [--recursive] [--match <text>] [--limit <n>] [--overwrite]
+
+The default --parent is the configured INIAD 2026 Drive folder.
+With --match, matching direct child folders are collected recursively.
+""".rstrip())
+            else:
+                print("""Usage:
+  imoocs drive ls [--parent <drive-folder-url-or-id>] [--recursive] [--match <text>]
+
+The default --parent is the configured INIAD 2026 Drive folder.
+""".rstrip())
+            raise SystemExit(0)
+        if arg in ("--parent", "--folder", "--folder-id"):
+            idx += 1
+            if idx >= len(args):
+                raise ValueError(f"{arg} requires a value")
+            options["parent"] = args[idx]
+            idx += 1
+            continue
+        if arg in ("--path", "--output"):
+            idx += 1
+            if idx >= len(args):
+                raise ValueError(f"{arg} requires a value")
+            options["path"] = args[idx]
+            idx += 1
+            continue
+        if arg == "--recursive":
+            options["recursive"] = True
+            idx += 1
+            continue
+        if arg == "--max-depth":
+            idx += 1
+            if idx >= len(args):
+                raise ValueError("--max-depth requires a value")
+            options["max_depth"] = int(args[idx])
+            idx += 1
+            continue
+        if arg == "--limit":
+            idx += 1
+            if idx >= len(args):
+                raise ValueError("--limit requires a value")
+            options["limit"] = int(args[idx])
+            idx += 1
+            continue
+        if arg == "--match":
+            idx += 1
+            if idx >= len(args):
+                raise ValueError("--match requires a value")
+            options["matches"].append(args[idx])
+            idx += 1
+            continue
+        if arg == "--overwrite":
+            options["overwrite"] = True
+            idx += 1
+            continue
+        raise ValueError(f"unknown argument for drive {action}: {arg}")
+
+    options["parentFolderId"] = drive_folder_id_from_value(options["parent"])
+    if action == "collect" and not options["path"]:
+        raise ValueError("drive collect requires --path")
+    if options["max_depth"] < 0:
+        raise ValueError("--max-depth must be >= 0")
+    if options["limit"] < 0:
+        raise ValueError("--limit must be >= 0")
+    return options
+
+
+def drive_matches(item, matches):
+    if not matches:
+        return True
+    name = item.get("name", "").casefold()
+    return all(token.casefold() in name for token in matches)
+
+
+def drive_selected_items(items, matches):
+    if not matches:
+        return items
+    return [item for item in items if drive_matches(item, matches)]
+
+
+def drive_load_google_jar(action, parent_id, browser_import_attempted=False):
+    jar, store_status = load_cookie_jar()
+    if store_status in ("missing_keyring", "keyring_unavailable"):
+        print_json(drive_auth_required_payload(action, parent_id, store_status))
+        raise SystemExit(2)
+
+    browser_import = None
+    if store_status != "loaded" or not has_google_auth_cookie(jar):
+        if not browser_import_attempted:
+            browser_import = maybe_import_google_cookies_from_browser(jar)
+            if browser_import.get("ok"):
+                return jar, browser_import
+        print_json(drive_auth_required_payload(action, parent_id, store_status, browser_import))
+        raise SystemExit(2)
+
+    return jar, browser_import
+
+
+def drive_list_entries(jar, folder_id, *, recursive=False, max_depth=8, matches=None):
+    matches = matches or []
+    entries = []
+    errors = []
+    seen_folders = set()
+
+    def visit(current_folder_id, relative_parts, depth, root=False):
+        if current_folder_id in seen_folders:
+            return
+        seen_folders.add(current_folder_id)
+        listing = list_drive_folder(jar, current_folder_id)
+        items = drive_selected_items(listing["items"], matches) if root else listing["items"]
+        for item in items:
+            entry = dict(item)
+            entry["depth"] = depth
+            entry["parentFolderId"] = current_folder_id
+            entry["relativePath"] = "/".join([*relative_parts, item["name"]])
+            entries.append(entry)
+            should_descend = item["kind"] == "folder" and recursive and depth < max_depth
+            if should_descend:
+                try:
+                    visit(item["id"], [*relative_parts, item["name"]], depth + 1)
+                except GoogleAuthRequired:
+                    raise
+                except Exception as exc:
+                    errors.append({
+                        "folderId": item["id"],
+                        "name": item["name"],
+                        "message": str(exc),
+                    })
+
+    visit(folder_id, [], 0, root=True)
+    return entries, errors
+
+
+def filename_from_content_disposition(value):
+    if not value:
+        return ""
+    match = re.search(r"""filename\*\s*=\s*UTF-8''([^;]+)""", value, flags=re.I)
+    if match:
+        return urllib.parse.unquote(match.group(1).strip().strip('"'))
+    match = re.search(r'''filename\s*=\s*"([^"]+)"''', value, flags=re.I)
+    if match:
+        return html.unescape(match.group(1))
+    match = re.search(r"""filename\s*=\s*([^;]+)""", value, flags=re.I)
+    if match:
+        return html.unescape(match.group(1).strip())
+    return ""
+
+
+def google_app_export_url(file_id, mime_type):
+    quoted = urllib.parse.quote(file_id, safe="")
+    if mime_type == "application/vnd.google-apps.presentation":
+        return f"https://docs.google.com/presentation/d/{quoted}/export/pdf", ".pdf"
+    if mime_type == "application/vnd.google-apps.document":
+        return f"https://docs.google.com/document/d/{quoted}/export?format=pdf", ".pdf"
+    if mime_type == "application/vnd.google-apps.spreadsheet":
+        return f"https://docs.google.com/spreadsheets/d/{quoted}/export?format=xlsx", ".xlsx"
+    return "", ""
+
+
+def drive_confirm_url(page_html, page_url):
+    for match in re.finditer(r"""(?is)<a\b[^>]*\bhref=["']([^"']+)["']""", page_html):
+        href = html.unescape(match.group(1))
+        if "confirm=" in href and ("id=" in href or "/download" in href):
+            return urllib.parse.urljoin(page_url, href)
+    form = find_form(
+        page_html,
+        page_url,
+        lambda _attrs, body, form_html: "confirm" in body.lower() and "download" in form_html.lower(),
+    )
+    if form:
+        action_url, fields, _attrs, _body = form
+        if fields:
+            return action_url + ("&" if "?" in action_url else "?") + urllib.parse.urlencode(fields)
+    return ""
+
+
+def downloadable_drive_response(final_url, headers, body):
+    content_type = header_value(headers, "Content-Type").lower()
+    if body.startswith((b"PK\x03\x04", b"%PDF", b"\x89PNG\r\n\x1a\n", b"\xff\xd8")):
+        return True
+    if header_value(headers, "Content-Disposition"):
+        return True
+    return "text/html" not in content_type
+
+
+def download_drive_file_body(jar, item):
+    export_url, export_suffix = google_app_export_url(item["id"], item.get("mimeType", ""))
+    url = export_url or "https://drive.usercontent.google.com/download?" + urllib.parse.urlencode({
+        "id": item["id"],
+        "export": "download",
+    })
+    final_url, status, headers, body = request(
+        jar,
+        url,
+        headers={"Accept": "application/octet-stream,application/pdf,application/zip,*/*;q=0.8"},
+        timeout=300,
+    )
+    page_html = decode_body(body) if body else ""
+    if looks_like_google_login_page(final_url, page_html):
+        raise GoogleAuthRequired("Google Drive authentication is required")
+    if 200 <= status < 400 and downloadable_drive_response(final_url, headers, body):
+        filename = filename_from_content_disposition(header_value(headers, "Content-Disposition")) or item["name"]
+        if export_suffix and not filename.lower().endswith(export_suffix):
+            filename = f"{Path(filename).stem or item['name']}{export_suffix}"
+        return final_url, headers, filename, body
+
+    confirm_url = drive_confirm_url(page_html, final_url)
+    if confirm_url:
+        final_url, status, headers, body = request(
+            jar,
+            confirm_url,
+            headers={"Accept": "application/octet-stream,application/pdf,application/zip,*/*;q=0.8", "Referer": final_url},
+            timeout=300,
+        )
+        page_html = decode_body(body) if body else ""
+        if looks_like_google_login_page(final_url, page_html):
+            raise GoogleAuthRequired("Google Drive authentication is required")
+        if 200 <= status < 400 and downloadable_drive_response(final_url, headers, body):
+            filename = filename_from_content_disposition(header_value(headers, "Content-Disposition")) or item["name"]
+            return final_url, headers, filename, body
+
+    if not (200 <= status < 400):
+        raise RuntimeError(f"Google Drive download returned HTTP {status}: {final_url}")
+    raise RuntimeError(f"Google Drive did not return a downloadable response: {final_url}")
+
+
+def unique_output_path(path):
+    if not path.exists():
+        return path
+    stem = path.stem
+    suffix = path.suffix
+    parent = path.parent
+    for counter in range(1, 1000):
+        candidate = parent / f"{stem} ({counter}){suffix}"
+        if not candidate.exists():
+            return candidate
+    raise RuntimeError(f"could not choose a unique output filename for {path}")
+
+
+def drive_collect_files(jar, folder_id, out_dir, options):
+    downloaded = []
+    skipped = []
+    errors = []
+    seen_folders = set()
+    limit = options["limit"]
+
+    def collect_folder(current_folder_id, relative_parts, depth, root=False, force_recursive=False):
+        if current_folder_id in seen_folders:
+            return
+        seen_folders.add(current_folder_id)
+        listing = list_drive_folder(jar, current_folder_id)
+        items = drive_selected_items(listing["items"], options["matches"]) if root else listing["items"]
+
+        for item in items:
+            if limit and len(downloaded) >= limit:
+                skipped.append({
+                    "id": item["id"],
+                    "name": item["name"],
+                    "reason": "limit_reached",
+                })
+                continue
+
+            item_relative_parts = [*relative_parts, item["name"]]
+            if item["kind"] == "folder":
+                child_force_recursive = force_recursive or (root and bool(options["matches"]))
+                should_descend = (
+                    depth < options["max_depth"]
+                    and (options["recursive"] or child_force_recursive)
+                )
+                if should_descend:
+                    collect_folder(item["id"], item_relative_parts, depth + 1, force_recursive=child_force_recursive)
+                else:
+                    skipped.append({
+                        "id": item["id"],
+                        "name": item["name"],
+                        "relativePath": "/".join(item_relative_parts),
+                        "reason": "folder_not_recursive",
+                    })
+                continue
+
+            try:
+                source_url, headers, filename, body = download_drive_file_body(jar, item)
+                file_dir = out_dir.joinpath(*(safe_filename(part) for part in relative_parts))
+                file_dir.mkdir(parents=True, exist_ok=True)
+                safe_name = safe_filename(filename or item["name"], item["id"])
+                output_path = file_dir / safe_name
+                if output_path.exists() and not options["overwrite"]:
+                    output_path = unique_output_path(output_path)
+                output_path.write_bytes(body)
+                downloaded.append({
+                    "id": item["id"],
+                    "name": item["name"],
+                    "path": str(output_path),
+                    "relativePath": "/".join([*relative_parts, output_path.name]),
+                    "bytes": len(body),
+                    "mimeType": item.get("mimeType", ""),
+                    "contentType": header_value(headers, "Content-Type"),
+                    "sourceUrl": source_url,
+                })
+            except GoogleAuthRequired:
+                raise
+            except Exception as exc:
+                errors.append({
+                    "id": item["id"],
+                    "name": item["name"],
+                    "relativePath": "/".join(item_relative_parts),
+                    "message": str(exc),
+                })
+
+    collect_folder(folder_id, [], 0, root=True)
+    return downloaded, skipped, errors
+
+
+def drive_ls(args, browser_import_attempted=False, browser_import=None):
+    try:
+        options = parse_drive_args(args, "ls")
+    except SystemExit:
+        raise
+    except Exception as exc:
+        print_json(envelope(False, "drive", "ls", "invalid_args", {}, "invalid_args", str(exc)))
+        return 64
+
+    parent_id = options["parentFolderId"]
+    try:
+        jar, import_info = drive_load_google_jar("ls", parent_id, browser_import_attempted)
+        browser_import = browser_import or import_info
+        entries, errors = drive_list_entries(
+            jar,
+            parent_id,
+            recursive=options["recursive"],
+            max_depth=options["max_depth"],
+            matches=options["matches"],
+        )
+        try:
+            save_cookie_jar(jar)
+        except Exception:
+            pass
+    except GoogleAuthRequired:
+        if not browser_import_attempted:
+            jar, _store_status = load_cookie_jar()
+            browser_import = maybe_import_google_cookies_from_browser(jar)
+            if browser_import.get("ok"):
+                return drive_ls(args, browser_import_attempted=True, browser_import=browser_import)
+        print_json(drive_auth_required_payload("ls", parent_id, "google_expired", browser_import))
+        return 2
+    except HttpStatusError as exc:
+        print_json(envelope(
+            False,
+            "drive",
+            "ls",
+            "http_error",
+            {"parentFolderId": parent_id, "url": exc.url, "httpStatus": exc.status},
+            "http_error",
+            str(exc),
+        ))
+        return 2
+    except Exception as exc:
+        print_json(envelope(
+            False,
+            "drive",
+            "ls",
+            "failed",
+            {"parentFolderId": parent_id, "parentFolderUrl": drive_folder_url(parent_id)},
+            "drive_ls_failed",
+            str(exc),
+        ))
+        return 2
+
+    status = "partial" if errors else "listed"
+    print_json(envelope(
+        not errors,
+        "drive",
+        "ls",
+        status,
+        {
+            "parentFolderId": parent_id,
+            "parentFolderUrl": drive_folder_url(parent_id),
+            "defaultParentFolderUrl": DEFAULT_DRIVE_PARENT_FOLDER_URL,
+            "recursive": options["recursive"],
+            "maxDepth": options["max_depth"],
+            "match": options["matches"],
+            "itemCount": len(entries),
+            "items": entries,
+            "errors": errors,
+            "browserCookieImport": browser_import,
+        },
+        "drive_ls_failed" if errors else "",
+        "one or more Drive folders failed to list" if errors else "",
+    ))
+    return 2 if errors else 0
+
+
+def drive_collect(args, browser_import_attempted=False, browser_import=None):
+    try:
+        options = parse_drive_args(args, "collect")
+    except SystemExit:
+        raise
+    except Exception as exc:
+        print_json(envelope(False, "drive", "collect", "invalid_args", {}, "invalid_args", str(exc)))
+        return 64
+
+    parent_id = options["parentFolderId"]
+    out_dir = Path(options["path"]).expanduser()
+    try:
+        jar, import_info = drive_load_google_jar("collect", parent_id, browser_import_attempted)
+        browser_import = browser_import or import_info
+        downloaded, skipped, errors = drive_collect_files(jar, parent_id, out_dir, options)
+        try:
+            save_cookie_jar(jar)
+        except Exception:
+            pass
+    except GoogleAuthRequired:
+        if not browser_import_attempted:
+            jar, _store_status = load_cookie_jar()
+            browser_import = maybe_import_google_cookies_from_browser(jar)
+            if browser_import.get("ok"):
+                return drive_collect(args, browser_import_attempted=True, browser_import=browser_import)
+        print_json(drive_auth_required_payload("collect", parent_id, "google_expired", browser_import))
+        return 2
+    except HttpStatusError as exc:
+        print_json(envelope(
+            False,
+            "drive",
+            "collect",
+            "http_error",
+            {"path": str(out_dir), "parentFolderId": parent_id, "url": exc.url, "httpStatus": exc.status},
+            "http_error",
+            str(exc),
+        ))
+        return 2
+    except Exception as exc:
+        print_json(envelope(
+            False,
+            "drive",
+            "collect",
+            "failed",
+            {"path": str(out_dir), "parentFolderId": parent_id, "parentFolderUrl": drive_folder_url(parent_id)},
+            "drive_collect_failed",
+            str(exc),
+        ))
+        return 2
+
+    status = "partial" if errors else "completed"
+    print_json(envelope(
+        not errors,
+        "drive",
+        "collect",
+        status,
+        {
+            "path": str(out_dir),
+            "parentFolderId": parent_id,
+            "parentFolderUrl": drive_folder_url(parent_id),
+            "defaultParentFolderUrl": DEFAULT_DRIVE_PARENT_FOLDER_URL,
+            "recursive": options["recursive"],
+            "maxDepth": options["max_depth"],
+            "match": options["matches"],
+            "downloadedFileCount": len(downloaded),
+            "downloadedFilePaths": [item["path"] for item in downloaded],
+            "downloadedFileDetails": downloaded,
+            "skippedCount": len(skipped),
+            "skipped": skipped,
+            "errors": errors,
+            "browserCookieImport": browser_import,
+        },
+        "drive_collect_failed" if errors else "",
+        "one or more Drive files failed to download" if errors else "",
     ))
     return 2 if errors else 0
 
@@ -2188,110 +2944,51 @@ def push_assignment(args):
         ))
         return 2
 
-    token = session_csrf_token(jar)
-    headers = {
-        "Accept": "application/json",
-        "Content-Type": "application/json;charset=UTF-8",
-        "X-Requested-With": "XMLHttpRequest",
-        "Referer": prefix,
-    }
-    if token:
-        headers["X-CSRF-TOKEN"] = token
+    try:
+        answers_json = fetch_problem_json(jar, f"{prefix}/answers", prefix, None)
+    except PermissionError:
+        print_json(envelope(
+            False,
+            "assignment",
+            "push",
+            "auth_required",
+            {"courseId": course_id, "problemId": problem_id, "serverSubmitted": False},
+            "auth_required",
+            "MOOCs authentication is required or the stored session expired.",
+        ))
+        return 2
+    except Exception as exc:
+        print_json(envelope(
+            False,
+            "assignment",
+            "push",
+            "verification_failed",
+            {"courseId": course_id, "problemId": problem_id, "serverSubmitted": False},
+            "verification_failed",
+            str(exc),
+        ))
+        return 2
 
-    # The MOOCs frontend stores answers with PUT /answers, then finalizes the
-    # answer state. Prefer the status endpoint; keep submit endpoints as
-    # compatibility fallbacks for older frontend revisions.
-    candidates = [
-        ("PUT", f"{prefix}/status", {"status": "submitted"}),
-        ("PUT", f"{prefix}/status", {"data": "submitted"}),
-        ("PUT", f"{prefix}/status", {"answer_state": "submitted"}),
-        ("POST", f"{prefix}/submit", {}),
-        ("PUT", f"{prefix}/submit", {}),
-    ]
-    errors = []
-
-    for method, url, payload in candidates:
-        body = json.dumps(payload, ensure_ascii=False).encode()
-        final_url, status, _headers, response_body = request(jar, url, method=method, data=body, headers=headers)
-        response_text = decode_body(response_body)
-        path = urllib.parse.urlparse(url).path
-        if looks_like_login_page(response_text, final_url):
-            print_json(envelope(
-                False,
-                "assignment",
-                "push",
-                "auth_required",
-                {"courseId": course_id, "problemId": problem_id, "serverSubmitted": False},
-                "auth_required",
-                "MOOCs authentication is required or the stored session expired.",
-            ))
-            return 2
-
-        if not (200 <= status < 400):
-            errors.append({
-                "method": method,
-                "path": path,
-                "httpStatus": status,
-                "responsePreview": response_text[:200],
-            })
-            continue
-
-        try:
-            after_status = assignment_status(jar, prefix)
-        except Exception as exc:
-            errors.append({
-                "method": method,
-                "path": path,
-                "httpStatus": status,
-                "message": f"status verification failed: {exc}",
-            })
-            continue
-
-        if after_status != "open":
-            answers_json = fetch_problem_json(jar, f"{prefix}/answers", prefix, None)
-            print_json(envelope(
-                True,
-                "assignment",
-                "push",
-                "submitted",
-                {
-                    "courseId": course_id,
-                    "problemId": problem_id,
-                    "urlPrefix": prefix,
-                    "previousStatus": before_status,
-                    "assignmentStatus": after_status,
-                    "method": method,
-                    "path": path,
-                    "currentAnswers": answer_summary(answers_json),
-                    "serverSubmitted": True,
-                },
-                submission_state="push",
-            ))
-            return 0
-
-        errors.append({
-            "method": method,
-            "path": path,
-            "httpStatus": status,
-            "message": "request succeeded but assignment status stayed open",
-        })
-
+    # Current MOOCs frontend behavior: clicking the green submit button only
+    # forces /answers autosave and verifies that answers are stored. It does
+    # not mutate /status away from "open".
     print_json(envelope(
-        False,
+        True,
         "assignment",
         "push",
-        "push_failed",
+        "saved",
         {
             "courseId": course_id,
             "problemId": problem_id,
-            "previousStatus": before_status,
-            "attempts": errors,
-            "serverSubmitted": False,
+            "urlPrefix": prefix,
+            "assignmentStatus": before_status,
+            "frontendAction": "submit-answer verifies /answers autosave; status remains open",
+            "currentAnswers": answer_summary(answers_json),
+            "serverSubmitted": True,
         },
-        "push_failed",
-        "assignment push endpoint did not confirm submission",
+        submission_state="push",
     ))
-    return 2
+    return 0
 
 
 def password_from_gui():
@@ -2507,6 +3204,142 @@ def google_hidden_post_form(page_html, page_url):
     return candidates[0][1], candidates[0][2]
 
 
+def google_authuser_from_url(url):
+    parsed = urllib.parse.urlparse(url)
+    query_authuser = urllib.parse.parse_qs(parsed.query).get("authuser", [])
+    if query_authuser and query_authuser[0].isdigit():
+        return query_authuser[0]
+    parts = [urllib.parse.unquote(part) for part in parsed.path.split("/") if part]
+    for index, part in enumerate(parts[:-1]):
+        if part == "u" and parts[index + 1].isdigit():
+            return parts[index + 1]
+    return ""
+
+
+def google_account_email_from_env():
+    value = os.environ.get("IMOOCS_GOOGLE_EMAIL", "").strip() or os.environ.get("IMOOCS_USERNAME", "").strip()
+    if not value:
+        return ""
+    value = value.lower()
+    if "@" not in value:
+        value = f"{value}@iniad.org"
+    return value
+
+
+def google_account_email_from_page(page_html):
+    for match in re.finditer(
+        r"""(?is)\b(?:data-identifier|data-email)\s*=\s*(?:"([^"]+)"|'([^']+)'|([^\s>]+))""",
+        page_html,
+    ):
+        raw = next((group for group in match.groups() if group), "")
+        email = html.unescape(raw).strip().lower()
+        if email.endswith("@iniad.org"):
+            return email
+    return ""
+
+
+def google_accountchooser_url_for_target(target_url, email):
+    return "https://accounts.google.com/AccountChooser?" + urllib.parse.urlencode([
+        ("continue", target_url),
+        ("Email", email),
+        ("hd", "iniad.org"),
+        ("service", "wise"),
+        ("ltmpl", "slides"),
+    ])
+
+
+def google_login_url_for_target(target_url):
+    email = google_account_email_from_env()
+    if email:
+        return google_accountchooser_url_for_target(target_url, email)
+    query = [
+        ("service", "wise"),
+        ("passive", "1209600"),
+        ("osid", "1"),
+        ("continue", target_url),
+        ("followup", target_url),
+        ("ltmpl", "slides"),
+    ]
+    authuser = google_authuser_from_url(target_url)
+    if authuser:
+        query.append(("authuser", authuser))
+    return "https://accounts.google.com/ServiceLogin?" + urllib.parse.urlencode(query)
+
+
+def google_service_login_url(page_html, page_url):
+    for match in re.finditer(
+        r"""(?is)\b(?:data-popup-url|href)\s*=\s*(?:"([^"]+)"|'([^']+)'|([^\s>]+))""",
+        page_html,
+    ):
+        raw = next((group for group in match.groups() if group), "")
+        if not raw:
+            continue
+        url = html.unescape(raw).strip()
+        if url.startswith("//"):
+            url = "https:" + url
+        url = urllib.parse.urljoin(page_url, url)
+        parsed = urllib.parse.urlparse(url)
+        if parsed.hostname == "accounts.google.com" and "servicelogin" in parsed.path.lower():
+            return url
+    return ""
+
+
+def follow_google_target_transitions(jar, initial_url, target_url=""):
+    final_url, status, _headers, body = request(jar, initial_url, timeout=60)
+    page_html = decode_body(body)
+    progressed = True
+    selected_account_emails = set()
+
+    for _ in range(12):
+        account_email = google_account_email_from_page(page_html)
+        if account_email and account_email not in selected_account_emails:
+            selected_account_emails.add(account_email)
+            chooser_url = google_accountchooser_url_for_target(target_url or final_url, account_email)
+            final_url, status, _headers, body = request(jar, chooser_url, timeout=60)
+            if not (200 <= status < 400):
+                return progressed
+            page_html = decode_body(body)
+            progressed = True
+            continue
+
+        form = google_hidden_post_form(page_html, final_url)
+        if form:
+            action_url, fields = form
+            final_url, status, _headers, body = post_form(jar, action_url, fields, final_url)
+            if not (200 <= status < 400):
+                return progressed
+            page_html = decode_body(body)
+            progressed = True
+            continue
+
+        next_url = (
+            meta_refresh_url(page_html, final_url)
+            or javascript_redirect_url(page_html, final_url)
+            or google_continue_url(page_html, final_url)
+            or google_service_login_url(page_html, final_url)
+        )
+        if next_url:
+            final_url, status, _headers, body = request(jar, next_url, timeout=60)
+            if not (200 <= status < 400):
+                return progressed
+            page_html = decode_body(body)
+            progressed = True
+            continue
+
+        break
+
+    return progressed
+
+
+def refresh_google_target_access(jar, target_url, final_url, page_html):
+    target = final_url or target_url
+    if google_authuser_from_url(target):
+        login_url = google_login_url_for_target(target)
+    else:
+        login_url = google_service_login_url(page_html, final_url) or google_login_url_for_target(target)
+    return follow_google_target_transitions(jar, login_url, target_url)
+
+
 GOOGLE_AUTH_COOKIE_NAMES = {
     "SID",
     "HSID",
@@ -2523,11 +3356,104 @@ GOOGLE_AUTH_COOKIE_NAMES = {
 
 
 def has_google_auth_cookie(jar):
+    return bool(google_auth_cookie_names_in(jar))
+
+
+def google_auth_cookie_names_in(jar):
+    names = set()
     for cookie in jar:
         domain = cookie.domain.lstrip(".").lower()
         if domain.endswith("google.com") and cookie.name in GOOGLE_AUTH_COOKIE_NAMES:
-            return True
-    return False
+            names.add(cookie.name)
+    return sorted(names)
+
+
+def browser_cookie_loaders(browser):
+    if browser_cookie3 is None:
+        raise RuntimeError(f"browser-cookie3 support is unavailable: {BROWSER_COOKIE3_ERROR}")
+
+    aliases = {
+        "google-chrome": "chrome",
+        "chrome": "chrome",
+        "chromium": "chromium",
+        "brave": "brave",
+        "edge": "edge",
+        "msedge": "edge",
+        "firefox": "firefox",
+    }
+    requested = (browser or "auto").strip().lower()
+    if requested == "auto":
+        names = ("chrome", "chromium", "brave", "edge", "firefox")
+    elif requested in aliases:
+        names = (aliases[requested],)
+    else:
+        raise ValueError("browser must be one of auto, chrome, chromium, brave, edge, or firefox")
+
+    loaders = []
+    for name in names:
+        loader = getattr(browser_cookie3, name, None)
+        if loader is not None:
+            loaders.append((name, loader))
+    if not loaders:
+        raise RuntimeError("no supported browser cookie loaders are available")
+    return loaders
+
+
+def import_google_cookies_from_browser(jar, browser="auto"):
+    tried = []
+    errors = []
+    for name, loader in browser_cookie_loaders(browser):
+        tried.append(name)
+        try:
+            browser_jar = loader(domain_name="google.com")
+        except Exception as exc:
+            errors.append({"browser": name, "message": str(exc)[:240]})
+            continue
+
+        imported = 0
+        for cookie in browser_jar:
+            domain = cookie.domain.lstrip(".").lower()
+            if not domain.endswith("google.com"):
+                continue
+            jar.set_cookie(cookie)
+            imported += 1
+
+        auth_cookie_names = google_auth_cookie_names_in(jar)
+        if auth_cookie_names:
+            return {
+                "ok": True,
+                "browser": name,
+                "triedBrowsers": tried,
+                "importedCookieCount": imported,
+                "authCookieNames": auth_cookie_names,
+                "errors": errors,
+            }
+
+        errors.append({
+            "browser": name,
+            "message": "Google cookies were readable, but Google auth cookies were not found.",
+        })
+
+    detail = "; ".join(f"{item['browser']}: {item['message']}" for item in errors[:3])
+    if detail:
+        raise RuntimeError(f"local browser Google auth cookies were not found ({detail})")
+    raise RuntimeError("local browser Google auth cookies were not found")
+
+
+def maybe_import_google_cookies_from_browser(jar):
+    disabled = os.environ.get("IMOOCS_DISABLE_BROWSER_COOKIE_IMPORT", "").lower()
+    if disabled in ("1", "true", "yes"):
+        return {"ok": False, "browser": "", "message": "browser cookie import is disabled"}
+    try:
+        info = import_google_cookies_from_browser(jar, os.environ.get("IMOOCS_BROWSER", "auto"))
+        save_cookie_jar(jar)
+        return info
+    except Exception as exc:
+        return {
+            "ok": False,
+            "browser": os.environ.get("IMOOCS_BROWSER", "auto"),
+            "message": str(exc)[:300],
+        }
 
 
 def is_google_authenticated(jar):
@@ -2549,7 +3475,7 @@ def follow_google_transitions(jar, final_url, page_html):
             action_url, fields = form
             final_url, status, _headers, body = post_form(jar, action_url, fields, final_url)
             if not (200 <= status < 400):
-                raise RuntimeError(f"Google hidden form returned HTTP {status}")
+                return False
             page_html = decode_body(body)
             continue
 
@@ -2674,6 +3600,13 @@ def auth_login(args):
     # should not discard a valid MOOCs login.
     save_cookie_jar(jar)
 
+    # Google Slides cookies are only needed for slide collection. Keep normal
+    # login short and reliable for assignment work; opt in when slides require
+    # a fresh Google session.
+    if os.environ.get("IMOOCS_AUTH_WITH_GOOGLE", "").lower() not in ("1", "true", "yes"):
+        print("auth login completed")
+        return 0
+
     try:
         login_google(jar, username, password)
     except Exception as exc:
@@ -2682,6 +3615,48 @@ def auth_login(args):
 
     save_cookie_jar(jar)
     print("auth login completed")
+    return 0
+
+
+def auth_import_browser(args):
+    browser = os.environ.get("IMOOCS_BROWSER", "auto")
+    idx = 0
+    while idx < len(args):
+        arg = args[idx]
+        if arg in ("-h", "--help"):
+            print("""Usage:
+  imoocs auth import-browser [--browser auto|chrome|chromium|brave|edge|firefox]
+
+Imports an existing local browser Google session into the imoocs CLI cookie jar.
+Cookie values are never printed.
+""".rstrip())
+            return 0
+        if arg == "--browser":
+            idx += 1
+            if idx >= len(args):
+                fail_text("--browser requires a value", 64)
+            browser = args[idx]
+            idx += 1
+            continue
+        if not arg.startswith("-") and browser == os.environ.get("IMOOCS_BROWSER", "auto"):
+            browser = arg
+            idx += 1
+            continue
+        fail_text(f"unknown argument for auth import-browser: {arg}", 64)
+
+    jar, store_status = load_cookie_jar()
+    if store_status in ("missing_keyring", "keyring_unavailable"):
+        fail_text("auth keyring is unavailable", 69)
+
+    info = import_google_cookies_from_browser(jar, browser)
+    save_cookie_jar(jar)
+    names = ", ".join(info["authCookieNames"])
+    tried = ", ".join(info["triedBrowsers"])
+    print(
+        "auth import-browser completed: "
+        f"browser={info['browser']} tried={tried} "
+        f"googleCookies={info['importedCookieCount']} authCookies={names}"
+    )
     return 0
 
 
@@ -2721,6 +3696,8 @@ def main():
         return open_url(args[0])
     if action == "auth-login":
         return auth_login(args)
+    if action == "auth-import-browser":
+        return auth_import_browser(args)
     if action == "auth-status":
         return auth_status()
     if action == "auth-logout":
@@ -2733,6 +3710,10 @@ def main():
         return push_assignment(args)
     if action == "slide-collect":
         return slide_collect(args)
+    if action == "drive-ls":
+        return drive_ls(args)
+    if action == "drive-collect":
+        return drive_collect(args)
     print_json(envelope(False, "internal", action, "invalid_args", {}, "invalid_action", f"unknown internal action: {action}"))
     return 64
 
@@ -2756,6 +3737,34 @@ open_cmd() {
 
 slide_collect_cmd() {
   moocs_http_cmd slide-collect "$@"
+}
+
+drive_cmd() {
+  local action="${1:-ls}"
+  shift || true
+
+  case "$action" in
+    ls|list)
+      moocs_http_cmd drive-ls "$@"
+      ;;
+    collect|download)
+      moocs_http_cmd drive-collect "$@"
+      ;;
+    ""|-h|--help)
+      cat <<'EOF'
+Usage:
+  imoocs drive ls [--parent <drive-folder-url-or-id>] [--recursive] [--match <text>]
+  imoocs drive collect --path <dir> [--parent <drive-folder-url-or-id>] [--recursive] [--match <text>] [--limit <n>] [--overwrite]
+
+The default parent is:
+  https://drive.google.com/drive/u/0/folders/1MDPeeFHJDmqgQeuJQOHPpWPLDyhT3ZSU
+EOF
+      ;;
+    *)
+      simple_unsupported drive "$action"
+      return 2
+      ;;
+  esac
 }
 
 slide_cmd() {
@@ -2952,6 +3961,10 @@ auth_cmd() {
       shift || true
       moocs_http_cmd auth-login "$@"
       ;;
+    import-browser|import-browser-cookies)
+      shift || true
+      moocs_http_cmd auth-import-browser "$@"
+      ;;
     logout)
       moocs_http_cmd auth-logout
       ;;
@@ -2976,7 +3989,7 @@ main() {
       usage
       ;;
     --version)
-      echo "imoocs 0.3.3 ($backend)"
+      echo "imoocs 0.3.7 ($backend)"
       ;;
     open)
       open_cmd "$@"
@@ -2987,7 +4000,10 @@ main() {
     assignment)
       assignment_cmd "$@"
       ;;
-    course|lesson|drive)
+    drive)
+      drive_cmd "$@"
+      ;;
+    course|lesson)
       local action="${1:-list}"
       local args_json
       args_json="$(

@@ -17,7 +17,7 @@ Slide PDF collection is implemented in the local `imoocs` CLI. It uses the store
 2. Do not manually parse MOOCs URLs. Treat `imoocs open` as the URL router, even when the backend reports an unsupported envelope.
 3. Treat `course`, `lesson`, `assignment`, `slide`, `drive`, and `open` command output as JSON envelopes.
 4. Treat `auth *` and `reset` as text output plus exit code, not JSON.
-5. Do not search for, print, save, or ask the user to paste passwords, tokens, cookies, or other credentials. `imoocs auth login` stores resulting MOOCs cookies in the local keyring, then also tries to add Google session cookies for slide collection. Google session failure does not invalidate a saved MOOCs session for assignment operations. In Codex desktop sessions, when auth recovery is needed, try the existing INIAD Keychain credential; this does not require additional user permission. Supported Keychain items are the moocs-collect service `me.yu7400ki.moocs-collect` and, as fallback for the same username, the INIAD 802.1X Wi-Fi service `com.apple.network.eap.user.item.wlan.ssid.iniad`. Keychain reads must use a short timeout; if Keychain auth is unavailable, missing, rejected, or blocked, stop the auth/material operation and report the Keychain blocker instead of automatically using GUI, TTY, browser, or any other password flow.
+5. Do not search for, print, save, or ask the user to paste passwords, tokens, cookies, or other credentials. `imoocs auth login` stores resulting MOOCs cookies in the local keyring. `imoocs auth import-browser` may import an existing local browser Google session into the same CLI cookie jar, but must never print cookie values. Google session failure does not invalidate a saved MOOCs session for assignment operations. In Codex desktop sessions, when MOOCs auth recovery is needed, try the existing INIAD Keychain credential; this does not require additional user permission. Supported Keychain items are the moocs-collect service `me.yu7400ki.moocs-collect` and, as fallback for the same username, the INIAD 802.1X Wi-Fi service `com.apple.network.eap.user.item.wlan.ssid.iniad`. Keychain reads must use a short timeout; if Keychain auth is unavailable, missing, rejected, or blocked, stop the auth/material operation and report the Keychain blocker instead of automatically using GUI, TTY, browser, or any other password flow.
 6. Assignment submit/upload/push operations require explicit user instruction. Never infer permission from a request to inspect a course or assignment.
 7. For assignments, verify the target `courseId`, `problemId`, `fields[].pid`, `currentAnswers` / `currentAnswerDetails` keys, current values, files, status, and deadline before any write operation.
 8. Before solving or submitting a lesson assignment, read the lesson's embedded slides, linked slide deck, handouts, PDFs, notebooks, and data files needed to understand the actual questions. Do not rely only on the assignment form body; MOOCs forms often contain only answer fields. If the slide/material content cannot be obtained through supported local/CLI/Keychain-backed paths, stop and report exactly which material is blocked instead of guessing.
@@ -35,6 +35,7 @@ imoocs --version
 imoocs --help
 imoocs assignment --help
 imoocs auth status
+imoocs auth import-browser --help
 ```
 
 If `imoocs` is missing, stop the MOOCs operation and report that the `imoocs` package is required. Do not silently switch to browser operation.
@@ -59,7 +60,7 @@ Use the plain TTY prompt only when the user explicitly asks to type in the termi
 imoocs auth login
 ```
 
-`imoocs auth login --gui` opens a macOS hidden-answer dialog, `imoocs auth login` prompts for the password in the user's TTY, and `--keychain` reads an existing supported INIAD Keychain item for the current username without printing it. `imoocs` stores resulting MOOCs cookies in the local keyring before attempting the optional Google Slides session. If login prints `auth login completed for MOOCs; Google session unavailable: ...`, assignment `open`, `show`, `submit`, and `push` may still proceed, but `slide collect` may need separate auth recovery or may return an authoritative failure envelope. Normal `open`, `slide collect`, and `assignment` commands try to refresh an expired MOOCs session from the stored SSO cookies before returning `auth_required`; if that refresh fails, run `imoocs auth login` once again. Do not ask the user to paste the password into chat. Do not use GUI or TTY password flows as an automatic fallback from Keychain failure. `imoocs auth logout` removes those stored session cookies.
+`imoocs auth login --gui` opens a macOS hidden-answer dialog, `imoocs auth login` prompts for the password in the user's TTY, and `--keychain` reads an existing supported INIAD Keychain item for the current username without printing it. `imoocs` stores resulting MOOCs cookies in the local keyring and exits without attempting Google Slides or Drive by default. Assignment `open`, `show`, `submit`, and `push` use the MOOCs session. For Google Slides and Google Drive, use `imoocs auth import-browser --browser auto` to import existing local browser Google cookies into the CLI cookie jar; this is a CLI auth recovery path, not browser material inspection. Normal `open`, `slide collect`, and `assignment` commands try to refresh an expired MOOCs session from the stored SSO cookies before returning `auth_required`; if that refresh fails, run `imoocs auth login` once again. Do not ask the user to paste the password into chat. Do not use GUI or TTY password flows as an automatic fallback from Keychain failure. `imoocs auth logout` removes those stored session cookies.
 
 Never ask the user to paste credentials into chat. If the user wants to avoid typing a username repeatedly, tell them to set `IMOOCS_USERNAME` in their own shell. Use the `username` value in this skill only for `imoocs` commands in the current task; do not copy it into unrelated repo files or final-output command examples unless the user asks.
 
@@ -89,7 +90,7 @@ Use the native slide PDF collector:
 imoocs slide collect --path /path/to/download-dir --year 2025
 ```
 
-This command uses stored `imoocs auth login` MOOCs and Google session cookies. It never prompts for a password and never calls `collect-cli`. If no valid session is stored, it returns an `auth_required` JSON envelope; recover with `imoocs auth login --keychain` in Codex desktop sessions, then retry only if auth succeeds.
+This command uses stored `imoocs auth login` MOOCs and Google session cookies. It never prompts for a password and never calls `collect-cli`. If no valid MOOCs session is stored, it returns an `auth_required` JSON envelope with `data.authScope: "moocs"`; recover with `imoocs auth login --keychain` in Codex desktop sessions, then retry only if auth succeeds. If it returns `data.authScope: "google_slides"` or `data.cookieStore: "google_expired"`, do not retry Keychain or `imoocs auth login` automatically because the MOOCs session is already usable and the blocker is Google Docs access for the embedded slide deck. Instead, run `imoocs auth import-browser --browser auto`, then retry `slide collect`; newer `slide collect` may attempt this import automatically once before failing.
 
 In an interactive TTY, missing `--course`, `--lecture`, or `--page` selectors are prompted as numbered menus. In non-interactive shells, pass selectors or explicit `--all`:
 
@@ -98,13 +99,34 @@ imoocs slide collect --path /path/to/download-dir --year 2025 --course COS101 --
 imoocs slide collect --path /path/to/download-dir --year 2025 --all
 ```
 
-Selectors accept 1-based indexes, slugs, names, or `all`. Avoid `--all` for read-only inspection unless the user explicitly asks to collect broad materials.
+Selectors accept ids/slugs, names, 1-based indexes, or `all`; exact ids such as lessonId `13` or pageId `03` are preferred over menu indexes. Avoid `--all` for read-only inspection unless the user explicitly asks to collect broad materials.
 
-If Google Slides PDF export fails or no slide iframe is found, treat that JSON envelope as authoritative. Do not fall back to browser, Playwright, manual URL parsing, or `collect-cli` unless the user explicitly authorizes a fallback in the current turn.
+If Google Slides PDF export fails after browser-cookie import, or no slide iframe is found, treat that JSON envelope as authoritative. Do not fall back to BrowserUse, Playwright, manual URL parsing, manual slide inspection, or `collect-cli` unless the user explicitly authorizes a fallback in the current turn.
 
 If the user only asks to read, inspect, summarize, or verify PDFs, use a temporary directory from `mktemp -d` for `imoocs slide collect`, read the PDFs from there, and remove that directory in the same turn after extracting the needed information. Do not leave PDFs in `Downloads`, the repo, or another stable local directory for read-only tasks.
 
 If the user explicitly asks to download, save, keep, organize, or reuse the PDFs later, choose a stable local directory for the task and report it.
+
+## Google Drive
+
+Use the native Drive collector for course handouts and sample data stored outside MOOCs pages:
+
+```bash
+imoocs drive ls
+imoocs drive ls --match 'ソフトウェア・エンジニアリング'
+imoocs drive collect --path /path/to/download-dir --match 'ソフトウェア・エンジニアリング'
+imoocs drive collect --path /path/to/download-dir --parent '<drive-folder-url-or-id>' --recursive
+```
+
+The default Drive parent folder is:
+
+```text
+https://drive.google.com/drive/u/0/folders/1MDPeeFHJDmqgQeuJQOHPpWPLDyhT3ZSU
+```
+
+Drive commands use stored Google cookies from the same CLI cookie jar as slide collection. If Drive returns `auth_required` with `data.authScope: "google_drive"` or `data.cookieStore: "google_expired"`, run `imoocs auth import-browser --browser auto`, then retry the Drive command. Do not run `imoocs auth login`, Keychain auth, GUI auth, BrowserUse, Playwright, or manual browser inspection for Drive-only failures unless the user explicitly authorizes that fallback in the current turn.
+
+`imoocs drive collect --match <text>` treats matching direct child folders of the default parent as the selected course folder and collects their contents recursively. Without `--match` or `--recursive`, folders are listed or skipped rather than broadly downloading every course folder.
 
 ## Assignments
 
@@ -184,7 +206,7 @@ After saving all intended answers, use `push` to perform the final submit-button
 imoocs assignment push <courseId> <problemId>
 ```
 
-Parse the JSON envelope. Treat `submission.state: "push"` and `data.serverSubmitted: true` as final confirmation. If `push` returns `auth_required`, `push_failed`, `not_submittable`, or any other non-ok envelope, report that no final submit-button confirmation occurred.
+Parse the JSON envelope. Treat `submission.state: "push"` and `data.serverSubmitted: true` as final confirmation. On the current MOOCs frontend, the green submit button verifies `/answers` autosave and leaves `data.assignmentStatus` as `open`; this is normal and should not be treated as a failed push. If `push` returns `auth_required`, `push_failed`, `not_submittable`, or any other non-ok envelope, report that no final submit-button confirmation occurred.
 
 ### Verify After Writes
 
@@ -194,11 +216,11 @@ After any server submission attempt or user-confirmed push, verify the reflected
 imoocs assignment show '<lesson-url>'
 ```
 
-Check that all intended text fields, including optional/challenge fields, have `currentValue`; all dropdown/select pids discovered from `currentAnswers` / `currentAnswerDetails` have the expected data value instead of `---`; all intended file fields have `uploadedFile.filename`; and the assignment status is submitted or equivalent. If `assignment show` is unsupported, say verification was not possible and do not claim the reflected server state was confirmed. Local file generation or confirm-mode staging alone is not submission completion.
+Check that all intended text fields, including optional/challenge fields, have `currentValue`; all dropdown/select pids discovered from `currentAnswers` / `currentAnswerDetails` have the expected data value instead of `---`; and all intended file fields have `uploadedFile.filename`. For current MOOCs pages, `status: open` can remain after the green submit-button confirmation, so rely on reflected answer/file values plus successful `push` rather than requiring a submitted status. If `assignment show` is unsupported, say verification was not possible and do not claim the reflected server state was confirmed. Local file generation or confirm-mode staging alone is not submission completion.
 
 ## Unsupported Surfaces
 
-Some surfaces may still be unsupported by the local CLI backend. Commands for course, lesson, drive, attendance, direct URL routing, assignment submit/upload, or assignment push may return JSON envelopes with an unsupported reason such as `unsupported_by_imoocs`.
+Some surfaces may still be unsupported by the local CLI backend. Commands for course, lesson, attendance, direct URL routing, assignment submit/upload, or assignment push may return JSON envelopes with an unsupported reason such as `unsupported_by_imoocs`.
 
 Use those envelopes as authoritative. Do not replace them with browser inspection or Playwright unless the user explicitly authorizes that fallback.
 
