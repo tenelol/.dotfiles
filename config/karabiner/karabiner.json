@@ -39,7 +39,7 @@
                         ]
                     },
                     {
-                        "description": "Caps double-tap prefix: p toggles Ghostty quick terminal, h enters Herdr prefix in Ghostty",
+                        "description": "Caps/F12 prefix: p toggles Ghostty quick terminal, h enters Herdr prefix in Ghostty",
                         "manipulators": [
                             {
                                 "type": "basic",
@@ -65,6 +65,34 @@
                                         "shell_command": "$HOME/.local/bin/toggle-ghostty-quick-terminal"
                                     }
                                 ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "f12",
+                                    "modifiers": { "optional": ["any"] }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "dotfiles_caps_quick_terminal_prefix",
+                                            "value": 1
+                                        }
+                                    }
+                                ],
+                                "to_delayed_action": {
+                                    "to_if_invoked": [
+                                        {
+                                            "set_variable": {
+                                                "name": "dotfiles_caps_quick_terminal_prefix",
+                                                "value": 0
+                                            }
+                                        }
+                                    ]
+                                },
+                                "parameters": {
+                                    "basic.to_delayed_action_delay_milliseconds": 700
+                                }
                             },
                             {
                                 "type": "basic",
