@@ -72,7 +72,7 @@ keybind = "ctrl+shift+space=toggle_quick_terminal"
 quick-terminal-position = "center"
 quick-terminal-size = "1000px,700px"
 quick-terminal-screen = "mouse"
-quick-terminal-animation-duration = 0
+quick-terminal-animation-duration = 0.16
 quick-terminal-autohide = false
 quick-terminal-space-behavior = "move"
 
