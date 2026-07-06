@@ -58,7 +58,6 @@ copy-on-select = false
 right-click-action = "context-menu"
 
 # Custom shaders
-custom-shader = ~/.config/ghostty/shaders/aurora.glsl
 custom-shader = ~/.config/ghostty/shaders/liquid_glass_focus.glsl
 custom-shader = ~/.config/ghostty/shaders/readability_scrim.glsl
 custom-shader = ~/.config/ghostty/shaders/cursor_tail.glsl
@@ -66,13 +65,16 @@ custom-shader = ~/.config/ghostty/shaders/ripple_rectangle_cursor.glsl
 custom-shader-animation = true
 
 # Quick terminal
-# Keep the old tmux popup muscle memory: F12 then p opens a centered quick terminal.
-keybind = "f12>p=toggle_quick_terminal"
+# Keep the old tmux popup muscle memory globally: F12 then p opens a centered quick terminal.
+keybind = "global:f12=activate_key_table_once:quickterm"
+keybind = "quickterm/global:p=toggle_quick_terminal"
+keybind = "quickterm/global:escape=deactivate_key_table"
+keybind = "quickterm/global:catch_all=deactivate_key_table"
 keybind = "ctrl+shift+space=toggle_quick_terminal"
 quick-terminal-position = "center"
 quick-terminal-size = "1000px,700px"
 quick-terminal-screen = "mouse"
-quick-terminal-animation-duration = 0.16
+quick-terminal-animation-duration = 0.28
 quick-terminal-autohide = false
 quick-terminal-space-behavior = "move"
 
