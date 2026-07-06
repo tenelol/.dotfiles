@@ -39,14 +39,14 @@
                         ]
                     },
                     {
-                        "description": "F12 then p: emit F13 for Ghostty quick terminal",
+                        "description": "Caps double-tap prefix: p toggles Ghostty quick terminal, h enters Herdr prefix in Ghostty",
                         "manipulators": [
                             {
                                 "type": "basic",
                                 "conditions": [
                                     {
                                         "type": "variable_if",
-                                        "name": "dotfiles_f12_quick_terminal_prefix",
+                                        "name": "dotfiles_caps_quick_terminal_prefix",
                                         "value": 1
                                     }
                                 ],
@@ -57,49 +57,50 @@
                                 "to": [
                                     {
                                         "set_variable": {
-                                            "name": "dotfiles_f12_quick_terminal_prefix",
+                                            "name": "dotfiles_caps_quick_terminal_prefix",
                                             "value": 0
                                         }
                                     },
                                     {
-                                        "key_code": "f13"
+                                        "shell_command": "$HOME/.local/bin/toggle-ghostty-quick-terminal"
                                     }
                                 ]
-                            },
-                            {
-                                "type": "basic",
-                                "from": {
-                                    "key_code": "f12",
-                                    "modifiers": { "optional": ["any"] }
-                                },
-                                "to": [
-                                    {
-                                        "set_variable": {
-                                            "name": "dotfiles_f12_quick_terminal_prefix",
-                                            "value": 1
-                                        }
-                                    }
-                                ],
-                                "to_delayed_action": {
-                                    "to_if_invoked": [
-                                        {
-                                            "set_variable": {
-                                                "name": "dotfiles_f12_quick_terminal_prefix",
-                                                "value": 0
-                                            }
-                                        }
-                                    ]
-                                },
-                                "parameters": {
-                                    "basic.to_delayed_action_delay_milliseconds": 700
-                                }
                             },
                             {
                                 "type": "basic",
                                 "conditions": [
                                     {
                                         "type": "variable_if",
-                                        "name": "dotfiles_f12_quick_terminal_prefix",
+                                        "name": "dotfiles_caps_quick_terminal_prefix",
+                                        "value": 1
+                                    },
+                                    {
+                                        "type": "frontmost_application_if",
+                                        "bundle_identifiers": ["^com\\.mitchellh\\.ghostty$"]
+                                    }
+                                ],
+                                "from": {
+                                    "key_code": "h",
+                                    "modifiers": { "optional": ["any"] }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "dotfiles_caps_quick_terminal_prefix",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "f11"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "conditions": [
+                                    {
+                                        "type": "variable_if",
+                                        "name": "dotfiles_caps_quick_terminal_prefix",
                                         "value": 1
                                     }
                                 ],
@@ -110,7 +111,7 @@
                                 "to": [
                                     {
                                         "set_variable": {
-                                            "name": "dotfiles_f12_quick_terminal_prefix",
+                                            "name": "dotfiles_caps_quick_terminal_prefix",
                                             "value": 0
                                         }
                                     }
@@ -119,7 +120,7 @@
                         ]
                     },
                     {
-                        "description": "Caps Lock: escape when tapped, F12 prefix when double-tapped, control when held",
+                        "description": "Caps Lock: escape when tapped, Caps prefix when double-tapped, control when held",
                         "manipulators": [
                             {
                                 "type": "basic",
@@ -143,7 +144,7 @@
                                     },
                                     {
                                         "set_variable": {
-                                            "name": "dotfiles_f12_quick_terminal_prefix",
+                                            "name": "dotfiles_caps_quick_terminal_prefix",
                                             "value": 1
                                         }
                                     }
@@ -152,7 +153,7 @@
                                     "to_if_invoked": [
                                         {
                                             "set_variable": {
-                                                "name": "dotfiles_f12_quick_terminal_prefix",
+                                                "name": "dotfiles_caps_quick_terminal_prefix",
                                                 "value": 0
                                             }
                                         }

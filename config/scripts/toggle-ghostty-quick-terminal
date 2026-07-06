@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if ! /usr/bin/pgrep -x Ghostty >/dev/null 2>&1; then
+  /usr/bin/open -g -a Ghostty
+  /bin/sleep 0.2
+fi
+
+/usr/bin/osascript <<'APPLESCRIPT'
+tell application "System Events"
+  tell process "Ghostty"
+    click menu item "Quick Terminal" of menu 1 of menu bar item "View" of menu bar 1
+  end tell
+end tell
+APPLESCRIPT
