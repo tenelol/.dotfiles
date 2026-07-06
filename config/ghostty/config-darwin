@@ -66,7 +66,7 @@ custom-shader-animation = true
 
 # Quick terminal
 # Kanata maps Caps double-tap then p to ~/.local/bin/toggle-ghostty-quick-terminal.
-# Caps double-tap then h sends F11 for Herdr prefix mode.
+# Caps double-tap then h sends Ctrl+B for Herdr prefix mode.
 keybind = "ctrl+shift+space=toggle_quick_terminal"
 quick-terminal-position = "center"
 quick-terminal-size = "1000px,700px"

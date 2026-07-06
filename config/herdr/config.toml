@@ -1,4 +1,4 @@
 onboarding = false
 
 [keys]
-prefix = "f11"
+prefix = "ctrl+b"

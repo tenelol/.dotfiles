@@ -27,7 +27,7 @@
 )
 
 (deflayer caps-prefix
-  XX XX XX f11 XX XX XX XX XX XX @quickterm XX XX XX XX XX XX XX
+  XX XX XX C-b XX XX XX XX XX XX @quickterm XX XX XX XX XX XX XX
   XX XX XX
   XX XX XX XX XX XX XX XX XX XX XX XX
 )
