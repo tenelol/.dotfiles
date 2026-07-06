@@ -5,6 +5,7 @@ delib.host {
   system = "aarch64-darwin";
 
   myconfig.nixbuild.enable = true;
+  myconfig.karabiner.enable = true;
 
   rice = "rift";
 }
