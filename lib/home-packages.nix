@@ -67,6 +67,7 @@ let
     imoocsPackage
     platformio
     pnpm
+    supabase-cli
     zig
   ];
 
