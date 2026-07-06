@@ -33,6 +33,11 @@ delib.module {
   };
 
   home.ifEnabled = lib.mkIf isDarwinDesktop {
+    home.file.".local/bin/toggle-ghostty-quick-terminal" = {
+      source = ../config/scripts/toggle-ghostty-quick-terminal;
+      executable = true;
+    };
+
     xdg.configFile."karabiner/karabiner.json" = {
       force = true;
       source = ../config/karabiner/karabiner.json;
