@@ -5,9 +5,9 @@
 )
 
 (defalias
-  caps-prefix (one-shot 900 (layer-while-held caps-prefix))
-  quickterm (cmd /bin/sh -lc "exec /bin/launchctl asuser $(/usr/bin/id -u tener) /usr/bin/sudo -n -u tener /Users/tener/.local/bin/toggle-ghostty-quick-terminal")
-  capctl (tap-hold 200 180 (tap-dance-eager 200 (esc @caps-prefix)) lctl)
+  caps-prefix (one-shot 750 (layer-while-held caps-prefix))
+  quickterm (cmd-log none error /bin/sh -lc "exec /bin/launchctl asuser $(/usr/bin/id -u tener) /usr/bin/sudo -n -u tener /Users/tener/.local/bin/toggle-ghostty-quick-terminal")
+  capctl (tap-hold 160 130 (tap-dance-eager 160 (esc @caps-prefix)) lctl)
   fsyms (tap-hold-tap-keys 200 150 f (layer-while-held symbols) (a e i o u))
   vnav (tap-hold-tap-keys 200 150 v (layer-while-held navigation) (a e i o u))
   scru (mwheel-up 50 120)
