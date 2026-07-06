@@ -39,7 +39,87 @@
                         ]
                     },
                     {
-                        "description": "Caps Lock: escape when tapped, F12 when double-tapped, control when held",
+                        "description": "F12 then p: emit F13 for Ghostty quick terminal",
+                        "manipulators": [
+                            {
+                                "type": "basic",
+                                "conditions": [
+                                    {
+                                        "type": "variable_if",
+                                        "name": "dotfiles_f12_quick_terminal_prefix",
+                                        "value": 1
+                                    }
+                                ],
+                                "from": {
+                                    "key_code": "p",
+                                    "modifiers": { "optional": ["any"] }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "dotfiles_f12_quick_terminal_prefix",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "f13"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "f12",
+                                    "modifiers": { "optional": ["any"] }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "dotfiles_f12_quick_terminal_prefix",
+                                            "value": 1
+                                        }
+                                    }
+                                ],
+                                "to_delayed_action": {
+                                    "to_if_invoked": [
+                                        {
+                                            "set_variable": {
+                                                "name": "dotfiles_f12_quick_terminal_prefix",
+                                                "value": 0
+                                            }
+                                        }
+                                    ]
+                                },
+                                "parameters": {
+                                    "basic.to_delayed_action_delay_milliseconds": 700
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "conditions": [
+                                    {
+                                        "type": "variable_if",
+                                        "name": "dotfiles_f12_quick_terminal_prefix",
+                                        "value": 1
+                                    }
+                                ],
+                                "from": {
+                                    "any": "key_code",
+                                    "modifiers": { "optional": ["any"] }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "dotfiles_f12_quick_terminal_prefix",
+                                            "value": 0
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "description": "Caps Lock: escape when tapped, F12 prefix when double-tapped, control when held",
                         "manipulators": [
                             {
                                 "type": "basic",
@@ -62,10 +142,25 @@
                                         }
                                     },
                                     {
-                                        "key_code": "f12",
-                                        "modifiers": ["fn"]
+                                        "set_variable": {
+                                            "name": "dotfiles_f12_quick_terminal_prefix",
+                                            "value": 1
+                                        }
                                     }
-                                ]
+                                ],
+                                "to_delayed_action": {
+                                    "to_if_invoked": [
+                                        {
+                                            "set_variable": {
+                                                "name": "dotfiles_f12_quick_terminal_prefix",
+                                                "value": 0
+                                            }
+                                        }
+                                    ]
+                                },
+                                "parameters": {
+                                    "basic.to_delayed_action_delay_milliseconds": 700
+                                }
                             },
                             {
                                 "type": "basic",
