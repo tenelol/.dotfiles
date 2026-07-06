@@ -65,13 +65,13 @@ custom-shader = ~/.config/ghostty/shaders/ripple_rectangle_cursor.glsl
 custom-shader-animation = true
 
 # Quick terminal
-# Karabiner maps Caps double-tap then p to ~/.local/bin/toggle-ghostty-quick-terminal.
-# Inside Ghostty, Caps double-tap then h sends F11 for Herdr prefix mode.
+# Kanata maps Caps double-tap then p to ~/.local/bin/toggle-ghostty-quick-terminal.
+# Caps double-tap then h sends F11 for Herdr prefix mode.
 keybind = "ctrl+shift+space=toggle_quick_terminal"
 quick-terminal-position = "center"
 quick-terminal-size = "1000px,700px"
 quick-terminal-screen = "mouse"
-quick-terminal-animation-duration = 0.28
+quick-terminal-animation-duration = 0.22
 quick-terminal-autohide = false
 quick-terminal-space-behavior = "move"
 
