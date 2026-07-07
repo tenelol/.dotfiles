@@ -6,7 +6,18 @@ if ! /usr/bin/pgrep -x Ghostty >/dev/null 2>&1; then
   /bin/sleep 0.1
 fi
 
-/usr/bin/osascript <<'APPLESCRIPT'
+if /usr/bin/osascript >/dev/null <<'APPLESCRIPT'
+tell application "Ghostty"
+  if (count of windows) = 0 then error "No Ghostty terminal window available"
+  set actionTarget to focused terminal of selected tab of front window
+  perform action "toggle_quick_terminal" on actionTarget
+end tell
+APPLESCRIPT
+then
+  exit 0
+fi
+
+/usr/bin/osascript >/dev/null <<'APPLESCRIPT'
 tell application "System Events"
   tell process "Ghostty"
     click menu item "Quick Terminal" of menu 1 of menu bar item "View" of menu bar 1
