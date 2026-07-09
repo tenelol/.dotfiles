@@ -1,49 +1,56 @@
 ---
 name: dotfiles-workflow
-description: Use when working in /Users/tener/.dotfiles or /home/tener/.dotfiles. Covers the denix host/module layout, the preferred nh-based validation/build workflow, rice-specific Darwin targets, and the documentation conventions for this personal multi-host NixOS and nix-darwin repo.
+description: Edit, review, validate, build, switch, or document the personal denix-based NixOS and nix-darwin repository at /Users/tener/.dotfiles or /home/tener/.dotfiles. Use for work on flake.nix, hosts, modules, rices, Home Manager, config, packages, lib, scripts, repository docs, validation, or host activation. Covers nh-based operations and rice-safe Darwin target selection.
 ---
 
 # Dotfiles Workflow
 
-Use this skill for any repo change that touches `flake.nix`, `hosts/`, `modules/`, `home/`, `config/`, or repo docs.
+## Start from current evidence
 
-## Quick map
+1. Read `AGENTS.md`, `git status --short`, and only the source files relevant to the request.
+2. Treat the current repository, flake outputs, CI, and runtime state as authoritative when notes or docs disagree.
+3. Identify the affected hosts and the cheapest sufficient validation before editing.
+4. Preserve unrelated user changes. Ignore `legacy/` unless the user explicitly requests comparison or revival.
 
-- `flake.nix`: builds public outputs and passes shared `profile` / `inputs`
-- `hosts/<name>/default.nix`: host metadata plus hardware import only
-- `modules/*.nix`: denix-discovered shared or host-specific modules
-- `rices/*.nix`: denix-discovered rice variants, including macOS WM variants
-- `home/home.nix`: shared Home Manager payload
-- `legacy/`: archived old config, not part of the active flake
+## Keep the denix structure
 
-## Workflow
+- Keep `hosts/<name>/default.nix` thin: host metadata plus hardware imports.
+- Put denix-discovered behavior in `modules/`, including nested module files, and rice variants in `rices/`.
+- Keep the shared Home Manager payload in `home/`. Do not add standalone `homeConfigurations` without an explicit architecture change.
+- Put explicitly imported helpers and generated-data builders in `lib/`, package definitions in `packages/`, and deployed source files in `config/`.
+- Treat `flake.nix` as the source of truth for platform-filtered `nixosConfigurations`, `darwinConfigurations`, `checks`, and `formatter` outputs.
+- Add every new flake-referenced file to Git before evaluation; flakes omit untracked files.
+- Keep active Nix files at or below the repository's 500-line structure limit.
+- Describe this repository as personal, `denix`-based, and `nh`-operated; do not recast it as a generic starter template.
 
-1. Read `flake.nix` and the relevant host/module files before editing.
-2. Keep host files thin. Put reusable behavior in `modules/`.
-3. If you add a new host or module file, make sure it is tracked by Git so denix can discover it from the flake source.
-4. When changing docs, describe the repo as personal and nh-based, not as a generic starter template.
-5. Before running host build/switch commands, check that no other `nh`, `darwin-rebuild`, or `nixos-rebuild` build/switch is active.
-6. On rice-enabled macOS work, preserve the current rice by using a target such as `macbook-rift` or `macbook-aerospace`.
+## Validate with the narrowest useful work
 
-## Validation
+1. Run the fastest artifact-specific check first. For active Nix changes, run `nix fmt -- flake.nix hosts modules rices home packages lib --ci --excludes 'hosts/*/hardware-configuration.nix' --excludes 'legacy/**'`; use `./scripts/validate structure` as a cheap preflight when useful.
+2. Run `nix flake check --all-systems --no-build` before any host build and before finalizing the change. For active Nix changes, `./scripts/validate eval` runs the structure check plus that same flake check; use it instead of repeating both commands.
+3. Build only configurations whose closure can change:
+   - Use `nh os build . -H <host>` for an affected Linux host.
+   - Use `./scripts/validate linux` only when all Linux hosts need building.
+   - Use `nh darwin build . -H <confirmed-target>` for Darwin.
+4. Skip host builds for docs- or skill-only changes.
 
-- Default validation command: `nix flake check --all-systems --no-build`
-- Linux hosts:
-  - `nh os build . -H nixos`
-  - `nh os build . -H nvidia-desktop`
-  - `nh os build . -H nixos-server`
-  - `nh os build . -H wsl`
-- Darwin host:
-  - `nh darwin build . -H macbook-rift`
+Always pass an explicit mode to `./scripts/validate`; its bare invocation defaults to all Linux builds. Prefer `nh` over raw `nixos-rebuild` or `darwin-rebuild` unless the user explicitly requests otherwise.
 
-Prefer `nh` over raw `nixos-rebuild` or `darwin-rebuild` unless the user explicitly asks otherwise.
+## Build and activate safely
 
-## Repo facts to preserve
+1. Before every build or switch, verify that no `nh`, `darwin-rebuild`, or `nixos-rebuild` build/switch is already running. Do not start a conflicting operation.
+2. After a successful host build, run the matching switch in the same turn unless the user asked to avoid activation.
+3. Reuse the exact Linux host or confirmed Darwin target between build and switch.
 
-- Host inventory:
-  - `nixos`: x86_64-linux laptop
-  - `nvidia-desktop`: x86_64-linux desktop
-  - `nixos-server`: x86_64-linux server
-  - `macbook`: aarch64-darwin laptop
-- Home Manager is integrated into system configurations; this flake does not expose standalone `homeConfigurations`.
-- README should mention both `denix` and `nh` when explaining structure or operations.
+For Darwin:
+
+1. Never use bare `macbook`. Resolve one of `macbook-rift`, `macbook-aerospace`, or `macbook-mac`.
+2. Run `dotfiles doctor --no-eval` or `dotfiles-doctor --no-eval` and use its `switch target` as canonical. This command also reports conflicting rebuild processes.
+3. If the doctor command is unavailable or cannot determine the target, inspect the AeroSpace/Rift process state and `~/.config/theme/wallpaper.png`; use `macbook-rift` only as the final fallback.
+4. Do not use `./scripts/validate darwin` as an active-rice selector; it currently builds `macbook-rift` unconditionally.
+5. For a build followed by switch, re-run the doctor command immediately before switching. Switch only the confirmed target; if it differs from the built target, build the newly confirmed target first.
+
+## Finish the change
+
+1. Review the final diff and status; keep unrelated paths out of the commit.
+2. Use `$dotfiles-commit` and commit the completed scoped change unless the user asked not to commit.
+3. Report artifact checks, flake validation, host build/switch results, the Darwin target when applicable, and any pre-existing dirty paths.
