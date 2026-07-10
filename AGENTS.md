@@ -15,6 +15,7 @@
   - `nh os build . -H wsl`
 - Preferred Darwin build command:
   - `nh darwin build . -H macbook-rift`
+- When a change is confined to macOS/Darwin, skip Linux host builds and `./scripts/validate linux`; run the all-system no-build evaluation and only the confirmed Darwin target build.
 - Preferred switch commands mirror the build commands with `switch` instead of `build`.
 - For rebuild/switch on rice-enabled hosts, preserve the active rice by targeting the rice-specific configuration. On `macbook`, infer the active rice from the current desktop state, such as the AeroSpace process/config or active wallpaper, and prefer names such as `macbook-rift` or `macbook-aerospace` instead of bare `macbook`.
 - Before running any rebuild/switch command, check that another `nh ... build`, `nh ... switch`, `darwin-rebuild`, or `nixos-rebuild` process is not already running. If one is active, do not start a conflicting activation.
