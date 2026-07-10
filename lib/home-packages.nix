@@ -9,10 +9,30 @@ let
   system = pkgs.stdenv.hostPlatform.system;
   herdrPackage = inputs.herdr.packages.${system}.default;
   hermesAgentPackages = inputs.hermes-agent.packages.${pkgs.stdenv.hostPlatform.system};
+  hermesPython = pkgs.python312.override {
+    packageOverrides = _final: previous: {
+      # Torch is only used by ctranslate2's package tests, not at runtime.
+      ctranslate2 = previous.ctranslate2.overridePythonAttrs (_: {
+        doCheck = false;
+        nativeCheckInputs = [ ];
+      });
+    };
+  };
+  hermesCallPackage = lib.callPackageWith (pkgs // { python312 = hermesPython; });
+  hermesAgentPackage = hermesAgentPackages.default.override { callPackage = hermesCallPackage; };
+  hermesDesktopPackage = pkgs.callPackage "${inputs.hermes-agent}/nix/desktop.nix" {
+    pkgs = pkgs // {
+      # Electron's v41.9.1 headers were republished after Hermes pinned them.
+      fetchurl =
+        args: pkgs.fetchurl (args // { sha256 = "sha256-zOl8rx6woWh7aeRUOlkTMviKc/EAQQX6nr/MxAx1ZPI="; });
+    };
+    hermesNpmLib = hermesAgentPackage.hermesNpmLib;
+    hermesAgent = hermesAgentPackage;
+  };
 
   hermesAgentDesktopAppPackage = import ../packages/hermes-agent-desktop-app.nix {
     inherit pkgs lib;
-    hermesDesktop = hermesAgentPackages.desktop;
+    hermesDesktop = hermesDesktopPackage;
   };
   codexBarPackage = import ../packages/codexbar.nix {
     inherit pkgs lib;
@@ -33,11 +53,11 @@ let
   iniadCommitPackage = import ../packages/iniad-commit.nix {
     inherit pkgs lib;
   };
-  palmierProPackage = import ../packages/palmier-pro.nix {
-    inherit pkgs lib;
-  };
+  commonPackages = [
+    iniadCommitPackage
+  ];
 
-  commonPackages = with pkgs; [
+  linuxCommonPackages = with pkgs; [
     awscli2
     cloudflared
     gh
@@ -52,7 +72,6 @@ let
     prettierd
     prettier
     go
-    iniadCommitPackage
     nodejs
     python3
   ];
@@ -61,10 +80,13 @@ let
     parted
   ];
 
-  nonServerPackages = with pkgs; [
-    cargo
+  nonServerPackages = [
     herdrPackage
     imoocsPackage
+  ];
+
+  linuxNonServerPackages = with pkgs; [
+    cargo
     platformio
     pnpm
     supabase-cli
@@ -74,7 +96,7 @@ let
   linuxDesktopPackages = with pkgs; [
     adwaita-icon-theme
     codexBarPackage
-    hermesAgentPackages.desktop
+    hermesDesktopPackage
     acpi
     alsa-utils
     brightnessctl
@@ -91,17 +113,11 @@ let
     awww
     wofi
     fuzzel
-    google-chrome
-    sqlitebrowser
     imv
     swaylock
     unicode-emoji
     wtype
     ydotool
-    obsidian
-    vesktop
-    slack
-    libreoffice-fresh
     waybar
     wl-clipboard
     xwayland-satellite
@@ -113,34 +129,24 @@ let
     pkgs.material-symbols
   ];
 
+  linuxFullDesktopPackages = with pkgs; [
+    google-chrome
+    sqlitebrowser
+    obsidian
+    vesktop
+    slack
+    libreoffice-fresh
+  ];
+
   darwinDesktopPackages = with pkgs; [
     hermesAgentDesktopAppPackage
     gijirokuPackage
     moocsCollectPackage
-    palmierProPackage
-    sqlitebrowser
-    unicode-emoji
-    obsidian
-    vesktop
-    zathura
   ];
 
   darwinCliPackages = with pkgs; [
     ccpocketBridgePackage
-    clang
-    cmake
-    coreutils
-    fd
-    findutils
-    gawk
-    gnugrep
-    gnumake
-    gnused
-    gnutar
     nil
-    pkg-config
-    wget
-    yazi
   ];
 
   linuxServerPackages = with pkgs; [
@@ -153,11 +159,16 @@ in
   forHost =
     {
       isServer ? false,
+      fullDesktop ? false,
     }:
     commonPackages
+    ++ lib.optionals isLinux linuxCommonPackages
     ++ lib.optionals isLinux linuxBasePackages
     ++ lib.optionals (!isServer) nonServerPackages
+    ++ lib.optionals (!isServer && isLinux) linuxNonServerPackages
     ++ lib.optionals (!isServer && isLinux) linuxDesktopPackages
-    ++ lib.optionals (!isServer && isDarwin) (darwinCliPackages ++ darwinDesktopPackages)
+    ++ lib.optionals (!isServer && isLinux && fullDesktop) linuxFullDesktopPackages
+    ++ lib.optionals (!isServer && isDarwin) darwinCliPackages
+    ++ lib.optionals (!isServer && isDarwin && fullDesktop) darwinDesktopPackages
     ++ lib.optionals (isServer && isLinux) linuxServerPackages;
 }

@@ -12,6 +12,7 @@ delib.module {
   name = "vscode";
 
   home.always = lib.mkIf (!host.isServer) {
-    programs.vscode = vscode.program;
+    programs.vscode =
+      vscode.program // lib.optionalAttrs pkgs.stdenv.hostPlatform.isDarwin { package = null; };
   };
 }

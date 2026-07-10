@@ -4,7 +4,12 @@ let
 in
 {
   homebrew = {
-    taps = [ "acsandmann/tap" ];
+    taps = [
+      {
+        name = "acsandmann/tap";
+        trusted = true;
+      }
+    ];
     brews = [ "acsandmann/tap/rift" ];
   };
 

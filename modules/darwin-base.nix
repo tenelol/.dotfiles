@@ -53,18 +53,6 @@ delib.module {
       nh
     ];
 
-    fonts.packages = with pkgs; [
-      noto-fonts-cjk-sans
-      noto-fonts-color-emoji
-      jetbrains-mono
-      fira-code
-      hack-font
-      nerd-fonts.jetbrains-mono
-      nerd-fonts.fira-code
-      nerd-fonts.caskaydia-cove
-      material-symbols
-    ];
-
     programs.fish.enable = true;
 
     security.pam.services.sudo_local.touchIdAuth = true;

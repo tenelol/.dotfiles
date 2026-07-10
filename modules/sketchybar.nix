@@ -14,7 +14,12 @@ delib.module {
 
   darwin.ifEnabled = {
     homebrew = {
-      taps = [ "FelixKratz/formulae" ];
+      taps = [
+        {
+          name = "FelixKratz/formulae";
+          trusted = true;
+        }
+      ];
       brews = [ "FelixKratz/formulae/sketchybar" ];
     };
 

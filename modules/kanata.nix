@@ -2,7 +2,6 @@
   delib,
   host,
   lib,
-  pkgs,
   profile,
   ...
 }:
@@ -13,7 +12,7 @@ let
   # Give Linux apps a macOS-style Command layer without running Kinto's mutable
   # installer. macOS still uses common.kbd unchanged.
   linuxMacConfig = builtins.readFile ../config/kanata/linux-mac.kbd;
-  darwinKanata = import ../lib/darwin/kanata.nix { inherit pkgs profile; };
+  darwinKanata = import ../lib/darwin/kanata.nix { inherit profile; };
 in
 delib.module {
   name = "kanata";
@@ -41,15 +40,19 @@ delib.module {
   };
 
   darwin.ifEnabled = lib.mkIf isDarwinDesktop {
-    # Kanata uses the Karabiner VirtualHID driver on macOS, but the
+    # Kanata uses the Homebrew-managed Karabiner VirtualHID driver, but the
     # Karabiner-Elements app itself should not manage key mappings.
-    homebrew.casks = [
-      "karabiner-elements"
-    ];
-
-    environment.systemPackages = [
-      darwinKanata.package
-    ];
+    homebrew = {
+      taps = [
+        {
+          name = "tener/dotfiles";
+          clone_target = "file:///Users/${profile.username}/.dotfiles";
+          force_auto_update = true;
+          trusted = true;
+        }
+      ];
+      brews = [ "tener/dotfiles/kanata-with-cmd" ];
+    };
 
     environment.etc."kanata/kanata.kbd".source = ../config/kanata/kanata.kbd;
     environment.etc."kanata/common.kbd".source = ../config/kanata/common.kbd;

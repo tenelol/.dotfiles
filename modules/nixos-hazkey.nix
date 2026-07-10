@@ -48,7 +48,6 @@ delib.module {
       installFcitx5Addon = false;
       installHazkeySettings = false;
       server.package = hazkey.server;
-      libllama.package = hazkey.libllamaCpu;
       dictionary.package = hazkey.dictionary;
       zenzai.package = hazkey.packages.zenzai_v3_1-small;
     };

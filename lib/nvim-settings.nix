@@ -2,6 +2,7 @@
 {
   enable = true;
   defaultEditor = true;
+  enableMan = !pkgs.stdenv.hostPlatform.isDarwin;
   viAlias = true;
   vimAlias = true;
   wrapRc = true;

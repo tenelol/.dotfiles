@@ -5,7 +5,12 @@ let
 in
 {
   homebrew = {
-    taps = [ "nikitabobko/tap" ];
+    taps = [
+      {
+        name = "nikitabobko/tap";
+        trusted = true;
+      }
+    ];
     casks = [ "nikitabobko/tap/aerospace" ];
   };
 

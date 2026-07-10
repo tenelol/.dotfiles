@@ -3,6 +3,7 @@ delib.host {
   name = "nixos";
   type = "laptop";
   system = "x86_64-linux";
+  features = [ "fullDesktop" ];
 
   myconfig.boot.efiSystemdBoot = true;
   myconfig.nixbuild.enable = true;

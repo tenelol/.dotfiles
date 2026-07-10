@@ -44,23 +44,6 @@ let
     else
       null;
 
-  hasLibllamaCpu = isSupportedSystem && builtins.hasAttr "libllama-cpu" packages;
-  libllamaVersion = "20251109.0";
-  libllamaSrc =
-    if hasLibllamaCpu then
-      pkgs.fetchzip {
-        name = "libllama-cpu-bin";
-        version = libllamaVersion;
-        urls = [
-          "https://github.com/7ka-Hiira/llama.cpp/releases/download/v${libllamaVersion}/llama-linux-x86_64-cpu-v${libllamaVersion}.tar.gz"
-          "https://ghproxy.net/https://github.com/7ka-Hiira/llama.cpp/releases/download/v${libllamaVersion}/llama-linux-x86_64-cpu-v${libllamaVersion}.tar.gz"
-          "https://github.moeyy.xyz/https://github.com/7ka-Hiira/llama.cpp/releases/download/v${libllamaVersion}/llama-linux-x86_64-cpu-v${libllamaVersion}.tar.gz"
-        ];
-        hash = "sha256-Hw96OYrd3LoePFhNk3Whk90I0pREx2gpxanIMxo+bHs=";
-        stripRoot = false;
-      }
-    else
-      null;
 in
 {
   inherit
@@ -74,12 +57,4 @@ in
   settings = overrideHazkeySrc "hazkey-settings";
   server = overrideHazkeySrc "hazkey-server";
   dictionary = overrideHazkeySrc "dictionary";
-
-  libllamaCpu =
-    if hasLibllamaCpu then
-      packages.libllama-cpu.overrideAttrs (_: {
-        src = libllamaSrc;
-      })
-    else
-      null;
 }
