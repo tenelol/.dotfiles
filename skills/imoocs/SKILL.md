@@ -136,6 +136,8 @@ When that request targets a lesson/page URL and does not explicitly limit the sc
 
 When the user asks to finish or submit an assignment without limiting the scope, complete every visible answer field, not only required fields. Treat optional, challenge, bonus, and file-upload fields as in scope unless the user explicitly asks for required-only work, the field is impossible/unsafe to complete, or the field's instructions clearly require unavailable personal input. If any visible field is skipped, state the exact field and reason before the final report.
 
+Audit every blank visible field before `push`; do not treat a conditional field as safely complete merely because its condition is false. When an inapplicable field is free text and the user asked to complete the whole form, enter a concise explicit value such as `該当なし（交互作用効果なし）` unless the form explicitly requires the field to remain blank. When an inapplicable branch is radio/select-only, leave it unselected if every available choice would assert a false or contradictory result, and record that exact conditional reason during verification. Never invent a substantive answer just to remove an empty value.
+
 Some INIAD MOOCs forms expose select/dropdown or radio-like answers only in `currentAnswers` / `currentAnswerDetails`, while omitting those pids from `fields[]`. Treat placeholder values such as `---`, empty strings, or option-looking current answers for pids not listed in `fields[]` as in-scope visible fields when the page text shows a selector or choice. Infer the pid from the `currentAnswers` key, solve it from the assignment instructions, submit it in the same JSON payload, and verify it after submission.
 
 ### Inspect Before Writing
