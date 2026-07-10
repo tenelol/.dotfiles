@@ -80,6 +80,7 @@
             args
             (base.withConfig {
               args.enable = true;
+              hosts.features.features = [ "fullDesktop" ];
               rices.enable = true;
             })
           ];

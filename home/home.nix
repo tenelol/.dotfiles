@@ -32,6 +32,14 @@ in
     "/run/wrappers/bin"
   ]
   ++ lib.optionals isDarwin [
+    "/opt/homebrew/opt/coreutils/libexec/gnubin"
+    "/opt/homebrew/opt/findutils/libexec/gnubin"
+    "/opt/homebrew/opt/gawk/libexec/gnubin"
+    "/opt/homebrew/opt/gnu-sed/libexec/gnubin"
+    "/opt/homebrew/opt/gnu-tar/libexec/gnubin"
+    "/opt/homebrew/opt/grep/libexec/gnubin"
+    "/opt/homebrew/opt/llvm/bin"
+    "/opt/homebrew/opt/make/libexec/gnubin"
     "/opt/homebrew/bin"
     "/opt/homebrew/sbin"
     "/usr/local/bin"
@@ -48,6 +56,7 @@ in
 
   home.packages = homePackages.forHost {
     inherit isServer;
+    fullDesktop = host.fullDesktopFeatured;
   };
 
   home.file =

@@ -1,7 +1,6 @@
 {
   delib,
   host,
-  pkgs,
   profile,
   ...
 }:
@@ -21,10 +20,20 @@ delib.module {
       theme = myconfig.theme.jankyborders;
     in
     {
+      homebrew = {
+        taps = [
+          {
+            name = "FelixKratz/formulae";
+            trusted = true;
+          }
+        ];
+        brews = [ "FelixKratz/formulae/borders" ];
+      };
+
       launchd.user.agents.jankyborders = {
         serviceConfig = {
           ProgramArguments = [
-            "${pkgs.jankyborders}/bin/borders"
+            "/opt/homebrew/bin/borders"
             "style=round"
             "width=8.0"
             "hidpi=on"
@@ -44,8 +53,4 @@ delib.module {
         managedBy = "jankyborders";
       };
     };
-
-  home.ifEnabled = {
-    home.packages = [ pkgs.jankyborders ];
-  };
 }

@@ -14,7 +14,12 @@ delib.module {
 
   darwin.ifEnabled = {
     homebrew = {
-      taps = [ "TheBoredTeam/boring-notch" ];
+      taps = [
+        {
+          name = "TheBoredTeam/boring-notch";
+          trusted = true;
+        }
+      ];
       casks = [ "boring-notch" ];
     };
 

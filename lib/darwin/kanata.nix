@@ -1,10 +1,10 @@
-{ pkgs, profile }:
+{ profile }:
 let
-  package = pkgs.kanata-with-cmd;
+  packageBin = "/opt/homebrew/bin/kanata";
   binPath = "/usr/local/bin/kanata";
 in
 {
-  inherit binPath package;
+  inherit binPath;
 
   daemon = {
     serviceConfig = {
@@ -30,7 +30,7 @@ in
     /usr/bin/pkill -f '${binPath}' >/dev/null 2>&1 || true
     /bin/rm -rf /Applications/Kanata.app
     kanata_link_target="$(/usr/bin/readlink ${binPath} 2>/dev/null || true)"
-    if [ "$kanata_link_target" = "${package}/bin/kanata" ] || [ "$kanata_link_target" = "/run/current-system/sw/bin/kanata" ]; then
+    if [ "$kanata_link_target" = "${packageBin}" ] || [ "$kanata_link_target" = "/run/current-system/sw/bin/kanata" ]; then
       /bin/rm -f ${binPath}
     fi
     /bin/rm -f /Library/PrivilegedHelperTools/local.nix-kanata-root
@@ -47,7 +47,7 @@ in
       echo "warning: ${binPath} exists and is not a symlink; leaving it unchanged" >&2
     else
       /usr/bin/install -d -m 0755 /usr/local/bin
-      /bin/ln -sfn ${package}/bin/kanata ${binPath}
+      /bin/ln -sfn ${packageBin} ${binPath}
     fi
 
     if [ -e /Applications/Kanata.app ] && /usr/bin/grep -q 'local.nix-kanata' /Applications/Kanata.app/Contents/Info.plist 2>/dev/null; then

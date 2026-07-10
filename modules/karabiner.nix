@@ -13,12 +13,6 @@ delib.module {
 
   options = delib.singleEnableOption false;
 
-  darwin.ifEnabled = lib.mkIf isDarwinDesktop {
-    homebrew.casks = [
-      "karabiner-elements"
-    ];
-  };
-
   home.ifEnabled = lib.mkIf isDarwinDesktop {
     launchd.agents.karabiner-elements = {
       enable = true;
