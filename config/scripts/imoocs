@@ -19,7 +19,7 @@ Usage:
   imoocs assignment push <courseId> <problemId>
   imoocs auth status
   imoocs auth login [--gui|--keychain]
-  imoocs auth import-browser [--browser auto|chrome|chromium|brave|edge|firefox]
+  imoocs auth import-browser [--browser auto|chrome|chromium|brave|edge|firefox] [--profile <chrome-profile>]
   imoocs auth logout
   imoocs reset
 
@@ -271,6 +271,30 @@ def load_cookie_jar():
     return jar, "loaded"
 
 
+def clone_cookie_jar(jar):
+    # Test each browser profile in isolation without mutating the saved jar first.
+    cloned = http.cookiejar.CookieJar()
+    for cookie in jar:
+        cloned.set_cookie(cookie_from_dict(cookie_to_dict(cookie)))
+    return cloned
+
+
+def replace_cookie_jar(target, source):
+    # Commit only the browser profile that produced a usable Google auth cookie set.
+    for cookie in list(target):
+        target.clear(cookie.domain, cookie.path, cookie.name)
+    for cookie in source:
+        target.set_cookie(cookie_from_dict(cookie_to_dict(cookie)))
+
+
+def clear_google_cookies(jar):
+    # Avoid mixing personal and INIAD Google cookies from different Chrome profiles.
+    for cookie in list(jar):
+        domain = cookie.domain.lstrip(".").lower()
+        if domain.endswith("google.com") or domain.endswith("googleusercontent.com"):
+            jar.clear(cookie.domain, cookie.path, cookie.name)
+
+
 def save_cookie_jar(jar):
     require_keyring()
     allowed_domains = (
@@ -497,18 +521,31 @@ def validate_moocs_url(url):
         raise ValueError("URLs containing userinfo are not supported")
 
 
-def problem_descriptor(page_html, page_url):
+def problem_descriptors(page_html, page_url):
+    descriptors = []
+    seen_prefixes = set()
     for match in re.finditer(r"(?is)<div\b([^>]*)>", page_html):
         attrs = match.group(1)
         class_name = attr("class", attrs) or ""
         url_prefix = attr("data-urlprefix", attrs)
-        if "problem-container" in class_name and url_prefix:
-            return {
-                "urlPrefix": urllib.parse.urljoin(page_url, url_prefix),
-                "language": attr("data-lang", attrs) or "",
-                "attributes": attrs,
-            }
-    return None
+        if "problem-container" not in class_name.split() or not url_prefix:
+            continue
+        resolved_prefix = urllib.parse.urljoin(page_url, url_prefix).rstrip("/")
+        if resolved_prefix in seen_prefixes:
+            continue
+        seen_prefixes.add(resolved_prefix)
+        descriptors.append({
+            "urlPrefix": resolved_prefix,
+            "language": attr("data-lang", attrs) or "",
+            "attributes": attrs,
+        })
+    return descriptors
+
+
+def problem_descriptor(page_html, page_url):
+    # Keep the original first-problem helper for callers that need the legacy view.
+    descriptors = problem_descriptors(page_html, page_url)
+    return descriptors[0] if descriptors else None
 
 
 def fetch_problem_json(jar, url, page_url, token):
@@ -630,6 +667,56 @@ def form_fields(fragment, answers, answer_details=None):
             "required": bool(re.search(r"(?is)\brequired\b", attrs)),
         })
     return fields
+
+
+def resolve_problem(jar, descriptor, page_url, token):
+    prefix = descriptor["urlPrefix"].rstrip("/")
+    answer_state = "unknown"
+    answers = {}
+    answer_details = {}
+    problem_html = ""
+    endpoint_errors = []
+    try:
+        status_json = fetch_problem_json(jar, f"{prefix}/status", page_url, token)
+        if isinstance(status_json, str):
+            answer_state = status_json
+        elif isinstance(status_json, dict):
+            answer_state = status_json.get("state") or status_json.get("answer_state") or status_json.get("status") or "unknown"
+    except Exception as exc:
+        endpoint_errors.append({"endpoint": "status", "message": str(exc)})
+    try:
+        problem_url = f"{prefix}/problem"
+        if descriptor.get("language"):
+            problem_url += "?" + urllib.parse.urlencode({"lang": descriptor["language"]})
+        problem_json = fetch_problem_json(jar, problem_url, page_url, token)
+        if isinstance(problem_json, dict):
+            problem_html = problem_json.get("html") or ""
+    except Exception as exc:
+        endpoint_errors.append({"endpoint": "problem", "message": str(exc)})
+    try:
+        answers_json = fetch_problem_json(jar, f"{prefix}/answers", page_url, token)
+        answers = current_answers_from_json(answers_json)
+        answer_details = answer_summary(answers_json)
+    except Exception as exc:
+        endpoint_errors.append({"endpoint": "answers", "message": str(exc)})
+
+    problem_id = urllib.parse.unquote(urllib.parse.urlparse(prefix).path.rstrip("/").split("/")[-1] or prefix)
+    problem_text = text_from_html(problem_html) if problem_html else ""
+    problem = {
+        "problemId": problem_id,
+        "urlPrefix": prefix,
+        "status": answer_state,
+        "isSubmittable": answer_state == "open",
+        "bodyText": problem_text,
+        "fields": form_fields(problem_html, answers, answer_details) if problem_html else [],
+        "currentAnswers": answers,
+        "currentAnswerDetails": answer_details,
+    }
+    if descriptor.get("language"):
+        problem["language"] = descriptor["language"]
+    if endpoint_errors:
+        problem["endpointErrors"] = endpoint_errors
+    return problem
 
 
 class AuthRequired(Exception):
@@ -2475,58 +2562,38 @@ def open_url(url):
     title = page_title(page_html, urllib.parse.unquote(urllib.parse.urlparse(final_url).path.rstrip("/").split("/")[-1] or "MOOCs"))
     body_text = text_from_html(content_html)
     route = route_from_url(final_url)
-    descriptor = problem_descriptor(page_html, final_url)
-    problem = None
+    descriptors = problem_descriptors(page_html, final_url)
+    problems = [resolve_problem(jar, descriptor, final_url, token) for descriptor in descriptors]
+    problem = problems[0] if problems else None
 
-    if descriptor:
-        prefix = descriptor["urlPrefix"].rstrip("/")
-        answer_state = "unknown"
-        answers = {}
-        answer_details = {}
-        problem_html = ""
-        endpoint_errors = []
-        try:
-            status_json = fetch_problem_json(jar, f"{prefix}/status", final_url, token)
-            if isinstance(status_json, str):
-                answer_state = status_json
-            elif isinstance(status_json, dict):
-                answer_state = status_json.get("state") or status_json.get("answer_state") or status_json.get("status") or "unknown"
-        except Exception as exc:
-            endpoint_errors.append({"endpoint": "status", "message": str(exc)})
-        try:
-            problem_url = f"{prefix}/problem"
-            if descriptor.get("language"):
-                problem_url += "?" + urllib.parse.urlencode({"lang": descriptor["language"]})
-            problem_json = fetch_problem_json(jar, problem_url, final_url, token)
-            if isinstance(problem_json, dict):
-                problem_html = problem_json.get("html") or ""
-        except Exception as exc:
-            endpoint_errors.append({"endpoint": "problem", "message": str(exc)})
-        try:
-            answers_json = fetch_problem_json(jar, f"{prefix}/answers", final_url, token)
-            answers = current_answers_from_json(answers_json)
-            answer_details = answer_summary(answers_json)
-        except Exception as exc:
-            endpoint_errors.append({"endpoint": "answers", "message": str(exc)})
+    for resolved_problem in problems:
+        if resolved_problem["bodyText"]:
+            body_text = "\n\n".join(part for part in [body_text, resolved_problem["bodyText"]] if part)
+    if problem:
+        # Keep the legacy route alias pointed at the first problem on the page.
+        route["problemId"] = problem["problemId"]
 
-        problem_text = text_from_html(problem_html) if problem_html else ""
-        fields = form_fields(problem_html, answers, answer_details) if problem_html else []
-        problem_id = urllib.parse.unquote(urllib.parse.urlparse(prefix).path.rstrip("/").split("/")[-1] or prefix)
-        problem = {
-            "problemId": problem_id,
-            "urlPrefix": prefix,
-            "status": answer_state,
-            "isSubmittable": answer_state == "open",
-            "bodyText": problem_text,
-            "fields": fields,
-            "currentAnswers": answers,
-            "currentAnswerDetails": answer_details,
+    assignments = []
+    for resolved_problem in problems:
+        assignment = {
+            "courseId": route.get("courseId"),
+            "lessonId": route.get("lessonId"),
+            "pageId": route.get("pageId"),
+            "problemId": resolved_problem["problemId"],
+            "title": title,
+            "urlPrefix": resolved_problem["urlPrefix"],
+            "bodyText": resolved_problem["bodyText"],
+            "fields": resolved_problem["fields"],
+            "currentAnswers": resolved_problem["currentAnswers"],
+            "currentAnswerDetails": resolved_problem["currentAnswerDetails"],
+            "status": resolved_problem["status"],
+            "isSubmittable": resolved_problem["isSubmittable"],
         }
-        if endpoint_errors:
-            problem["endpointErrors"] = endpoint_errors
-        if problem_text:
-            body_text = "\n\n".join(part for part in [body_text, problem_text] if part)
-        route["problemId"] = problem_id
+        if "language" in resolved_problem:
+            assignment["language"] = resolved_problem["language"]
+        if "endpointErrors" in resolved_problem:
+            assignment["endpointErrors"] = resolved_problem["endpointErrors"]
+        assignments.append(assignment)
 
     data = {
         "url": url,
@@ -2535,18 +2602,8 @@ def open_url(url):
         "title": title,
         "bodyText": body_text,
         "problem": problem,
-        "assignments": [{
-            "courseId": route.get("courseId"),
-            "lessonId": route.get("lessonId"),
-            "pageId": route.get("pageId"),
-            "problemId": route.get("problemId"),
-            "title": title,
-            "fields": problem.get("fields", []) if problem else [],
-            "currentAnswers": problem.get("currentAnswers") if problem else None,
-            "currentAnswerDetails": problem.get("currentAnswerDetails") if problem else None,
-            "status": problem.get("status") if problem else None,
-            "isSubmittable": problem.get("isSubmittable") if problem else None,
-        }] if problem else [],
+        "assignmentCount": len(assignments),
+        "assignments": assignments,
     }
     print_json(envelope(True, "open", "route", "resolved", data))
     return 0
@@ -3368,7 +3425,116 @@ def google_auth_cookie_names_in(jar):
     return sorted(names)
 
 
-def browser_cookie_loaders(browser):
+def browser_profile_roots():
+    # Locate Chromium-family profile stores on macOS; unsupported platforms fall back.
+    if sys.platform == "darwin":
+        base = Path.home() / "Library" / "Application Support"
+        return {
+            "chrome": base / "Google" / "Chrome",
+            "chromium": base / "Chromium",
+            "brave": base / "BraveSoftware" / "Brave-Browser",
+            "edge": base / "Microsoft Edge",
+        }
+    return {}
+
+
+def browser_profile_info(base_dir):
+    # Chrome Local State gives profile display names and account hints without secrets.
+    local_state = base_dir / "Local State"
+    try:
+        data = json.loads(local_state.read_text())
+    except Exception:
+        return {}
+    info_cache = data.get("profile", {}).get("info_cache", {})
+    return info_cache if isinstance(info_cache, dict) else {}
+
+
+def browser_profile_cookie_file(profile_dir):
+    # Chrome versions have used both profile/Cookies and profile/Network/Cookies.
+    for relative in ("Network/Cookies", "Cookies"):
+        cookie_file = profile_dir / relative
+        if cookie_file.exists():
+            return cookie_file
+    return None
+
+
+def browser_profile_score(profile_dir_name, info):
+    # Prefer INIAD profiles so auto import does not pick a personal Google account.
+    values = [
+        profile_dir_name,
+        str(info.get("name", "")),
+        str(info.get("user_name", "")),
+        str(info.get("gaia_name", "")),
+    ]
+    text = " ".join(values).lower()
+    score = 0
+    if "iniad" in text:
+        score += 100
+    if "@iniad.org" in text:
+        score += 50
+    if info.get("user_name"):
+        score += 10
+    if profile_dir_name == "Default":
+        score -= 5
+    return score
+
+
+def browser_profile_matches(profile_dir_name, info, requested_profile):
+    # Accept either the profile directory, display name, account name, or Gaia name.
+    if not requested_profile:
+        return True
+    wanted = requested_profile.strip().casefold()
+    values = [
+        profile_dir_name,
+        str(info.get("name", "")),
+        str(info.get("user_name", "")),
+        str(info.get("gaia_name", "")),
+    ]
+    return any(value.strip().casefold() == wanted for value in values if value)
+
+
+def chromium_profile_cookie_sources(browser_name, requested_profile=""):
+    # Build cookie loader candidates in the order they should be attempted.
+    roots = browser_profile_roots()
+    base_dir = roots.get(browser_name)
+    if not base_dir or not base_dir.exists():
+        return []
+
+    info_cache = browser_profile_info(base_dir)
+    profile_names = set(info_cache)
+    for profile_dir in base_dir.iterdir():
+        if profile_dir.is_dir() and (profile_dir.name == "Default" or profile_dir.name.startswith("Profile ")):
+            profile_names.add(profile_dir.name)
+
+    sources = []
+    for profile_name in sorted(profile_names):
+        profile_dir = base_dir / profile_name
+        if not profile_dir.is_dir():
+            continue
+        info = info_cache.get(profile_name, {})
+        if not browser_profile_matches(profile_name, info, requested_profile):
+            continue
+        cookie_file = browser_profile_cookie_file(profile_dir)
+        if not cookie_file:
+            continue
+        sources.append({
+            "profile": profile_name,
+            "profileName": str(info.get("name", "")),
+            "userNamePresent": bool(info.get("user_name")),
+            "cookieFile": str(cookie_file),
+            "score": browser_profile_score(profile_name, info),
+        })
+
+    if not requested_profile:
+        preferred_sources = [source for source in sources if source["score"] >= 100]
+        if preferred_sources:
+            sources = preferred_sources
+
+    sources.sort(key=lambda item: (-item["score"], item["profile"]))
+    return sources
+
+
+def browser_cookie_loaders(browser, profile=""):
     if browser_cookie3 is None:
         raise RuntimeError(f"browser-cookie3 support is unavailable: {BROWSER_COOKIE3_ERROR}")
 
@@ -3392,45 +3558,76 @@ def browser_cookie_loaders(browser):
     loaders = []
     for name in names:
         loader = getattr(browser_cookie3, name, None)
-        if loader is not None:
-            loaders.append((name, loader))
+        if loader is None:
+            continue
+        profile_sources = chromium_profile_cookie_sources(name, profile)
+        for source in profile_sources:
+            loaders.append({
+                "browser": name,
+                "label": f"{name}:{source['profile']}",
+                "loader": loader,
+                "kwargs": {"cookie_file": source["cookieFile"], "domain_name": "google.com"},
+                "profile": source["profile"],
+                "profileName": source["profileName"],
+                "userNamePresent": source["userNamePresent"],
+            })
+        if not profile_sources and not profile:
+            loaders.append({
+                "browser": name,
+                "label": name,
+                "loader": loader,
+                "kwargs": {"domain_name": "google.com"},
+                "profile": "",
+                "profileName": "",
+                "userNamePresent": False,
+            })
     if not loaders:
+        if profile:
+            raise RuntimeError(f"no supported browser cookie loaders are available for profile {profile!r}")
         raise RuntimeError("no supported browser cookie loaders are available")
     return loaders
 
 
-def import_google_cookies_from_browser(jar, browser="auto"):
+def import_google_cookies_from_browser(jar, browser="auto", profile=""):
     tried = []
     errors = []
-    for name, loader in browser_cookie_loaders(browser):
-        tried.append(name)
+    for spec in browser_cookie_loaders(browser, profile):
+        tried.append(spec["label"])
         try:
-            browser_jar = loader(domain_name="google.com")
+            browser_jar = spec["loader"](**spec["kwargs"])
         except Exception as exc:
-            errors.append({"browser": name, "message": str(exc)[:240]})
+            errors.append({"browser": spec["label"], "message": str(exc)[:240]})
             continue
 
+        # Validate this profile as a complete Google cookie set before saving it.
+        candidate_jar = clone_cookie_jar(jar)
+        clear_google_cookies(candidate_jar)
         imported = 0
         for cookie in browser_jar:
             domain = cookie.domain.lstrip(".").lower()
             if not domain.endswith("google.com"):
                 continue
-            jar.set_cookie(cookie)
+            candidate_jar.set_cookie(cookie)
             imported += 1
 
-        auth_cookie_names = google_auth_cookie_names_in(jar)
+        auth_cookie_names = google_auth_cookie_names_in(candidate_jar)
         if auth_cookie_names:
-            return {
+            replace_cookie_jar(jar, candidate_jar)
+            info = {
                 "ok": True,
-                "browser": name,
+                "browser": spec["browser"],
+                "profile": spec["profile"],
+                "profileName": spec["profileName"],
+                "userNamePresent": spec["userNamePresent"],
                 "triedBrowsers": tried,
                 "importedCookieCount": imported,
                 "authCookieNames": auth_cookie_names,
                 "errors": errors,
             }
+            return info
 
         errors.append({
-            "browser": name,
+            "browser": spec["label"],
             "message": "Google cookies were readable, but Google auth cookies were not found.",
         })
 
@@ -3445,13 +3642,15 @@ def maybe_import_google_cookies_from_browser(jar):
     if disabled in ("1", "true", "yes"):
         return {"ok": False, "browser": "", "message": "browser cookie import is disabled"}
     try:
-        info = import_google_cookies_from_browser(jar, os.environ.get("IMOOCS_BROWSER", "auto"))
+        profile = os.environ.get("IMOOCS_BROWSER_PROFILE", "").strip() or os.environ.get("IMOOCS_CHROME_PROFILE", "").strip()
+        info = import_google_cookies_from_browser(jar, os.environ.get("IMOOCS_BROWSER", "auto"), profile)
         save_cookie_jar(jar)
         return info
     except Exception as exc:
         return {
             "ok": False,
             "browser": os.environ.get("IMOOCS_BROWSER", "auto"),
+            "profile": os.environ.get("IMOOCS_BROWSER_PROFILE", "").strip() or os.environ.get("IMOOCS_CHROME_PROFILE", "").strip(),
             "message": str(exc)[:300],
         }
 
@@ -3620,14 +3819,16 @@ def auth_login(args):
 
 def auth_import_browser(args):
     browser = os.environ.get("IMOOCS_BROWSER", "auto")
+    profile = os.environ.get("IMOOCS_BROWSER_PROFILE", "").strip() or os.environ.get("IMOOCS_CHROME_PROFILE", "").strip()
     idx = 0
     while idx < len(args):
         arg = args[idx]
         if arg in ("-h", "--help"):
             print("""Usage:
-  imoocs auth import-browser [--browser auto|chrome|chromium|brave|edge|firefox]
+  imoocs auth import-browser [--browser auto|chrome|chromium|brave|edge|firefox] [--profile <chrome-profile>]
 
 Imports an existing local browser Google session into the imoocs CLI cookie jar.
+When no profile is provided, INIAD-looking Chrome profiles are tried first.
 Cookie values are never printed.
 """.rstrip())
             return 0
@@ -3636,6 +3837,13 @@ Cookie values are never printed.
             if idx >= len(args):
                 fail_text("--browser requires a value", 64)
             browser = args[idx]
+            idx += 1
+            continue
+        if arg == "--profile":
+            idx += 1
+            if idx >= len(args):
+                fail_text("--profile requires a value", 64)
+            profile = args[idx]
             idx += 1
             continue
         if not arg.startswith("-") and browser == os.environ.get("IMOOCS_BROWSER", "auto"):
@@ -3648,13 +3856,14 @@ Cookie values are never printed.
     if store_status in ("missing_keyring", "keyring_unavailable"):
         fail_text("auth keyring is unavailable", 69)
 
-    info = import_google_cookies_from_browser(jar, browser)
+    info = import_google_cookies_from_browser(jar, browser, profile)
     save_cookie_jar(jar)
     names = ", ".join(info["authCookieNames"])
     tried = ", ".join(info["triedBrowsers"])
+    profile_text = f" profile={info['profile']}" if info.get("profile") else ""
     print(
         "auth import-browser completed: "
-        f"browser={info['browser']} tried={tried} "
+        f"browser={info['browser']}{profile_text} tried={tried} "
         f"googleCookies={info['importedCookieCount']} authCookies={names}"
     )
     return 0
@@ -3989,7 +4198,7 @@ main() {
       usage
       ;;
     --version)
-      echo "imoocs 0.3.7 ($backend)"
+      echo "imoocs 0.3.9 ($backend)"
       ;;
     open)
       open_cmd "$@"
