@@ -31,6 +31,7 @@ description: Edit, review, validate, build, switch, or document the personal den
    - Use `nh os build . -H <host>` for an affected Linux host.
    - Use `./scripts/validate linux` only when all Linux hosts need building.
    - Use `nh darwin build . -H <confirmed-target>` for Darwin.
+   - For a macOS/Darwin-only change, skip every Linux host build and `./scripts/validate linux`; keep the all-system no-build evaluation, then build only the confirmed Darwin target.
 4. Skip host builds for docs- or skill-only changes.
 
 Always pass an explicit mode to `./scripts/validate`; its bare invocation defaults to all Linux builds. Prefer `nh` over raw `nixos-rebuild` or `darwin-rebuild` unless the user explicitly requests otherwise.
