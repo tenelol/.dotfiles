@@ -2,6 +2,19 @@
 let
   packageBin = "/opt/homebrew/bin/kanata";
   binPath = "/usr/local/bin/kanata";
+  managedMarker = "/usr/local/bin/.kanata-managed-by-nix-darwin";
+  checkManagedPath = ''
+    kanata_managed=0
+    if [ -e ${managedMarker} ]; then
+      kanata_managed=1
+    elif [ -L ${binPath} ]; then
+      case "$(/usr/bin/readlink ${binPath})" in
+        ${packageBin}|/run/current-system/sw/bin/kanata|/nix/store/*-kanata-*/bin/kanata)
+          kanata_managed=1
+          ;;
+      esac
+    fi
+  '';
 in
 {
   inherit binPath;
@@ -29,9 +42,10 @@ in
     /usr/bin/pkill -f '/Applications/Kanata.app/Contents/MacOS/kanata' >/dev/null 2>&1 || true
     /usr/bin/pkill -f '${binPath}' >/dev/null 2>&1 || true
     /bin/rm -rf /Applications/Kanata.app
-    kanata_link_target="$(/usr/bin/readlink ${binPath} 2>/dev/null || true)"
-    if [ "$kanata_link_target" = "${packageBin}" ] || [ "$kanata_link_target" = "/run/current-system/sw/bin/kanata" ]; then
+    ${checkManagedPath}
+    if [ "$kanata_managed" = 1 ]; then
       /bin/rm -f ${binPath}
+      /bin/rm -f ${managedMarker}
     fi
     /bin/rm -f /Library/PrivilegedHelperTools/local.nix-kanata-root
     /bin/rm -f /Library/LaunchDaemons/org.nixos.kanata.plist
@@ -41,14 +55,22 @@ in
   enabledPostActivation = ''
     uid="$(id -u ${profile.username})"
 
-    # Kanata uses the Karabiner VirtualHID driver on macOS. Keep the launched
-    # binary path stable so the Input Monitoring grant survives rebuilds.
-    if [ -e ${binPath} ] && [ ! -L ${binPath} ]; then
-      echo "warning: ${binPath} exists and is not a symlink; leaving it unchanged" >&2
-    else
-      /usr/bin/install -d -m 0755 /usr/local/bin
-      /bin/ln -sfn ${packageBin} ${binPath}
+    # Keep the Input Monitoring path stable without letting the root daemon
+    # execute Homebrew's user-writable binary directly.
+    ${checkManagedPath}
+    if [ -e ${binPath} ] || [ -L ${binPath} ]; then
+      if [ "$kanata_managed" = 1 ]; then
+        /bin/rm -f ${binPath}
+      else
+        echo "error: refusing to replace unmanaged ${binPath}" >&2
+        exit 1
+      fi
     fi
+    /usr/bin/install -d -o root -g wheel -m 0755 /usr/local/bin
+    kanata_tmp="${binPath}.nix-darwin.$$"
+    /usr/bin/install -o root -g wheel -m 0755 ${packageBin} "$kanata_tmp"
+    /bin/mv -f "$kanata_tmp" ${binPath}
+    /usr/bin/install -o root -g wheel -m 0644 /dev/null ${managedMarker}
 
     if [ -e /Applications/Kanata.app ] && /usr/bin/grep -q 'local.nix-kanata' /Applications/Kanata.app/Contents/Info.plist 2>/dev/null; then
       /bin/rm -rf /Applications/Kanata.app

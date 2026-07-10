@@ -5,6 +5,7 @@ class KanataWithCmd < Formula
   desc "Cross-platform keyboard remapper with command actions enabled"
   homepage "https://github.com/jtroo/kanata"
   url "https://github.com/jtroo/kanata/releases/download/v1.12.0/macos-binaries-arm64.zip"
+  version "1.12.0"
   sha256 "839769d189911b5881e11550eaa2039705213fb725865d088f5a2e3a6c10de32"
   license "LGPL-3.0-only"
 
