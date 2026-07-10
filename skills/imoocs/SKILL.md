@@ -237,4 +237,6 @@ For assignment work, also state whether post-write `imoocs assignment show '<les
 
 For normal slide/material work, report downloaded paths or counts and state that no assignment submission was performed. If PDFs were only read from a temporary directory, state that the temporary PDFs were deleted instead of reporting them as saved materials.
 
+For every completed MOOCs task, include a clickable Markdown link to the exact target course, lesson, or assignment URL in the final report so the user can verify the result immediately. Prefer the URL supplied by the user; otherwise use the URL resolved by `imoocs open`.
+
 Always treat submitted content, submission judgment, submission operation, and compliance with related rules as the user's responsibility.
