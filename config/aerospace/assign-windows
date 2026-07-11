@@ -33,6 +33,7 @@ assign_app com.apple.mail 3
 assign_app com.tinyspeck.slackmacgap 3
 assign_app dev.vencord.vesktop 3
 assign_app jp.naver.line.mac 3
+assign_app com.google.Chrome 4
 assign_app com.spotify.client 4
 assign_app com.apple.Preview 5
 

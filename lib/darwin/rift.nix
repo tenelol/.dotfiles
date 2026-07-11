@@ -97,6 +97,10 @@ in
       $DRY_RUN_CMD /bin/launchctl kickstart -k "gui/$uid/git.acsandmann.rift" >/dev/null 2>&1 || true
     fi
 
+    if [ -x "$HOME/.config/rift/assign-windows" ]; then
+      $DRY_RUN_CMD "$HOME/.config/rift/assign-windows" >/dev/null 2>&1 || true
+    fi
+
     if [ -x "$HOME/.config/rift/sketchybar-workspace-subscribe" ]; then
       $DRY_RUN_CMD "$HOME/.config/rift/sketchybar-workspace-subscribe" >/dev/null 2>&1 || true
     fi
@@ -104,6 +108,10 @@ in
 
   configFiles = {
     "rift/config.toml".source = ../../config/rift/config.toml;
+    "rift/assign-windows" = {
+      source = ../../config/rift/assign-windows;
+      executable = true;
+    };
     "rift/sketchybar-workspace-subscribe" = {
       source = ../../config/rift/sketchybar-workspace-subscribe;
       executable = true;
