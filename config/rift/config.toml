@@ -18,6 +18,7 @@ auto_focus_blacklist = [
 run_on_start = [
   "/bin/sh -lc \"$HOME/.config/rift/sketchybar-workspace-subscribe\"",
   "/bin/sh -lc \"$HOME/.config/rift/apply-horizontal-fullscreen --all-workspaces\"",
+  "/bin/sh -lc \"$HOME/.config/rift/assign-windows\"",
 ]
 hot_reload = true
 
@@ -128,6 +129,7 @@ app_rules = [
   { app_id = "com.tinyspeck.slackmacgap", workspace = 2 },
   { app_id = "dev.vencord.vesktop", workspace = 2 },
   { app_id = "jp.naver.line.mac", workspace = 2 },
+  { app_id = "com.google.Chrome", workspace = 3 },
   { app_id = "com.spotify.client", workspace = 3 },
   { app_id = "com.apple.Preview", workspace = 4 },
   { app_name = "System Settings", manage = false },

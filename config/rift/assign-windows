@@ -1,0 +1,33 @@
+#!/bin/sh
+set -eu
+
+RIFT_CLI="${RIFT_CLI:-/opt/homebrew/bin/rift-cli}"
+JQ="${JQ:-/usr/bin/jq}"
+SLEEP="${SLEEP:-/bin/sleep}"
+
+[ -x "$RIFT_CLI" ] && [ -x "$JQ" ] || exit 0
+
+tries=0
+until "$RIFT_CLI" query metrics >/dev/null 2>&1; do
+  tries=$((tries + 1))
+  [ "$tries" -lt 30 ] || exit 0
+  "$SLEEP" 0.1
+done
+
+assign_app() {
+  app_id="$1"
+  workspace="$2"
+
+  "$RIFT_CLI" query workspaces 2>/dev/null \
+    | "$JQ" -r --arg app_id "$app_id" \
+      '.[] | .windows[]? | select(.bundle_id == $app_id) | .window_server_id' \
+    | while IFS= read -r window_id; do
+        case "$window_id" in
+          '' | *[!0-9]*) continue ;;
+        esac
+
+        "$RIFT_CLI" execute workspace move-window "$workspace" "$window_id" >/dev/null 2>&1 || true
+      done
+}
+
+assign_app com.google.Chrome 3
