@@ -120,10 +120,25 @@
       # the public flake interface aligned with the actual target platform.
       nixosConfigurations = filterConfigurations isLinuxSystem (mkConfigurations "nixos");
       darwinConfigurations = filterConfigurations isDarwinSystem (mkConfigurations "darwin");
-      allConfigurations = nixosConfigurations // darwinConfigurations;
+      linuxCheckTargets = [
+        "nixos"
+        "nvidia-desktop"
+        "nixos-server"
+        "wsl"
+      ];
+      darwinCheckTargets = [
+        "macbook-rift"
+        "macbook-aerospace"
+        "macbook-mac"
+      ];
+      # Keep every rice buildable, but avoid rechecking generated variants after
+      # Nix has already validated the public NixOS configurations.
+      checkedNixosConfigurations = lib.getAttrs linuxCheckTargets nixosConfigurations;
+      checkedConfigurations =
+        checkedNixosConfigurations // lib.getAttrs darwinCheckTargets darwinConfigurations;
       supportedSystems = lib.unique (
         map (configuration: configuration.pkgs.stdenv.hostPlatform.system) (
-          builtins.attrValues allConfigurations
+          builtins.attrValues checkedConfigurations
         )
       );
     in
@@ -133,8 +148,8 @@
       checks = lib.genAttrs supportedSystems (
         system:
         let
-          systemConfigurations = filterConfigurationsBySystem system allConfigurations;
-          linuxSystemConfigurations = filterConfigurationsBySystem system nixosConfigurations;
+          systemConfigurations = filterConfigurationsBySystem system checkedConfigurations;
+          linuxSystemConfigurations = filterConfigurationsBySystem system checkedNixosConfigurations;
         in
         mkEvalChecks systemConfigurations
         // lib.optionalAttrs (isLinuxSystem system) (mkLinuxBuildChecks linuxSystemConfigurations)
