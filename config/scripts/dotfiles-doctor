@@ -99,11 +99,11 @@ line_count() {
 }
 
 stat_mtime() {
-  if stat -f '%Sm' -t '%Y-%m-%d %H:%M:%S' "$1" 2>/dev/null; then
-    return 0
+  if [ "$uname_s" = "Darwin" ]; then
+    /usr/bin/stat -f '%Sm' -t '%Y-%m-%d %H:%M:%S' "$1" 2>/dev/null
+  else
+    stat -c '%y' "$1" 2>/dev/null | cut -d. -f1
   fi
-
-  stat -c '%y' "$1" 2>/dev/null | cut -d. -f1
 }
 
 repo_root="${DOTFILES_REPO:-$HOME/.dotfiles}"
