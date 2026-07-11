@@ -61,6 +61,7 @@ in
       show-process-indicators = true;
       show-recents = false;
       showhidden = true;
+      static-only = true;
       tilesize = 48;
     };
 
