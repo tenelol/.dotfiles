@@ -88,6 +88,7 @@ delib.module {
       # repo-built tools and the nix-darwin/Home Manager control plane.
       casks = [
         "azookey"
+        "blender"
         "claude"
         "codex"
         "chatgpt"
