@@ -54,6 +54,47 @@ in
     EDITOR = "nvim";
   };
 
+  programs.opencode = lib.mkIf isDarwin {
+    enable = true;
+    settings = {
+      model = "ollama/qwen3.5:9b-q4_K_M";
+      provider.ollama = {
+        npm = "@ai-sdk/openai-compatible";
+        name = "Ollama (local)";
+        options.baseURL = "http://127.0.0.1:11434/v1";
+        models."qwen3.5:9b-q4_K_M" = {
+          name = "Qwen3.5 9B Q4_K_M (local)";
+          attachment = true;
+          reasoning = true;
+          tool_call = true;
+          options.reasoningEffort = "none";
+          limit = {
+            context = 32768;
+            output = 8192;
+          };
+          modalities = {
+            input = [
+              "text"
+              "image"
+            ];
+            output = [ "text" ];
+          };
+        };
+      };
+    };
+  };
+
+  services.ollama = lib.mkIf isDarwin {
+    enable = true;
+    environmentVariables = {
+      OLLAMA_CONTEXT_LENGTH = "32768";
+      OLLAMA_KEEP_ALIVE = "30m";
+      OLLAMA_MAX_LOADED_MODELS = "1";
+      OLLAMA_NO_CLOUD = "1";
+      OLLAMA_NUM_PARALLEL = "1";
+    };
+  };
+
   home.packages = homePackages.forHost {
     inherit isServer;
     fullDesktop = host.fullDesktopFeatured;
