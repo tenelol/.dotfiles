@@ -9,7 +9,7 @@ description: Use when working with INIAD MOOCs (moocs.iniad.org), INIAD course p
 
 Use the local `imoocs` command as the first interface for INIAD MOOCs work. In this dotfiles repo, `imoocs` is an agent-safe CLI for MOOCs operations; it enforces JSON envelopes, URL handling, and submission safety rules. Use it instead of BrowserUse, Playwright, or manual browser operations whenever the requested surface is supported.
 
-Slide PDF collection is implemented in the local `imoocs` CLI. It uses the stored `imoocs auth login` MOOCs and Google session cookies and does not require `collect-cli`.
+Lecture-material collection is implemented in the local `imoocs` CLI. It discovers Google Slides, Drive files, and Drive folders from MOOCs page HTML, uses the stored `imoocs auth login` MOOCs and Google session cookies, and does not require `collect-cli`.
 
 ## Core Rules
 
@@ -70,7 +70,7 @@ Never ask the user to paste credentials into chat. If the user wants to avoid ty
 imoocs open 'https://moocs.iniad.org/...'
 ```
 
-Parse the JSON envelope. If `ok` is false, report the unsupported operation and use the envelope's `data.next` hints where relevant. Do not parse the URL by hand.
+Parse the JSON envelope. If `ok` is false, report the unsupported operation and use the envelope's `data.next` hints where relevant. Do not parse the URL by hand. For a resolved page, use `data.links` for ordinary anchors and `data.materialLinks` for discovered Google Slides / Drive materials instead of scraping the page separately.
 
 For lesson URLs, inspect the resolved `courseId`, `lessonId`, `pageId`, `assignmentCount`, every `assignments[].problemId`, and every `assignments[].fields[]` when the CLI returns them. Do not assume that one lesson page contains one assignment or stop after `data.problem`; the array is authoritative and may contain any number of entries. If `imoocs open` returns `auth_required`, run `imoocs auth login --keychain` in Codex desktop sessions, then retry only if Keychain auth succeeds. If Keychain auth fails or blocks, stop and report the Keychain blocker; do not fall back to GUI/TTY/browser unless the user explicitly authorizes that fallback in the current turn. If the expected assignment is not present and the local CLI supports assignment listing/detail commands, use the same course's assignment list and then show the matching assignment:
 
@@ -84,24 +84,25 @@ Do not submit a different pending assignment just because it appears in the list
 
 ## Slides
 
-Use the native slide PDF collector:
+Use the native lecture-material collector:
 
 ```bash
 imoocs slide collect --path /path/to/download-dir --year 2025
 ```
 
-This command uses stored `imoocs auth login` MOOCs and Google session cookies. It never prompts for a password and never calls `collect-cli`. If no valid MOOCs session is stored, it returns an `auth_required` JSON envelope with `data.authScope: "moocs"`; recover with `imoocs auth login --keychain` in Codex desktop sessions, then retry only if auth succeeds. If it returns `data.authScope: "google_slides"` or `data.cookieStore: "google_expired"`, do not retry Keychain or `imoocs auth login` automatically because the MOOCs session is already usable and the blocker is Google Docs access for the embedded slide deck. Instead, run `imoocs auth import-browser --browser auto`, then retry `slide collect`; newer `slide collect` may attempt this import automatically once before failing.
+This command uses stored `imoocs auth login` MOOCs and Google session cookies. It collects linked Google presentations as PDF, downloads linked Drive files directly, and recursively collects linked Drive folders. It never prompts for a password and never calls `collect-cli`. If no valid MOOCs session is stored, it returns an `auth_required` JSON envelope with `data.authScope: "moocs"`; recover with `imoocs auth login --keychain` in Codex desktop sessions, then retry only if auth succeeds. If it returns `data.authScope: "google_slides"` or `data.cookieStore: "google_expired"`, do not retry Keychain or `imoocs auth login` automatically because the MOOCs session is already usable and the blocker is Google Docs access. Instead, run `imoocs auth import-browser --browser auto`, then retry `slide collect`. To discard stale stored Google cookies and import the configured local browser profile in the same collection run, pass `--refresh-google`.
 
 In an interactive TTY, missing `--course`, `--lecture`, or `--page` selectors are prompted as numbered menus. In non-interactive shells, pass selectors or explicit `--all`:
 
 ```bash
 imoocs slide collect --path /path/to/download-dir --year 2025 --course COS101 --lecture all --page all
 imoocs slide collect --path /path/to/download-dir --year 2025 --all
+imoocs slide collect --path /path/to/download-dir --year 2025 --all --refresh-google
 ```
 
 Selectors accept ids/slugs, names, 1-based indexes, or `all`; exact ids such as lessonId `13` or pageId `03` are preferred over menu indexes. Avoid `--all` for read-only inspection unless the user explicitly asks to collect broad materials.
 
-If Google Slides PDF export fails after browser-cookie import, or no slide iframe is found, treat that JSON envelope as authoritative. Do not fall back to BrowserUse, Playwright, manual URL parsing, manual slide inspection, or `collect-cli` unless the user explicitly authorizes a fallback in the current turn.
+If Google material export/download fails after browser-cookie import, or no Google material link is found, treat that JSON envelope as authoritative. Do not fall back to BrowserUse, Playwright, manual URL parsing, manual slide inspection, or `collect-cli` unless the user explicitly authorizes a fallback in the current turn.
 
 If the user only asks to read, inspect, summarize, or verify PDFs, use a temporary directory from `mktemp -d` for `imoocs slide collect`, read the PDFs from there, and remove that directory in the same turn after extracting the needed information. Do not leave PDFs in `Downloads`, the repo, or another stable local directory for read-only tasks.
 

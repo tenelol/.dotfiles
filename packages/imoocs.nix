@@ -11,7 +11,7 @@ in
 
 pkgs.stdenvNoCC.mkDerivation {
   pname = "imoocs";
-  version = "0.3.9";
+  version = "0.3.10";
 
   src = ../config/scripts/imoocs;
   dontUnpack = true;

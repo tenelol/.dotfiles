@@ -927,6 +927,53 @@ def is_google_presentation_url(url):
     return parsed.hostname == "docs.google.com" and "/presentation/d/" in parsed.path
 
 
+def is_google_material_url(url):
+    return urllib.parse.urlparse(url).hostname in {"docs.google.com", "drive.google.com"}
+
+
+def google_material_kind(url):
+    parsed = urllib.parse.urlparse(url)
+    if parsed.hostname == "docs.google.com" and "/presentation/d/" in parsed.path:
+        return "presentation"
+    if parsed.hostname == "drive.google.com" and "/folders/" in parsed.path:
+        return "folder"
+    return "drive"
+
+
+def extract_google_material_links(page_html, page_url):
+    materials = []
+
+    def add(url, source, text=""):
+        resolved = urllib.parse.urljoin(page_url, html.unescape(url).strip())
+        if not is_google_material_url(resolved):
+            return
+        if any(item["url"] == resolved for item in materials):
+            return
+        materials.append({
+            "url": resolved,
+            "kind": google_material_kind(resolved),
+            "source": source,
+            "text": normalize_text(text),
+        })
+
+    for link in extract_anchor_links(page_html, page_url):
+        add(link["url"], "anchor", link["text"] or link["title"])
+
+    for match in re.finditer(r"(?is)<(iframe|object|embed)\b([^>]*)>", page_html):
+        tag_name = match.group(1).lower()
+        attrs = match.group(2)
+        for attr_name in ("src", "href", "data", "data-src", "data-url", "data-href", "data-popup-url"):
+            value = attr(attr_name, attrs)
+            if value:
+                add(value, tag_name)
+
+    normalized_html = normalize_google_js_text(html.unescape(page_html))
+    for match in re.finditer(r"https?://(?:docs|drive)\.google\.com/[^\"'<>\s\\]+", normalized_html):
+        add(match.group(0), "html")
+
+    return materials
+
+
 def extract_slide_embeds(page_html, page_url):
     embeds = []
     for match in re.finditer(r"(?is)<iframe\b([^>]*)>", page_html):
@@ -1590,13 +1637,14 @@ def parse_slide_collect_args(args):
         "lecture": "",
         "page": "",
         "all": False,
+        "refresh_google": False,
     }
     idx = 0
     while idx < len(args):
         arg = args[idx]
         if arg in ("-h", "--help"):
             print("""Usage:
-  imoocs slide collect --path <dir> --year <year> [--course <selector>] [--lecture <selector>] [--page <selector>] [--all]
+  imoocs slide collect --path <dir> --year <year> [--course <selector>] [--lecture <selector>] [--page <selector>] [--all] [--refresh-google]
 
 Selectors accept ids/slugs, names, 1-based indexes, or "all".
 In non-interactive shells, pass each needed selector or --all.
@@ -1604,6 +1652,10 @@ In non-interactive shells, pass each needed selector or --all.
             raise SystemExit(0)
         if arg == "--all":
             options["all"] = True
+            idx += 1
+            continue
+        if arg == "--refresh-google":
+            options["refresh_google"] = True
             idx += 1
             continue
         if arg in ("--path", "--year", "--course", "--lecture", "--page"):
@@ -1674,6 +1726,11 @@ def slide_collect(args, browser_import_attempted=False, browser_import=None):
     if not ensure_moocs_authenticated(jar):
         print_json(slide_auth_required_payload(str(out_dir), year, "expired"))
         return 2
+    if options["refresh_google"]:
+        browser_import = maybe_import_google_cookies_from_browser(jar)
+        if not browser_import.get("ok"):
+            print_json(slide_auth_required_payload(str(out_dir), year, "google_expired", browser_import))
+            return 2
     try:
         save_cookie_jar(jar)
     except Exception:
@@ -1711,20 +1768,103 @@ def slide_collect(args, browser_import_attempted=False, browser_import=None):
                         "title": page["title"],
                     })
                     final_url, page_html = authenticated_html(jar, page["url"])
-                    embeds = extract_slide_embeds(page_html, final_url)
-                    if not embeds:
+                    materials = extract_google_material_links(page_html, final_url)
+                    if not materials:
                         skipped.append({
                             "courseId": course["courseId"],
                             "lessonId": lecture["lessonId"],
                             "pageId": page["pageId"],
-                            "reason": "no_google_slide_embed",
+                            "reason": "no_google_material_link",
                         })
                         continue
                     lecture_dir = out_dir / safe_filename(course["name"], course["slug"]) / safe_filename(lecture["name"], lecture["slug"])
                     lecture_dir.mkdir(parents=True, exist_ok=True)
-                    for embed in embeds:
+                    for material_index, material in enumerate(materials):
                         try:
-                            pdf_url, pdf_body = fetch_slide_pdf(jar, embed["url"])
+                            if material["kind"] == "presentation":
+                                source_url, body = fetch_slide_pdf(jar, material["url"])
+                                suffix = "" if len(materials) == 1 else f" ({material_index + 1})"
+                                filename = f"{safe_filename(page['slug'])} - {safe_filename(page['title'], page['slug'])}{suffix}.pdf"
+                                output_path = unique_output_path(lecture_dir / filename)
+                                output_path.write_bytes(body)
+                                downloaded.append({
+                                    "path": str(output_path),
+                                    "bytes": len(body),
+                                    "contentType": "application/pdf",
+                                    "sourceUrl": source_url,
+                                    "sourceMaterialUrl": material["url"],
+                                    "courseId": course["courseId"],
+                                    "lessonId": lecture["lessonId"],
+                                    "pageId": page["pageId"],
+                                })
+                                continue
+
+                            if material["kind"] == "folder":
+                                folder_id = drive_folder_id_from_value(material["url"])
+                                material_dir = lecture_dir / safe_filename(
+                                    f"{page['slug']} - {page['title']}",
+                                    page["slug"],
+                                )
+                                folder_downloaded, folder_skipped, folder_errors = drive_collect_files(
+                                    jar,
+                                    folder_id,
+                                    material_dir,
+                                    {
+                                        "matches": [],
+                                        "limit": 0,
+                                        "recursive": True,
+                                        "max_depth": 8,
+                                        "overwrite": False,
+                                    },
+                                )
+                                for item in folder_downloaded:
+                                    item.update({
+                                        "sourceMaterialUrl": material["url"],
+                                        "courseId": course["courseId"],
+                                        "lessonId": lecture["lessonId"],
+                                        "pageId": page["pageId"],
+                                    })
+                                    downloaded.append(item)
+                                for item in folder_skipped:
+                                    skipped.append({
+                                        "courseId": course["courseId"],
+                                        "lessonId": lecture["lessonId"],
+                                        "pageId": page["pageId"],
+                                        "materialUrl": material["url"],
+                                        **item,
+                                    })
+                                for item in folder_errors:
+                                    errors.append({
+                                        "courseId": course["courseId"],
+                                        "lessonId": lecture["lessonId"],
+                                        "pageId": page["pageId"],
+                                        "materialUrl": material["url"],
+                                        **item,
+                                    })
+                                continue
+
+                            file_id = drive_file_id_from_value(material["url"])
+                            source_url, headers, filename, body = download_drive_file_body(jar, {
+                                "id": file_id,
+                                "name": f"{page['slug']} - {page['title']}",
+                                "mimeType": drive_mime_from_url(material["url"]),
+                            })
+                            filename = filename_with_detected_suffix(filename, headers, body)
+                            output_path = unique_output_path(lecture_dir / safe_filename(filename, file_id))
+                            output_path.write_bytes(body)
+                            downloaded.append({
+                                "id": file_id,
+                                "name": filename,
+                                "path": str(output_path),
+                                "bytes": len(body),
+                                "mimeType": drive_mime_from_url(material["url"]),
+                                "contentType": header_value(headers, "Content-Type"),
+                                "sourceUrl": source_url,
+                                "sourceMaterialUrl": material["url"],
+                                "courseId": course["courseId"],
+                                "lessonId": lecture["lessonId"],
+                                "pageId": page["pageId"],
+                            })
                         except GoogleAuthRequired:
                             raise
                         except Exception as exc:
@@ -1732,19 +1872,9 @@ def slide_collect(args, browser_import_attempted=False, browser_import=None):
                                 "courseId": course["courseId"],
                                 "lessonId": lecture["lessonId"],
                                 "pageId": page["pageId"],
-                                "embedUrl": embed["url"],
+                                "materialUrl": material["url"],
                                 "message": str(exc),
                             })
-                            continue
-                        suffix = "" if len(embeds) == 1 else f" ({embed['index'] + 1})"
-                        filename = f"{safe_filename(page['slug'])} - {safe_filename(page['title'], page['slug'])}{suffix}.pdf"
-                        pdf_path = lecture_dir / filename
-                        pdf_path.write_bytes(pdf_body)
-                        downloaded.append({
-                            "path": str(pdf_path),
-                            "bytes": len(pdf_body),
-                            "sourceUrl": pdf_url,
-                        })
         try:
             save_cookie_jar(jar)
         except Exception:
@@ -1793,6 +1923,11 @@ def slide_collect(args, browser_import_attempted=False, browser_import=None):
         ))
         return 2
 
+    pdf_downloaded = [
+        item for item in downloaded
+        if Path(item["path"]).suffix.lower() == ".pdf"
+        or "application/pdf" in item.get("contentType", "").lower()
+    ]
     status = "partial" if errors else "completed"
     print_json(envelope(
         not errors,
@@ -1803,14 +1938,18 @@ def slide_collect(args, browser_import_attempted=False, browser_import=None):
             "path": str(out_dir),
             "year": year,
             "mode": "native",
-            "downloadedPdfCount": len(downloaded),
-            "downloadedPdfPaths": [item["path"] for item in downloaded],
-            "downloadedPdfDetails": downloaded,
+            "downloadedFileCount": len(downloaded),
+            "downloadedFilePaths": [item["path"] for item in downloaded],
+            "downloadedFileDetails": downloaded,
+            "downloadedPdfCount": len(pdf_downloaded),
+            "downloadedPdfPaths": [item["path"] for item in pdf_downloaded],
+            "downloadedPdfDetails": pdf_downloaded,
             "skippedPageCount": len(skipped),
             "skippedPages": skipped,
             "errors": errors,
             "selected": selected,
             "command": ["imoocs", "slide", "collect", "--path", str(out_dir), "--year", year],
+            **({"browserCookieImport": browser_import} if browser_import is not None else {}),
         },
         "slide_collect_failed" if errors else "",
         "one or more slide PDFs failed to download" if errors else "",
@@ -1862,6 +2001,30 @@ def drive_folder_id_from_value(value):
     if re.fullmatch(r"[A-Za-z0-9_-]{10,}", value):
         return value
     raise ValueError("Drive folder id was not recognized")
+
+
+def drive_file_id_from_value(value):
+    parsed = urllib.parse.urlparse((value or "").strip())
+    parts = [urllib.parse.unquote(part) for part in parsed.path.split("/") if part]
+    for marker in ("file", "document", "presentation", "spreadsheets"):
+        for index in range(len(parts) - 2):
+            if parts[index] == marker and parts[index + 1] == "d":
+                return parts[index + 2]
+    query_id = urllib.parse.parse_qs(parsed.query).get("id", [])
+    if query_id:
+        return query_id[0]
+    raise ValueError("Drive file URL must contain /file/d/<id>, a Google app /d/<id>, or ?id=<id>")
+
+
+def drive_mime_from_url(value):
+    path = urllib.parse.urlparse(value).path
+    if "/presentation/d/" in path:
+        return "application/vnd.google-apps.presentation"
+    if "/document/d/" in path:
+        return "application/vnd.google-apps.document"
+    if "/spreadsheets/d/" in path:
+        return "application/vnd.google-apps.spreadsheet"
+    return ""
 
 
 def drive_folder_url(folder_id):
@@ -2174,17 +2337,24 @@ def drive_list_entries(jar, folder_id, *, recursive=False, max_depth=8, matches=
 
 
 def filename_from_content_disposition(value):
+    def decode_filename(filename):
+        filename = html.unescape(filename).strip()
+        try:
+            return filename.encode("latin-1").decode("utf-8")
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            return filename
+
     if not value:
         return ""
     match = re.search(r"""filename\*\s*=\s*UTF-8''([^;]+)""", value, flags=re.I)
     if match:
-        return urllib.parse.unquote(match.group(1).strip().strip('"'))
+        return decode_filename(urllib.parse.unquote(match.group(1).strip().strip('"')))
     match = re.search(r'''filename\s*=\s*"([^"]+)"''', value, flags=re.I)
     if match:
-        return html.unescape(match.group(1))
+        return decode_filename(match.group(1))
     match = re.search(r"""filename\s*=\s*([^;]+)""", value, flags=re.I)
     if match:
-        return html.unescape(match.group(1).strip())
+        return decode_filename(match.group(1))
     return ""
 
 
@@ -2225,45 +2395,108 @@ def downloadable_drive_response(final_url, headers, body):
     return "text/html" not in content_type
 
 
-def download_drive_file_body(jar, item):
-    export_url, export_suffix = google_app_export_url(item["id"], item.get("mimeType", ""))
-    url = export_url or "https://drive.usercontent.google.com/download?" + urllib.parse.urlencode({
-        "id": item["id"],
-        "export": "download",
-    })
-    final_url, status, headers, body = request(
-        jar,
-        url,
-        headers={"Accept": "application/octet-stream,application/pdf,application/zip,*/*;q=0.8"},
-        timeout=300,
-    )
+def filename_with_detected_suffix(filename, headers, body):
+    if Path(filename).suffix:
+        return filename
+    if body.startswith(b"%PDF"):
+        return f"{filename}.pdf"
+    if body.startswith(b"PK\x03\x04"):
+        return f"{filename}.zip"
+    if body.startswith(b"\x89PNG\r\n\x1a\n"):
+        return f"{filename}.png"
+    if body.startswith(b"\xff\xd8"):
+        return f"{filename}.jpg"
+    content_type = header_value(headers, "Content-Type").split(";", 1)[0].strip().lower()
+    suffix = mimetypes.guess_extension(content_type) if content_type else ""
+    return f"{filename}{suffix or ''}"
+
+
+def try_drive_download_url(jar, url, referer=""):
+    request_headers = {"Accept": "application/octet-stream,application/pdf,application/zip,*/*;q=0.8"}
+    if referer:
+        request_headers["Referer"] = referer
+    final_url, status, headers, body = request(jar, url, headers=request_headers, timeout=300)
     page_html = decode_body(body) if body else ""
     if looks_like_google_login_page(final_url, page_html):
         raise GoogleAuthRequired("Google Drive authentication is required")
     if 200 <= status < 400 and downloadable_drive_response(final_url, headers, body):
-        filename = filename_from_content_disposition(header_value(headers, "Content-Disposition")) or item["name"]
-        if export_suffix and not filename.lower().endswith(export_suffix):
-            filename = f"{Path(filename).stem or item['name']}{export_suffix}"
-        return final_url, headers, filename, body
+        return (final_url, headers, body), None
 
     confirm_url = drive_confirm_url(page_html, final_url)
     if confirm_url:
         final_url, status, headers, body = request(
             jar,
             confirm_url,
-            headers={"Accept": "application/octet-stream,application/pdf,application/zip,*/*;q=0.8", "Referer": final_url},
+            headers={
+                "Accept": "application/octet-stream,application/pdf,application/zip,*/*;q=0.8",
+                "Referer": final_url,
+            },
             timeout=300,
         )
         page_html = decode_body(body) if body else ""
         if looks_like_google_login_page(final_url, page_html):
             raise GoogleAuthRequired("Google Drive authentication is required")
         if 200 <= status < 400 and downloadable_drive_response(final_url, headers, body):
-            filename = filename_from_content_disposition(header_value(headers, "Content-Disposition")) or item["name"]
-            return final_url, headers, filename, body
+            return (final_url, headers, body), None
 
-    if not (200 <= status < 400):
-        raise RuntimeError(f"Google Drive download returned HTTP {status}: {final_url}")
-    raise RuntimeError(f"Google Drive did not return a downloadable response: {final_url}")
+    return None, {"status": status, "url": final_url}
+
+
+def download_drive_file_body(jar, item):
+    export_url, export_suffix = google_app_export_url(item["id"], item.get("mimeType", ""))
+    file_id = item["id"]
+    encoded_id = urllib.parse.quote(file_id, safe="")
+    candidates = [export_url] if export_url else [
+        "https://drive.usercontent.google.com/download?" + urllib.parse.urlencode({
+            "id": file_id,
+            "export": "download",
+        }),
+        f"https://drive.google.com/uc?export=download&id={encoded_id}",
+        f"https://drive.google.com/uc?id={encoded_id}&export=download",
+    ]
+    failures = []
+    referer = drive_file_url(file_id)
+
+    for url in dict.fromkeys(candidates):
+        result, failure = try_drive_download_url(jar, url, referer)
+        if result:
+            final_url, headers, body = result
+            filename = filename_from_content_disposition(header_value(headers, "Content-Disposition")) or item["name"]
+            if export_suffix and not filename.lower().endswith(export_suffix):
+                filename = f"{Path(filename).stem or item['name']}{export_suffix}"
+            return final_url, headers, filename, body
+        failures.append(failure)
+
+    view_final_url, view_status, view_headers, view_body = request(
+        jar,
+        referer,
+        headers={"Accept": "text/html,application/xhtml+xml,*/*;q=0.8"},
+        timeout=120,
+    )
+    view_html = decode_body(view_body) if view_body else ""
+    if looks_like_google_login_page(view_final_url, view_html):
+        raise GoogleAuthRequired("Google Drive authentication is required")
+    if is_google_presentation_url(view_final_url):
+        source_url, body = fetch_slide_pdf(jar, view_final_url)
+        filename = f"{Path(item['name']).stem or item['id']}.pdf"
+        return source_url, {"Content-Type": "application/pdf"}, filename, body
+
+    detected_mime = drive_infer_mime(item["name"], view_html, False)
+    detected_export_url, detected_suffix = google_app_export_url(file_id, detected_mime)
+    if detected_export_url:
+        result, failure = try_drive_download_url(jar, detected_export_url, view_final_url)
+        if result:
+            final_url, headers, body = result
+            filename = filename_from_content_disposition(header_value(headers, "Content-Disposition")) or item["name"]
+            if detected_suffix and not filename.lower().endswith(detected_suffix):
+                filename = f"{Path(filename).stem or item['name']}{detected_suffix}"
+            return final_url, headers, filename, body
+        failures.append(failure)
+
+    failures.append({"status": view_status, "url": view_final_url})
+
+    detail = "; ".join(f"HTTP {item['status']} {item['url']}" for item in failures)
+    raise RuntimeError(f"Google Drive did not return a downloadable response ({detail})")
 
 
 def unique_output_path(path):
@@ -2561,6 +2794,8 @@ def open_url(url):
     content_html = main_content(page_html)
     title = page_title(page_html, urllib.parse.unquote(urllib.parse.urlparse(final_url).path.rstrip("/").split("/")[-1] or "MOOCs"))
     body_text = text_from_html(content_html)
+    links = extract_anchor_links(content_html, final_url)
+    material_links = extract_google_material_links(page_html, final_url)
     route = route_from_url(final_url)
     descriptors = problem_descriptors(page_html, final_url)
     problems = [resolve_problem(jar, descriptor, final_url, token) for descriptor in descriptors]
@@ -2601,6 +2836,8 @@ def open_url(url):
         "route": route,
         "title": title,
         "bodyText": body_text,
+        "links": links,
+        "materialLinks": material_links,
         "problem": problem,
         "assignmentCount": len(assignments),
         "assignments": assignments,
@@ -3644,7 +3881,14 @@ def maybe_import_google_cookies_from_browser(jar):
     try:
         profile = os.environ.get("IMOOCS_BROWSER_PROFILE", "").strip() or os.environ.get("IMOOCS_CHROME_PROFILE", "").strip()
         info = import_google_cookies_from_browser(jar, os.environ.get("IMOOCS_BROWSER", "auto"), profile)
-        save_cookie_jar(jar)
+        try:
+            save_cookie_jar(jar)
+            info["cookieStore"] = "saved"
+        except Exception as exc:
+            # The imported cookies are still usable for this process. Report
+            # that they were not persisted instead of discarding a valid jar.
+            info["cookieStore"] = "not_persisted"
+            info["cookieStoreWarning"] = str(exc)[:240]
         return info
     except Exception as exc:
         return {
@@ -3988,7 +4232,7 @@ slide_cmd() {
       cat <<'EOF'
 Usage:
   imoocs slide collect --path <dir> --year <year>
-  imoocs slide collect --path <dir> --year <year> --course <selector> --lecture <selector> --page <selector>
+  imoocs slide collect --path <dir> --year <year> --course <selector> --lecture <selector> --page <selector> [--refresh-google]
   imoocs slide collect --path <dir> --year <year> --all
 EOF
       ;;
@@ -4198,7 +4442,7 @@ main() {
       usage
       ;;
     --version)
-      echo "imoocs 0.3.9 ($backend)"
+      echo "imoocs 0.3.10 ($backend)"
       ;;
     open)
       open_cmd "$@"
