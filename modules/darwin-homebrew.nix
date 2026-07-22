@@ -75,6 +75,7 @@ delib.module {
       };
 
       masApps = {
+        "Apple Configurator" = 1037126344;
         GarageBand = 682658836;
         iMovie = 408981434;
         Keynote = 409183694;
