@@ -135,6 +135,7 @@ delib.module {
         "steam"
         "vesktop"
         "visual-studio-code"
+        "windows-app"
       ];
     };
   };
