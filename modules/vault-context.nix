@@ -29,6 +29,7 @@ let
       pkgs.git
       pkgs.jq
       pkgs.nodejs
+      pkgs.openssh
       pkgs.sqlite
     ];
     text = builtins.readFile ../config/scripts/vault-git-sync;
