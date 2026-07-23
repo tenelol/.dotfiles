@@ -11,6 +11,9 @@ vault_cli="${VAULT_CONTEXT_CLI:-/Users/tener/.codex/bin/vault-context}"
 secret_scanner="${VAULT_CONTEXT_SECRET_SCANNER:-/Users/tener/.codex/mcp/vault-context-mcp/scripts/check-sensitive-stdin.mjs}"
 expected_remote="${VAULT_GIT_EXPECTED_REMOTE:-git@github.com:tenelol/obsidian.git}"
 branch="${VAULT_GIT_BRANCH:-main}"
+if [[ "${expected_remote}" == git@github.com:* ]]; then
+  export GIT_SSH_COMMAND="${VAULT_GIT_SYNC_SSH_COMMAND:-ssh -4 -p 443 -o HostName=ssh.github.com -o HostKeyAlias=github.com -o ConnectTimeout=20}"
+fi
 lock_dir="${vault_root}/.vault-context/git-sync.lock"
 pending_file="${vault_root}/.vault-context/pending-push"
 staged_by_script=0
