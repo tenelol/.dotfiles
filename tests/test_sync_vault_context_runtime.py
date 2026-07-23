@@ -19,7 +19,8 @@ class SyncVaultContextRuntimeTests(unittest.TestCase):
         (self.bundle / "src").mkdir(parents=True)
         (self.bundle / "node_modules").mkdir()
         (self.bundle / "src/server.mjs").write_text(
-            'if (process.argv.includes("--self-test")) process.exit(0);\n',
+            'if (process.argv.includes("--self-test")) process.exit(0);\n'
+            'if (process.argv.includes("--hold")) setInterval(() => {}, 1000);\n',
             encoding="utf-8",
         )
         (self.bundle / "node_modules/fixture.txt").write_text(
@@ -100,7 +101,8 @@ class SyncVaultContextRuntimeTests(unittest.TestCase):
         self.assertEqual(repair.returncode, 0, repair.stderr)
         self.assertEqual(
             destination_server.read_text(encoding="utf-8"),
-            'if (process.argv.includes("--self-test")) process.exit(0);\n',
+            'if (process.argv.includes("--self-test")) process.exit(0);\n'
+            'if (process.argv.includes("--hold")) setInterval(() => {}, 1000);\n',
         )
 
     def test_large_drift_is_not_misclassified_as_current(self):
@@ -125,6 +127,41 @@ class SyncVaultContextRuntimeTests(unittest.TestCase):
                 / "vault-context-mcp/node_modules/fixture-2499.txt"
             ).is_file()
         )
+
+    def test_sync_preserves_active_runtime_processes(self):
+        self.assertEqual(self.run_script().returncode, 0)
+        server = self.runtime_parent / "vault-context-mcp/src/server.mjs"
+        process = subprocess.Popen(
+            ["node", str(server), "--hold"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        try:
+            self.assertIsNone(process.poll())
+            os.chmod(self.bundle / "node_modules", 0o755)
+            (self.bundle / "node_modules/updated.txt").write_text(
+                "updated\n",
+                encoding="utf-8",
+            )
+            os.chmod(self.bundle / "node_modules", 0o555)
+
+            update = self.run_script()
+
+            self.assertEqual(update.returncode, 0, update.stderr)
+            self.assertIsNone(
+                process.poll(),
+                "runtime sync must not close active MCP transports",
+            )
+            self.assertTrue(
+                (
+                    self.runtime_parent
+                    / "vault-context-mcp/node_modules/updated.txt"
+                ).is_file()
+            )
+            self.assertNotIn("kill -TERM", SCRIPT.read_text(encoding="utf-8"))
+        finally:
+            process.terminate()
+            process.wait(timeout=5)
 
 
 if __name__ == "__main__":
