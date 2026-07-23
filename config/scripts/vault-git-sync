@@ -1,0 +1,180 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+vault_root="${VAULT_GIT_SYNC_ROOT:-/Users/tener/obsidian}"
+[[ -d "${vault_root}" ]] || {
+  printf '{"ok":false,"status":"blocked","reason":"not_a_git_repository"}\n'
+  exit 1
+}
+vault_root="$(cd "${vault_root}" && pwd -P)"
+vault_cli="${VAULT_CONTEXT_CLI:-/Users/tener/.codex/bin/vault-context}"
+secret_scanner="${VAULT_CONTEXT_SECRET_SCANNER:-/Users/tener/.codex/mcp/vault-context-mcp/scripts/check-sensitive-stdin.mjs}"
+expected_remote="${VAULT_GIT_EXPECTED_REMOTE:-git@github.com:tenelol/obsidian.git}"
+branch="${VAULT_GIT_BRANCH:-main}"
+lock_dir="${vault_root}/.vault-context/git-sync.lock"
+pending_file="${vault_root}/.vault-context/pending-push"
+staged_by_script=0
+lock_acquired=0
+temp_dir=""
+
+fail() {
+  local reason="$1"
+  printf '{"ok":false,"status":"blocked","reason":"%s"}\n' "${reason}"
+  exit 1
+}
+
+cleanup() {
+  local exit_status=$?
+  local cleanup_paths=""
+  if [[ -n "${temp_dir}" ]]; then
+    cleanup_paths="${temp_dir}/staged-paths"
+    if [[ ! -s "${cleanup_paths}" ]]; then
+      cleanup_paths="${temp_dir}/stage-candidates"
+    fi
+  fi
+  if [[ "${staged_by_script}" == "1" && -s "${cleanup_paths}" ]]; then
+    git -C "${vault_root}" restore --staged \
+      --pathspec-from-file="${cleanup_paths}" \
+      --pathspec-file-nul >/dev/null 2>&1 || true
+  fi
+  if [[ -n "${temp_dir}" && -d "${temp_dir}" ]]; then
+    rm -f -- "${temp_dir}/quality.json" "${temp_dir}/reindex.json" "${temp_dir}/stage-candidates" "${temp_dir}/staged-paths" "${temp_dir}/staged-status"
+    rmdir "${temp_dir}" 2>/dev/null || true
+  fi
+  if [[ "${lock_acquired}" == "1" ]]; then
+    rm -f -- "${lock_dir}/pid"
+    rmdir "${lock_dir}" 2>/dev/null || true
+  fi
+  return "${exit_status}"
+}
+trap cleanup EXIT
+trap 'exit 130' INT TERM
+
+[[ -d "${vault_root}/.git" ]] || fail "not_a_git_repository"
+[[ -x "${vault_cli}" ]] || fail "vault_cli_missing"
+[[ -f "${secret_scanner}" ]] || fail "secret_scanner_missing"
+
+mkdir -p "${vault_root}/.vault-context"
+if ! mkdir "${lock_dir}" 2>/dev/null; then
+  if [[ -f "${lock_dir}/pid" ]]; then
+    read -r existing_pid < "${lock_dir}/pid" || true
+    if [[ "${existing_pid:-}" =~ ^[0-9]+$ ]] && kill -0 "${existing_pid}" 2>/dev/null; then
+      fail "already_running"
+    fi
+  fi
+  rm -f -- "${lock_dir}/pid"
+  rmdir "${lock_dir}" 2>/dev/null || fail "lock_unavailable"
+  mkdir "${lock_dir}" || fail "lock_unavailable"
+fi
+lock_acquired=1
+printf '%s\n' "$$" > "${lock_dir}/pid"
+
+temp_dir="$(mktemp -d "${TMPDIR:-/tmp}/vault-git-sync.XXXXXX")"
+: > "${temp_dir}/staged-paths"
+: > "${temp_dir}/stage-candidates"
+
+repository_root="$(git -C "${vault_root}" rev-parse --show-toplevel 2>/dev/null)" || fail "git_root_unavailable"
+[[ "${repository_root}" == "${vault_root}" ]] || fail "unexpected_git_root"
+[[ "$(git -C "${vault_root}" branch --show-current)" == "${branch}" ]] || fail "unexpected_branch"
+[[ "$(git -C "${vault_root}" remote get-url origin)" == "${expected_remote}" ]] || fail "unexpected_remote"
+git -C "${vault_root}" diff --cached --quiet || fail "preexisting_staged_changes"
+[[ -z "$(git -C "${vault_root}" ls-files -u)" ]] || fail "unmerged_paths"
+
+git -C "${vault_root}" fetch --quiet origin "${branch}" || fail "fetch_failed"
+read -r ahead_count behind_count < <(
+  git -C "${vault_root}" rev-list --left-right --count "HEAD...origin/${branch}"
+)
+
+retried_pending=0
+if [[ "${behind_count}" != "0" ]]; then
+  fail "remote_diverged"
+fi
+if [[ "${ahead_count}" != "0" ]]; then
+  [[ -f "${pending_file}" ]] || fail "unrecognized_local_commits"
+  read -r pending_commit < "${pending_file}" || fail "invalid_pending_push"
+  [[ "${pending_commit}" =~ ^[0-9a-f]{40}$ ]] || fail "invalid_pending_push"
+  [[ "${pending_commit}" == "$(git -C "${vault_root}" rev-parse HEAD)" ]] || fail "pending_push_mismatch"
+  git -C "${vault_root}" push --quiet origin "HEAD:${branch}" || fail "pending_push_failed"
+  rm -f -- "${pending_file}"
+  retried_pending=1
+fi
+
+"${vault_cli}" reindex --json > "${temp_dir}/reindex.json" || fail "reindex_failed"
+"${vault_cli}" quality --json > "${temp_dir}/quality.json" || fail "quality_failed"
+jq -e '
+  .summary.raw_integrity_failures == 0 and
+  .summary.sensitive_quarantined == 0 and
+  .summary.noncanonical_quarantined == 0 and
+  .summary.schema_violations == 0 and
+  .summary.broken_links == 0 and
+  .summary.missing_summary == 0 and
+  .summary.missing_scope_or_project == 0
+' "${temp_dir}/quality.json" >/dev/null || fail "quality_gate_failed"
+
+allowlist=(".gitignore" "00 Inbox" "10 Records" "20 Synthesis" "90 System")
+git -C "${vault_root}" ls-files -z --modified --deleted --others --exclude-standard -- \
+  "${allowlist[@]}" > "${temp_dir}/stage-candidates"
+if [[ -s "${temp_dir}/stage-candidates" ]]; then
+  git -C "${vault_root}" add -A \
+    --pathspec-from-file="${temp_dir}/stage-candidates" \
+    --pathspec-file-nul
+  staged_by_script=1
+fi
+git -C "${vault_root}" diff --cached --name-only -z > "${temp_dir}/staged-paths"
+if [[ ! -s "${temp_dir}/staged-paths" ]]; then
+  staged_by_script=0
+  if [[ "${retried_pending}" == "1" ]]; then
+    printf '{"ok":true,"status":"pushed_pending"}\n'
+  else
+    printf '{"ok":true,"status":"noop"}\n'
+  fi
+  exit 0
+fi
+staged_by_script=1
+
+git -C "${vault_root}" diff --cached --name-status --no-renames -z > "${temp_dir}/staged-status"
+while IFS= read -r -d '' staged_status &&
+  IFS= read -r -d '' path; do
+  case "${path}" in
+    "00 Inbox/raw/"*)
+      [[ "${staged_status}" == "A" ]] || fail "immutable_raw_changed"
+      ;;
+  esac
+done < "${temp_dir}/staged-status"
+
+while IFS= read -r -d '' path; do
+  case "${path}" in
+    .gitignore | "00 Inbox/"*.md | "10 Records/"*.md | "20 Synthesis/"*.md | "90 System/"*.md | "90 System/"*.json | "90 System/"*.yaml | "90 System/"*.yml | "90 System/"*.toml | "90 System/"*.txt)
+      ;;
+    *)
+      fail "disallowed_staged_path"
+      ;;
+  esac
+  if git -C "${vault_root}" cat-file -e ":${path}" 2>/dev/null; then
+    blob_size="$(git -C "${vault_root}" cat-file -s ":${path}")"
+    (( blob_size <= 10485760 )) || fail "staged_file_too_large"
+    if ! git -C "${vault_root}" cat-file blob ":${path}" |
+      node "${secret_scanner}" >/dev/null; then
+      fail "staged_secret_suspected"
+    fi
+  fi
+done < "${temp_dir}/staged-paths"
+
+git -C "${vault_root}" diff --cached --check || fail "staged_diff_invalid"
+if ! git -C "${vault_root}" diff --cached --no-ext-diff --unified=0 -- "${allowlist[@]}" |
+  node "${secret_scanner}" >/dev/null; then
+  fail "staged_secret_suspected"
+fi
+
+commit_time="$(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M JST')"
+git -C "${vault_root}" commit -m "chore: sync Vault ${commit_time}" >/dev/null || fail "commit_failed"
+staged_by_script=0
+commit_sha="$(git -C "${vault_root}" rev-parse HEAD)"
+printf '%s\n' "${commit_sha}" > "${pending_file}"
+
+if ! git -C "${vault_root}" push --quiet origin "HEAD:${branch}"; then
+  printf '{"ok":false,"status":"push_pending","reason":"push_failed","commit":"%s"}\n' "${commit_sha}"
+  exit 1
+fi
+rm -f -- "${pending_file}"
+printf '{"ok":true,"status":"committed_and_pushed","commit":"%s"}\n' "${commit_sha}"
