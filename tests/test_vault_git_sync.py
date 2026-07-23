@@ -52,6 +52,13 @@ class VaultGitSyncTests(unittest.TestCase):
         self.cli.write_text(
             "#!/usr/bin/env bash\n"
             "if [[ \"$1\" == \"reindex\" ]]; then echo '{\"ok\":true}'; exit 0; fi\n"
+            "if [[ -n \"${VAULT_TEST_MUTATE_DURING_QUALITY:-}\" ]]; then\n"
+            "  printf '# changed during quality\\n' >> \"${VAULT_TEST_MUTATE_DURING_QUALITY}\"\n"
+            "fi\n"
+            "if [[ -n \"${VAULT_TEST_STAGE_DURING_QUALITY:-}\" ]]; then\n"
+            "  printf '# staged during quality\\n' >> \"${VAULT_TEST_STAGE_DURING_QUALITY}\"\n"
+            "  git -C \"${VAULT_GIT_SYNC_ROOT}\" add -- \"${VAULT_TEST_STAGE_DURING_QUALITY}\"\n"
+            "fi\n"
             "cat <<'JSON'\n"
             + json.dumps(
                 {
@@ -195,6 +202,51 @@ class VaultGitSyncTests(unittest.TestCase):
         result = self.sync()
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(json.loads(result.stdout)["reason"], "remote_diverged")
+        self.assertEqual(run("git", "diff", "--cached", "--name-only", cwd=self.vault).stdout, "")
+
+    def test_worktree_change_during_quality_is_not_committed(self) -> None:
+        path = self.vault / "10 Records" / "note" / "raced.md"
+        path.write_text("# Before\n", encoding="utf-8")
+        before = run("git", "rev-parse", "HEAD", cwd=self.vault).stdout
+        self.env["VAULT_TEST_MUTATE_DURING_QUALITY"] = str(path)
+
+        result = self.sync()
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(
+            json.loads(result.stdout)["reason"],
+            "vault_changed_during_validation",
+        )
+        self.assertEqual(run("git", "rev-parse", "HEAD", cwd=self.vault).stdout, before)
+        self.assertEqual(run("git", "diff", "--cached", "--name-only", cwd=self.vault).stdout, "")
+        self.assertNotEqual(
+            run(
+                "git",
+                "--git-dir",
+                str(self.remote),
+                "cat-file",
+                "-e",
+                "main:10 Records/note/raced.md",
+                cwd=self.temp,
+                check=False,
+            ).returncode,
+            0,
+        )
+
+    def test_index_change_during_quality_is_not_committed(self) -> None:
+        path = self.vault / "10 Records" / "note" / "restaged.md"
+        path.write_text("# Before\n", encoding="utf-8")
+        before = run("git", "rev-parse", "HEAD", cwd=self.vault).stdout
+        self.env["VAULT_TEST_STAGE_DURING_QUALITY"] = str(path)
+
+        result = self.sync()
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(
+            json.loads(result.stdout)["reason"],
+            "index_changed_during_validation",
+        )
+        self.assertEqual(run("git", "rev-parse", "HEAD", cwd=self.vault).stdout, before)
         self.assertEqual(run("git", "diff", "--cached", "--name-only", cwd=self.vault).stdout, "")
 
     def test_failed_push_is_retried_only_with_pending_marker(self) -> None:
