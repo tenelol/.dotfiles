@@ -41,7 +41,8 @@ cleanup() {
       --pathspec-file-nul >/dev/null 2>&1 || true
   fi
   if [[ -n "${temp_dir}" && -d "${temp_dir}" ]]; then
-    rm -f -- "${temp_dir}/quality.json" "${temp_dir}/reindex.json" "${temp_dir}/stage-candidates" "${temp_dir}/staged-paths" "${temp_dir}/staged-status"
+    rm -rf -- "${temp_dir}/snapshot"
+    rm -f -- "${temp_dir}/quality.json" "${temp_dir}/reindex.json" "${temp_dir}/stage-candidates" "${temp_dir}/post-validation-changes" "${temp_dir}/staged-paths" "${temp_dir}/staged-status"
     rmdir "${temp_dir}" 2>/dev/null || true
   fi
   if [[ "${lock_acquired}" == "1" ]]; then
@@ -102,18 +103,6 @@ if [[ "${ahead_count}" != "0" ]]; then
   retried_pending=1
 fi
 
-"${vault_cli}" reindex --json > "${temp_dir}/reindex.json" || fail "reindex_failed"
-"${vault_cli}" quality --json > "${temp_dir}/quality.json" || fail "quality_failed"
-jq -e '
-  .summary.raw_integrity_failures == 0 and
-  .summary.sensitive_quarantined == 0 and
-  .summary.noncanonical_quarantined == 0 and
-  .summary.schema_violations == 0 and
-  .summary.broken_links == 0 and
-  .summary.missing_summary == 0 and
-  .summary.missing_scope_or_project == 0
-' "${temp_dir}/quality.json" >/dev/null || fail "quality_gate_failed"
-
 allowlist=(".gitignore" "00 Inbox" "10 Records" "20 Synthesis" "90 System")
 git -C "${vault_root}" ls-files -z --modified --deleted --others --exclude-standard -- \
   "${allowlist[@]}" > "${temp_dir}/stage-candidates"
@@ -124,6 +113,37 @@ if [[ -s "${temp_dir}/stage-candidates" ]]; then
   staged_by_script=1
 fi
 git -C "${vault_root}" diff --cached --name-only -z > "${temp_dir}/staged-paths"
+
+validated_tree="$(git -C "${vault_root}" write-tree)" || fail "staged_tree_unavailable"
+snapshot="${temp_dir}/snapshot"
+mkdir "${snapshot}"
+git -C "${vault_root}" checkout-index --all --force --prefix="${snapshot}/" ||
+  fail "snapshot_failed"
+VAULT_CONTEXT_ROOT="${snapshot}" \
+  VAULT_CONTEXT_INDEX="${snapshot}/.vault-context/index.sqlite" \
+  "${vault_cli}" reindex --json > "${temp_dir}/reindex.json" ||
+  fail "reindex_failed"
+VAULT_CONTEXT_ROOT="${snapshot}" \
+  VAULT_CONTEXT_INDEX="${snapshot}/.vault-context/index.sqlite" \
+  "${vault_cli}" quality --json > "${temp_dir}/quality.json" ||
+  fail "quality_failed"
+jq -e '
+  .summary.raw_integrity_failures == 0 and
+  .summary.sensitive_quarantined == 0 and
+  .summary.noncanonical_quarantined == 0 and
+  .summary.schema_violations == 0 and
+  .summary.broken_links == 0 and
+  .summary.missing_summary == 0 and
+  .summary.missing_scope_or_project == 0
+' "${temp_dir}/quality.json" >/dev/null || fail "quality_gate_failed"
+
+git -C "${vault_root}" ls-files -z --modified --deleted --others --exclude-standard -- \
+  "${allowlist[@]}" > "${temp_dir}/post-validation-changes"
+[[ ! -s "${temp_dir}/post-validation-changes" ]] ||
+  fail "vault_changed_during_validation"
+[[ "$(git -C "${vault_root}" write-tree)" == "${validated_tree}" ]] ||
+  fail "index_changed_during_validation"
+
 if [[ ! -s "${temp_dir}/staged-paths" ]]; then
   staged_by_script=0
   if [[ "${retried_pending}" == "1" ]]; then
@@ -133,7 +153,6 @@ if [[ ! -s "${temp_dir}/staged-paths" ]]; then
   fi
   exit 0
 fi
-staged_by_script=1
 
 git -C "${vault_root}" diff --cached --name-status --no-renames -z > "${temp_dir}/staged-status"
 while IFS= read -r -d '' staged_status &&
@@ -168,11 +187,21 @@ if ! git -C "${vault_root}" diff --cached --no-ext-diff --unified=0 -- "${allowl
   node "${secret_scanner}" >/dev/null; then
   fail "staged_secret_suspected"
 fi
+[[ "$(git -C "${vault_root}" write-tree)" == "${validated_tree}" ]] ||
+  fail "index_changed_during_validation"
 
+# Commit the exact audited tree. `git commit` would reread a concurrently
+# mutable index; the explicit tree plus compare-and-swap ref update cannot
+# include content that bypassed the quality and secret gates above.
 commit_time="$(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M JST')"
-git -C "${vault_root}" commit -m "chore: sync Vault ${commit_time}" >/dev/null || fail "commit_failed"
+parent_sha="$(git -C "${vault_root}" rev-parse HEAD)"
+commit_sha="$(
+  printf 'chore: sync Vault %s\n' "${commit_time}" |
+    git -C "${vault_root}" commit-tree "${validated_tree}" -p "${parent_sha}"
+)" || fail "commit_failed"
+git -C "${vault_root}" update-ref "refs/heads/${branch}" "${commit_sha}" "${parent_sha}" ||
+  fail "commit_failed"
 staged_by_script=0
-commit_sha="$(git -C "${vault_root}" rev-parse HEAD)"
 printf '%s\n' "${commit_sha}" > "${pending_file}"
 
 if ! git -C "${vault_root}" push --quiet origin "HEAD:${branch}"; then
