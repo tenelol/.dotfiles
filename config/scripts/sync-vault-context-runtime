@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+bundle="${VAULT_CONTEXT_BUNDLE:?VAULT_CONTEXT_BUNDLE is required}"
+runtime_parent="${VAULT_CONTEXT_RUNTIME_PARENT:-/Users/tener/.codex/mcp}"
+destination="${runtime_parent}/vault-context-mcp"
+
+if [[ ! -f "${bundle}/src/server.mjs" || ! -d "${bundle}/node_modules" ]]; then
+  echo "vault-context bundle is incomplete" >&2
+  exit 1
+fi
+
+runtime_differs() {
+  local comparison
+  if ! comparison="$(rsync -rlcni --delete "${1}/" "${2}/")"; then
+    return 2
+  fi
+  [[ -n "${comparison}" ]]
+}
+
+mkdir -p "${runtime_parent}"
+
+if [[ "${1:-}" == "--check" ]]; then
+  if [[ ! -d "${destination}" ]]; then
+    echo "vault-context runtime is missing" >&2
+    exit 1
+  fi
+  if runtime_differs "${bundle}" "${destination}"; then
+    echo "vault-context runtime differs from the declarative bundle" >&2
+    exit 1
+  else
+    comparison_status=$?
+    if [[ "${comparison_status}" != "1" ]]; then
+      echo "vault-context runtime comparison failed" >&2
+      exit 1
+    fi
+  fi
+  echo "vault-context runtime is current"
+  exit 0
+fi
+
+stage="$(mktemp -d "${runtime_parent}/.vault-context-mcp-stage.XXXXXX")"
+previous="${runtime_parent}/.vault-context-mcp-previous"
+
+cleanup_stage() {
+  if [[ -d "${stage}" ]]; then
+    rm -rf -- "${stage}"
+  fi
+}
+trap cleanup_stage EXIT
+
+rsync -a --delete "${bundle}/" "${stage}/"
+chmod -R u+w "${stage}"
+node "${stage}/src/server.mjs" --self-test >/dev/null
+
+if [[ -d "${destination}" ]]; then
+  if runtime_differs "${stage}" "${destination}"; then
+    :
+  else
+    comparison_status=$?
+    if [[ "${comparison_status}" == "1" ]]; then
+      echo "vault-context runtime is already current"
+      exit 0
+    fi
+    echo "vault-context runtime comparison failed" >&2
+    exit 1
+  fi
+fi
+
+while IFS= read -r process_id; do
+  [[ -n "${process_id}" ]] && kill -TERM "${process_id}" 2>/dev/null || true
+done < <(
+  ps -axo pid=,command= |
+    awk '($2 == "node" || $2 ~ /\/node$/) && $3 == "/Users/tener/.codex/mcp/vault-context-mcp/src/server.mjs" { print $1 }'
+)
+
+if [[ -e "${previous}" ]]; then
+  rm -rf -- "${previous}"
+fi
+if [[ -e "${destination}" ]]; then
+  mv "${destination}" "${previous}"
+fi
+if ! mv "${stage}" "${destination}"; then
+  if [[ -e "${previous}" && ! -e "${destination}" ]]; then
+    mv "${previous}" "${destination}"
+  fi
+  exit 1
+fi
+if [[ -e "${previous}" ]]; then
+  rm -rf -- "${previous}"
+fi
+
+trap - EXIT
+echo "vault-context runtime synchronized"

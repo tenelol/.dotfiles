@@ -4,6 +4,7 @@ result-*
 .direnv
 .nvimlog
 __pycache__/
+node_modules/
 *.pyc
 *.swp
 .#*

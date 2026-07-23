@@ -1,0 +1,16 @@
+# Non-secret fragment only. Codex owns ~/.codex/config.toml.
+
+[[hooks.UserPromptSubmit]]
+  [[hooks.UserPromptSubmit.hooks]]
+  type = "command"
+  command = "python3 /Users/tener/.codex/hooks/inject-vault-context-workflow.py"
+  timeout = 5
+  statusMessage = "Injecting Obsidian Vault context"
+
+[mcp_servers."vault-context"]
+command = "node"
+args = ["/Users/tener/.codex/mcp/vault-context-mcp/src/server.mjs"]
+
+[mcp_servers."vault-context".env]
+VAULT_CONTEXT_ROOT = "/Users/tener/obsidian"
+VAULT_CONTEXT_INDEX = "/Users/tener/obsidian/.vault-context/index.sqlite"
