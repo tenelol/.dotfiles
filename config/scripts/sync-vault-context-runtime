@@ -67,16 +67,12 @@ if [[ -d "${destination}" ]]; then
   fi
 fi
 
-while IFS= read -r process_id; do
-  [[ -n "${process_id}" ]] && kill -TERM "${process_id}" 2>/dev/null || true
-done < <(
-  ps -axo pid=,command= |
-    awk '($2 == "node" || $2 ~ /\/node$/) && $3 == "/Users/tener/.codex/mcp/vault-context-mcp/src/server.mjs" { print $1 }'
-)
-
 if [[ -e "${previous}" ]]; then
   rm -rf -- "${previous}"
 fi
+# Codex owns each MCP stdio transport. Keep existing servers alive; the atomic
+# swap below makes the new runtime available to later sessions without closing
+# transports that are already attached to active tasks.
 if [[ -e "${destination}" ]]; then
   mv "${destination}" "${previous}"
 fi
