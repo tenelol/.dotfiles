@@ -1,0 +1,4 @@
+interface:
+  display_name: "Windows via Chrome Remote Desktop"
+  short_description: "MacからTenerへ安全に接続してWindows作業を実行"
+  default_prompt: "Use $windows-via-crd to connect from this Mac to Tener and complete the requested Windows work safely."
