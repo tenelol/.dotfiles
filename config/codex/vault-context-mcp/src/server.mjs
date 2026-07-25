@@ -3,6 +3,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
+import { evaluateRetrievalBenchmark } from "./benchmark.mjs";
 import {
   backlinks,
   capture,
@@ -27,6 +28,12 @@ import {
   semanticSearch,
   startup,
 } from "./core.mjs";
+import {
+  getLatestKpiSnapshot,
+  getWeeklyKpiReport,
+  listKpiHistory,
+  recordKpiSnapshot,
+} from "./observability.mjs";
 
 function result(value) {
   return { content: [{ type: "text", text: JSON.stringify(value, null, 2) }] };
@@ -44,11 +51,11 @@ function safe(fn) {
 
 const config = loadConfig();
 if (process.argv.includes("--self-test")) {
-  console.log(JSON.stringify({ name: "vault-context-mcp", version: "0.2.0", ...health(config) }, null, 2));
+  console.log(JSON.stringify({ name: "vault-context-mcp", version: "0.3.0", ...health(config) }, null, 2));
   process.exit(0);
 }
 
-const server = new McpServer({ name: "vault-context-mcp", version: "0.2.0" });
+const server = new McpServer({ name: "vault-context-mcp", version: "0.3.0" });
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const mutatingTools = new Set([
   "build_semantic_index",
@@ -58,6 +65,7 @@ const mutatingTools = new Set([
   "generate_weekly_synthesis",
   "capture_raw_note",
   "reindex_vault",
+  "record_kpi_snapshot",
 ]);
 const idempotentMutations = new Set([
   "build_semantic_index",
@@ -65,8 +73,13 @@ const idempotentMutations = new Set([
   "generate_daily_context",
   "generate_weekly_synthesis",
   "reindex_vault",
+  "record_kpi_snapshot",
 ]);
-const destructiveMutations = new Set(["generate_daily_context", "generate_weekly_synthesis"]);
+const destructiveMutations = new Set([
+  "generate_daily_context",
+  "generate_weekly_synthesis",
+  "record_kpi_snapshot",
+]);
 const untrustedResultTools = new Set([
   "get_startup_context",
   "get_context_for_prompt",
@@ -81,6 +94,10 @@ const untrustedResultTools = new Set([
   "generate_weekly_synthesis",
   "list_review_queue",
   "quality_check",
+  "evaluate_retrieval_benchmark",
+  "get_latest_kpi_snapshot",
+  "list_kpi_history",
+  "get_weekly_kpi_report",
 ]);
 
 function registerTool(name, description, inputSchema, callback) {
@@ -426,6 +443,68 @@ registerTool(
     limit: z.number().int().min(1).max(100).optional().default(50),
   },
   safe((args) => quality({ today: args.today, pinnedLimit: args.pinned_limit, staleHandoffDays: args.stale_handoff_days, limit: args.limit }, config)),
+);
+
+registerTool(
+  "evaluate_retrieval_benchmark",
+  "Evaluate the curated Vault-local Golden Query suite without returning or persisting query text.",
+  {
+    tracks: z.array(z.enum(["lexical", "chunks", "hybrid", "context", "scope"])).optional(),
+    timeout_ms: z.number().int().min(100).max(120000).optional().default(30000),
+  },
+  safe((args) => evaluateRetrievalBenchmark({ tracks: args.tracks, timeoutMs: args.timeout_ms }, config)),
+);
+
+registerTool(
+  "record_kpi_snapshot",
+  "Collect and atomically persist a privacy-minimized Vault quality, retrieval, and SLO snapshot; policy-expired observations are pruned relative to the actual current date.",
+  {
+    date: isoDate.optional(),
+    source: z.enum(["manual", "morning", "weekly"]).optional().default("manual"),
+    benchmark: z.boolean().optional().default(true),
+    tracks: z.array(z.enum(["lexical", "chunks", "hybrid", "context", "scope"])).optional(),
+    timeout_ms: z.number().int().min(100).max(120000).optional().default(30000),
+    enforce_daily: z.boolean().optional(),
+    require_weekly: z.boolean().optional().default(false),
+  },
+  safe((args) => recordKpiSnapshot({
+    date: args.date,
+    source: args.source,
+    benchmark: args.benchmark,
+    tracks: args.tracks,
+    timeoutMs: args.timeout_ms,
+    enforceDaily: args.enforce_daily,
+    requireWeekly: args.require_weekly,
+  }, config)),
+);
+
+registerTool(
+  "get_latest_kpi_snapshot",
+  "Read the latest privacy-minimized Vault KPI snapshot.",
+  {},
+  safe(() => getLatestKpiSnapshot({}, config)),
+);
+
+registerTool(
+  "list_kpi_history",
+  "Read bounded Vault KPI history without query text, note bodies, or raw quality rows.",
+  {
+    from: isoDate.optional(),
+    to: isoDate.optional(),
+    limit: z.number().int().min(1).max(400).optional().default(100),
+  },
+  safe((args) => listKpiHistory({ from: args.from, to: args.to, limit: args.limit }, config)),
+);
+
+registerTool(
+  "get_weekly_kpi_report",
+  "Compare the latest KPI snapshot per day with the preceding period and surface SLO breaches and debt regressions.",
+  {
+    date: isoDate.optional(),
+    days: z.number().int().min(1).max(31).optional().default(7),
+    compare_days: z.number().int().min(1).max(31).optional().default(7),
+  },
+  safe((args) => getWeeklyKpiReport({ date: args.date, days: args.days, compareDays: args.compare_days }, config)),
 );
 
 registerTool("reindex_vault", "Rebuild the disposable SQLite search index from Markdown source files.", {}, safe(() => reindex(config)));

@@ -25,6 +25,13 @@ try {
   const listed = await client.listTools();
   assert.ok(listed.tools.length >= 20, `expected at least 20 tools, got ${listed.tools.length}`);
   assert.ok(listed.tools.every((tool) => tool.outputSchema), "every tool must expose an output schema");
+  const benchmark = listed.tools.find((tool) => tool.name === "evaluate_retrieval_benchmark");
+  const recorder = listed.tools.find((tool) => tool.name === "record_kpi_snapshot");
+  assert.equal(benchmark.annotations.readOnlyHint, true);
+  assert.equal(benchmark.annotations.destructiveHint, false);
+  assert.equal(recorder.annotations.readOnlyHint, false);
+  assert.equal(recorder.annotations.idempotentHint, true);
+  assert.equal(recorder.annotations.destructiveHint, true);
   const response = await client.callTool({ name: "health_check", arguments: {} });
   assert.equal(response.isError, undefined);
   assert.ok(response.content.some((item) => item.type === "text"));

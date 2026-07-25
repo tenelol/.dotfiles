@@ -47,6 +47,8 @@ function computeIndexFormatRevision() {
     readFileSync(new URL("./core.mjs", import.meta.url), "utf8"),
     readFileSync(new URL("./schema.mjs", import.meta.url), "utf8"),
     readFileSync(new URL("./context-key.mjs", import.meta.url), "utf8"),
+    readFileSync(new URL("./benchmark.mjs", import.meta.url), "utf8"),
+    readFileSync(new URL("./observability.mjs", import.meta.url), "utf8"),
     readFileSync(new URL("./server.mjs", import.meta.url), "utf8"),
     readFileSync(new URL("../schema/vault-note-v2.schema.json", import.meta.url), "utf8"),
     readFileSync(new URL("../package-lock.json", import.meta.url), "utf8"),
@@ -115,7 +117,10 @@ const QUERY_SYNONYMS = [
 export function loadConfig() {
   const vaultRoot = resolve(process.env.VAULT_CONTEXT_ROOT || "/Users/tener/obsidian");
   const indexPath = resolve(process.env.VAULT_CONTEXT_INDEX || join(vaultRoot, ".vault-context", "index.sqlite"));
-  return { vaultRoot, indexPath, vaultName: basename(vaultRoot) };
+  const observabilityPath = resolve(
+    process.env.VAULT_CONTEXT_OBSERVABILITY || join(vaultRoot, ".vault-context", "observability.sqlite"),
+  );
+  return { vaultRoot, indexPath, observabilityPath, vaultName: basename(vaultRoot) };
 }
 
 function sqlString(value) {
@@ -931,7 +936,11 @@ function rankChunks(query, units, options, config) {
     const fuzzy = dice(grams(query), grams(`${row.heading || ""} ${row.text || ""}`));
     const fuzzyScore = fuzzy >= 0.18 ? fuzzy * 22 : 0;
     return { ...row, score: heading.score + text.score + fuzzyScore, match_reasons: [heading.score ? "heading" : null, text.score ? "chunk" : null, fuzzyScore ? "ngram" : null].filter(Boolean) };
-  }).filter((row) => row.match_reasons.length > 0).sort((left, right) => right.score - left.score);
+  }).filter((row) => row.match_reasons.length > 0).sort((left, right) => (
+    right.score - left.score
+    || String(left.path).localeCompare(String(right.path))
+    || String(left.chunk_id).localeCompare(String(right.chunk_id))
+  ));
 }
 
 export function searchChunks(query, options = {}, config = loadConfig()) {
@@ -1019,7 +1028,11 @@ export function search(query, options = {}, config = loadConfig()) {
     const match = scoreRow(row, normalized, units);
     return { row, ...match };
   }).filter((entry) => entry.score > 0)
-    .sort((left, right) => right.score - left.score || String(right.row.updated || "").localeCompare(String(left.row.updated || "")))
+    .sort((left, right) => (
+      right.score - left.score
+      || String(right.row.updated || "").localeCompare(String(left.row.updated || ""))
+      || String(left.row.path).localeCompare(String(right.row.path))
+    ))
     .slice(0, limit)
     .map(({ row, score, reasons }) => ({
       ...rowSummary(indexedConfig, row),
@@ -2032,7 +2045,8 @@ export async function semanticSearch(query, options = {}, config = loadConfig())
     };
   }
   if (suspectedSensitive(query)) throw new Error("Sensitive-looking semantic query was rejected");
-  const [queryVector] = await ollamaEmbed([String(query)], { model, timeoutMs: options.timeoutMs || 30_000 });
+  const embedder = options.embedder || ollamaEmbed;
+  const [queryVector] = await embedder([String(query)], { model, timeoutMs: options.timeoutMs || 30_000 });
   const lifecycleFilter = options.includeArchived ? "1=1" : "n.lifecycle!='archived'";
   const rows = queryRows(indexedConfig, `SELECT ${SUMMARY_COLUMNS_N},c.chunk_id,c.heading,c.text,hex(e.vector) AS vector_hex,e.dimensions FROM chunk_embeddings e JOIN chunks c ON c.path=e.path AND c.chunk_id=e.chunk_id AND c.embedding_source_sha256=e.source_hash JOIN notes n ON n.path=e.path WHERE e.model=${sqlString(model)} AND ${lifecycleFilter} AND ${retrievalEligibilitySql("n")}`);
   if (!rows.length) throw new Error(`No semantic index for ${model}; run vault-context embed first`);
@@ -2040,10 +2054,17 @@ export async function semanticSearch(query, options = {}, config = loadConfig())
     .filter((row) => Number(row.dimensions) === queryVector.length)
     .map((row) => ({ row, similarity: cosine(queryVector, bufferVector(row.vector_hex, Number(row.dimensions))) }))
     .filter((entry) => entry.similarity >= minimumSimilarity)
-    .sort((left, right) => right.similarity - left.similarity);
+    .sort((left, right) => (
+      right.similarity - left.similarity
+      || String(left.row.path).localeCompare(String(right.row.path))
+      || String(left.row.chunk_id).localeCompare(String(right.row.chunk_id))
+    ));
   const semanticByPath = new Map();
   for (const candidate of semanticChunks) if (!semanticByPath.has(candidate.row.path)) semanticByPath.set(candidate.row.path, candidate);
-  const semantic = [...semanticByPath.values()].sort((left, right) => right.similarity - left.similarity);
+  const semantic = [...semanticByPath.values()].sort((left, right) => (
+    right.similarity - left.similarity
+    || String(left.row.path).localeCompare(String(right.row.path))
+  ));
   const lexical = search(query, { ...options, limit: Math.max(Number(options.limit) || 10, 20) }, indexedConfig).results;
   const fused = new Map();
   lexical.forEach((row, index) => {
@@ -2063,7 +2084,14 @@ export async function semanticSearch(query, options = {}, config = loadConfig())
     current.semantic_chunk = { chunk_id: row.chunk_id, heading: row.heading, text: row.text };
     fused.set(row.path, current);
   });
-  const graphRows = relatedRowsForPaths([...fused.values()].sort((left, right) => right.score - left.score).slice(0, 5).map((entry) => entry.row.path), { limit: 50, includeArchived: options.includeArchived, automatic: true }, indexedConfig);
+  const graphRows = relatedRowsForPaths(
+    [...fused.values()]
+      .sort((left, right) => right.score - left.score || String(left.row.path).localeCompare(String(right.row.path)))
+      .slice(0, 5)
+      .map((entry) => entry.row.path),
+    { limit: 50, includeArchived: options.includeArchived, automatic: true },
+    indexedConfig,
+  );
   graphRows.forEach((row, index) => {
     const current = fused.get(row.path) || { row: rowSummary(indexedConfig, row), score: 0 };
     current.score += 0.2 / (60 + index + 1);
@@ -2072,7 +2100,10 @@ export async function semanticSearch(query, options = {}, config = loadConfig())
     fused.set(row.path, current);
   });
   const limit = Math.min(Math.max(Number(options.limit) || 10, 1), 100);
-  const results = [...fused.values()].sort((left, right) => right.score - left.score).slice(0, limit).map((entry) => ({
+  const results = [...fused.values()]
+    .sort((left, right) => right.score - left.score || String(left.row.path).localeCompare(String(right.row.path)))
+    .slice(0, limit)
+    .map((entry) => ({
     ...entry.row,
     hybrid_score: Number(entry.score.toFixed(6)),
     lexical_rank: entry.lexical_rank || null,
@@ -2082,7 +2113,7 @@ export async function semanticSearch(query, options = {}, config = loadConfig())
     semantic_chunk: entry.semantic_chunk || null,
     graph_rank: entry.graph_rank || null,
     shared_facets: entry.shared_facets || [],
-  }));
+    }));
   return {
     query,
     model,
