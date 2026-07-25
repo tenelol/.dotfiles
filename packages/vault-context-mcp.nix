@@ -5,10 +5,10 @@
 }:
 buildNpmPackage {
   pname = "vault-context-mcp";
-  version = "0.2.0";
+  version = "0.3.0";
 
   src = ../config/codex/vault-context-mcp;
-  npmDepsHash = "sha256-j8yyB3bkE4ApgDhkWscMZFoPZOLPL5C/LrPGD/Kf0D8=";
+  npmDepsHash = "sha256-PlESTDWZBBqqRSP+vN5rudbUNrFPKLZ6Noi1j/yPucI=";
 
   dontNpmBuild = true;
   doCheck = true;

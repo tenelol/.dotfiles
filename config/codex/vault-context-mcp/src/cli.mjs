@@ -2,6 +2,7 @@
 
 import { readFileSync } from "node:fs";
 import { basename } from "node:path";
+import { evaluateRetrievalBenchmark } from "./benchmark.mjs";
 import {
   backlinks,
   capture,
@@ -25,6 +26,12 @@ import {
   semanticSearch,
   startup,
 } from "./core.mjs";
+import {
+  getLatestKpiSnapshot,
+  getWeeklyKpiReport,
+  listKpiHistory,
+  recordKpiSnapshot,
+} from "./observability.mjs";
 
 const CAPTURE_TYPES = new Set(["task", "decision", "note", "risk", "learning", "question", "handoff", "investigation"]);
 
@@ -65,6 +72,10 @@ function number(value, fallback) {
   if (value === undefined) return fallback;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : Number.NaN;
+}
+
+function optionalBool(value) {
+  return value === undefined ? undefined : bool(value);
 }
 
 function body(flags) {
@@ -145,6 +156,11 @@ function usage() {
   vault-context backlinks PATH_OR_ID
   vault-context related PATH_OR_ID
   vault-context quality [--today YYYY-MM-DD]
+  vault-context benchmark [--suite VAULT_RELATIVE_PATH] [--tracks lexical,chunks,hybrid,context,scope] [--strict]
+  vault-context kpi snapshot [--date YYYY-MM-DD] [--source morning] [--no-write] [--no-benchmark]
+  vault-context kpi latest
+  vault-context kpi history [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--limit N]
+  vault-context kpi report [--date YYYY-MM-DD] [--days 7] [--compare-days 7]
   vault-context review [--before YYYY-MM-DD]
   vault-context inbox
   vault-context raw --stdin [--title TITLE]
@@ -245,6 +261,49 @@ async function main() {
         limit: integer(flags.limit, 50),
       }, config);
       break;
+    case "benchmark":
+      result = await evaluateRetrievalBenchmark({
+        suitePath: flags.suite,
+        tracks: flags.tracks ? String(flags.tracks).split(",").map((value) => value.trim()).filter(Boolean) : undefined,
+        timeoutMs: integer(flags.timeout_ms, undefined),
+      }, config);
+      if (bool(flags.strict, false) && result.status === "fail") process.exitCode = 2;
+      break;
+    case "kpi": {
+      const subcommand = positional.shift() || "latest";
+      if (subcommand === "snapshot") {
+        result = await recordKpiSnapshot({
+          date: flags.date,
+          source: flags.source || "manual",
+          policyPath: flags.policy,
+          benchmark: bool(flags.benchmark, true),
+          tracks: flags.tracks ? String(flags.tracks).split(",").map((value) => value.trim()).filter(Boolean) : undefined,
+          timeoutMs: integer(flags.timeout_ms, undefined),
+          write: bool(flags.write, true),
+          enforceDaily: optionalBool(flags.enforce_daily),
+          requireWeekly: bool(flags.require_weekly, false),
+        }, config);
+        if (bool(flags.strict, false) && result.overall_status === "fail") process.exitCode = 2;
+      } else if (subcommand === "latest") {
+        result = getLatestKpiSnapshot({}, config);
+      } else if (subcommand === "history") {
+        result = listKpiHistory({
+          from: flags.from,
+          to: flags.to,
+          limit: integer(flags.limit, 100),
+        }, config);
+      } else if (subcommand === "report") {
+        result = getWeeklyKpiReport({
+          date: flags.date,
+          days: integer(flags.days, 7),
+          compareDays: integer(flags.compare_days, 7),
+        }, config);
+        if (bool(flags.strict, false) && result.overall_status === "fail") process.exitCode = 2;
+      } else {
+        throw new Error(`Unknown kpi subcommand: ${subcommand}`);
+      }
+      break;
+    }
     case "review":
       result = review({ before: flags.before, limit: integer(flags.limit, 50) }, config);
       break;
