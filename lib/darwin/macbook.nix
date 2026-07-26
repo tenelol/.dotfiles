@@ -106,9 +106,9 @@ in
 
   activationScripts = {
     configurePowerManagement.text = ''
-      # Disable idle system sleep only while connected to AC power.
+      # Keep the system and display awake while connected to AC power.
       # Lid-close sleep is controlled separately by macOS and remains unchanged.
-      /usr/bin/pmset -c sleep 0
+      /usr/bin/pmset -c sleep 0 displaysleep 0
     '';
 
     ensureScreenshotDirectory.text = ''
