@@ -119,6 +119,11 @@ in
     postActivation.text = lib.mkAfter ''
       uid="$(id -u ${profile.username})"
 
+      # Prevent the screen saver from triggering an automatic lock. Battery
+      # display sleep, lid-close sleep, and manual locking remain unchanged.
+      launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/defaults -currentHost write \
+        com.apple.screensaver idleTime -int 0
+
       launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/defaults write \
         com.apple.HIToolbox AppleEnabledInputSources ${lib.escapeShellArg azookey.enabledInputSourcesPlist}
       launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/defaults write \
