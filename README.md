@@ -124,6 +124,17 @@ NixOS では path だけ `/root/.ssh/nixbuild_ed25519` に置き換えます。`
 
 ## Workflow
 
+リポジトリの構造と現在の構成をブラウザで確認する:
+
+```sh
+nix develop
+```
+
+対話シェルに入ると `http://127.0.0.1:43110` で Dotfiles Explorer が起動し、ブラウザも開きます。
+`hosts/`、`modules/`、`rices/`、flake inputs、Homebrew / Nix package、Git の変更状態をリポジトリから都度読み取るため、設定を編集すると画面も自動更新されます。
+ブラウザを開きたくない場合は `DOTFILES_EXPLORER_NO_OPEN=1 nix develop`、port を変える場合は `DOTFILES_EXPLORER_PORT=43111 nix develop` を使います。
+シェルを抜けると、そのシェルが起動したローカルサーバーも終了します。
+
 軽量評価:
 
 ```sh
