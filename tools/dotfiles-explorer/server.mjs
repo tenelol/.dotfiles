@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, lstatSync, readFileSync, readdirSync } from "node:fs";
 import { createServer } from "node:http";
 import { dirname, extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -12,20 +12,6 @@ const publicRoot = join(scriptDirectory, "public");
 const port = Number.parseInt(process.env.DOTFILES_EXPLORER_PORT || "43110", 10);
 const host = "127.0.0.1";
 
-const visibleEntries = [
-  "flake.nix",
-  "flake.lock",
-  "README.md",
-  "hosts",
-  "modules",
-  "rices",
-  "home",
-  "lib",
-  "packages",
-  "config",
-  "scripts",
-  "tools",
-];
 const ignoredNames = new Set([
   ".DS_Store",
   ".direnv",
@@ -287,62 +273,80 @@ function collectRuntime(hosts, rices) {
   };
 }
 
-function treeNode(path, relativePath, budget) {
-  if (budget.count >= budget.max) return null;
-  const name = relativePath.split("/").at(-1);
-  if (ignoredNames.has(name)) return null;
-
-  let stats;
-  try {
-    stats = statSync(path);
-  } catch {
-    return null;
-  }
-
-  budget.count += 1;
-  if (!stats.isDirectory()) {
-    return {
-      name,
-      path: relativePath,
-      type: "file",
-      extension: extname(name).replace(".", "") || "file",
-    };
-  }
-
-  const children = readdirSync(path, { withFileTypes: true })
-    .filter((entry) => !ignoredNames.has(entry.name))
-    .sort((left, right) => {
-      if (left.isDirectory() !== right.isDirectory()) {
-        return left.isDirectory() ? -1 : 1;
+function collectRepositoryFiles() {
+  return run("git", [
+    "ls-files",
+    "--cached",
+    "--others",
+    "--exclude-standard",
+    "-z",
+  ])
+    .split("\0")
+    .filter(Boolean)
+    .map((path) => {
+      let stats;
+      try {
+        stats = lstatSync(join(repositoryRoot, path));
+      } catch {
+        return null;
       }
-      return left.name.localeCompare(right.name);
+      if (!stats.isFile() && !stats.isSymbolicLink()) return null;
+
+      const name = path.split("/").at(-1);
+      return {
+        name,
+        path,
+        type: "file",
+        extension: extname(name).replace(".", "") || "file",
+        size: stats.size,
+      };
     })
-    .map((entry) =>
-      treeNode(join(path, entry.name), `${relativePath}/${entry.name}`, budget),
-    )
-    .filter(Boolean);
-
-  return {
-    name,
-    path: relativePath,
-    type: "directory",
-    children,
-  };
+    .filter(Boolean)
+    .sort((left, right) => left.path.localeCompare(right.path));
 }
 
-function collectTree() {
-  const budget = { count: 0, max: 900 };
-  return visibleEntries
-    .filter((entry) => existsSync(join(repositoryRoot, entry)))
-    .map((entry) => treeNode(join(repositoryRoot, entry), entry, budget))
-    .filter(Boolean);
-}
+function collectTree(files) {
+  const root = { children: new Map() };
 
-function countTree(nodes) {
-  return nodes.reduce(
-    (total, node) => total + 1 + (node.children ? countTree(node.children) : 0),
-    0,
-  );
+  for (const file of files) {
+    const parts = file.path.split("/");
+    let parent = root;
+
+    parts.forEach((part, index) => {
+      const path = parts.slice(0, index + 1).join("/");
+      const isFile = index === parts.length - 1;
+      if (!parent.children.has(part)) {
+        parent.children.set(
+          part,
+          isFile
+            ? file
+            : {
+                name: part,
+                path,
+                type: "directory",
+                children: new Map(),
+              },
+        );
+      }
+      if (!isFile) parent = parent.children.get(part);
+    });
+  }
+
+  const materialize = (children) =>
+    [...children.values()]
+      .map((node) =>
+        node.type === "directory"
+          ? { ...node, children: materialize(node.children) }
+          : node,
+      )
+      .sort((left, right) => {
+        if (left.type !== right.type) {
+          return left.type === "directory" ? -1 : 1;
+        }
+        return left.name.localeCompare(right.name);
+      });
+
+  return materialize(root.children);
 }
 
 function collectGit() {
@@ -373,15 +377,19 @@ function collectState() {
   const hosts = collectHosts();
   const rices = collectRices();
   const modules = collectModules();
-  const tree = collectTree();
-  const nixFiles = listNixFiles(repositoryRoot).length;
+  const repositoryFiles = collectRepositoryFiles();
+  const tree = collectTree(repositoryFiles);
+  const nixFiles = repositoryFiles.filter(
+    (file) => file.extension === "nix",
+  ).length;
 
   return {
     generatedAt: new Date().toISOString(),
     repository: {
       name: ".dotfiles",
       description: "denix control plane for NixOS and nix-darwin",
-      filesVisible: countTree(tree),
+      fileCount: repositoryFiles.length,
+      filesVisible: repositoryFiles.length,
       nixFiles,
       git: collectGit(),
     },
