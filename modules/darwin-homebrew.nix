@@ -111,6 +111,7 @@ delib.module {
         "font-noto-sans-cjk"
         "ghostty"
         "google-chrome"
+        "insomnia"
         "karabiner-elements"
         "notion"
         {
