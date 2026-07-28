@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="denix ベースの dotfiles 構成をリアルタイムに可視化するローカル explorer"
+    />
+    <title>Dotfiles Explorer</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="noise" aria-hidden="true"></div>
+    <header class="masthead">
+      <div class="wordmark">
+        <span class="wordmark-mark" aria-hidden="true">⌁</span>
+        <div>
+          <p>LOCAL CONTROL PLANE</p>
+          <h1>Dotfiles Explorer</h1>
+        </div>
+      </div>
+      <div class="live-readout" aria-live="polite">
+        <span class="live-dot"></span>
+        <span id="sync-label">構成を読み込み中</span>
+      </div>
+    </header>
+
+    <div id="error-banner" class="error-banner" hidden></div>
+
+    <main class="workspace">
+      <aside class="file-drawer" aria-label="Repository structure">
+        <div class="drawer-heading">
+          <div>
+            <p class="eyebrow">Repository</p>
+            <h2>実ファイル</h2>
+          </div>
+          <span id="file-count" class="count-label">—</span>
+        </div>
+        <label class="search">
+          <span>⌕</span>
+          <input
+            id="search-input"
+            type="search"
+            placeholder="ファイル・module・packageを検索"
+            autocomplete="off"
+          />
+        </label>
+        <div id="file-tree" class="file-tree" aria-live="polite"></div>
+        <div id="file-inspector" class="file-inspector">
+          <p class="eyebrow">Selected path</p>
+          <strong>flake.nix</strong>
+          <p>すべての host、module、rice を束ねる入口です。</p>
+        </div>
+      </aside>
+
+      <div class="dashboard">
+        <section class="hero">
+          <div class="hero-copy">
+            <p class="eyebrow">denix / multi-host / live</p>
+            <h2>ひとつの flake から、<br />すべての環境へ。</h2>
+            <p>
+              ファイルを編集すると、構造・構成要素・Git状態を自動で読み直します。
+              ここに見えているものが、いまの dotfiles です。
+            </p>
+          </div>
+          <div id="runtime-card" class="runtime-card loading">
+            <p class="eyebrow">Active signal</p>
+            <strong>検出中</strong>
+          </div>
+        </section>
+
+        <section class="topology-section">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Architecture</p>
+              <h2>構成の配線</h2>
+            </div>
+            <p id="git-summary" class="git-summary">Gitを確認中</p>
+          </div>
+          <div id="topology" class="topology" aria-live="polite"></div>
+        </section>
+
+        <section class="hosts-section">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Targets</p>
+              <h2>Host と rice</h2>
+            </div>
+            <span class="section-note">denix auto-discovery</span>
+          </div>
+          <div id="hosts" class="host-grid"></div>
+          <div id="rices" class="rice-strip"></div>
+        </section>
+
+        <section class="inventory-section">
+          <div class="section-heading inventory-heading">
+            <div>
+              <p class="eyebrow">Inventory</p>
+              <h2>何が入るか</h2>
+            </div>
+            <div id="inventory-tabs" class="tabs" role="tablist"></div>
+          </div>
+          <div id="inventory" class="inventory"></div>
+        </section>
+
+        <section class="modules-section">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Modules</p>
+              <h2>共有される振る舞い</h2>
+            </div>
+            <span id="module-count" class="section-note">—</span>
+          </div>
+          <div id="modules" class="module-grid"></div>
+        </section>
+      </div>
+    </main>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
