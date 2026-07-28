@@ -41,6 +41,29 @@
     end
 
     local is_wsl = vim.fn.has("wsl") == 1
+    local function duplicate_current_or_visual_lines()
+      local first_line = vim.fn.line(".")
+      local last_line = first_line
+
+      if vim.fn.mode():match("^[vV\22]") then
+        first_line = vim.fn.line("v")
+        last_line = vim.fn.line(".")
+      end
+
+      if first_line > last_line then
+        first_line, last_line = last_line, first_line
+      end
+
+      local lines = vim.api.nvim_buf_get_lines(0, first_line - 1, last_line, false)
+      vim.api.nvim_buf_set_lines(0, last_line, last_line, false, lines)
+      vim.api.nvim_win_set_cursor(0, { last_line + #lines, 0 })
+    end
+
+    vim.keymap.set({ "n", "x" }, "<M-S-Down>", duplicate_current_or_visual_lines, {
+      silent = true,
+      desc = "Duplicate line(s) below",
+    })
+
     if is_wsl then
       vim.keymap.set({ "n", "i", "v" }, "<C-h>", "<Left>", { noremap = true, silent = true, desc = "Move left" })
       vim.keymap.set({ "n", "i", "v" }, "<C-j>", "<Down>", { noremap = true, silent = true, desc = "Move down" })
