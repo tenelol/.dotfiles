@@ -1,7 +1,8 @@
 const TYPE_META = {
   root: { label: "Root", color: "#edf8ff", radius: 17 },
   cluster: { label: "Group", color: "#5277c3", radius: 9 },
-  file: { label: "Structure", color: "#8fc9ed", radius: 6 },
+  directory: { label: "Directory", color: "#6ba9d6", radius: 4.5 },
+  file: { label: "File", color: "#a8d7f0", radius: 3 },
   host: { label: "Hosts", color: "#7ebae4", radius: 9 },
   rice: { label: "Rices", color: "#a8c7f0", radius: 8 },
   module: { label: "Modules", color: "#62b9d1", radius: 5 },
@@ -41,7 +42,8 @@ const CATEGORY_META = [
 const TYPE_LABELS = {
   root: "flake root",
   cluster: "collection",
-  file: "repository path",
+  directory: "directory",
+  file: "file",
   host: "host",
   rice: "rice",
   module: "module",
@@ -192,12 +194,50 @@ function countTreeChildren(node) {
   );
 }
 
+function formatBytes(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KiB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MiB`;
+}
+
+function addTreeNodes(entries, parentId, nodes, edges) {
+  entries.forEach((entry, index) => {
+    const directory = entry.type === "directory";
+    const id = `path:${entry.path}`;
+    nodes.push(
+      makeNode({
+        id,
+        label: entry.name,
+        type: directory ? "directory" : "file",
+        category: "structure",
+        path: entry.path,
+        index,
+        total: entries.length,
+        details: directory
+          ? {
+              kind: "directory",
+              descendants: countTreeChildren(entry),
+              children: entry.children.length,
+            }
+          : {
+              kind: "file",
+              extension: entry.extension,
+              size: formatBytes(entry.size),
+            },
+      }),
+    );
+    addEdge(edges, parentId, id);
+    if (directory) addTreeNodes(entry.children, id, nodes, edges);
+  });
+}
+
 function snowflakeSlots(count) {
   const slots = [];
   let layer = 0;
+  const layerStep = count > 450 ? 18 : count > 250 ? 22 : count > 140 ? 26 : 31;
 
   while (slots.length < count) {
-    const radius = 128 + layer * 31;
+    const radius = 128 + layer * layerStep;
     for (let arm = 0; arm < 6 && slots.length < count; arm += 1) {
       const angle = -Math.PI / 2 + (arm / 6) * Math.PI * 2;
       const baseX = Math.cos(angle) * radius;
@@ -205,7 +245,8 @@ function snowflakeSlots(count) {
       slots.push({ x: baseX, y: baseY });
 
       if (layer > 0) {
-        const branchLength = 17 + Math.min(layer * 4.5, 48);
+        const branchLength =
+          Math.max(12, layerStep * 0.55) + Math.min(layer * 3.5, 42);
         for (const direction of [-1, 1]) {
           if (slots.length >= count) break;
           const branchAngle = angle + direction * (Math.PI / 3);
@@ -298,14 +339,14 @@ function buildGraph(state) {
       details: {
         role: "denix control plane",
         description: state.repository.description,
-        files: `${state.repository.filesVisible} visible`,
+        files: `${state.repository.fileCount} repository files`,
         nix: `${state.repository.nixFiles} Nix files`,
       },
     }),
   );
 
   const groups = [
-    ["group:structure", "repository", "structure", state.tree.length],
+    ["group:structure", "repository", "structure", state.repository.fileCount],
     ["group:hosts", "hosts/", "host", state.hosts.length],
     ["group:rices", "rices/", "rice", state.rices.length],
     ["group:modules", "modules/", "module", state.modules.length],
@@ -349,26 +390,7 @@ function buildGraph(state) {
     );
   }
 
-  state.tree.forEach((entry, index) => {
-    const id = `file:${entry.path}`;
-    nodes.push(
-      makeNode({
-        id,
-        label: entry.name,
-        type: "file",
-        category: "structure",
-        path: entry.path,
-        index,
-        total: state.tree.length,
-        details: {
-          kind: entry.type,
-          descendants:
-            entry.type === "directory" ? countTreeChildren(entry) : 0,
-        },
-      }),
-    );
-    addEdge(edges, "group:structure", id);
-  });
+  addTreeNodes(state.tree, "group:structure", nodes, edges);
 
   state.hosts.forEach((host, index) => {
     const id = `host:${host.name}`;
@@ -715,29 +737,35 @@ function applyForces() {
   }
 
   const count = visibleNodes.length;
-  for (let leftIndex = 0; leftIndex < count; leftIndex += 1) {
-    const left = visibleNodes[leftIndex];
-    for (let rightIndex = leftIndex + 1; rightIndex < count; rightIndex += 1) {
-      const right = visibleNodes[rightIndex];
-      let dx = right.x - left.x;
-      let dy = right.y - left.y;
-      let distanceSquared = dx * dx + dy * dy;
-      if (distanceSquared < 1) {
-        dx = 0.5;
-        dy = 0.5;
-        distanceSquared = 0.5;
+  if (count <= 180) {
+    for (let leftIndex = 0; leftIndex < count; leftIndex += 1) {
+      const left = visibleNodes[leftIndex];
+      for (
+        let rightIndex = leftIndex + 1;
+        rightIndex < count;
+        rightIndex += 1
+      ) {
+        const right = visibleNodes[rightIndex];
+        let dx = right.x - left.x;
+        let dy = right.y - left.y;
+        let distanceSquared = dx * dx + dy * dy;
+        if (distanceSquared < 1) {
+          dx = 0.5;
+          dy = 0.5;
+          distanceSquared = 0.5;
+        }
+        if (distanceSquared > 42000) continue;
+        const distance = Math.sqrt(distanceSquared);
+        const strength =
+          (left.type === "cluster" || right.type === "cluster" ? 180 : 82) /
+          Math.max(distanceSquared, 80);
+        const forceX = (dx / distance) * strength * layoutEnergy;
+        const forceY = (dy / distance) * strength * layoutEnergy;
+        left.vx -= forceX;
+        left.vy -= forceY;
+        right.vx += forceX;
+        right.vy += forceY;
       }
-      if (distanceSquared > 42000) continue;
-      const distance = Math.sqrt(distanceSquared);
-      const strength =
-        (left.type === "cluster" || right.type === "cluster" ? 180 : 82) /
-        Math.max(distanceSquared, 80);
-      const forceX = (dx / distance) * strength * layoutEnergy;
-      const forceY = (dy / distance) * strength * layoutEnergy;
-      left.vx -= forceX;
-      left.vy -= forceY;
-      right.vx += forceX;
-      right.vy += forceY;
     }
   }
 
@@ -1133,7 +1161,7 @@ function selectNode(id, center = false) {
 
 function setZoom(nextZoom, pivotX = viewWidth / 2, pivotY = viewHeight / 2) {
   const worldBefore = screenToWorld(pivotX, pivotY);
-  zoom = Math.max(0.35, Math.min(2.8, nextZoom));
+  zoom = Math.max(0.28, Math.min(2.8, nextZoom));
   panX = pivotX - viewWidth / 2 - worldBefore.x * zoom;
   panY = pivotY - viewHeight / 2 - worldBefore.y * zoom;
   elements.zoomLabel.textContent = `${Math.round(zoom * 100)}%`;
@@ -1179,7 +1207,7 @@ function fitGraph() {
     usableWidth / Math.max(maxX - minX, 180),
     usableHeight / Math.max(maxY - minY, 180),
   );
-  zoom = Math.max(0.42, nextZoom);
+  zoom = Math.max(0.3, nextZoom);
   panX = -((minX + maxX) / 2) * zoom;
   panY = -((minY + maxY) / 2) * zoom;
   elements.zoomLabel.textContent = `${Math.round(zoom * 100)}%`;

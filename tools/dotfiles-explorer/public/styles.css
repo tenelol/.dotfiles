@@ -242,31 +242,6 @@ kbd {
   cursor: pointer;
 }
 
-.graph-title {
-  position: absolute;
-  z-index: 3;
-  top: 26px;
-  left: 50%;
-  pointer-events: none;
-  transform: translateX(-50%);
-  text-align: center;
-}
-
-.graph-title span {
-  display: block;
-  margin-bottom: 6px;
-  color: var(--text-dim);
-  font: 600 8px/1 var(--mono);
-  letter-spacing: 0.22em;
-}
-
-.graph-title strong {
-  color: rgba(233, 237, 245, 0.86);
-  font-size: 17px;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-}
-
 .control-panel,
 .inspector {
   position: absolute;
@@ -723,10 +698,6 @@ kbd {
 
   .graph-shell {
     height: calc(100vh - 56px);
-  }
-
-  .graph-title {
-    display: none;
   }
 
   .control-panel {
