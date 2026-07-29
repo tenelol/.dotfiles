@@ -22,7 +22,7 @@ return {
         dim_inactive = true,
         styles = {
           comments = { italic = true },
-          keywords = { italic = true },
+          keywords = {},
           functions = {},
           variables = {},
           sidebars = "transparent",
@@ -58,10 +58,10 @@ return {
           c.bg_visual = theme.bg_selection
           c.bg_search = theme.yellow
           c.diff = {
-            add = "#20303b",
-            delete = "#3b2430",
-            change = "#2f2d3f",
-            text = "#3d3650",
+            add = "#183242",
+            delete = "#202a45",
+            change = "#243149",
+            text = "#2b3f5c",
           }
           c.git = {
             add = theme.green,
@@ -70,12 +70,12 @@ return {
             ignore = theme.fg_gutter,
           }
           c.rainbow = {
-            theme.red,
-            theme.yellow,
-            theme.green,
-            theme.cyan,
+            theme.fg_dark,
+            theme.blue0,
             theme.blue,
-            theme.magenta,
+            theme.cyan,
+            theme.fg,
+            theme.blue,
           }
           c.terminal = {
             black = theme.bg,
@@ -110,7 +110,7 @@ return {
             "@string.escape",
             "@string.regex",
             "@character",
-          }, { fg = theme.green, bg = "none" })
+          }, { fg = theme.fg_dark, bg = "none" })
 
           set_highlights(hl, {
             "Boolean",
@@ -123,7 +123,7 @@ return {
             "@constant.macro",
             "@number",
             "@number.float",
-          }, { fg = theme.orange, bg = "none" })
+          }, { fg = theme.blue, bg = "none" })
 
           set_highlights(hl, {
             "Type",
@@ -185,12 +185,12 @@ return {
             "@keyword.operator",
             "@keyword.repeat",
             "@label",
-          }, { fg = theme.magenta, bg = "none" })
+          }, { fg = theme.blue, bg = "none" })
 
           set_highlights(hl, {
             "Operator",
             "@operator",
-          }, { fg = theme.cyan, bg = "none" })
+          }, { fg = theme.fg_dark, bg = "none" })
 
           set_highlights(hl, {
             "Special",
@@ -199,7 +199,7 @@ return {
             "@tag",
             "@tag.attribute",
             "@tag.delimiter",
-          }, { fg = theme.yellow, bg = "none" })
+          }, { fg = theme.cyan, bg = "none" })
 
           hl.Todo = { fg = theme.yellow, bg = theme.bg_highlight, bold = true }
 
@@ -228,15 +228,15 @@ return {
           hl.Search = { fg = theme.bg_dark, bg = theme.yellow }
           hl.IncSearch = { fg = theme.bg_dark, bg = theme.orange }
 
-          hl.DiagnosticError = { fg = theme.red }
+          hl.DiagnosticError = { fg = theme.red, bold = true }
           hl.DiagnosticWarn = { fg = theme.yellow }
           hl.DiagnosticInfo = { fg = theme.cyan }
-          hl.DiagnosticHint = { fg = theme.green }
-          hl.Error = { fg = theme.red }
-          hl.DiffAdd = { fg = theme.green, bg = "#20303b" }
-          hl.DiffChange = { fg = theme.yellow, bg = "#2f2d3f" }
-          hl.DiffDelete = { fg = theme.red, bg = "#3b2430" }
-          hl.DiffText = { fg = theme.fg, bg = "#3d3650" }
+          hl.DiagnosticHint = { fg = theme.fg_dark }
+          hl.Error = { fg = theme.red, bold = true }
+          hl.DiffAdd = { fg = theme.green, bg = "#183242" }
+          hl.DiffChange = { fg = theme.yellow, bg = "#243149" }
+          hl.DiffDelete = { fg = theme.red, bg = "#202a45" }
+          hl.DiffText = { fg = theme.fg, bg = "#2b3f5c" }
 
           hl.TelescopeBorder = { fg = theme.blue, bg = "none" }
           hl.TelescopeNormal = { fg = theme.fg, bg = "none" }

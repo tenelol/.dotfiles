@@ -150,6 +150,7 @@ let
         css
         scss
         astro
+        prisma
       ]
     );
     vim-test = pkgs.vimPlugins.vim-test;
