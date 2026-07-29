@@ -16,6 +16,7 @@ delib.module {
       typescript
       tailwindcss-language-server
       astro-language-server
+      prisma-language-server
       prettierd
       prettier
       dart-sass
