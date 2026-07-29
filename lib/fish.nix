@@ -19,39 +19,39 @@
       enable = true;
 
       interactiveShellInit = ''
-        # Match the terminal/Neovim TokyoNight palette while keeping errors obvious.
-        set -g fish_color_normal c0caf5
-        set -g fish_color_command 7dcfff
-        set -g fish_color_keyword bb9af7
-        set -g fish_color_error f7768e
-        set -g fish_color_param c0caf5
-        set -g fish_color_option e0af68
-        set -g fish_color_quote 9ece6a
-        set -g fish_color_redirection bb9af7
-        set -g fish_color_end ff9e64
-        set -g fish_color_operator 7dcfff
-        set -g fish_color_escape bb9af7
-        set -g fish_color_autosuggestion 565f89
-        set -g fish_color_comment 565f89
-        set -g fish_color_match e0af68
-        set -g fish_color_selection c0caf5 --background=364a82
-        set -g fish_color_search_match 1f2335 --background=e0af68
-        set -g fish_color_cancel f7768e
-        set -g fish_color_valid_path 9ece6a
-        set -g fish_color_cwd 7aa2f7
-        set -g fish_color_cwd_root f7768e
-        set -g fish_color_user bb9af7
-        set -g fish_color_host 7dcfff
-        set -g fish_color_host_remote e0af68
-        set -g fish_color_status f7768e
+        # Match the low-saturation Graphite Frost hierarchy used by Neovim.
+        set -g fish_color_normal b3bbc7
+        set -g fish_color_command d8dde6
+        set -g fish_color_keyword 8993a3
+        set -g fish_color_error c4a0e8
+        set -g fish_color_param b3bbc7
+        set -g fish_color_option 8993a3
+        set -g fish_color_quote 8993a3
+        set -g fish_color_redirection 7f9bc4
+        set -g fish_color_end 8993a3
+        set -g fish_color_operator 78b6cf
+        set -g fish_color_escape 7f9bc4
+        set -g fish_color_autosuggestion 4f5968
+        set -g fish_color_comment 626c7a
+        set -g fish_color_match 94b8c7
+        set -g fish_color_selection b3bbc7 --background=293448
+        set -g fish_color_search_match d8dde6 --background=202631
+        set -g fish_color_cancel c4a0e8
+        set -g fish_color_valid_path b3bbc7
+        set -g fish_color_cwd 7f9bc4
+        set -g fish_color_cwd_root c4a0e8
+        set -g fish_color_user b3bbc7
+        set -g fish_color_host 78b6cf
+        set -g fish_color_host_remote a894c7
+        set -g fish_color_status c4a0e8
 
-        set -g fish_pager_color_progress 7aa2f7
-        set -g fish_pager_color_prefix 7dcfff
-        set -g fish_pager_color_completion c0caf5
-        set -g fish_pager_color_description 9aa5ce
-        set -g fish_pager_color_selected_prefix 7dcfff --background=364a82
-        set -g fish_pager_color_selected_completion c0caf5 --background=364a82
-        set -g fish_pager_color_selected_description c0caf5 --background=364a82
+        set -g fish_pager_color_progress 7f9bc4
+        set -g fish_pager_color_prefix 78b6cf
+        set -g fish_pager_color_completion b3bbc7
+        set -g fish_pager_color_description 8993a3
+        set -g fish_pager_color_selected_prefix 78b6cf --background=293448
+        set -g fish_pager_color_selected_completion d8dde6 --background=293448
+        set -g fish_pager_color_selected_description b3bbc7 --background=293448
 
         if test -d /run/wrappers/bin
           if not contains /run/wrappers/bin $PATH

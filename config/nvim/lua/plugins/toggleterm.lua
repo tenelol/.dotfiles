@@ -43,14 +43,13 @@ return {
 
       local function apply_winbar_highlights()
         vim.api.nvim_set_hl(0, "WinBarActive", {
-          fg = theme.bg,
-          bg = theme.cyan,
+          fg = theme.fg_bright,
+          bg = theme.bg_highlight,
           bold = true,
         })
         vim.api.nvim_set_hl(0, "WinBarInactive", {
           fg = theme.fg_dark,
-          bg = theme.bg_highlight,
-          bold = true,
+          bg = "none",
         })
       end
 

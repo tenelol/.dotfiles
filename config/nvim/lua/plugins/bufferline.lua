@@ -65,7 +65,7 @@ return {
       local bufferline = require("bufferline")
       local map = vim.keymap.set
 
-      vim.api.nvim_set_hl(0, "NeoTreeOffset", { fg = theme.fg, bg = theme.bg_dark, bold = true })
+      vim.api.nvim_set_hl(0, "NeoTreeOffset", { fg = theme.fg_bright, bg = theme.bg_dark, bold = true })
 
       bufferline.setup({
         options = {
@@ -130,7 +130,7 @@ return {
           fill = { bg = "none" },
           background = { fg = theme.fg_gutter, bg = "none" },
           buffer_visible = { fg = theme.fg_dark, bg = "none" },
-          buffer_selected = { fg = theme.fg, bg = theme.bg_highlight, bold = true, italic = false },
+          buffer_selected = { fg = theme.fg_bright, bg = theme.bg_highlight, bold = true, italic = false },
           close_button = { fg = theme.fg_gutter, bg = "none" },
           close_button_visible = { fg = theme.fg_gutter, bg = "none" },
           close_button_selected = { fg = theme.fg_dark, bg = theme.bg_highlight },
@@ -139,7 +139,7 @@ return {
           modified_selected = { fg = theme.yellow, bg = theme.bg_highlight },
           duplicate = { fg = theme.fg_gutter, bg = "none", italic = false },
           duplicate_visible = { fg = theme.fg_dark, bg = "none", italic = false },
-          duplicate_selected = { fg = theme.fg, bg = theme.bg_highlight, italic = false },
+          duplicate_selected = { fg = theme.fg_bright, bg = theme.bg_highlight, italic = false },
           separator = { fg = theme.bg_dark, bg = "none" },
           separator_visible = { fg = theme.bg_dark, bg = "none" },
           separator_selected = { fg = theme.bg_dark, bg = theme.bg_highlight },
