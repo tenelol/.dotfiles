@@ -283,13 +283,6 @@ return {
           hl.TelescopeMatching = { fg = theme.cyan, bold = true }
 
           hl.NeoTreeDirectoryIcon = { fg = theme.blue0, bg = "none" }
-          hl.NeoTreeNormal = { fg = theme.fg_dark, bg = theme.bg_dark }
-          hl.NeoTreeNormalNC = { fg = theme.fg_gutter, bg = theme.bg_dark }
-          hl.NeoTreeEndOfBuffer = { fg = theme.bg_dark, bg = theme.bg_dark }
-          hl.NeoTreeWinSeparator = { fg = theme.fg_gutter, bg = theme.bg_dark }
-          hl.NeoTreeVertSplit = { fg = theme.fg_gutter, bg = theme.bg_dark }
-          hl.NeoTreeCursorLine = { bg = theme.bg_highlight }
-          hl.NeoTreeTitleBar = { fg = theme.blue, bg = theme.bg_highlight, bold = true }
           hl.NeoTreeDirectoryName = { fg = theme.fg_dark, bg = "none" }
           hl.NeoTreeFileIcon = { fg = theme.blue0, bg = "none" }
           hl.NeoTreeFileName = { fg = theme.fg_dark, bg = "none" }

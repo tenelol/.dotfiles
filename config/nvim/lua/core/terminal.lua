@@ -213,7 +213,7 @@ function M.toggle_float()
             dir = project_root(),
             direction = "float",
             display_name = "Float shell",
-            float_opts = { border = "single", title_pos = "left" },
+            float_opts = { border = "rounded" },
         })
     else
         float_term.dir = project_root()
