@@ -48,6 +48,7 @@ delib.module {
         "homebrew-zathura/zathura/zathura-djvu"
         "homebrew-zathura/zathura/zathura-pdf-mupdf"
         "homebrew-zathura/zathura/zathura-ps"
+        "lazygit"
         "llvm"
         "lolcat"
         "make"
