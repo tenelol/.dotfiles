@@ -18,9 +18,9 @@ end
 
 local function neo_tree_title()
   local labels = {
-    filesystem = "File Explorer",
-    buffers = "Buffers",
-    git_status = "Git Status",
+    filesystem = "FILES // WORKTREE",
+    buffers = "BUFFERS // INDEX",
+    git_status = "GIT // STATUS",
   }
 
   for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
@@ -31,7 +31,7 @@ local function neo_tree_title()
     end
   end
 
-  return "File Explorer"
+  return "FILES // WORKTREE"
 end
 
 local function diagnostics_indicator(_, _, diagnostics)
@@ -65,20 +65,23 @@ return {
       local bufferline = require("bufferline")
       local map = vim.keymap.set
 
-      vim.api.nvim_set_hl(0, "NeoTreeOffset", { fg = theme.fg_bright, bg = theme.bg_dark, bold = true })
+      vim.api.nvim_set_hl(0, "NeoTreeOffset", { fg = theme.blue, bg = theme.bg_dark, bold = true })
 
       bufferline.setup({
         options = {
           mode = "buffers",
           style_preset = bufferline.style_preset.default,
           themable = true,
-          numbers = "none",
+          numbers = function(opts)
+            return ("%02d"):format(opts.ordinal)
+          end,
           close_command = close_buffer,
           right_mouse_command = close_buffer,
           left_mouse_command = "buffer %d",
           middle_mouse_command = close_buffer,
           indicator = {
-            style = "underline",
+            icon = "▎",
+            style = "icon",
           },
           buffer_close_icon = "×",
           modified_icon = "●",
@@ -108,7 +111,7 @@ return {
               separator = true,
             },
           },
-          color_icons = true,
+          color_icons = false,
           show_buffer_icons = true,
           show_buffer_close_icons = true,
           show_close_icon = false,
@@ -116,7 +119,7 @@ return {
           show_duplicate_prefix = true,
           persist_buffer_sort = true,
           move_wraps_at_ends = true,
-          separator_style = "slant",
+          separator_style = { "│", "│" },
           enforce_regular_tabs = false,
           always_show_bufferline = true,
           hover = {
@@ -140,12 +143,15 @@ return {
           duplicate = { fg = theme.fg_gutter, bg = "none", italic = false },
           duplicate_visible = { fg = theme.fg_dark, bg = "none", italic = false },
           duplicate_selected = { fg = theme.fg_bright, bg = theme.bg_highlight, italic = false },
-          separator = { fg = theme.bg_dark, bg = "none" },
-          separator_visible = { fg = theme.bg_dark, bg = "none" },
-          separator_selected = { fg = theme.bg_dark, bg = theme.bg_highlight },
+          separator = { fg = theme.fg_gutter, bg = "none" },
+          separator_visible = { fg = theme.fg_gutter, bg = "none" },
+          separator_selected = { fg = theme.fg_gutter, bg = theme.bg_highlight },
           indicator_selected = { fg = theme.blue, bg = theme.bg_highlight },
           offset_separator = { fg = theme.fg_gutter, bg = "none" },
           trunc_marker = { fg = theme.fg_gutter, bg = "none" },
+          numbers = { fg = theme.fg_gutter, bg = "none" },
+          numbers_visible = { fg = theme.fg_dark, bg = "none" },
+          numbers_selected = { fg = theme.blue, bg = theme.bg_highlight, bold = true },
           diagnostic = { fg = theme.fg_gutter, bg = "none" },
           diagnostic_visible = { fg = theme.fg_gutter, bg = "none" },
           diagnostic_selected = { fg = theme.fg_dark, bg = theme.bg_highlight },

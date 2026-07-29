@@ -8,7 +8,16 @@ vim.opt.ignorecase = true
 vim.opt.number = true
 vim.opt.pumblend = 12
 vim.opt.relativenumber = false
-vim.opt.fillchars:append({ eob = " " })
+vim.opt.fillchars:append({
+    eob = " ",
+    horiz = "─",
+    horizdown = "┬",
+    horizup = "┴",
+    vert = "│",
+    vertleft = "┤",
+    vertright = "├",
+    verthoriz = "┼",
+})
 vim.opt.scrolloff = 8
 vim.opt.shiftwidth = 2
 vim.opt.signcolumn = "yes"
@@ -24,6 +33,7 @@ vim.opt.timeoutlen = 300
 vim.opt.undofile = true
 vim.opt.updatetime = 250
 vim.opt.winblend = 12
+vim.opt.showmode = false
 
 if vim.fn.has("wsl") == 1 and vim.fn.executable("clip.exe") == 1 and vim.fn.executable("powershell.exe") == 1 then
     vim.g.clipboard = {

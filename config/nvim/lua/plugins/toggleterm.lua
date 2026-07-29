@@ -1,4 +1,5 @@
 local plugin = require("nix-plugin")
+local layout = require("core.panel-layout")
 local theme = require("core.theme")
 
 return {
@@ -27,38 +28,59 @@ return {
         local name = term.display_name or ""
 
         if name == "TypeScript watch" then
-          return (" TSC %d "):format(term.id)
+          return (" MON %02d // TSC "):format(term.id)
         end
 
         if name == "Tests" then
-          return (" TEST %d "):format(term.id)
+          return (" RUN %02d // TEST "):format(term.id)
         end
 
         if name == "" or name:match("^Shell %d+$") then
-          return (" TERM %d "):format(term.id)
+          return (" TERM %02d // SHELL "):format(term.id)
         end
 
-        return (" %d %s "):format(term.id, name:upper())
+        return (" TERM %02d // %s "):format(term.id, name:upper())
       end
 
       local function apply_winbar_highlights()
         vim.api.nvim_set_hl(0, "WinBarActive", {
-          fg = theme.fg_bright,
-          bg = theme.bg_highlight,
+          fg = theme.blue,
+          bg = theme.bg_dark,
           bold = true,
         })
         vim.api.nvim_set_hl(0, "WinBarInactive", {
-          fg = theme.fg_dark,
-          bg = "none",
+          fg = theme.fg_gutter,
+          bg = theme.bg_dark,
         })
       end
 
       require("toggleterm").setup({
-        size = 10,
-        shade_terminals = true,
+        size = layout.terminal_height,
+        shade_terminals = false,
+        highlights = {
+          Normal = {
+            guifg = theme.fg,
+            guibg = theme.bg_dark,
+          },
+          StatusLine = {
+            guifg = theme.fg_dark,
+            guibg = theme.bg_dark,
+          },
+          StatusLineNC = {
+            guifg = theme.fg_gutter,
+            guibg = theme.bg_dark,
+          },
+        },
         direction = "horizontal",
+        persist_size = false,
         persist_mode = true,
         start_in_insert = true,
+        on_open = layout.dock_terminal,
+        float_opts = {
+          border = "single",
+          title_pos = "left",
+          winblend = 8,
+        },
         winbar = {
           enabled = true,
           name_formatter = terminal_label,
