@@ -1,4 +1,6 @@
 local plugin = require("nix-plugin")
+local layout = require("core.panel-layout")
+local theme = require("core.theme")
 
 return {
   plugin.spec("neo-tree-nvim", {
@@ -19,22 +21,18 @@ return {
       local project = require("core.project")
       local command = require("neo-tree.command")
 
-      local transparent_groups = {
+      local panel_groups = {
         "NeoTreeNormal",
         "NeoTreeNormalNC",
         "NeoTreeEndOfBuffer",
-        "NeoTreeWinSeparator",
-        "NeoTreeVertSplit",
         "NeoTreeFloatNormal",
-        "NeoTreeFloatBorder",
-        "NeoTreeTitleBar",
         "NeoTreeTabActive",
         "NeoTreeTabInactive",
         "NeoTreeTabSeparatorActive",
         "NeoTreeTabSeparatorInactive",
       }
 
-      local function clear_group_background(group)
+      local function update_highlight(group, changes)
         local ok, highlight = pcall(vim.api.nvim_get_hl, 0, {
           name = group,
           link = false,
@@ -43,20 +41,33 @@ return {
           return
         end
 
-        highlight.bg = "NONE"
-        highlight.ctermbg = nil
+        for key, value in pairs(changes) do
+          highlight[key] = value
+        end
+
         vim.api.nvim_set_hl(0, group, highlight)
       end
 
-      local function apply_transparent_highlights()
-        for _, group in ipairs(transparent_groups) do
-          clear_group_background(group)
+      local function apply_panel_highlights()
+        for _, group in ipairs(panel_groups) do
+          update_highlight(group, { bg = theme.bg_dark })
         end
+
+        update_highlight("NeoTreeWinSeparator", { fg = theme.fg_gutter, bg = theme.bg_dark })
+        update_highlight("NeoTreeVertSplit", { fg = theme.fg_gutter, bg = theme.bg_dark })
+        update_highlight("NeoTreeFloatBorder", { fg = theme.fg_gutter, bg = theme.bg_dark })
+        update_highlight("NeoTreeTitleBar", { fg = theme.blue, bg = theme.bg_highlight, bold = true })
+        update_highlight("NeoTreeCursorLine", { bg = theme.bg_highlight })
+      end
+
+      local function refresh_sidebar()
+        apply_panel_highlights()
+        layout.pin_sidebars()
       end
 
       require("neo-tree").setup({
         close_if_last_window = true,
-        popup_border_style = "rounded",
+        popup_border_style = "single",
         enable_git_status = true,
         enable_diagnostics = true,
         default_component_configs = {
@@ -103,32 +114,32 @@ return {
           show_unloaded = true,
         },
         window = {
-          width = 34,
+          width = 32,
         },
       })
 
-      local highlight_group = vim.api.nvim_create_augroup("NeoTreeTransparentHighlights", { clear = true })
+      local highlight_group = vim.api.nvim_create_augroup("NeoTreePanelLayout", { clear = true })
 
       vim.api.nvim_create_autocmd("ColorScheme", {
         group = highlight_group,
-        callback = apply_transparent_highlights,
+        callback = apply_panel_highlights,
       })
       vim.api.nvim_create_autocmd("FileType", {
         group = highlight_group,
         pattern = "neo-tree",
         callback = function()
-          vim.schedule(apply_transparent_highlights)
+          vim.schedule(refresh_sidebar)
         end,
       })
       vim.api.nvim_create_autocmd("BufWinEnter", {
         group = highlight_group,
         callback = function(event)
           if vim.bo[event.buf].filetype == "neo-tree" then
-            vim.schedule(apply_transparent_highlights)
+            vim.schedule(refresh_sidebar)
           end
         end,
       })
-      apply_transparent_highlights()
+      apply_panel_highlights()
 
       local function open_filesystem_tree()
         command.execute({
