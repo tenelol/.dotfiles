@@ -1,53 +1,56 @@
-[manager]
-cwd = { fg = "#B8F4FF", bg = "reset" }
-hovered = { fg = "#0B1520", bg = "#A7E9F2" }
-preview_hovered = { fg = "#0B1520", bg = "#A7E9F2" }
-find_keyword = { fg = "#0B1520", bg = "#F5F1A8", bold = true }
-find_position = { fg = "#F5F1A8", bg = "reset", bold = true }
-marker_copied = { fg = "#0B1520", bg = "#B7F7D1" }
-marker_cut = { fg = "#0B1520", bg = "#FFB6A6" }
-marker_selected = { fg = "#0B1520", bg = "#B9C7FF" }
-tab_active = { fg = "#0B1520", bg = "#B8F4FF", bold = true }
-tab_inactive = { fg = "#C7D8E3", bg = "reset" }
-tab_width = 1
-border_style = { fg = "#86CFE0", bg = "reset" }
+#:schema https://yazi-rs.github.io/schemas/theme.json
+
+# Match config/nvim/lua/core/theme.lua: graphite gray with restrained cool accents.
+[app]
+overall = { fg = "#B3BBC7", bg = "reset" }
+
+[mgr]
+cwd = { fg = "#7F9BC4", bold = true }
+find_keyword = { fg = "#D8DDE6", bg = "#293448", bold = true }
+find_position = { fg = "#78B6CF", bold = true }
+symlink_target = { fg = "#626C7A", italic = true }
+marker_copied = { fg = "#88C0B8", bg = "#88C0B8" }
+marker_cut = { fg = "#A894C7", bg = "#A894C7" }
+marker_marked = { fg = "#78B6CF", bg = "#78B6CF" }
+marker_selected = { fg = "#A8B4CE", bg = "#A8B4CE" }
+border_symbol = "│"
+border_style = { fg = "#4F5968" }
+
+[tabs]
+active = { fg = "#D8DDE6", bg = "#293448", bold = true }
+inactive = { fg = "#626C7A", bg = "reset" }
+sep_inner = { open = " ", close = " " }
+sep_outer = { open = " ", close = " " }
+
+[mode]
+normal_main = { fg = "#11151D", bg = "#7F9BC4", bold = true }
+normal_alt = { fg = "#7F9BC4", bg = "#202631" }
+select_main = { fg = "#11151D", bg = "#A894C7", bold = true }
+select_alt = { fg = "#A894C7", bg = "#202631" }
+unset_main = { fg = "#11151D", bg = "#94B8C7", bold = true }
+unset_alt = { fg = "#94B8C7", bg = "#202631" }
+
+[indicator]
+parent = { fg = "#8993A3", bg = "#202631" }
+current = { fg = "#D8DDE6", bg = "#293448", bold = true }
+preview = { fg = "#78B6CF", underline = true }
+padding = { open = " ", close = " " }
 
 [status]
-separator_open = ""
-separator_close = ""
-separator_style = { fg = "#86CFE0", bg = "reset" }
-mode_normal = { fg = "#0B1520", bg = "#B8F4FF", bold = true }
-mode_select = { fg = "#0B1520", bg = "#B9C7FF", bold = true }
-mode_unset = { fg = "#0B1520", bg = "#C7D8E3", bold = true }
-progress_label = { fg = "#C7D8E3", bg = "reset" }
-progress_normal = { fg = "#86CFE0", bg = "reset" }
-progress_error = { fg = "#FFB6A6", bg = "reset" }
+overall = { fg = "#8993A3" }
+sep_left = { open = " ", close = "" }
+sep_right = { open = "", close = " " }
+perm_sep = { fg = "#4F5968" }
+perm_type = { fg = "#7F9BC4" }
+perm_read = { fg = "#B3BBC7" }
+perm_write = { fg = "#A894C7" }
+perm_exec = { fg = "#78B6CF" }
+progress_label = { fg = "#B3BBC7", bold = true }
+progress_normal = { fg = "#78B6CF", bg = "#202631" }
+progress_error = { fg = "#C4A0E8", bg = "#202631" }
 
-[input]
-border = { fg = "#86CFE0", bg = "reset" }
-title = { fg = "#C7D8E3", bg = "reset" }
-value = { fg = "#E9F6FB", bg = "reset" }
-selected = { fg = "#0B1520", bg = "#B8F4FF" }
-
-[select]
-border = { fg = "#86CFE0", bg = "reset" }
-active = { fg = "#0B1520", bg = "#A7E9F2" }
-inactive = { fg = "#C7D8E3", bg = "reset" }
-
-[completion]
-border = { fg = "#86CFE0", bg = "reset" }
-active = { fg = "#0B1520", bg = "#B8F4FF" }
-inactive = { fg = "#C7D8E3", bg = "reset" }
-
-[tasks]
-border = { fg = "#86CFE0", bg = "reset" }
-title = { fg = "#C7D8E3", bg = "reset" }
-hovered = { fg = "#0B1520", bg = "#A7E9F2" }
-
-[which]
-mask = { bg = "reset" }
-cand = { fg = "#B8F4FF", bg = "reset" }
-rest = { fg = "#C7D8E3", bg = "reset" }
-desc = { fg = "#86CFE0", bg = "reset" }
-separator = "  "
-separator_style = { fg = "#86CFE0", bg = "reset" }
+[filetype]
+rules = [
+	{ url = "*/", fg = "#8993A3" },
+	{ url = "*", fg = "#8993A3" },
+]
