@@ -169,6 +169,11 @@ return {
             vim.lsp.config("ts_ls", {
                 capabilities = capabilities,
                 on_attach = on_attach,
+                init_options = {
+                    tsserver = {
+                        useSyntaxServer = "never",
+                    },
+                },
                 settings = {
                     typescript = {
                         inlayHints = {
