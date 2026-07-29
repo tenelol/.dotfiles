@@ -65,7 +65,7 @@ return {
       local bufferline = require("bufferline")
       local map = vim.keymap.set
 
-      vim.api.nvim_set_hl(0, "NeoTreeOffset", { fg = theme.yellow, bg = theme.bg_dark, bold = true })
+      vim.api.nvim_set_hl(0, "NeoTreeOffset", { fg = theme.fg, bg = theme.bg_dark, bold = true })
 
       bufferline.setup({
         options = {
