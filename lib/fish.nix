@@ -1,15 +1,4 @@
-{ pkgs }:
-let
-  fishLogoPlugin = {
-    name = "fish_logo";
-    src = pkgs.fetchFromGitHub {
-      owner = "laughedelic";
-      repo = "fish_logo";
-      rev = "dc6a40836de8c24c62ad7c4365aa9f21292c3e6e";
-      hash = "sha256-DZXQt0fa5LdbJ4vPZFyJf5FWB46Dbk58adpHqbiUmyY=";
-    };
-  };
-in
+{ ... }:
 {
   homeConfig = {
     programs.fzf = {
@@ -28,7 +17,6 @@ in
 
     programs.fish = {
       enable = true;
-      plugins = [ fishLogoPlugin ];
 
       interactiveShellInit = ''
         # Match the terminal/Neovim TokyoNight palette while keeping errors obvious.

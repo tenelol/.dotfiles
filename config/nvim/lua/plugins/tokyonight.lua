@@ -243,6 +243,19 @@ return {
           hl.TelescopeSelection = { fg = theme.fg, bg = theme.bg_selection }
           hl.TelescopeMatching = { fg = theme.cyan, bold = true }
 
+          hl.NeoTreeDirectoryIcon = { fg = theme.blue, bg = "none" }
+          hl.NeoTreeFileIcon = { fg = theme.blue, bg = "none" }
+          hl.NeoTreeGitAdded = { fg = theme.cyan, bg = "none" }
+          hl.NeoTreeGitConflict = { fg = theme.red, bg = "none", bold = true }
+          hl.NeoTreeGitDeleted = { fg = theme.red, bg = "none" }
+          hl.NeoTreeGitIgnored = { fg = theme.comment, bg = "none" }
+          hl.NeoTreeGitModified = { fg = theme.blue, bg = "none" }
+          hl.NeoTreeGitRenamed = { fg = theme.blue, bg = "none" }
+          hl.NeoTreeGitStaged = { fg = theme.cyan, bg = "none" }
+          hl.NeoTreeGitUntracked = { fg = theme.magenta, bg = "none" }
+          hl.NeoTreeGitUnstaged = { fg = theme.blue, bg = "none" }
+          hl.NeoTreeModified = { fg = theme.blue, bg = "none" }
+
           hl.NoiceCmdlinePopupBorder = { fg = theme.blue, bg = "none" }
           hl.NoiceCmdlinePopup = { fg = theme.fg, bg = "none" }
           hl.WhichKeyFloat = { fg = theme.fg, bg = "none" }
