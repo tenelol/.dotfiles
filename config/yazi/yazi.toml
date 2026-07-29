@@ -1,9 +1,9 @@
 #:schema https://yazi-rs.github.io/schemas/yazi.json
 
 [mgr]
-# The parent pane becomes unreadable in narrow Herdr splits. Keep the current
-# directory and preview useful without reducing the terminal font size.
-ratio = [ 0, 5, 3 ]
+# Yazi is a narrow navigator in the left Herdr pane, so only keep the current
+# directory visible. Zoom the pane when a wider file operation is needed.
+ratio = [ 0, 1, 0 ]
 sort_by = "alphabetical"
 sort_sensitive = false
 sort_reverse = false
@@ -12,7 +12,3 @@ linemode = "none"
 show_hidden = false
 show_symlink = true
 scrolloff = 3
-
-[preview]
-wrap = "yes"
-tab_size = 2

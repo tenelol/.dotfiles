@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/jesseduffield/lazygit/v0.63.1/schema/config.json
+
+gui:
+  # Herdr keeps Lazygit in a narrow pane. Show one useful panel at a time;
+  # cycle through full, half, and normal layouts with + and _.
+  screenMode: full
+  portraitMode: always
+  enlargedSideViewLocation: top
+  mainPanelSplitMode: vertical
+
+  showFileTree: false
+  showCommandLog: false
+  showRandomTip: false
+  commitHashLength: 4
+  border: single
+
+  theme:
+    activeBorderColor:
+      - "#7F9BC4"
+      - bold
+    inactiveBorderColor:
+      - "#4F5968"
+    searchingActiveBorderColor:
+      - "#78B6CF"
+      - bold
+    optionsTextColor:
+      - "#8993A3"
+    selectedLineBgColor:
+      - "#293448"
+    inactiveViewSelectedLineBgColor:
+      - "#202631"
+    cherryPickedCommitFgColor:
+      - "#7F9BC4"
+    cherryPickedCommitBgColor:
+      - "#293448"
+    markedBaseCommitFgColor:
+      - "#A8B4CE"
+    markedBaseCommitBgColor:
+      - "#202631"
+    unstagedChangesColor:
+      - "#C4A0E8"
+    defaultFgColor:
+      - "#B3BBC7"
