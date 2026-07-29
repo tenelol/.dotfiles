@@ -77,6 +77,11 @@ return {
               error = "DiagnosticSignError",
             },
           },
+          git_status = {
+            symbols = {
+              untracked = "·",
+            },
+          },
         },
         filesystem = {
           follow_current_file = {

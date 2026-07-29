@@ -1,5 +1,5 @@
 function fish_greeting
-    set -l prompt_white ffffff
+    set -l prompt_white b3bbc7
     set -l greetings "Hollow World!" "Welcome back!" "Ready to code?" "Let's be productive!" "Time is money!" "Stay Hungry!"
     set -l count (count $greetings)
     set -l idx (math "$(random) % $count + 1")

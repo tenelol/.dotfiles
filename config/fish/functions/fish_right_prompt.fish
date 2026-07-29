@@ -1,10 +1,11 @@
 function fish_right_prompt
         set -l cmd_status $status
-        set -l prompt_white ffffff
-        set -l prompt_blue 7aa2f7
+        set -l prompt_white b3bbc7
+        set -l prompt_blue 7f9bc4
+        set -l prompt_error c4a0e8
 
         if test $cmd_status -ne 0
-                echo -n (set_color --bold $prompt_blue)"✘ $cmd_status"
+                echo -n (set_color --bold $prompt_error)"✘ $cmd_status"
         end
 
         if not command -sq git

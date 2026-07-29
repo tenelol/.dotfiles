@@ -5,10 +5,12 @@ local function setup_lualine()
     -- 色コードをまとめて設定。各プラグインの色設定で使用
     local colors = {
         fg = theme.fg,
+        focus = theme.fg_bright,
         fg2 = theme.bg_dark,
         fg3 = theme.fg_dark,
         bg = 'none',
         bg3 = 'none',
+        surface = theme.bg_highlight,
         white = theme.fg,
         black = theme.bg_dark,
         yellow = theme.yellow,
@@ -25,15 +27,15 @@ local function setup_lualine()
     -- 独自テーマの設定
     local custom_theme = {
         normal = {
-            a = { fg = colors.fg2, bg = colors.cyan, gui = 'bold' },
+            a = { fg = colors.focus, bg = colors.surface, gui = 'bold' },
             b = { fg = colors.fg, bg = colors.bg },
             c = { fg = colors.fg3, bg = colors.bg },
         },
-        insert = { a = { fg = colors.fg2, bg = colors.yellow, gui = 'bold' } },
-        visual = { a = { fg = colors.fg2, bg = colors.magenta, gui = 'bold' } },
-        replace = { a = { fg = colors.fg2, bg = colors.green, gui = 'bold' } },
-        command = { a = { fg = colors.fg2, bg = colors.red, gui = 'bold' } },
-        terminal = { a = { fg = colors.fg2, bg = colors.orange, gui = 'bold' } },
+        insert = { a = { fg = colors.cyan, bg = colors.surface, gui = 'bold' } },
+        visual = { a = { fg = colors.magenta, bg = colors.surface, gui = 'bold' } },
+        replace = { a = { fg = colors.green, bg = colors.surface, gui = 'bold' } },
+        command = { a = { fg = colors.red, bg = colors.surface, gui = 'bold' } },
+        terminal = { a = { fg = colors.blue, bg = colors.surface, gui = 'bold' } },
         inactive = {
             a = { fg = colors.fg3, bg = colors.bg3, gui = 'bold' },
             b = { fg = colors.fg3, bg = colors.bg3 },
@@ -41,16 +43,9 @@ local function setup_lualine()
         },
     }
 
-    -- fileformatをタイプ別に色分け
+    -- fileformatは情報量を抑え、OSごとの色分けはしない
     local function fileformat_color()
-        local format = vim.bo.fileformat
-        if format == 'unix' then
-            return { fg = colors.red }
-        elseif format == 'dos' then
-            return { fg = colors.cyan }
-        elseif format == 'mac' then
-            return { fg = colors.green }
-        end
+        return { fg = colors.fg3 }
     end
 
     -- modeの表示文字列を変更
@@ -98,7 +93,7 @@ local function setup_lualine()
                 {
                     mycat,
                     padding = { left = 1, right = 0 },
-                    color = { fg = colors.darkbrown },
+                    color = { fg = colors.fg3 },
                     cond = function()
                         return win_width() > 80
                     end,
