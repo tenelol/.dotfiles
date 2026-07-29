@@ -12,7 +12,7 @@ return {
         override = {
           default_icon = {
             icon = "",
-            color = theme.blue,
+            color = theme.blue0,
             name = "Default",
           },
         },

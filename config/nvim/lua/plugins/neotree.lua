@@ -59,6 +59,25 @@ return {
         popup_border_style = "rounded",
         enable_git_status = true,
         enable_diagnostics = true,
+        default_component_configs = {
+          name = {
+            use_git_status_colors = false,
+          },
+          diagnostics = {
+            symbols = {
+              hint = "H",
+              info = "I",
+              warn = "W",
+              error = "E",
+            },
+            highlights = {
+              hint = "DiagnosticSignHint",
+              info = "DiagnosticSignInfo",
+              warn = "DiagnosticSignWarn",
+              error = "DiagnosticSignError",
+            },
+          },
+        },
         filesystem = {
           follow_current_file = {
             enabled = true,

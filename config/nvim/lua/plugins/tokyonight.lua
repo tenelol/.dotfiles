@@ -123,7 +123,7 @@ return {
             "@constant.macro",
             "@number",
             "@number.float",
-          }, { fg = theme.blue, bg = "none" })
+          }, { fg = theme.fg_dark, bg = "none" })
 
           set_highlights(hl, {
             "Type",
@@ -132,6 +132,14 @@ return {
             "Typedef",
             "@type",
             "@type.builtin",
+            "@type.definition",
+            "@constructor",
+            "@lsp.type.class",
+            "@lsp.type.enum",
+            "@lsp.type.interface",
+            "@lsp.type.namespace",
+            "@lsp.type.type",
+            "@lsp.type.typeParameter",
           }, { fg = theme.cyan, bg = "none" })
 
           set_highlights(hl, {
@@ -143,6 +151,11 @@ return {
             "@property",
             "@text",
             "@text.literal",
+            "@lsp.type.function",
+            "@lsp.type.method",
+            "@lsp.type.parameter",
+            "@lsp.type.property",
+            "@lsp.type.variable",
           }, { fg = theme.fg, bg = "none" })
 
           set_highlights(hl, {
@@ -163,7 +176,11 @@ return {
             "@function.builtin",
             "@function.call",
             "@function.macro",
-          }, { fg = theme.blue, bg = "none" })
+            "@function.method",
+            "@function.method.call",
+            "@method",
+            "@method.call",
+          }, { fg = theme.fg, bg = "none" })
 
           set_highlights(hl, {
             "Conditional",
@@ -178,14 +195,21 @@ return {
             "Repeat",
             "Statement",
             "@keyword",
+            "@keyword.coroutine",
             "@keyword.conditional",
+            "@keyword.debug",
+            "@keyword.directive",
+            "@keyword.directive.define",
             "@keyword.exception",
             "@keyword.function",
             "@keyword.import",
+            "@keyword.modifier",
             "@keyword.operator",
             "@keyword.repeat",
+            "@keyword.return",
+            "@keyword.type",
             "@label",
-          }, { fg = theme.blue, bg = "none" })
+          }, { fg = theme.fg_dark, bg = "none" })
 
           set_highlights(hl, {
             "Operator",
@@ -199,6 +223,8 @@ return {
             "@tag",
             "@tag.attribute",
             "@tag.delimiter",
+            "@attribute",
+            "@lsp.type.decorator",
           }, { fg = theme.cyan, bg = "none" })
 
           hl.Todo = { fg = theme.yellow, bg = theme.bg_highlight, bold = true }
@@ -207,7 +233,7 @@ return {
           hl.NormalNC = { fg = theme.fg_dark, bg = "none" }
           hl.EndOfBuffer = { fg = theme.fg_gutter, bg = "none" }
           hl.MsgArea = { fg = theme.fg, bg = "none" }
-          hl.FloatBorder = { fg = theme.blue, bg = "none" }
+          hl.FloatBorder = { fg = theme.fg_gutter, bg = "none" }
           hl.NormalFloat = { fg = theme.fg, bg = "none" }
           hl.Pmenu = { fg = theme.fg, bg = "none" }
           hl.PmenuSel = { fg = theme.fg, bg = theme.bg_selection }
@@ -216,7 +242,7 @@ return {
           hl.StatusLine = { fg = theme.fg, bg = "none" }
           hl.StatusLineNC = { fg = theme.fg_dark, bg = "none" }
           hl.TabLine = { fg = theme.fg_dark, bg = "none" }
-          hl.TabLineSel = { fg = theme.bg, bg = theme.cyan }
+          hl.TabLineSel = { fg = theme.fg, bg = theme.bg_highlight, bold = true }
           hl.TabLineFill = { fg = theme.fg_gutter, bg = "none" }
           hl.WinSeparator = { fg = theme.fg_gutter, bg = "none" }
           hl.IblIndent = { fg = theme.ibl_indent, bg = "none" }
@@ -232,6 +258,12 @@ return {
           hl.DiagnosticWarn = { fg = theme.yellow }
           hl.DiagnosticInfo = { fg = theme.cyan }
           hl.DiagnosticHint = { fg = theme.fg_dark }
+          hl.DiagnosticSignError = { fg = theme.red, bg = "none", bold = true }
+          hl.DiagnosticSignWarn = { fg = theme.yellow, bg = "none", bold = true }
+          hl.DiagnosticSignInfo = { fg = theme.cyan, bg = "none" }
+          hl.DiagnosticSignHint = { fg = theme.fg_dark, bg = "none" }
+          hl.DiagnosticUnderlineError = { sp = theme.red, undercurl = true }
+          hl.DiagnosticUnderlineWarn = { sp = theme.yellow, undercurl = true }
           hl.Error = { fg = theme.red, bold = true }
           hl.DiffAdd = { fg = theme.green, bg = "#183242" }
           hl.DiffChange = { fg = theme.yellow, bg = "#243149" }
@@ -243,18 +275,26 @@ return {
           hl.TelescopeSelection = { fg = theme.fg, bg = theme.bg_selection }
           hl.TelescopeMatching = { fg = theme.cyan, bold = true }
 
-          hl.NeoTreeDirectoryIcon = { fg = theme.blue, bg = "none" }
-          hl.NeoTreeFileIcon = { fg = theme.blue, bg = "none" }
+          hl.NeoTreeDirectoryIcon = { fg = theme.blue0, bg = "none" }
+          hl.NeoTreeDirectoryName = { fg = theme.fg_dark, bg = "none" }
+          hl.NeoTreeFileIcon = { fg = theme.blue0, bg = "none" }
+          hl.NeoTreeFileName = { fg = theme.fg_dark, bg = "none" }
+          hl.NeoTreeFileNameOpened = { fg = theme.fg, bg = "none", bold = true }
+          hl.NeoTreeRootName = { fg = theme.fg, bg = "none", bold = true, italic = true }
+          hl.NeoTreeDiagnosticError = { fg = theme.red, bg = "none", bold = true }
+          hl.NeoTreeDiagnosticWarn = { fg = theme.yellow, bg = "none", bold = true }
+          hl.NeoTreeDiagnosticInfo = { fg = theme.cyan, bg = "none" }
+          hl.NeoTreeDiagnosticHint = { fg = theme.fg_dark, bg = "none" }
           hl.NeoTreeGitAdded = { fg = theme.cyan, bg = "none" }
           hl.NeoTreeGitConflict = { fg = theme.red, bg = "none", bold = true }
           hl.NeoTreeGitDeleted = { fg = theme.red, bg = "none" }
           hl.NeoTreeGitIgnored = { fg = theme.comment, bg = "none" }
-          hl.NeoTreeGitModified = { fg = theme.blue, bg = "none" }
-          hl.NeoTreeGitRenamed = { fg = theme.blue, bg = "none" }
+          hl.NeoTreeGitModified = { fg = theme.fg_gutter, bg = "none" }
+          hl.NeoTreeGitRenamed = { fg = theme.blue0, bg = "none" }
           hl.NeoTreeGitStaged = { fg = theme.cyan, bg = "none" }
           hl.NeoTreeGitUntracked = { fg = theme.magenta, bg = "none" }
-          hl.NeoTreeGitUnstaged = { fg = theme.blue, bg = "none" }
-          hl.NeoTreeModified = { fg = theme.blue, bg = "none" }
+          hl.NeoTreeGitUnstaged = { fg = theme.fg_gutter, bg = "none" }
+          hl.NeoTreeModified = { fg = theme.fg_dark, bg = "none" }
 
           hl.NoiceCmdlinePopupBorder = { fg = theme.blue, bg = "none" }
           hl.NoiceCmdlinePopup = { fg = theme.fg, bg = "none" }
