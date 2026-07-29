@@ -162,6 +162,7 @@ return {
                     "tailwindcss",
                     "ts_ls",
                     "astro",
+                    "prismals",
                 })
             end
 
