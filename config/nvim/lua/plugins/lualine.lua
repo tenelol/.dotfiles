@@ -64,6 +64,14 @@ local function setup_lualine()
         return mode_map[current_mode] or current_mode
     end
 
+    -- 猫ちゃん連れてく
+    local function mycat()
+        -- 候補：
+        -- 󰄛 ,󰆚 ,󰩃 ,󰇥 ,󱖿 ,󱗂 ,󰈺 ,󰊠 ,󱕘 ,󱜿 ,󰏩 ,󰻀 ,󰐁 ,󰤇 ,󰚩 ,󱌧 ,󰚌 ,󱙷 ,󰴻 ,󱅼 , ,
+        -- 󰉊 ,󰣠 ,󰋑 ,󱁏 ,󰮣 ,󰟟 ,󰫕 ,󰜃 ,󰮿 ,󰟪 ,󰑣 ,󰚬 ,󱕬 ,󰴺 ,󰓿 ,󰔬 ,󰯙 ,󱂖 ,󰕊 , , ,
+        return '󰄛'
+    end
+
     local function win_width()
         return vim.api.nvim_win_get_width(0)
     end
@@ -71,13 +79,25 @@ local function setup_lualine()
     require('lualine').setup {
         options = {
             theme = custom_theme,
-            icons_enabled = false,
-            component_separators = { left = '│', right = '│' },
-            section_separators = { left = '', right = '' },
+            -- component_separators = { left = '', right = '' },
+            -- component_separators = { left = '|', right = '|' },
+            component_separators = { left = '', right = '' },
+            section_separators = {
+                left = '',
+                right = '',
+            },
             globalstatus = false, -- ウィンドウごとに異なるステータスライン
         },
         sections = {
             lualine_a = {
+                {
+                    mycat,
+                    padding = { left = 1, right = 0 },
+                    color = { fg = colors.fg3 },
+                    cond = function()
+                        return win_width() > 80
+                    end,
+                },
                 {
                     custom_mode, -- モードをカスタム表示。'mode'の置き換え
                 },
@@ -93,15 +113,16 @@ local function setup_lualine()
                         end
 
                         if win_width() > 100 then
-                            return 'BR ' .. branch_name
+                            return ' ' .. branch_name -- アイコン＋テキスト
                         else
-                            return 'BR'
+                            return '' -- アイコンのみ
                         end
                     end,
                 },
                 {
                     'diff',
-                    symbols = { added = '+', modified = '~', removed = '-' },
+                    symbols = { added = ' ', modified = ' ', removed = ' ' },
+                    -- symbols = { added = '➕ ', modified = '✏️ ', removed = '❌ ' }
                     padding = { left = 0, right = 1 },
                     fmt = function(str)
                         if win_width() > 90 then
@@ -125,7 +146,7 @@ local function setup_lualine()
                     'diagnostics',
                     update_in_insert = false, -- 挿入モードでは更新しない
                     padding = { left = 0, right = 1 },
-                    symbols = { error = 'E ', warn = 'W ', info = 'I ', hint = 'H ' },
+                    symbols = { error = ' ', warn = ' ', info = ' ', hint = ' ' },
                     diagnostics_color = {
                         error = { fg = colors.red },
                         warn = { fg = colors.yellow },
@@ -149,19 +170,18 @@ local function setup_lualine()
                         if win_width() <= 90 then
                             return ''
                         end
-                        return filetype:upper()
+                        return filetype
                     end,
                 },
                 {
                     'fileformat',
-                    symbols = { unix = 'LF', dos = 'CRLF', mac = 'CR' },
+                    symbols = { unix = '', dos = '', mac = '' }, --  , ,
                     color = fileformat_color,
                     padding = { left = 0, right = 1 },
                 },
                 {
                     'encoding',
                     padding = { left = 0, right = 1 },
-                    fmt = string.upper,
                     cond = function()
                         return win_width() > 70
                     end,
@@ -177,9 +197,7 @@ local function setup_lualine()
             },
             lualine_z = {
                 {
-                    function()
-                        return ("%03d:%02d"):format(vim.fn.line("."), vim.fn.col("."))
-                    end,
+                    'location',
                     padding = 1,
                     cond = function()
                         return win_width() > 70
