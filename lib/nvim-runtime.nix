@@ -115,6 +115,7 @@ let
     otter-nvim = pkgs.vimPlugins.otter-nvim;
     quarto-nvim = pkgs.vimPlugins.quarto-nvim;
     dashboard-nvim = pkgs.vimPlugins.dashboard-nvim;
+    edgy-nvim = pkgs.vimPlugins.edgy-nvim;
     presence-nvim = pkgs.vimPlugins.presence-nvim;
     hop-nvim = pkgs.vimPlugins.hop-nvim;
     nvim-lspconfig = pkgs.vimPlugins.nvim-lspconfig;
