@@ -42,12 +42,19 @@ return {
           c.bg_sidebar = theme.bg_dark
           c.blue = theme.blue
           c.blue0 = theme.blue0
+          c.blue1 = theme.blue0
+          c.blue2 = theme.blue0
+          c.blue5 = theme.blue0
+          c.blue6 = theme.blue0
           c.cyan = theme.cyan
           c.green = theme.green
+          c.green1 = theme.blue0
+          c.green2 = theme.blue0
           c.magenta = theme.magenta
           c.orange = theme.orange
           c.purple = theme.purple
           c.red = theme.red
+          c.teal = theme.blue0
           c.yellow = theme.yellow
           c.error = theme.red
           c.warning = theme.yellow
@@ -143,6 +150,8 @@ return {
             "@lsp.type.namespace",
             "@lsp.type.type",
             "@lsp.type.typeParameter",
+            "@lsp.typemod.type.defaultLibrary",
+            "@lsp.typemod.typeAlias.defaultLibrary",
           }, { fg = theme.cyan, bg = "none" })
 
           set_highlights(hl, {
