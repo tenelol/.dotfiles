@@ -7,11 +7,11 @@ overall = { fg = "#B3BBC7", bg = "reset" }
 [mgr]
 cwd = { fg = "#7F9BC4", bold = true }
 find_keyword = { fg = "#D8DDE6", bg = "#293448", bold = true }
-find_position = { fg = "#78B6CF", bold = true }
+find_position = { fg = "#5F7695", bold = true }
 symlink_target = { fg = "#626C7A", italic = true }
 marker_copied = { fg = "#88C0B8", bg = "#88C0B8" }
 marker_cut = { fg = "#A894C7", bg = "#A894C7" }
-marker_marked = { fg = "#78B6CF", bg = "#78B6CF" }
+marker_marked = { fg = "#5F7695", bg = "#5F7695" }
 marker_selected = { fg = "#A8B4CE", bg = "#A8B4CE" }
 border_symbol = "│"
 border_style = { fg = "#4F5968" }
@@ -33,7 +33,7 @@ unset_alt = { fg = "#94B8C7", bg = "#202631" }
 [indicator]
 parent = { fg = "#8993A3", bg = "#202631" }
 current = { fg = "#D8DDE6", bg = "#293448", bold = true }
-preview = { fg = "#78B6CF", underline = true }
+preview = { fg = "#5F7695", underline = true }
 padding = { open = " ", close = " " }
 
 [status]
@@ -44,9 +44,9 @@ perm_sep = { fg = "#4F5968" }
 perm_type = { fg = "#7F9BC4" }
 perm_read = { fg = "#B3BBC7" }
 perm_write = { fg = "#A894C7" }
-perm_exec = { fg = "#78B6CF" }
+perm_exec = { fg = "#5F7695" }
 progress_label = { fg = "#B3BBC7", bold = true }
-progress_normal = { fg = "#78B6CF", bg = "#202631" }
+progress_normal = { fg = "#5F7695", bg = "#202631" }
 progress_error = { fg = "#C4A0E8", bg = "#202631" }
 
 [filetype]

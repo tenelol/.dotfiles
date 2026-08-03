@@ -34,7 +34,8 @@ local theme = {
   blue = "#7f9bc4",
   blue0 = "#5f7695",
   comment = "#626c7a",
-  cyan = "#78b6cf",
+  -- Keep former cyan accents aligned with the muted file-icon blue.
+  cyan = "#5f7695",
   green = "#88c0b8",
   magenta = "#a894c7",
   orange = "#8fa6bd",
