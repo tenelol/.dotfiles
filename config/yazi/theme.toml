@@ -54,3 +54,12 @@ rules = [
 	{ url = "*/", fg = "#8993A3" },
 	{ url = "*", fg = "#8993A3" },
 ]
+
+# Drop the vivid built-in directory icons and keep every directory on the same
+# restrained blue used by the rest of the interface.
+[icon]
+dirs = []
+prepend_conds = [
+	{ if = "dir & hovered", text = "", fg = "#5F7695" },
+	{ if = "dir", text = "", fg = "#5F7695" },
+]

@@ -13,7 +13,7 @@ delib.rice {
         background = "11151d";
         backgroundBlur = 96;
         readabilityScrim = 0.52;
-        cursor = "78b6cf";
+        cursor = "5f7695";
         selectionForeground = "d8dde6";
         selectionBackground = "293448";
       };
