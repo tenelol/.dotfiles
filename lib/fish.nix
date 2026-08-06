@@ -73,6 +73,10 @@
           source ~/.config/fish/secrets.fish
         end
 
+        # Recall the last argument from command history with Esc, then period.
+        bind --user escape,. history-last-token-search-backward
+        bind --user -M insert escape,. history-last-token-search-backward
+
       '';
 
       shellAliases = {
