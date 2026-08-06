@@ -159,59 +159,6 @@
         // lib.optionalAttrs (isLinuxSystem system) (mkLinuxBuildChecks linuxSystemConfigurations)
       );
 
-      devShells = lib.genAttrs supportedSystems (
-        system:
-        let
-          pkgs = nixpkgs.legacyPackages.${system};
-        in
-        {
-          default = pkgs.mkShell {
-            packages = [
-              pkgs.curl
-              pkgs.git
-              pkgs.nodejs_24
-            ];
-
-            shellHook = ''
-              if [ -t 1 ]; then
-                export DOTFILES_EXPLORER_PORT="''${DOTFILES_EXPLORER_PORT:-43110}"
-                explorer_root="$(${pkgs.git}/bin/git rev-parse --show-toplevel 2>/dev/null || pwd)"
-                explorer_url="http://127.0.0.1:$DOTFILES_EXPLORER_PORT"
-                explorer_log="''${TMPDIR:-/tmp}/dotfiles-explorer-$DOTFILES_EXPLORER_PORT.log"
-
-                if ! ${pkgs.curl}/bin/curl --silent --fail "$explorer_url/api/health" >/dev/null 2>&1; then
-                  DOTFILES_REPO_ROOT="$explorer_root" \
-                    ${pkgs.nodejs_24}/bin/node "$explorer_root/tools/dotfiles-explorer/server.mjs" \
-                    >"$explorer_log" 2>&1 &
-                  export DOTFILES_EXPLORER_PID=$!
-
-                  trap 'kill "$DOTFILES_EXPLORER_PID" >/dev/null 2>&1 || true' EXIT
-
-                  explorer_attempt=0
-                  while ! ${pkgs.curl}/bin/curl --silent --fail "$explorer_url/api/health" >/dev/null 2>&1; do
-                    explorer_attempt=$((explorer_attempt + 1))
-                    if [ "$explorer_attempt" -ge 30 ]; then
-                      echo "dotfiles explorer failed to start; see $explorer_log" >&2
-                      break
-                    fi
-                    sleep 0.1
-                  done
-                fi
-
-                echo "dotfiles explorer: $explorer_url"
-                if [ "''${DOTFILES_EXPLORER_NO_OPEN:-0}" != "1" ]; then
-                  if command -v open >/dev/null 2>&1; then
-                    open "$explorer_url" >/dev/null 2>&1
-                  elif command -v xdg-open >/dev/null 2>&1; then
-                    xdg-open "$explorer_url" >/dev/null 2>&1
-                  fi
-                fi
-              fi
-            '';
-          };
-        }
-      );
-
       formatter = lib.genAttrs supportedSystems (system: nixpkgs.legacyPackages.${system}.nixfmt-tree);
     };
 }
