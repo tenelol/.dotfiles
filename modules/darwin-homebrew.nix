@@ -98,8 +98,6 @@ delib.module {
         "codex"
         "chatgpt"
         "chatgpt-atlas"
-        "cmux"
-        "codexbar"
         "codex-app"
         "cursor"
         "font-caskaydia-cove-nerd-font"
@@ -132,7 +130,10 @@ delib.module {
         "db-browser-for-sqlite"
         "discord"
         "docker-desktop"
-        "microsoft-office"
+        "microsoft-excel"
+        "microsoft-onenote"
+        "microsoft-powerpoint"
+        "microsoft-word"
         "obsidian"
         "palmier-pro"
         "slack"
@@ -140,7 +141,6 @@ delib.module {
         "steam"
         "vesktop"
         "visual-studio-code"
-        "windows-app"
       ];
     };
   };

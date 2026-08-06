@@ -34,9 +34,6 @@ let
     inherit pkgs lib;
     hermesDesktop = hermesDesktopPackage;
   };
-  codexBarPackage = import ../packages/codexbar.nix {
-    inherit pkgs lib;
-  };
   ccpocketBridgePackage = import ../packages/ccpocket-bridge.nix {
     inherit pkgs lib;
   };
@@ -91,7 +88,6 @@ let
 
   linuxDesktopPackages = with pkgs; [
     adwaita-icon-theme
-    codexBarPackage
     hermesDesktopPackage
     acpi
     alsa-utils
