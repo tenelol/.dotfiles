@@ -67,6 +67,7 @@ delib.module {
         "swiftlint"
         "tre-command"
         "wget"
+        "xcodegen"
         "yazi"
         "zig"
       ];

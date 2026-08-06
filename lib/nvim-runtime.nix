@@ -130,6 +130,7 @@ let
     luasnip = pkgs.vimPlugins.luasnip;
     friendly-snippets = pkgs.vimPlugins.friendly-snippets;
     telescope-nvim = pkgs.vimPlugins.telescope-nvim;
+    grug-far-nvim = pkgs.vimPlugins.grug-far-nvim;
     toggleterm-nvim = pkgs.vimPlugins.toggleterm-nvim;
     nvim-ts-autotag = pkgs.vimPlugins.nvim-ts-autotag;
     nvim-treesitter = pkgs.vimPlugins.nvim-treesitter.withPlugins (

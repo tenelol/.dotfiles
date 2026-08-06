@@ -27,6 +27,7 @@ return {
                 { "<leader>l", group = "language" },
                 { "<leader>o", group = "open" },
                 { "<leader>p", group = "platformio" },
+                { "<leader>r", group = "replace" },
                 { "<leader>s", group = "session" },
                 { "<leader>x", group = "problems" },
                 { "<leader>t", group = "test" },
