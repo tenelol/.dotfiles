@@ -5,7 +5,7 @@ bundle="${VAULT_CONTEXT_BUNDLE:?VAULT_CONTEXT_BUNDLE is required}"
 runtime_parent="${VAULT_CONTEXT_RUNTIME_PARENT:-/Users/tener/.codex/mcp}"
 destination="${runtime_parent}/vault-context-mcp"
 
-if [[ ! -f "${bundle}/src/server.mjs" || ! -d "${bundle}/node_modules" ]]; then
+if [[ ! -f "${bundle}/dist/src/server.js" || ! -d "${bundle}/node_modules" ]]; then
   echo "vault-context bundle is incomplete" >&2
   exit 1
 fi
@@ -51,7 +51,7 @@ trap cleanup_stage EXIT
 
 rsync -a --delete "${bundle}/" "${stage}/"
 chmod -R u+w "${stage}"
-node "${stage}/src/server.mjs" --self-test >/dev/null
+node "${stage}/dist/src/server.js" --self-test >/dev/null
 
 if [[ -d "${destination}" ]]; then
   if runtime_differs "${stage}" "${destination}"; then

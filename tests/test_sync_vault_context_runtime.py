@@ -18,19 +18,35 @@ class SyncVaultContextRuntimeTests(unittest.TestCase):
         self.root = Path(self.temporary_directory.name)
         self.bundle = self.root / "bundle"
         self.runtime_parent = self.root / "runtime"
-        (self.bundle / "src").mkdir(parents=True)
+        (self.bundle / "dist/src").mkdir(parents=True)
+        (self.bundle / "dist/scripts").mkdir(parents=True)
+        (self.bundle / "src").mkdir()
+        (self.bundle / "scripts").mkdir()
         (self.bundle / "node_modules").mkdir()
-        (self.bundle / "src/server.mjs").write_text(
+        (self.bundle / "dist/src/server.js").write_text(
             'if (process.argv.includes("--self-test")) process.exit(0);\n'
             'if (process.argv.includes("--hold")) setInterval(() => {}, 1000);\n',
             encoding="utf-8",
+        )
+        (self.bundle / "dist/scripts/migrate-v2.js").write_text(
+            "process.exit(0);\n",
+            encoding="utf-8",
+        )
+        (self.bundle / "src/server.mjs").symlink_to("../dist/src/server.js")
+        (self.bundle / "scripts/migrate-v2.mjs").symlink_to(
+            "../dist/scripts/migrate-v2.js"
         )
         (self.bundle / "node_modules/fixture.txt").write_text(
             "fixture\n",
             encoding="utf-8",
         )
-        os.chmod(self.bundle / "src/server.mjs", 0o444)
+        os.chmod(self.bundle / "dist/src/server.js", 0o444)
+        os.chmod(self.bundle / "dist/scripts/migrate-v2.js", 0o444)
+        os.chmod(self.bundle / "dist/src", 0o555)
+        os.chmod(self.bundle / "dist/scripts", 0o555)
+        os.chmod(self.bundle / "dist", 0o555)
         os.chmod(self.bundle / "src", 0o555)
+        os.chmod(self.bundle / "scripts", 0o555)
         os.chmod(self.bundle / "node_modules/fixture.txt", 0o444)
         os.chmod(self.bundle / "node_modules", 0o555)
         os.chmod(self.bundle, 0o555)
@@ -69,7 +85,15 @@ class SyncVaultContextRuntimeTests(unittest.TestCase):
         self.assertTrue(destination.is_dir())
         self.assertTrue(destination.stat().st_mode & stat.S_IWUSR)
         self.assertTrue(
-            (destination / "src/server.mjs").stat().st_mode & stat.S_IWUSR
+            (destination / "dist/src/server.js").stat().st_mode & stat.S_IWUSR
+        )
+        self.assertEqual(
+            (destination / "src/server.mjs").resolve(),
+            (destination / "dist/src/server.js").resolve(),
+        )
+        self.assertEqual(
+            (destination / "scripts/migrate-v2.mjs").resolve(),
+            (destination / "dist/scripts/migrate-v2.js").resolve(),
         )
         self.assertEqual(
             list(self.runtime_parent.glob(".vault-context-mcp-stage.*")),
@@ -91,7 +115,7 @@ class SyncVaultContextRuntimeTests(unittest.TestCase):
     def test_check_detects_content_drift_and_sync_repairs_it(self):
         self.assertEqual(self.run_script().returncode, 0)
         destination_server = (
-            self.runtime_parent / "vault-context-mcp/src/server.mjs"
+            self.runtime_parent / "vault-context-mcp/dist/src/server.js"
         )
         destination_server.write_text("process.exit(1);\n", encoding="utf-8")
 
@@ -132,7 +156,7 @@ class SyncVaultContextRuntimeTests(unittest.TestCase):
 
     def test_sync_preserves_active_runtime_processes(self):
         self.assertEqual(self.run_script().returncode, 0)
-        server = self.runtime_parent / "vault-context-mcp/src/server.mjs"
+        server = self.runtime_parent / "vault-context-mcp/dist/src/server.js"
         process = subprocess.Popen(
             ["node", str(server), "--hold"],
             stdout=subprocess.DEVNULL,

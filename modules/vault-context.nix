@@ -23,6 +23,11 @@ let
         ];
       }
       ''
+        test -f ${vaultContextMcp}/share/vault-context-mcp/dist/src/server.js
+        test -f ${vaultContextMcp}/share/vault-context-mcp/dist/src/cli.js
+        test -f ${vaultContextMcp}/share/vault-context-mcp/dist/scripts/check-sensitive-stdin.js
+        test -L ${vaultContextMcp}/share/vault-context-mcp/src/server.mjs
+        test -L ${vaultContextMcp}/share/vault-context-mcp/scripts/migrate-v2.mjs
         PYTHONDONTWRITEBYTECODE=1 python3 \
           ${../config/codex/hooks}/tests/test_inject_vault_context_workflow.py -v
         DOTFILES_REPOSITORY=${../.} PYTHONDONTWRITEBYTECODE=1 python3 \
@@ -69,7 +74,7 @@ let
       pkgs.sqlite
     ];
     text = ''
-      exec node /Users/tener/.codex/mcp/vault-context-mcp/src/cli.mjs "$@"
+      exec node /Users/tener/.codex/mcp/vault-context-mcp/dist/src/cli.js "$@"
     '';
   };
   codexContextCli = pkgs.writeShellApplication {
@@ -79,7 +84,7 @@ let
       pkgs.sqlite
     ];
     text = ''
-      exec node /Users/tener/.codex/mcp/vault-context-mcp/src/cli.mjs "$@"
+      exec node /Users/tener/.codex/mcp/vault-context-mcp/dist/src/cli.js "$@"
     '';
   };
 in

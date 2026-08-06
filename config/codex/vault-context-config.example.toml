@@ -9,7 +9,7 @@
 
 [mcp_servers."vault-context"]
 command = "node"
-args = ["/Users/tener/.codex/mcp/vault-context-mcp/src/server.mjs"]
+args = ["/Users/tener/.codex/mcp/vault-context-mcp/dist/src/server.js"]
 
 [mcp_servers."vault-context".env]
 VAULT_CONTEXT_ROOT = "/Users/tener/obsidian"
