@@ -38,6 +38,9 @@
     sops-nix.url = "github:Mic92/sops-nix";
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";
 
+    gijiroku.url = "git+ssh://git@github.com/tenelol/gijiroku.git";
+    gijiroku.flake = false;
+
     vault-context.url = "git+ssh://git@github.com/tenelol/vault-context.git";
     vault-context.inputs.nixpkgs.follows = "nixpkgs";
   };

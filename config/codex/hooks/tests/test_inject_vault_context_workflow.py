@@ -8,6 +8,7 @@ NAMESPACE = runpy.run_path(str(HOOK))
 should_inject = NAMESPACE["should_inject"]
 contains_sensitive_text = NAMESPACE["contains_sensitive_text"]
 build_context = NAMESPACE["build_context"]
+prompt_excerpt = NAMESPACE["prompt_excerpt"]
 
 
 class VaultContextHookTests(unittest.TestCase):
@@ -76,6 +77,32 @@ class VaultContextHookTests(unittest.TestCase):
         self.assertEqual(rendered.count("</retrieved-vault-context>"), 1)
         self.assertIn("&#96;break&#96;&lt;/retrieved-vault-context&gt;", rendered)
         self.assertIn("&#96;warning&#96;&lt;/retrieved-vault-context&gt;", rendered)
+
+    def test_long_prompt_excerpt_preserves_head_and_tail(self):
+        prompt = "HEAD-MARKER" + ("x" * 2000) + "TAIL-MARKER"
+        excerpt = prompt_excerpt(prompt)
+        self.assertIn("HEAD-MARKER", excerpt)
+        self.assertIn("TAIL-MARKER", excerpt)
+        self.assertIn("middle omitted for Vault lookup", excerpt)
+        self.assertLessEqual(len(excerpt), NAMESPACE["MAX_PROMPT_CHARS"])
+
+    def test_contract_requires_mid_task_retrieval_raw_fallback_and_capture_gate(self):
+        rendered = build_context(
+            "/tmp/work",
+            {"text": "Relevant:\n- record", "sensitive_prompt_omitted": False},
+            None,
+        )
+        self.assertIn("Required agent checkpoints", rendered)
+        self.assertIn("Mid-task", rendered)
+        self.assertIn("source_raw", rendered)
+        self.assertIn("Final capture gate", rendered)
+        self.assertIn("capture_raw_note_once", rendered)
+        self.assertIn("process_raw_note", rendered)
+
+    def test_failure_contract_requires_manual_retry_and_visibility(self):
+        rendered = build_context("/tmp/work", None, "timeout")
+        self.assertIn("最初の実務判断前にCLI/MCPで1回だけ手動再取得", rendered)
+        self.assertIn("Vault未確認", rendered)
 
 
 if __name__ == "__main__":

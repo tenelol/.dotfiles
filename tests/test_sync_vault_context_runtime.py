@@ -6,7 +6,9 @@ import unittest
 from pathlib import Path
 
 
-REPOSITORY = Path(__file__).resolve().parents[1]
+REPOSITORY = Path(
+    os.environ.get("DOTFILES_REPOSITORY", Path(__file__).resolve().parents[1])
+)
 SCRIPT = REPOSITORY / "config/scripts/sync-vault-context-runtime"
 
 

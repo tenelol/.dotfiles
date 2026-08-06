@@ -2,13 +2,41 @@
   delib,
   hm,
   host,
+  inputs,
   lib,
   pkgs,
   ...
 }:
 let
   isMacbook = host.name == "macbook" && builtins.match ".*-darwin" host.system != null;
-  vaultContextMcp = pkgs.callPackage ../packages/vault-context-mcp.nix { };
+  vaultContextMcp = inputs.vault-context.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  vaultContextIntegrationCheck =
+    pkgs.runCommand "vault-context-dotfiles-integration-check"
+      {
+        nativeBuildInputs = [
+          pkgs.coreutils
+          pkgs.git
+          pkgs.jq
+          pkgs.nodejs
+          pkgs.python3
+          pkgs.rsync
+        ];
+      }
+      ''
+        PYTHONDONTWRITEBYTECODE=1 python3 \
+          ${../config/codex/hooks}/tests/test_inject_vault_context_workflow.py -v
+        DOTFILES_REPOSITORY=${../.} PYTHONDONTWRITEBYTECODE=1 python3 \
+          ${../tests}/test_sync_vault_context_runtime.py -v
+        DOTFILES_REPOSITORY=${../.} PYTHONDONTWRITEBYTECODE=1 python3 \
+          ${../tests}/test_vault_git_sync.py -v
+        touch "$out"
+      '';
+  vaultContextRuntime = pkgs.runCommand "vault-context-runtime" { } ''
+    test -e ${vaultContextIntegrationCheck}
+    mkdir -p "$out/share"
+    ln -s ${vaultContextMcp}/share/vault-context-mcp \
+      "$out/share/vault-context-mcp"
+  '';
   syncRuntime = pkgs.writeShellApplication {
     name = "sync-vault-context-runtime";
     runtimeInputs = [
@@ -18,7 +46,7 @@ let
       pkgs.sqlite
     ];
     text = ''
-      export VAULT_CONTEXT_BUNDLE=${lib.escapeShellArg "${vaultContextMcp}/share/vault-context-mcp"}
+      export VAULT_CONTEXT_BUNDLE=${lib.escapeShellArg "${vaultContextRuntime}/share/vault-context-mcp"}
       exec ${pkgs.bash}/bin/bash ${../config/scripts/sync-vault-context-runtime} "$@"
     '';
   };

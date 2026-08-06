@@ -7,9 +7,8 @@ import unittest
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(os.environ.get("DOTFILES_REPOSITORY", Path(__file__).resolve().parents[1]))
 SCRIPT = ROOT / "config" / "scripts" / "vault-git-sync"
-SCANNER = ROOT / "config" / "codex" / "vault-context-mcp" / "scripts" / "check-sensitive-stdin.mjs"
 
 
 def run(*args: str, cwd: Path, check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -36,11 +35,21 @@ class VaultGitSyncTests(unittest.TestCase):
 
         self.cli = self.temp / "fake-vault-context"
         self.write_cli(valid=True)
+        self.scanner = self.temp / "check-sensitive-stdin.mjs"
+        self.scanner.write_text(
+            "let input = '';\n"
+            "process.stdin.setEncoding('utf8');\n"
+            "process.stdin.on('data', chunk => { input += chunk; });\n"
+            "process.stdin.on('end', () => {\n"
+            "  if (/(?:api[_-]?key|secret|password|token)\\s*[:=]\\s*\\S+/i.test(input)) process.exit(1);\n"
+            "});\n",
+            encoding="utf-8",
+        )
         self.env = {
             **os.environ,
             "VAULT_GIT_SYNC_ROOT": str(self.vault),
             "VAULT_CONTEXT_CLI": str(self.cli),
-            "VAULT_CONTEXT_SECRET_SCANNER": str(SCANNER),
+            "VAULT_CONTEXT_SECRET_SCANNER": str(self.scanner),
             "VAULT_GIT_EXPECTED_REMOTE": str(self.remote),
         }
 
