@@ -30,6 +30,8 @@ let
         test -L ${vaultContextMcp}/share/vault-context-mcp/scripts/migrate-v2.mjs
         PYTHONDONTWRITEBYTECODE=1 python3 \
           ${../config/codex/hooks}/tests/test_inject_vault_context_workflow.py -v
+        PYTHONDONTWRITEBYTECODE=1 python3 \
+          ${../config/codex/hooks}/tests/test_vault_capture_gate_hooks.py -v
         DOTFILES_REPOSITORY=${../.} PYTHONDONTWRITEBYTECODE=1 python3 \
           ${../tests}/test_sync_vault_context_runtime.py -v
         DOTFILES_REPOSITORY=${../.} PYTHONDONTWRITEBYTECODE=1 python3 \
@@ -107,6 +109,12 @@ delib.module {
       };
       ".codex/hooks/inject-vault-context-workflow.py" = {
         source = ../config/codex/hooks/inject-vault-context-workflow.py;
+      };
+      ".codex/hooks/mark-vault-capture-gate.py" = {
+        source = ../config/codex/hooks/mark-vault-capture-gate.py;
+      };
+      ".codex/hooks/ensure-vault-capture-gate.py" = {
+        source = ../config/codex/hooks/ensure-vault-capture-gate.py;
       };
       ".local/bin/sync-vault-context-runtime" = {
         source = "${syncRuntime}/bin/sync-vault-context-runtime";
