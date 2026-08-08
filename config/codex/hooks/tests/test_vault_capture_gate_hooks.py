@@ -27,10 +27,16 @@ class VaultCaptureGateHookTests(unittest.TestCase):
         payload["stop_hook_active"] = True
         self.assertEqual(decision_for(payload, True), {})
 
-    def test_review_marker_or_vault_receipt_allows_stop(self):
+    def test_only_invisible_review_marker_allows_stop(self):
         decision_for = ENSURE_NS["decision_for"]
         self.assertEqual(decision_for({"last_assistant_message": MARK_NS["REVIEW_MARKER"]}, True), {})
-        self.assertEqual(decision_for({"last_assistant_message": "Vault保存: handoff/example"}, True), {})
+        self.assertEqual(
+            decision_for(
+                {"last_assistant_message": "Vault保存: handoff/example", "stop_hook_active": False},
+                True,
+            ).get("decision"),
+            "block",
+        )
         self.assertEqual(decision_for({"last_assistant_message": "done"}, False), {})
 
     def test_marker_and_stop_hooks_share_turn_state(self):
@@ -38,22 +44,59 @@ class VaultCaptureGateHookTests(unittest.TestCase):
             environment = {**os.environ, "VAULT_CAPTURE_GATE_STATE_DIR": directory}
             marked = subprocess.run(
                 [sys.executable, str(MARK)],
-                input='{"hook_event_name":"UserPromptSubmit","turn_id":"turn-1","prompt":"実装して"}',
+                input='{"hook_event_name":"UserPromptSubmit","session_id":"session-1","turn_id":"turn-1","prompt":"実装して"}',
                 text=True,
                 capture_output=True,
                 env=environment,
                 check=True,
             )
-            self.assertIn("Final Vault capture guard", marked.stdout)
+            self.assertEqual(marked.stdout, "")
+            self.assertEqual(len(list(Path(directory).glob("*.required"))), 1)
             stopped = subprocess.run(
                 [sys.executable, str(ENSURE)],
-                input='{"hook_event_name":"Stop","turn_id":"turn-1","stop_hook_active":false,"last_assistant_message":"完了"}',
+                input='{"hook_event_name":"Stop","session_id":"session-1","turn_id":"turn-1","stop_hook_active":false,"last_assistant_message":"完了"}',
                 text=True,
                 capture_output=True,
                 env=environment,
                 check=True,
             )
             self.assertIn('"decision": "block"', stopped.stdout)
+
+    def test_subagent_prompt_does_not_activate_parent_capture_gate(self):
+        with tempfile.TemporaryDirectory() as directory:
+            environment = {**os.environ, "VAULT_CAPTURE_GATE_STATE_DIR": directory}
+            marked = subprocess.run(
+                [sys.executable, str(MARK)],
+                input=(
+                    '{"hook_event_name":"UserPromptSubmit","session_id":"session-sub",'
+                    '"turn_id":"turn-sub","agent_id":"agent-1","agent_type":"default",'
+                    '"prompt":"調査して"}'
+                ),
+                text=True,
+                capture_output=True,
+                env=environment,
+                check=True,
+            )
+            self.assertEqual(marked.stdout, "")
+            self.assertEqual(list(Path(directory).glob("*.required")), [])
+
+    def test_same_turn_id_is_isolated_by_session(self):
+        with tempfile.TemporaryDirectory() as directory:
+            environment = {**os.environ, "VAULT_CAPTURE_GATE_STATE_DIR": directory}
+            for session_id in ("session-a", "session-b"):
+                subprocess.run(
+                    [sys.executable, str(MARK)],
+                    input=(
+                        '{"hook_event_name":"UserPromptSubmit","session_id":"'
+                        + session_id
+                        + '","turn_id":"shared-turn","prompt":"実装して"}'
+                    ),
+                    text=True,
+                    capture_output=True,
+                    env=environment,
+                    check=True,
+                )
+            self.assertEqual(len(list(Path(directory).glob("*.required"))), 2)
 
 
 if __name__ == "__main__":

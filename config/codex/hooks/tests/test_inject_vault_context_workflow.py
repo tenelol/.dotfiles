@@ -1,4 +1,10 @@
+import json
+import os
 import runpy
+import subprocess
+import sys
+import tempfile
+import textwrap
 import unittest
 from pathlib import Path
 
@@ -93,6 +99,11 @@ class VaultContextHookTests(unittest.TestCase):
             None,
         )
         self.assertIn("Contract:", rendered)
+        self.assertIn("New-task startup", rendered)
+        self.assertIn("first substantive prompt in a session", rendered)
+        self.assertIn("not the whole project archive", rendered)
+        self.assertIn("Do not enumerate or load every record", rendered)
+        self.assertIn("Do not reinject the startup manifest on every prompt", rendered)
         self.assertIn("Mid-task", rendered)
         self.assertIn("source_raw", rendered)
         self.assertIn("Question gate", rendered)
@@ -151,6 +162,67 @@ class VaultContextHookTests(unittest.TestCase):
         self.assertIn("保存済み判断が不可欠で安全に進めない場合だけ", rendered)
         self.assertIn("定型報告せず進める", rendered)
         self.assertNotIn("Vault未確認", rendered)
+
+    def test_full_context_is_injected_once_per_session_and_skipped_for_subagents(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fake_cli = root / "vault-context"
+            fake_cli.write_text(
+                textwrap.dedent(
+                    f"""\
+                    #!{sys.executable}
+                    import json
+                    import sys
+
+                    sys.stdin.read()
+                    print(json.dumps({{"text": "Derived scope: repo:test\\nRelevant:\\n- record", "sensitive_prompt_omitted": False}}))
+                    """
+                ),
+                encoding="utf-8",
+            )
+            fake_cli.chmod(0o755)
+            environment = {
+                **os.environ,
+                "VAULT_CONTEXT_CLI": str(fake_cli),
+                "VAULT_CONTEXT_SESSION_STATE_DIR": str(root / "sessions"),
+            }
+
+            def run(payload: dict[str, object]) -> subprocess.CompletedProcess[str]:
+                return subprocess.run(
+                    [sys.executable, str(HOOK)],
+                    input=json.dumps(payload),
+                    text=True,
+                    capture_output=True,
+                    env=environment,
+                    check=True,
+                )
+
+            base = {
+                "hook_event_name": "UserPromptSubmit",
+                "session_id": "session-1",
+                "turn_id": "turn-1",
+                "cwd": str(root),
+                "prompt": "この実装を確認して",
+            }
+            first = run(base)
+            self.assertIn("AI-first Obsidian context", first.stdout)
+
+            second = run({**base, "turn_id": "turn-2"})
+            self.assertEqual(second.stdout, "")
+
+            another_session = run({**base, "session_id": "session-2", "turn_id": "turn-3"})
+            self.assertIn("AI-first Obsidian context", another_session.stdout)
+
+            subagent = run(
+                {
+                    **base,
+                    "session_id": "session-3",
+                    "turn_id": "turn-4",
+                    "agent_id": "agent-1",
+                    "agent_type": "default",
+                }
+            )
+            self.assertEqual(subagent.stdout, "")
 
 
 if __name__ == "__main__":

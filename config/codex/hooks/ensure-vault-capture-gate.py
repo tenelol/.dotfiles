@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -13,13 +14,16 @@ from typing import Any
 
 
 STATE_DIR = Path(os.environ.get("VAULT_CAPTURE_GATE_STATE_DIR", "/tmp/codex-vault-capture-gate"))
-TURN_ID = re.compile(r"^[A-Za-z0-9._:-]{1,200}$")
+HOOK_ID = re.compile(r"^[A-Za-z0-9._:-]{1,200}$")
 REVIEW_MARKER = "<!-- vault-capture-gate: reviewed -->"
 MAX_AGE_SECONDS = 24 * 60 * 60
 
 
-def state_path(turn_id: str) -> Path | None:
-    return STATE_DIR / f"{turn_id}.required" if TURN_ID.fullmatch(turn_id) else None
+def state_path(session_id: str, turn_id: str) -> Path | None:
+    if not HOOK_ID.fullmatch(session_id) or not HOOK_ID.fullmatch(turn_id):
+        return None
+    state_id = hashlib.sha256(f"{session_id}\0{turn_id}".encode()).hexdigest()
+    return STATE_DIR / f"{state_id}.required"
 
 
 def cleanup() -> None:
@@ -38,7 +42,7 @@ def decision_for(payload: dict[str, Any], required: bool) -> dict[str, str]:
     if not required:
         return {}
     message = payload.get("last_assistant_message")
-    if isinstance(message, str) and (REVIEW_MARKER in message or "Vault保存:" in message):
+    if isinstance(message, str) and REVIEW_MARKER in message:
         return {}
     if payload.get("stop_hook_active") is True:
         return {}
@@ -47,6 +51,7 @@ def decision_for(payload: dict[str, Any], required: bool) -> dict[str, str]:
         "reason": (
             "最終回答の直前に、AGENTS.mdの最終capture gateを一度だけ実行してください。"
             "保存価値・重複・現在証拠を判定し、必要ならsanitized raw→canonical→receiptを保存・確認してください。"
+            "成功時の保存報告は不要です。"
             f"完了後の最終Markdown末尾へ `{REVIEW_MARKER}` を追加してください。"
         ),
     }
@@ -60,8 +65,13 @@ def main() -> int:
     if not isinstance(payload, dict):
         return 0
     cleanup()
+    session_id = payload.get("session_id")
     turn_id = payload.get("turn_id")
-    path = state_path(turn_id) if isinstance(turn_id, str) else None
+    path = (
+        state_path(session_id, turn_id)
+        if isinstance(session_id, str) and isinstance(turn_id, str)
+        else None
+    )
     required = bool(path and path.is_file())
     decision = decision_for(payload, required)
     if required and not decision and path is not None:
