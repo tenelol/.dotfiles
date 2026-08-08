@@ -49,6 +49,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 concurrency:
   group: flake-check-${{ github.ref }}
@@ -64,6 +65,9 @@ jobs:
 
       - name: Install Nix
         uses: DeterminateSystems/determinate-nix-action@v3
+
+      - name: Restore Magic Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: Check Nix formatting
         run: nix fmt -- flake.nix hosts modules rices home packages lib shared --ci --excludes 'hosts/*/hardware-configuration.nix' --excludes 'legacy/**'
@@ -90,6 +94,9 @@ jobs:
 
       - name: Install Nix
         uses: DeterminateSystems/determinate-nix-action@v3
+
+      - name: Restore Magic Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: Build Linux flake check
         run: nix build .#checks.x86_64-linux.${{ matrix.check }}

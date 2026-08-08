@@ -148,7 +148,7 @@ dotfiles doctor
 
 Darwin 実機がまだ無い段階でも `macbook` host を腐らせないため、普段の軽量チェックは Linux / Darwin をまとめて見る `./scripts/validate eval` を基準にします。
 このコマンドは active Nix ファイルの肥大化チェックを通してから、`nix flake check --all-systems --no-build` で Linux の全 host / rice 派生と、実運用する Darwin target（`macbook-rift` / `macbook-aerospace` / `macbook-mac`）を build なしで評価します。未使用の Darwin rice も flake output には残るため、必要なときは `nh darwin build . -H <target>` で個別確認できます。
-CI の pull request では `nix fmt --ci` と `./scripts/validate eval` だけを走らせ、GitHub 上の待ち時間を軽くしています。Linux host の実 build は `main` への push と `workflow_dispatch` で `checks.x86_64-linux.build-*` を個別に build します。ローカルの実運用は引き続き `nh os build` / `nh darwin build` を使います。Darwin は GitHub Actions の Linux runner では build せず、ローカルで `./scripts/validate darwin` を回す運用です。
+CI の pull request では `nix fmt --ci` と `./scripts/validate eval` だけを走らせ、GitHub 上の待ち時間を軽くしています。Linux host の実 build は `main` への push と `workflow_dispatch` で `checks.x86_64-linux.build-*` を個別に build します。GitHub Actions の再実行では Magic Nix Cache を使い、workflow 内で生成した Nix store path を再利用します。ローカルの実運用は引き続き `nh os build` / `nh darwin build` を使います。Darwin は GitHub Actions の Linux runner では build せず、ローカルで `./scripts/validate darwin` を回す運用です。
 
 整形確認:
 
