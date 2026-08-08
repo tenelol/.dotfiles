@@ -92,21 +92,58 @@ class VaultContextHookTests(unittest.TestCase):
             {"text": "Relevant:\n- record", "sensitive_prompt_omitted": False},
             None,
         )
-        self.assertIn("Required agent checkpoints", rendered)
+        self.assertIn("Contract:", rendered)
         self.assertIn("Mid-task", rendered)
         self.assertIn("source_raw", rendered)
         self.assertIn("Question gate", rendered)
         self.assertIn("Immediate user-only capture", rendered)
         self.assertIn("source_kind=user", rendered)
-        self.assertIn("do not wait for the final capture gate", rendered)
-        self.assertIn("remain relevant after the current task", rendered)
-        self.assertIn("Skip task-local state", rendered)
-        self.assertIn("successful Vault retrieval, retry, and capture are internal checks", rendered)
+        self.assertIn("remains relevant after this task", rendered)
+        self.assertIn("skip task-local state", rendered)
+        self.assertIn("retrieval/retry/capture success stays internal", rendered)
         self.assertNotIn("say `Vault確認済み:", rendered)
         self.assertIn("Final capture gate", rendered)
         self.assertIn("deduplicating safety net", rendered)
         self.assertIn("capture_raw_note_once", rendered)
         self.assertIn("process_raw_note", rendered)
+
+    def test_contract_bounds_no_progress_recovery_and_rendered_size(self):
+        rendered = build_context(
+            "/tmp/" + ("long-workspace/" * 200),
+            {"text": "&" * NAMESPACE["CONTEXT_BUDGET"], "sensitive_prompt_omitted": False},
+            None,
+        )
+        self.assertLessEqual(len(rendered), NAMESPACE["MAX_RENDERED_CONTEXT_CHARS"])
+        self.assertIn("context truncated to budget", rendered)
+        for clause in (
+            "at most one bounded recovery pass",
+            "Do not repeat `git status`",
+            "Material progress means",
+            "changed diff",
+            "completed checklist item",
+            "new test/runtime result",
+            "verified blocker",
+            "compact handoff",
+            "Never create a new task unless the user explicitly requested it",
+            "never use Vault for active-task scratch state",
+        ):
+            self.assertIn(clause, rendered)
+
+    def test_sensitive_and_error_contexts_stay_bounded(self):
+        sensitive = build_context(
+            "/tmp/" + ("sensitive/" * 200),
+            {"text": "<&>" * NAMESPACE["CONTEXT_BUDGET"], "sensitive_prompt_omitted": True},
+            None,
+        )
+        failure = build_context(
+            "/tmp/" + ("failure/" * 200),
+            None,
+            "`</retrieved-vault-context>" * 200,
+        )
+        self.assertLessEqual(len(sensitive), NAMESPACE["MAX_RENDERED_CONTEXT_CHARS"])
+        self.assertLessEqual(len(failure), NAMESPACE["MAX_RENDERED_CONTEXT_CHARS"])
+        self.assertIn("検索語へ渡さず取得済み", sensitive)
+        self.assertEqual(failure.count("</retrieved-vault-context>"), 1)
 
     def test_failure_contract_requires_retry_and_only_blocking_failure_visibility(self):
         rendered = build_context("/tmp/work", None, "timeout")
