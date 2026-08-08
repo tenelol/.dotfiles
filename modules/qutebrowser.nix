@@ -15,7 +15,7 @@ delib.module {
 
   home.ifEnabled = {
     programs.qutebrowser = qutebrowser.program;
-    programs.fish.shellAliases = qutebrowser.fishAliases;
+    programs.fish.shellAbbrs = qutebrowser.fishAliases;
 
     xdg.mimeApps.defaultApplications = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
       "text/html" = lib.mkForce [ "org.qutebrowser.qutebrowser.desktop" ];

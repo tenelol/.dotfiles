@@ -79,7 +79,7 @@
 
       '';
 
-      shellAliases = {
+      shellAbbrs = {
         ls = "eza --icons";
         rm = "gomi";
         tm = "tmux new-session -A -s main";
