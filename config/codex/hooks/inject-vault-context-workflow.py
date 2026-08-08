@@ -159,7 +159,7 @@ def build_context(cwd: str | None, packet: dict[str, Any] | None, error: str | N
         packet_text = escape(str(packet.get("text") or "Vault contextなし")[:CONTEXT_BUDGET], quote=False)
         sensitive_line = "\n- Prompt中のsecret候補を検索語へ渡さず取得済み" if packet.get("sensitive_prompt_omitted") else ""
     else:
-        packet_text = "Vault contextの自動取得に失敗。依頼がAGENTS.mdのVault対象なら、最初の実務判断前にCLI/MCPで1回だけ手動再取得する。再取得も失敗した場合は「Vault未確認」と短い理由を会話に示し、保存済み判断に依存しない範囲だけ進める。"
+        packet_text = "Vault contextの自動取得に失敗。依頼がAGENTS.mdのVault対象なら、最初の実務判断前にCLI/MCPで1回だけ手動再取得する。再取得も失敗し、保存済み判断が不可欠で安全に進めない場合だけ、失敗の影響と必要な対応を短く示す。保存済み判断に依存しない範囲は定型報告せず進める。"
         sensitive_line = ""
     safe_cwd = escape(cwd, quote=False).replace("`", "&#96;") if cwd else ""
     safe_error = escape(error, quote=False).replace("`", "&#96;") if error else ""
@@ -188,9 +188,10 @@ Required agent checkpoints:
 
 - Startup: before the first practical decision, inspect this packet; fetch every record actually relied on and compare it with current repository/runtime evidence. An injected packet alone is not "confirmed"
 - Mid-task: before implementation, external action, persistence, or final judgment, if a past decision, constraint, preference, term, or unfinished state has not been fetched and verified in this turn, stop and rerun `vault-context context` for that exact uncertainty
-- Visibility: say `Vault確認済み: <impact>`, `Vault確認済み: 関連記録なし`, or `Vault未確認: <reason>` briefly; use `Vault再確認` when the lookup happens mid-task
-- Final capture gate: immediately before the final response, once per substantive task, decide whether a newly confirmed decision, constraint, reusable learning, risk, or handoff changes future work, is not already recorded, and is supported by current evidence
-- If all capture conditions hold, this standing policy pre-approves one minimal local Vault capture without waiting for another user request: reuse/process an existing raw when available; otherwise create one sanitized `source_kind=agent` raw with `capture_raw_note_once`, then `process_raw_note`; verify the canonical `source_raw` and receipt
+- Question gate: if an exact Vault retry and current primary evidence still cannot resolve an uncertainty that materially changes the deliverable, scope, priority, external action, or persistent change, ask one concise specific question before consequential work; only isolate and state assumptions for nonessential uncertainty
+- Immediate user-only capture: when an explicit user decision, preference, constraint, term, background fact, or unfinished state will remain relevant after the current task, change future work, and cannot be reconstructed from repository/docs/issue/PR/CI/runtime evidence, check duplicate, sensitivity, and meaning, then create a minimal sanitized `source_kind=user` raw with `capture_raw_note_once` and process it with `process_raw_note` at the first safe checkpoint; do not wait for the final capture gate. Skip task-local state held by the active task/thread/workflow artifact and expected to resolve before task completion
+- Visibility: successful Vault retrieval, retry, and capture are internal checks; do not emit routine `Vault確認済み`, `Vault再確認`, or save-success reports. Surface only the impact of a conflict, material approach change, required user decision, or failure that prevents safe progress
+- Final capture gate: use the final review only as a deduplicating safety net for uncaptured durable outcomes since the last checkpoint. If capture conditions hold, reuse/process an existing raw or create one sanitized raw with `capture_raw_note_once` and provenance-appropriate `source_kind=user|agent|mixed`, then `process_raw_note`; verify the canonical `source_raw` and receipt
 - Never copy a conversation transcript, prompt, raw tool output, secret, or unnecessary personal data into the Vault. On sensitivity, weak evidence, duplicate, or processing failure, stop instead of silently falling back to direct canonical capture
 """
 

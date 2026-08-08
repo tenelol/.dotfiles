@@ -86,7 +86,7 @@ class VaultContextHookTests(unittest.TestCase):
         self.assertIn("middle omitted for Vault lookup", excerpt)
         self.assertLessEqual(len(excerpt), NAMESPACE["MAX_PROMPT_CHARS"])
 
-    def test_contract_requires_mid_task_retrieval_raw_fallback_and_capture_gate(self):
+    def test_contract_requires_retrieval_immediate_capture_question_and_final_safety_net(self):
         rendered = build_context(
             "/tmp/work",
             {"text": "Relevant:\n- record", "sensitive_prompt_omitted": False},
@@ -95,14 +95,25 @@ class VaultContextHookTests(unittest.TestCase):
         self.assertIn("Required agent checkpoints", rendered)
         self.assertIn("Mid-task", rendered)
         self.assertIn("source_raw", rendered)
+        self.assertIn("Question gate", rendered)
+        self.assertIn("Immediate user-only capture", rendered)
+        self.assertIn("source_kind=user", rendered)
+        self.assertIn("do not wait for the final capture gate", rendered)
+        self.assertIn("remain relevant after the current task", rendered)
+        self.assertIn("Skip task-local state", rendered)
+        self.assertIn("successful Vault retrieval, retry, and capture are internal checks", rendered)
+        self.assertNotIn("say `Vault確認済み:", rendered)
         self.assertIn("Final capture gate", rendered)
+        self.assertIn("deduplicating safety net", rendered)
         self.assertIn("capture_raw_note_once", rendered)
         self.assertIn("process_raw_note", rendered)
 
-    def test_failure_contract_requires_manual_retry_and_visibility(self):
+    def test_failure_contract_requires_retry_and_only_blocking_failure_visibility(self):
         rendered = build_context("/tmp/work", None, "timeout")
         self.assertIn("最初の実務判断前にCLI/MCPで1回だけ手動再取得", rendered)
-        self.assertIn("Vault未確認", rendered)
+        self.assertIn("保存済み判断が不可欠で安全に進めない場合だけ", rendered)
+        self.assertIn("定型報告せず進める", rendered)
+        self.assertNotIn("Vault未確認", rendered)
 
 
 if __name__ == "__main__":
