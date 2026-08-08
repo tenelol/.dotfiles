@@ -138,6 +138,7 @@ let
   darwinCliPackages = with pkgs; [
     ccpocketBridgePackage
     nil
+    nushell
   ];
 
   linuxServerPackages = with pkgs; [
