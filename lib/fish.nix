@@ -80,6 +80,8 @@
       '';
 
       shellAbbrs = {
+        "\\cc" = "command cc";
+        cc = "claude";
         cx = "codex";
         ls = "eza --icons";
         rm = "gomi";
