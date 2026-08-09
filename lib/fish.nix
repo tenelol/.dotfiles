@@ -77,14 +77,11 @@
         bind --user escape,. history-last-token-search-backward
         bind --user -M insert escape,. history-last-token-search-backward
 
-        function \cc
-          command cc $argv
-        end
-
       '';
 
       shellAbbrs = {
         cc = "claude";
+        cg = "clang";
         cx = "codex";
         ls = "eza --icons";
         rm = "gomi";
