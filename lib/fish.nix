@@ -77,9 +77,13 @@
         bind --user escape,. history-last-token-search-backward
         bind --user -M insert escape,. history-last-token-search-backward
 
+        # Match a Nix flake-reference token anywhere in the command line.
+        abbr --add nixpkgs-claude --position anywhere --regex '^nixpkgs#cc$' 'nixpkgs#claude-code'
+
       '';
 
       shellAbbrs = {
+        cx = "codex";
         ls = "eza --icons";
         rm = "gomi";
         tm = "tmux new-session -A -s main";
