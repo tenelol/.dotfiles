@@ -13,9 +13,9 @@
           "${nixpkgs}/nixos/modules/virtualisation/proxmox-image.nix"
           {
             proxmox = {
-              filenameSuffix = "9001-nixos-26.05-cloud";
+              filenameSuffix = "9001-nixos-26.05-cloudinit";
               qemuConf = {
-                name = "nixos-26.05-cloud";
+                name = "nixos-26.05-cloudinit";
                 cores = 2;
                 memory = 2048;
                 virtio0 = "local-lvm:vm-9001-disk-0";
@@ -33,7 +33,7 @@
 
             virtualisation.diskSize = 8192;
 
-            users.users.tener = {
+            users.users.nixos = {
               isNormalUser = true;
               extraGroups = [ "wheel" ];
               hashedPassword = "!";
