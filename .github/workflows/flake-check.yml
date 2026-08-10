@@ -3,6 +3,7 @@ name: Flake Check
 on:
   pull_request:
     paths:
+      - ".sops.yaml"
       - ".github/workflows/**"
       - "flake.nix"
       - "flake.lock"
@@ -16,12 +17,16 @@ on:
       - "scripts/**"
       - "vendor/**"
       - "img/**"
+      - "infra/**"
       - "keys/**"
+      - "secrets/**"
+      - "shared/**"
       - "README.md"
   push:
     branches:
       - main
     paths:
+      - ".sops.yaml"
       - ".github/workflows/**"
       - "flake.nix"
       - "flake.lock"
@@ -35,7 +40,10 @@ on:
       - "scripts/**"
       - "vendor/**"
       - "img/**"
+      - "infra/**"
       - "keys/**"
+      - "secrets/**"
+      - "shared/**"
       - "README.md"
   workflow_dispatch:
 
