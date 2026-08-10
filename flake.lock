@@ -102,22 +102,6 @@
         "type": "github"
       }
     },
-    "gijiroku": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1778502770,
-        "narHash": "sha256-iB2IEq3MXcL5+OcBMBkAvkLX0AT1v6A9+9pAs7KV6Vg=",
-        "ref": "refs/heads/main",
-        "rev": "5acfe3fa3cd8108dabfa36502e67ed4e48f5e9fb",
-        "revCount": 3,
-        "type": "git",
-        "url": "ssh://git@github.com/tenelol/gijiroku.git"
-      },
-      "original": {
-        "type": "git",
-        "url": "ssh://git@github.com/tenelol/gijiroku.git"
-      }
-    },
     "gitignore": {
       "inputs": {
         "nixpkgs": [
@@ -473,7 +457,6 @@
     "root": {
       "inputs": {
         "denix": "denix",
-        "gijiroku": "gijiroku",
         "herdr": "herdr",
         "hermes-agent": "hermes-agent",
         "home-manager": "home-manager",
@@ -482,8 +465,30 @@
         "nixos-wsl": "nixos-wsl",
         "nixpkgs": "nixpkgs_2",
         "nixvim": "nixvim",
+        "sops-nix": "sops-nix",
         "spicetify-nix": "spicetify-nix",
+        "vault-context": "vault-context",
         "zen-browser": "zen-browser"
+      }
+    },
+    "sops-nix": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1783174389,
+        "narHash": "sha256-aCWC8ngycU7OdJrU2+Je3qf+1a2ykuBvpPhZT/9tXMc=",
+        "owner": "Mic92",
+        "repo": "sops-nix",
+        "rev": "f1406619a3884cd5c47992a70b8b35c9c0fcb4c9",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Mic92",
+        "repo": "sops-nix",
+        "type": "github"
       }
     },
     "spicetify-nix": {
@@ -561,6 +566,26 @@
         "owner": "pyproject-nix",
         "repo": "uv2nix",
         "type": "github"
+      }
+    },
+    "vault-context": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1786122842,
+        "narHash": "sha256-L9PmnCD8Rn/VDt8AHZVOKt5KUx1yb8B5SrODYn8+OCs=",
+        "ref": "refs/heads/main",
+        "rev": "62242b83c40c453e9d21ce88873e5fe91a60e03f",
+        "revCount": 9,
+        "type": "git",
+        "url": "ssh://git@github.com/tenelol/vault-context.git"
+      },
+      "original": {
+        "type": "git",
+        "url": "ssh://git@github.com/tenelol/vault-context.git"
       }
     },
     "zen-browser": {

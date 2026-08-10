@@ -10,7 +10,8 @@
 - Preferred Linux build commands:
   - `nh os build . -H nixos`
   - `nh os build . -H nvidia-desktop`
-  - `nh os build . -H nixos-server`
+  - `nh os build . -H web-server`
+  - `nh os build . -H nas`
   - `nh os build . -H wsl`
 - Preferred Darwin build command:
   - `nh darwin build . -H macbook-rift`
@@ -39,7 +40,8 @@
 ## Host inventory
 - `nixos`: x86_64-linux laptop
 - `nvidia-desktop`: x86_64-linux desktop
-- `nixos-server`: x86_64-linux headless server
+- `web-server`: x86_64-linux Proxmox guest for personal sites
+- `nas`: x86_64-linux Proxmox guest configuration; deployment waits for the data HDD
 - `wsl`: x86_64-linux NixOS-WSL environment
 - `macbook`: aarch64-darwin laptop
 
@@ -60,7 +62,7 @@
 ## Validation scripts
 - Lightweight (all platforms, no build): `./scripts/validate eval`
 - Darwin local check: `./scripts/validate darwin`
-- Format check: `nix fmt -- flake.nix hosts modules rices home packages --ci --excludes 'hosts/*/hardware-configuration.nix' --excludes 'legacy/**'`
+- Format check: `nix fmt -- flake.nix hosts modules rices home packages lib shared --ci --excludes 'hosts/*/hardware-configuration.nix' --excludes 'legacy/**'`
 
 ## Documentation expectations
 - README changes should describe the actual personal workflow used in this repo.
