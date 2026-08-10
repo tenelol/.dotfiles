@@ -9,7 +9,8 @@ NixOS と `nix-darwin` を 1 つの flake で管理し、Home Manager は各 sys
 
 - `nixos`: x86_64 Linux laptop
 - `nvidia-desktop`: x86_64 Linux desktop
-- `nixos-server`: x86_64 Linux headless server
+- `web-server`: x86_64 Linux Proxmox guest for personal sites
+- `nas`: x86_64 Linux Proxmox guest config; deployment waits for the data HDD
 - `wsl`: x86_64 Linux NixOS-WSL environment
 - `macbook`: aarch64 Darwin laptop
 
@@ -23,6 +24,7 @@ NixOS と `nix-darwin` を 1 つの flake で管理し、Home Manager は各 sys
 - [lib](./lib): denix が自動発見しない内部 helper。大きくなりやすい package 群、生成ロジック、host 固有 helper を module から明示 import する
 - [config](./config): Neovim、fish、niri、Rift、waybar などの実ファイル
 - [packages](./packages): 軽い独自 package 定義
+- [shared/nixos](./shared/nixos): 他repoからも使える、外部inputを持たない headless / Proxmox guest / SSH hardening module
 - [legacy](./legacy): 退避した旧構成。現行 flake では未使用
 
 `hosts/` と `modules/` と `rices/` は `denix` が自動で読むので、新しい `.nix` を足したら Git 管理下に置く前提です。
@@ -162,7 +164,7 @@ CI の pull request では `nix fmt --ci` と `./scripts/validate eval` だけ�
 整形確認:
 
 ```sh
-nix fmt -- flake.nix hosts modules rices home packages lib --ci --excludes 'hosts/*/hardware-configuration.nix' --excludes 'legacy/**'
+nix fmt -- flake.nix hosts modules rices home packages lib shared --ci --excludes 'hosts/*/hardware-configuration.nix' --excludes 'legacy/**'
 ```
 
 Linux host を build:
@@ -176,7 +178,8 @@ Linux host を switch:
 ```sh
 nh os switch . -H nixos
 nh os switch . -H nvidia-desktop
-nh os switch . -H nixos-server
+nh os switch . -H web-server
+nh os switch . -H nas
 nh os switch . -H wsl
 ```
 
@@ -223,7 +226,13 @@ nh darwin build . -H macbook-mac
 `nh` を使う前提で書いています。`nixos-rebuild` や `darwin-rebuild` を直接叩くより、普段の運用では `nh` を優先します。
 共通の評価入口として `./scripts/validate` を置いていて、`eval` / `linux` / `darwin` の 3 モードを使い分けます。
 手動で rebuild / switch するときも、実行前に既存の rebuild/switch process がないか確認し、AeroSpace process/config や現在の wallpaper から組み立てた config 名を `-H` に渡して現在の rice を保ちます。
-通常の `nixos` / `nvidia-desktop` は `indigo` rice を使い、`macbook` の通常運用は `macbook-rift` として明示します。`macbook-rift` は `img/rift.png`、`macbook-aerospace` は `img/aerospace.png` を使い、SketchyBar の文字色/accent、Ghostty foreground、JankyBorders の色も rice から切り替えます。Linux desktop では `switch` 後に Home Manager activation が `apply-theme-wallpaper` を叩くので、`niri` 上でも wallpaper が即時反映されます。headless な `nixos-server` と NixOS-WSL の `wsl` にも rice 名は付きますが、今のところ見た目には影響しません。
+通常の `nixos` / `nvidia-desktop` は `indigo` rice を使い、`macbook` の通常運用は `macbook-rift` として明示します。`macbook-rift` は `img/rift.png`、`macbook-aerospace` は `img/aerospace.png` を使い、SketchyBar の文字色/accent、Ghostty foreground、JankyBorders の色も rice から切り替えます。Linux desktop では `switch` 後に Home Manager activation が `apply-theme-wallpaper` を叩くので、`niri` 上でも wallpaper が即時反映されます。headless な Proxmox guest と NixOS-WSL の `wsl` にも rice 名は付きますが、今のところ見た目には影響しません。
+
+## Proxmox guests
+
+PVE 本体は Debian/Proxmox のまま管理し、guest OS だけを NixOS flake へ寄せます。NixOS 26.05 テンプレートは公式 nixpkgs の `proxmox-image.nix` が公開する `system.build.cloudImage` から生成し、PVE へ raw image を import します。再生成用flakeは `infra/proxmox-image` にあり、x86_64 builderで `nix build ./infra/proxmox-image#cloud-image` を実行します。clone の初回起動だけ cloud-init で SSH・hostname・IP を渡し、その後は `nh os build` / `nh os switch` で管理します。秘密値は `sops-nix` と host ごとの age key を使い、private key や token を cloud-init と Git に入れません。
+
+`web-server` は nginx、Cloudflare Tunnel、Tailscale、非 root の blog runner を管理します。`nas` は Nextcloud 32、MariaDB、Redis、File Browser、Universal Media Server を定義しますが、`nas-data` label の HDD が接続されるまで storage-dependent service は起動しません。
 
 ## Design Notes
 

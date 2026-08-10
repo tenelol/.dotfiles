@@ -58,7 +58,7 @@ jobs:
         uses: DeterminateSystems/determinate-nix-action@v3
 
       - name: Check Nix formatting
-        run: nix fmt -- flake.nix hosts modules rices home packages lib --ci --excludes 'hosts/*/hardware-configuration.nix' --excludes 'legacy/**'
+        run: nix fmt -- flake.nix hosts modules rices home packages lib shared --ci --excludes 'hosts/*/hardware-configuration.nix' --excludes 'legacy/**'
 
       - name: Evaluate all supported systems
         run: ./scripts/validate eval
@@ -72,7 +72,8 @@ jobs:
         check:
           - build-nixos
           - build-nvidia-desktop
-          - build-nixos-server
+          - build-web-server
+          - build-nas
           - build-wsl
 
     steps:

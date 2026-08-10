@@ -36,7 +36,7 @@ run_structure_check() {
       failed=1
     fi
   done < <(
-    find flake.nix hosts modules rices home packages lib \
+    find flake.nix hosts modules rices home packages lib shared \
       -type f \
       -name '*.nix' \
       -print 2>/dev/null | sort
@@ -92,7 +92,8 @@ case "$mode" in
     ensure_no_rebuild_running
     nh os build . -H nixos
     nh os build . -H nvidia-desktop
-    nh os build . -H nixos-server
+    nh os build . -H web-server
+    nh os build . -H nas
     nh os build . -H wsl
     ;;
   darwin)

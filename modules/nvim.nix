@@ -1,5 +1,7 @@
 {
   delib,
+  host,
+  lib,
   pkgs,
   hm,
   ...
@@ -10,7 +12,7 @@ in
 delib.module {
   name = "nvim";
 
-  home.always = {
+  home.always = lib.mkIf (!host.isServer) {
     programs.nixvim = nvim.nixvimProgram;
 
     xdg.dataFile."jupyter/kernels/nix-python3/kernel.json".text = nvim.jupyterKernelSpecJson;
