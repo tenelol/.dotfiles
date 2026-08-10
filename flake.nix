@@ -35,8 +35,11 @@
     herdr.url = "github:ogulcancelik/herdr/v0.7.1";
     herdr.inputs.nixpkgs.follows = "nixpkgs";
 
-    gijiroku.url = "git+ssh://git@github.com/tenelol/gijiroku.git";
-    gijiroku.flake = false;
+    sops-nix.url = "github:Mic92/sops-nix";
+    sops-nix.inputs.nixpkgs.follows = "nixpkgs";
+
+    vault-context.url = "git+ssh://git@github.com/tenelol/vault-context.git";
+    vault-context.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs =
@@ -123,7 +126,8 @@
       linuxCheckTargets = [
         "nixos"
         "nvidia-desktop"
-        "nixos-server"
+        "web-server"
+        "nas"
         "wsl"
       ];
       darwinCheckTargets = [

@@ -1,10 +1,9 @@
 { delib, ... }:
 delib.host {
-  name = "nixos-server";
+  name = "web-server";
   type = "server";
   system = "x86_64-linux";
 
-  myconfig.boot.efiSystemdBoot = true;
   rice = "indigo";
 
   nixos.imports = [

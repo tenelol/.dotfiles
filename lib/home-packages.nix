@@ -46,10 +46,6 @@ let
   imoocsPackage = import ../packages/imoocs.nix {
     inherit pkgs lib;
   };
-  gijirokuPackage = import ../packages/gijiroku.nix {
-    inherit pkgs lib;
-    src = inputs.gijiroku;
-  };
   iniadCommitPackage = import ../packages/iniad-commit.nix {
     inherit pkgs lib;
   };
@@ -140,7 +136,6 @@ let
 
   darwinDesktopPackages = with pkgs; [
     hermesAgentDesktopAppPackage
-    gijirokuPackage
     moocsCollectPackage
   ];
 
@@ -161,8 +156,8 @@ in
       isServer ? false,
       fullDesktop ? false,
     }:
-    commonPackages
-    ++ lib.optionals isLinux linuxCommonPackages
+    lib.optionals (!isServer) commonPackages
+    ++ lib.optionals (isLinux && !isServer) linuxCommonPackages
     ++ lib.optionals isLinux linuxBasePackages
     ++ lib.optionals (!isServer) nonServerPackages
     ++ lib.optionals (!isServer && isLinux) linuxNonServerPackages
