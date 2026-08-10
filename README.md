@@ -230,7 +230,7 @@ nh darwin build . -H macbook-mac
 
 ## Proxmox guests
 
-PVE 本体は Debian/Proxmox のまま管理し、guest OS だけを NixOS flake へ寄せます。NixOS 26.05 テンプレートは公式 nixpkgs の `proxmox-image.nix` が公開する `system.build.cloudImage` から生成し、PVE へ raw image を import します。再生成用flakeは `infra/proxmox-image` にあり、x86_64 builderで `nix build ./infra/proxmox-image#cloud-image` を実行します。clone の初回起動だけ cloud-init で SSH・hostname・IP を渡し、その後は `nh os build` / `nh os switch` で管理します。秘密値は `sops-nix` と host ごとの age key を使い、private key や token を cloud-init と Git に入れません。
+PVE 本体は Debian/Proxmox のまま管理し、guest OS だけを NixOS flake へ寄せます。NixOS 26.05 テンプレート `nixos-26.05-cloudinit` は公式 nixpkgs の `proxmox-image.nix` が公開する `system.build.cloudImage` から生成し、PVE へ raw image を import します。再生成用flakeは `infra/proxmox-image` にあり、x86_64 builderで `nix build ./infra/proxmox-image#cloud-image` を実行します。clone の初回起動だけ cloud-init の `nixos` ユーザーで SSH・hostname・IP を渡し、その後は `nh os build` / `nh os switch` で管理します。秘密値は `sops-nix` と host ごとの age key を使い、private key や token を cloud-init と Git に入れません。
 
 `web-server` は nginx、Cloudflare Tunnel、Tailscale、非 root の blog runner を管理します。`nas` は Nextcloud 32、MariaDB、Redis、File Browser、Universal Media Server を定義しますが、`nas-data` label の HDD が接続されるまで storage-dependent service は起動しません。
 
