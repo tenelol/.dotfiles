@@ -1,0 +1,16 @@
+keys:
+  - &admin age1srttaj3xys75hqzjrltv38ytxw2q80tne5vsj4pl52l7hz7az45q86r7h0
+  - &nas age1qhcvugn8lqt7dcf9e0xd3f73scapdw2jgu565n7aphzwxqkj9uxq0fnkkh
+  - &web_server age13p8c6wj5h9hn2sj2tu073nsh4p6tg0lnkgsesdmtprcatzavng7sjjsqun
+
+creation_rules:
+  - path_regex: secrets/web-server/.*\.enc$
+    key_groups:
+      - age:
+          - *admin
+          - *web_server
+  - path_regex: secrets/nas/.*\.enc$
+    key_groups:
+      - age:
+          - *admin
+          - *nas
