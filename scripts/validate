@@ -48,7 +48,13 @@ run_structure_check() {
 }
 
 run_eval_check() {
-  nix flake check --all-systems --no-build
+  local system
+
+  for system in x86_64-linux aarch64-darwin; do
+    nix eval --json ".#checks.${system}" \
+      --apply 'checks: builtins.mapAttrs (_: check: check.drvPath) checks' \
+      --no-write-lock-file >/dev/null
+  done
 }
 
 ensure_no_rebuild_running() {
