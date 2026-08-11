@@ -102,6 +102,22 @@
         "type": "github"
       }
     },
+    "gijiroku": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1778502770,
+        "narHash": "sha256-iB2IEq3MXcL5+OcBMBkAvkLX0AT1v6A9+9pAs7KV6Vg=",
+        "ref": "refs/heads/main",
+        "rev": "5acfe3fa3cd8108dabfa36502e67ed4e48f5e9fb",
+        "revCount": 3,
+        "type": "git",
+        "url": "ssh://git@github.com/tenelol/gijiroku.git"
+      },
+      "original": {
+        "type": "git",
+        "url": "ssh://git@github.com/tenelol/gijiroku.git"
+      }
+    },
     "gitignore": {
       "inputs": {
         "nixpkgs": [
@@ -457,6 +473,7 @@
     "root": {
       "inputs": {
         "denix": "denix",
+        "gijiroku": "gijiroku",
         "herdr": "herdr",
         "hermes-agent": "hermes-agent",
         "home-manager": "home-manager",
