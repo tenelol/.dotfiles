@@ -1,5 +1,14 @@
 # Non-secret fragment only. Codex owns ~/.codex/config.toml.
 
+[[hooks.PreToolUse]]
+matcher = "^Bash$"
+
+  [[hooks.PreToolUse.hooks]]
+  type = "command"
+  command = "python3 /Users/tener/.codex/hooks/enforce-worktree-layout.py"
+  timeout = 2
+  statusMessage = "Checking worktree layout"
+
 [[hooks.UserPromptSubmit]]
   [[hooks.UserPromptSubmit.hooks]]
   type = "command"
