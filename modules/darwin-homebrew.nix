@@ -28,6 +28,7 @@ delib.module {
         "awscli"
         "bat"
         "cloudflared"
+        "cloudflare-wrangler"
         "cmake"
         "coreutils"
         "cowsay"
