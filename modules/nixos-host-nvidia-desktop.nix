@@ -14,8 +14,6 @@ delib.module {
     networking.hostName = "nvidia-desktop";
     boot.kernelPackages = pkgs.linuxPackages_latest;
 
-    programs.kdeconnect.enable = true;
-
     users.users.${profile.username} = {
       openssh.authorizedKeys.keyFiles = [ profile.sshPublicKey ];
     };
