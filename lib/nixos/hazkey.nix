@@ -8,7 +8,7 @@ let
   inherit (pkgs.stdenv.hostPlatform) system;
 
   hosts = [
-    "nixos"
+    "surface"
     "nvidia-desktop"
   ];
 

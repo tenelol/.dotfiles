@@ -1,6 +1,6 @@
 { delib, ... }:
 delib.host {
-  name = "nixos";
+  name = "surface";
   type = "laptop";
   system = "x86_64-linux";
   features = [ "fullDesktop" ];

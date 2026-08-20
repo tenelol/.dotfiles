@@ -9,7 +9,7 @@
 - Preferred validation command: `nix flake check --all-systems --no-build`
 - Preferred Linux build commands:
   - `nh os build . -H adguard-home`
-  - `nh os build . -H nixos`
+  - `nh os build . -H surface`
   - `nh os build . -H nvidia-desktop`
   - `nh os build . -H web-server`
   - `nh os build . -H nas`
@@ -40,7 +40,7 @@
 
 ## Host inventory
 - `adguard-home`: x86_64-linux Proxmox guest config; VM stays stopped until router/DHCP integration is safe
-- `nixos`: x86_64-linux laptop
+- `surface`: x86_64-linux laptop
 - `nvidia-desktop`: x86_64-linux desktop
 - `web-server`: x86_64-linux Proxmox guest for personal sites
 - `nas`: x86_64-linux Proxmox guest configuration; deployment waits for the data HDD

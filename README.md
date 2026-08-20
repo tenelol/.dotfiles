@@ -7,7 +7,7 @@ NixOS と `nix-darwin` を 1 つの flake で管理し、Home Manager は各 sys
 
 ## Host
 
-- `nixos`: x86_64 Linux laptop
+- `surface`: x86_64 Linux laptop
 - `nvidia-desktop`: x86_64 Linux desktop
 - `web-server`: x86_64 Linux Proxmox guest for personal sites
 - `adguard-home`: x86_64 Linux Proxmox guest config; VM stays stopped pending router/DHCP integration
@@ -107,7 +107,7 @@ Script Commands は `~/.config/raycast/scripts` に展開されるので、Rayca
 
 ## Remote builds
 
-PC の負荷を下げるため、interactive host の `macbook` / `nixos` / `nvidia-desktop` では `nixbuild.net` を Nix remote builder として有効化しています。`nixbuild.net` は Linux target 用なので、Darwin system rebuild 自体はローカル build のままですが、`macbook` から Linux derivation を build するときは `x86_64-linux` / `aarch64-linux` を offload できます。
+PC の負荷を下げるため、interactive host の `macbook` / `surface` / `nvidia-desktop` では `nixbuild.net` を Nix remote builder として有効化しています。`nixbuild.net` は Linux target 用なので、Darwin system rebuild 自体はローカル build のままですが、`macbook` から Linux derivation を build するときは `x86_64-linux` / `aarch64-linux` を offload できます。
 
 秘密鍵は repo に置かず、`nix-daemon` を実行する root user から読める場所に置きます。既定の配置:
 
@@ -166,7 +166,7 @@ Linux host を build:
 Linux host を switch:
 
 ```sh
-nh os switch . -H nixos
+nh os switch . -H surface
 nh os switch . -H nvidia-desktop
 nh os switch . -H web-server
 nh os switch . -H adguard-home
@@ -217,7 +217,7 @@ nh darwin build . -H macbook-mac
 `nh` を使う前提で書いています。`nixos-rebuild` や `darwin-rebuild` を直接叩くより、普段の運用では `nh` を優先します。
 共通の評価入口として `./scripts/validate` を置いていて、`eval` / `linux` / `darwin` の 3 モードを使い分けます。
 手動で rebuild / switch するときも、実行前に既存の rebuild/switch process がないか確認し、AeroSpace process/config や現在の wallpaper から組み立てた config 名を `-H` に渡して現在の rice を保ちます。
-通常の `nixos` / `nvidia-desktop` は `indigo` rice を使い、`macbook` の通常運用は `macbook-rift` として明示します。`macbook-rift` は `img/rift.png`、`macbook-aerospace` は `img/aerospace.png` を使い、SketchyBar の文字色/accent、Ghostty foreground、JankyBorders の色も rice から切り替えます。Linux desktop では `switch` 後に Home Manager activation が `apply-theme-wallpaper` を叩くので、`niri` 上でも wallpaper が即時反映されます。headless な Proxmox guest と NixOS-WSL の `wsl` にも rice 名は付きますが、今のところ見た目には影響しません。
+通常の `surface` / `nvidia-desktop` は `indigo` rice を使い、`macbook` の通常運用は `macbook-rift` として明示します。`macbook-rift` は `img/rift.png`、`macbook-aerospace` は `img/aerospace.png` を使い、SketchyBar の文字色/accent、Ghostty foreground、JankyBorders の色も rice から切り替えます。Linux desktop では `switch` 後に Home Manager activation が `apply-theme-wallpaper` を叩くので、`niri` 上でも wallpaper が即時反映されます。headless な Proxmox guest と NixOS-WSL の `wsl` にも rice 名は付きますが、今のところ見た目には影響しません。
 
 ## Proxmox guests
 

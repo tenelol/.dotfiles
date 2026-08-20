@@ -5,12 +5,12 @@
   ...
 }:
 delib.module {
-  name = "nixos.host.nixos";
+  name = "nixos.host.surface";
 
-  options = delib.singleEnableOption (host.name == "nixos");
+  options = delib.singleEnableOption (host.name == "surface");
 
   nixos.ifEnabled = {
-    networking.hostName = "nixos";
+    networking.hostName = "surface";
 
     # Keep the laptop on the regular kernel track; unstable+latest is more likely
     # to regress power management and fan behavior on this host.

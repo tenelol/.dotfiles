@@ -128,7 +128,7 @@
       darwinConfigurations = filterConfigurations isDarwinSystem (mkConfigurations "darwin");
       linuxCheckTargets = [
         "adguard-home"
-        "nixos"
+        "surface"
         "nvidia-desktop"
         "web-server"
         "nas"

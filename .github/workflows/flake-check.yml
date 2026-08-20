@@ -83,7 +83,7 @@ jobs:
       matrix:
         check:
           - build-adguard-home
-          - build-nixos
+          - build-surface
           - build-nvidia-desktop
           - build-web-server
           - build-nas
