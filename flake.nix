@@ -127,6 +127,7 @@
       nixosConfigurations = filterConfigurations isLinuxSystem (mkConfigurations "nixos");
       darwinConfigurations = filterConfigurations isDarwinSystem (mkConfigurations "darwin");
       linuxCheckTargets = [
+        "adguard-home"
         "nixos"
         "nvidia-desktop"
         "web-server"

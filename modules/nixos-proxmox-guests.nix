@@ -7,6 +7,7 @@
 }:
 let
   isProxmoxGuest = builtins.elem host.name [
+    "adguard-home"
     "nas"
     "web-server"
   ];

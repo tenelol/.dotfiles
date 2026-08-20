@@ -96,6 +96,7 @@ case "$mode" in
     ;;
   linux)
     ensure_no_rebuild_running
+    nh os build . -H adguard-home
     nh os build . -H nixos
     nh os build . -H nvidia-desktop
     nh os build . -H web-server

@@ -8,6 +8,7 @@
 - Prefer `nh` commands over raw `nixos-rebuild` / `darwin-rebuild` unless the user explicitly asks otherwise.
 - Preferred validation command: `nix flake check --all-systems --no-build`
 - Preferred Linux build commands:
+  - `nh os build . -H adguard-home`
   - `nh os build . -H nixos`
   - `nh os build . -H nvidia-desktop`
   - `nh os build . -H web-server`
@@ -38,6 +39,7 @@
 - `legacy/`: retired configs; not used in the active flake.
 
 ## Host inventory
+- `adguard-home`: x86_64-linux Proxmox guest config; VM stays stopped until router/DHCP integration is safe
 - `nixos`: x86_64-linux laptop
 - `nvidia-desktop`: x86_64-linux desktop
 - `web-server`: x86_64-linux Proxmox guest for personal sites
