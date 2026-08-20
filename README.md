@@ -1,7 +1,3 @@
-# tener dotfiles
-
-個人用の `denix` ベース multi-host dotfiles。NixOS と `nix-darwin` を1つのflakeで管理し、Home Managerは各systemに統合しています。
-
 ## Stack
 
 - NixOS / nix-darwin / Home Manager
