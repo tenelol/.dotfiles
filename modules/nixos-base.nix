@@ -62,12 +62,10 @@ delib.module {
       git
       neovim
       nh
-      tailscale
     ];
     programs.fish.enable = true;
     programs.fish.useBabelfish = true;
     security.sudo.extraConfig = ''Defaults env_keep += "EDITOR VISUAL"'';
-    services.tailscale.enable = true;
     # Codex probes a conventional FHS path for bubblewrap on Linux.
     systemd.tmpfiles.rules = [
       "L+ /usr/bin/bwrap - - - - ${pkgs.bubblewrap}/bin/bwrap"

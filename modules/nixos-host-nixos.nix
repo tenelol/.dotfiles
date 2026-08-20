@@ -11,10 +11,6 @@ delib.module {
 
   nixos.ifEnabled = {
     networking.hostName = "nixos";
-    networking.nameservers = [
-      "1.1.1.1"
-      "8.8.8.8"
-    ];
 
     # Keep the laptop on the regular kernel track; unstable+latest is more likely
     # to regress power management and fan behavior on this host.
