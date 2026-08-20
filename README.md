@@ -6,6 +6,9 @@
 
 - NixOS / nix-darwin / Home Manager
 - denix / nh / nixvim
+- sops-nix / Tailscale / systemd-resolved
+- nixbuild.net remote builders
+- GitHub Actions / Determinate Nix / Magic Nix Cache
 - Neovim / Fish / Ghostty
 - Niri（Linux）/ Rift・AeroSpace（macOS）
 
@@ -37,6 +40,13 @@
 
 ## Commands
 
+### Diagnose
+
+```sh
+dotfiles doctor
+dotfiles doctor --no-eval
+```
+
 ### Check
 
 ```sh
@@ -56,7 +66,6 @@ nh os switch . -H nvidia-desktop
 ### macOS
 
 ```sh
-dotfiles doctor --no-eval
 nh darwin build . -H macbook-rift
 nh darwin switch . -H macbook-rift
 ```
