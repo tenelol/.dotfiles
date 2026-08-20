@@ -5,7 +5,7 @@ delib.host {
   system = "x86_64-linux";
   features = [ "fullDesktop" ];
 
-  myconfig.boot.efiSystemdBoot = true;
+  myconfig.boot.efiLimine = true;
   myconfig.nixbuild.enable = true;
   rice = "indigo";
 

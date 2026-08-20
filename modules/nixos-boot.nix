@@ -10,16 +10,21 @@ delib.module {
   options =
     with delib;
     moduleOptions {
-      efiSystemdBoot = boolOption false;
+      efiLimine = boolOption false;
     };
 
   nixos.always =
     { myconfig, ... }:
-    lib.mkIf (builtins.match ".*-linux" host.system != null && myconfig.boot.efiSystemdBoot) {
-      boot.loader.systemd-boot = {
-        enable = true;
-        configurationLimit = 5;
+    lib.mkIf (builtins.match ".*-linux" host.system != null && myconfig.boot.efiLimine) {
+      boot.loader = {
+        limine = {
+          enable = true;
+          style = {
+            wallpapers = [ ../img/rift.png ];
+            wallpaperStyle = "centered";
+          };
+        };
+        efi.canTouchEfiVariables = true;
       };
-      boot.loader.efi.canTouchEfiVariables = true;
     };
 }
