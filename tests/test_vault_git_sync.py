@@ -34,7 +34,7 @@ class VaultGitSyncTests(unittest.TestCase):
         run("git", "push", "-u", "origin", "main", cwd=self.vault)
 
         self.cli = self.temp / "fake-vault-context"
-        self.write_cli(valid=True)
+        self.write_cli()
         self.scanner = self.temp / "check-sensitive-stdin.mjs"
         self.scanner.write_text(
             "let input = '';\n"
@@ -56,8 +56,17 @@ class VaultGitSyncTests(unittest.TestCase):
     def tearDown(self) -> None:
         shutil.rmtree(self.temp)
 
-    def write_cli(self, *, valid: bool) -> None:
-        failures = 0 if valid else 1
+    def write_cli(self, *, failures: dict[str, int] | None = None) -> None:
+        summary = {
+            "raw_integrity_failures": 0,
+            "sensitive_quarantined": 0,
+            "noncanonical_quarantined": 0,
+            "schema_violations": 0,
+            "broken_links": 0,
+            "missing_summary": 0,
+            "missing_scope_or_project": 0,
+        }
+        summary.update(failures or {})
         self.cli.write_text(
             "#!/usr/bin/env bash\n"
             "if [[ \"$1\" == \"reindex\" ]]; then echo '{\"ok\":true}'; exit 0; fi\n"
@@ -70,17 +79,7 @@ class VaultGitSyncTests(unittest.TestCase):
             "fi\n"
             "cat <<'JSON'\n"
             + json.dumps(
-                {
-                    "summary": {
-                        "raw_integrity_failures": failures,
-                        "sensitive_quarantined": 0,
-                        "noncanonical_quarantined": 0,
-                        "schema_violations": 0,
-                        "broken_links": 0,
-                        "missing_summary": 0,
-                        "missing_scope_or_project": 0,
-                    }
-                }
+                {"summary": summary}
             )
             + "\nJSON\n",
             encoding="utf-8",
@@ -116,13 +115,26 @@ class VaultGitSyncTests(unittest.TestCase):
         )
 
     def test_quality_failure_leaves_index_and_head_unchanged(self) -> None:
-        self.write_cli(valid=False)
+        self.write_cli(
+            failures={
+                "raw_integrity_failures": 1,
+                "noncanonical_quarantined": 2,
+            }
+        )
         path = self.vault / "10 Records" / "note" / "invalid.md"
         path.write_text("# Invalid\n", encoding="utf-8")
         before = run("git", "rev-parse", "HEAD", cwd=self.vault).stdout
         result = self.sync()
         self.assertNotEqual(result.returncode, 0)
-        self.assertEqual(json.loads(result.stdout)["reason"], "quality_gate_failed")
+        output = json.loads(result.stdout)
+        self.assertEqual(output["reason"], "quality_gate_failed")
+        self.assertEqual(
+            output["failed_checks"],
+            [
+                {"check": "raw_integrity_failures", "count": 1},
+                {"check": "noncanonical_quarantined", "count": 2},
+            ],
+        )
         self.assertEqual(run("git", "rev-parse", "HEAD", cwd=self.vault).stdout, before)
         self.assertEqual(run("git", "diff", "--cached", "--name-only", cwd=self.vault).stdout, "")
 

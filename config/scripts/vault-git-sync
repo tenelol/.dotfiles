@@ -127,15 +127,28 @@ VAULT_CONTEXT_ROOT="${snapshot}" \
   VAULT_CONTEXT_INDEX="${snapshot}/.vault-context/index.sqlite" \
   "${vault_cli}" quality --json > "${temp_dir}/quality.json" ||
   fail "quality_failed"
-jq -e '
-  .summary.raw_integrity_failures == 0 and
-  .summary.sensitive_quarantined == 0 and
-  .summary.noncanonical_quarantined == 0 and
-  .summary.schema_violations == 0 and
-  .summary.broken_links == 0 and
-  .summary.missing_summary == 0 and
-  .summary.missing_scope_or_project == 0
-' "${temp_dir}/quality.json" >/dev/null || fail "quality_gate_failed"
+quality_failures="$({
+  jq -ce '
+    [
+      {check: "raw_integrity_failures", count: .summary.raw_integrity_failures},
+      {check: "sensitive_quarantined", count: .summary.sensitive_quarantined},
+      {check: "noncanonical_quarantined", count: .summary.noncanonical_quarantined},
+      {check: "schema_violations", count: .summary.schema_violations},
+      {check: "broken_links", count: .summary.broken_links},
+      {check: "missing_summary", count: .summary.missing_summary},
+      {check: "missing_scope_or_project", count: .summary.missing_scope_or_project}
+    ]
+    | if all(.[]; ((.count | type) == "number") and .count >= 0 and (.count | floor) == .count)
+      then map(select(.count != 0))
+      else error("invalid quality summary")
+      end
+  ' "${temp_dir}/quality.json"
+} 2>/dev/null)" || fail "quality_output_invalid"
+if [[ "${quality_failures}" != "[]" ]]; then
+  jq -cn --argjson failed_checks "${quality_failures}" \
+    '{ok: false, status: "blocked", reason: "quality_gate_failed", failed_checks: $failed_checks}'
+  exit 1
+fi
 
 git -C "${vault_root}" ls-files -z --modified --deleted --others --exclude-standard -- \
   "${allowlist[@]}" > "${temp_dir}/post-validation-changes"
