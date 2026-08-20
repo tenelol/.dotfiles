@@ -54,6 +54,7 @@ delib.module {
         "lolcat"
         "make"
         "mas"
+        "mysql"
         "node"
         "pkgconf"
         "platformio"
