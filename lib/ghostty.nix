@@ -2,9 +2,9 @@
 let
   baseConfig =
     if pkgs.stdenv.hostPlatform.isDarwin then
-      ../config/ghostty/config-darwin
+      ../modules/ghostty/files/config-darwin
     else
-      ../config/ghostty/config;
+      ../modules/ghostty/files/config;
 
   mkReadabilityShader =
     myconfig:
@@ -120,7 +120,7 @@ in
 
   shaders = {
     aurora = auroraShader;
-    liquidGlassFocus = ../config/ghostty/shaders/liquid_glass_focus.glsl;
+    liquidGlassFocus = ../modules/ghostty/files/shaders/liquid_glass_focus.glsl;
     readabilityScrim = mkReadabilityShader;
     cursorTail = cursorTailShader;
     rippleRectangleCursor = rippleRectangleCursorShader;

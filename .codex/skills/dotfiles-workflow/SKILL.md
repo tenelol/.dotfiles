@@ -16,8 +16,10 @@ description: Edit, review, validate, build, switch, or document the personal den
 
 - Keep `hosts/<name>/default.nix` thin: host metadata plus hardware imports.
 - Put denix-discovered behavior in `modules/`, including nested module files, and rice variants in `rices/`.
-- Keep the shared Home Manager payload in `home/`. Do not add standalone `homeConfigurations` without an explicit architecture change.
-- Put explicitly imported helpers and generated-data builders in `lib/`, package definitions in `packages/`, and deployed source files in `config/`.
+- Put integrated Home Manager behavior in each denix module's `home.*` sections. Do not create a separate shared `home/` module tree or standalone `homeConfigurations` without an explicit architecture change.
+- Colocate deployed non-Nix sources under the owning `modules/<feature>/files/` directory, and package-owned sources beside their definition in `packages/`.
+- Do not manually import local denix modules. Keep imports for external modules, generated hardware modules, and deliberate reusable-module boundaries.
+- Put explicitly imported helpers and generated-data builders in `lib/`; `.nix` helpers must not live under denix auto-discovered paths unless they are valid denix modules.
 - Treat `flake.nix` as the source of truth for platform-filtered `nixosConfigurations`, `darwinConfigurations`, `checks`, and `formatter` outputs.
 - Add every new flake-referenced file to Git before evaluation; flakes omit untracked files.
 - Keep active Nix files at or below the repository's 500-line structure limit.
@@ -25,7 +27,7 @@ description: Edit, review, validate, build, switch, or document the personal den
 
 ## Validate with the narrowest useful work
 
-1. Run the fastest artifact-specific check first. For active Nix changes, run `nix fmt -- flake.nix hosts modules rices home packages lib --ci --excludes 'hosts/*/hardware-configuration.nix' --excludes 'legacy/**'`; use `./scripts/validate structure` as a cheap preflight when useful.
+1. Run the fastest artifact-specific check first. For active Nix changes, run `nix fmt -- flake.nix hosts modules rices packages lib --ci --excludes 'hosts/*/hardware-configuration.nix' --excludes 'legacy/**'`; use `./scripts/validate structure` as a cheap preflight when useful.
 2. Run `nix flake check --all-systems --no-build` before any host build and before finalizing the change. For active Nix changes, `./scripts/validate eval` runs the structure check plus that same flake check; use it instead of repeating both commands.
 3. Build only configurations whose closure can change:
    - Use `nh os build . -H <host>` for an affected Linux host.

@@ -54,7 +54,7 @@ delib.module {
       fi
     '';
 
-    xdg.configFile."sketchybar".source = ../config/sketchybar;
+    xdg.configFile."sketchybar".source = ./sketchybar/files;
 
     home.activation.restartSketchybar = hm.dag.entryAfter [ "linkGeneration" ] ''
       uid="$(/usr/bin/id -u)"

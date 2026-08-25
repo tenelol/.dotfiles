@@ -90,12 +90,13 @@
       };
     };
 
-    xdg.configFile."fish/functions/fish_prompt.fish".source = ../config/fish/functions/fish_prompt.fish;
+    xdg.configFile."fish/functions/fish_prompt.fish".source =
+      ../modules/shell/fish/files/functions/fish_prompt.fish;
 
     xdg.configFile."fish/functions/fish_greeting.fish".source =
-      ../config/fish/functions/fish_greeting.fish;
+      ../modules/shell/fish/files/functions/fish_greeting.fish;
 
     xdg.configFile."fish/functions/fish_right_prompt.fish".source =
-      ../config/fish/functions/fish_right_prompt.fish;
+      ../modules/shell/fish/files/functions/fish_right_prompt.fish;
   };
 }

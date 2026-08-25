@@ -10,7 +10,7 @@ delib.module {
 
   home.ifEnabled = {
     home.file.".local/bin/perf-snapshot" = {
-      source = ../config/scripts/perf-snapshot;
+      source = ./perf-snapshot/files/perf-snapshot;
       executable = true;
     };
   };

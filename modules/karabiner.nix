@@ -29,13 +29,13 @@ delib.module {
     };
 
     home.file.".local/bin/toggle-ghostty-quick-terminal" = {
-      source = ../config/scripts/toggle-ghostty-quick-terminal;
+      source = ./karabiner/files/toggle-ghostty-quick-terminal;
       executable = true;
     };
 
     xdg.configFile."karabiner/karabiner.json" = {
       force = true;
-      source = ../config/karabiner/karabiner.json;
+      source = ./karabiner/files/config/karabiner.json;
     };
 
     home.activation.reloadKarabiner = hm.dag.entryAfter [ "setupLaunchAgents" ] ''

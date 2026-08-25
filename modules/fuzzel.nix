@@ -12,8 +12,13 @@ delib.module {
 
   home.ifEnabled = {
     xdg.configFile."fuzzel" = {
-      source = ../config/fuzzel;
+      source = ./fuzzel/files/config;
       recursive = true;
+    };
+
+    home.file.".local/bin/emoji-fuzzel" = {
+      source = ./fuzzel/files/emoji-fuzzel;
+      executable = true;
     };
   };
 }

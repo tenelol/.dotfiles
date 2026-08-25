@@ -14,19 +14,19 @@ delib.module {
 
   options = delib.singleEnableOption (hazkey.enabled && hazkey.isSupportedSystem);
 
-  nixos.always =
-    { ... }:
-    {
-      warnings =
-        lib.optional
-          (
-            hazkey.enabled
-            && !host.isServer
-            && builtins.match ".*-linux" host.system != null
-            && !hazkey.isSupportedSystem
-          )
-          "nixos.hazkey is enabled for ${host.name}, but the pinned upstream binary overrides are only packaged for x86_64-linux.";
-    };
+  nixos.always = {
+    imports = [ inputs.nix-hazkey.nixosModules.hazkey ];
+
+    warnings =
+      lib.optional
+        (
+          hazkey.enabled
+          && !host.isServer
+          && builtins.match ".*-linux" host.system != null
+          && !hazkey.isSupportedSystem
+        )
+        "nixos.hazkey is enabled for ${host.name}, but the pinned upstream binary overrides are only packaged for x86_64-linux.";
+  };
 
   nixos.ifEnabled = {
     i18n.inputMethod = {

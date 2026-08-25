@@ -13,7 +13,7 @@ pkgs.stdenvNoCC.mkDerivation {
   pname = "imoocs";
   version = "0.3.10";
 
-  src = ../config/scripts/imoocs;
+  src = ./imoocs/imoocs;
   dontUnpack = true;
 
   nativeBuildInputs = [

@@ -25,16 +25,17 @@
 ## denix structure
 - `hosts/<name>/default.nix` should stay thin: host metadata plus hardware imports.
 - Shared and host-specific behavior belongs in `modules/`.
-- `denix` auto-discovers `hosts/`, `modules/`, and `rices/`, so new `.nix` files must be committed to Git to participate in flake evaluation.
+- Integrated Home Manager behavior belongs in each denix module's `home.*` sections.
+- Deployed non-Nix sources belong in the owning `modules/<feature>/files/` directory; package-owned sources belong beside their package definition.
+- `denix` recursively auto-discovers `.nix` files in `hosts/`, `modules/`, and `rices/`, so local denix modules do not need manual imports and new `.nix` files must be committed to Git.
+- Keep imports for external modules, generated hardware modules, and deliberate reusable-module boundaries.
 - `legacy/` is not part of the active flake unless the user explicitly asks to revive or compare it.
 
 ## Directory layout
 - `flake.nix`: flake entrypoint; uses `denix.lib.configurations` to wire hosts and modules.
 - `hosts/`: thin per-host definitions (metadata + hardware import only).
-- `modules/`: denix auto-discovered shared and host-specific modules.
+- `modules/`: denix auto-discovered shared and host-specific modules, with module-owned non-Nix assets under `files/`.
 - `rices/`: denix rice definitions (currently minimal — common wallpaper switching).
-- `home/home.nix`: shared Home Manager configuration.
-- `config/`: raw config files for Neovim, fish, niri, waybar, etc.
 - `packages/`: lightweight custom package definitions.
 - `legacy/`: retired configs; not used in the active flake.
 
@@ -64,7 +65,7 @@
 ## Validation scripts
 - Lightweight (all platforms, no build): `./scripts/validate eval`
 - Darwin local check: `./scripts/validate darwin`
-- Format check: `nix fmt -- flake.nix hosts modules rices home packages lib shared --ci --excludes 'hosts/*/hardware-configuration.nix' --excludes 'legacy/**'`
+- Format check: `nix fmt -- flake.nix hosts modules rices packages lib shared --ci --excludes 'hosts/*/hardware-configuration.nix' --excludes 'legacy/**'`
 
 ## Documentation expectations
 - README changes should describe the actual personal workflow used in this repo.

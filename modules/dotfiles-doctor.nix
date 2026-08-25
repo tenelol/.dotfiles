@@ -5,12 +5,12 @@ delib.module {
   home.always = {
     home.file = {
       ".local/bin/dotfiles" = {
-        source = ../config/scripts/dotfiles;
+        source = ./dotfiles-doctor/files/dotfiles;
         executable = true;
       };
 
       ".local/bin/dotfiles-doctor" = {
-        source = ../config/scripts/dotfiles-doctor;
+        source = ./dotfiles-doctor/files/dotfiles-doctor;
         executable = true;
       };
     };

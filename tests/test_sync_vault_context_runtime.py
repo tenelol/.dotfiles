@@ -9,7 +9,7 @@ from pathlib import Path
 REPOSITORY = Path(
     os.environ.get("DOTFILES_REPOSITORY", Path(__file__).resolve().parents[1])
 )
-SCRIPT = REPOSITORY / "config/scripts/sync-vault-context-runtime"
+SCRIPT = REPOSITORY / "modules/vault-context/files/sync-vault-context-runtime"
 
 
 class SyncVaultContextRuntimeTests(unittest.TestCase):

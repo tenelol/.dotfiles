@@ -8,7 +8,7 @@ from pathlib import Path
 
 
 ROOT = Path(os.environ.get("DOTFILES_REPOSITORY", Path(__file__).resolve().parents[1]))
-SCRIPT = ROOT / "config" / "scripts" / "vault-git-sync"
+SCRIPT = ROOT / "modules" / "vault-context" / "files" / "vault-git-sync"
 
 
 def run(*args: str, cwd: Path, check: bool = True) -> subprocess.CompletedProcess[str]:

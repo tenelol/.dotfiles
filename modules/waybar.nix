@@ -27,7 +27,7 @@ delib.module {
       fi
     '';
 
-    xdg.configFile."waybar/config".source = ../config/waybar/config;
-    xdg.configFile."waybar/style.css".source = ../config/waybar/style.css;
+    xdg.configFile."waybar/config".source = ./waybar/files/config;
+    xdg.configFile."waybar/style.css".source = ./waybar/files/style.css;
   };
 }

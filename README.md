@@ -26,13 +26,12 @@
 | --- | --- |
 | [`flake.nix`](./flake.nix) | inputs and configuration outputs |
 | [`hosts`](./hosts) | host identity, platform, hardware imports |
-| [`modules`](./modules) | denix-discovered system and Home Manager modules |
-| [`home`](./home) | shared Home Manager payload |
-| [`config`](./config) | application configuration files |
+| [`modules`](./modules) | denix-discovered system/Home Manager modules and their colocated `files/` assets |
 | [`rices`](./rices) | theme and desktop variants |
 | [`lib`](./lib) | explicitly imported helpers |
+| [`packages`](./packages) | custom package definitions and package-owned sources |
 
-`hosts/`、`modules/`、`rices/` はdenixが自動で読みます。新しいNixファイルはGit管理下に置きます。
+`hosts/`、`modules/`、`rices/` 内のNixファイルはdenixが再帰的に自動で読みます。Home Manager設定も各denix moduleの `home.*` に記述し、アプリ固有の非Nixファイルは所有moduleの `files/` に併置します。新しいNixファイルはGit管理下に置きます。
 
 ## Commands
 

@@ -1,6 +1,6 @@
 #:schema https://yazi-rs.github.io/schemas/theme.json
 
-# Match config/nvim/lua/core/theme.lua: graphite gray with restrained cool accents.
+# Match modules/nvim/files/lua/core/theme.lua: graphite gray with restrained cool accents.
 [app]
 overall = { fg = "#B3BBC7", bg = "reset" }
 

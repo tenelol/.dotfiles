@@ -176,7 +176,7 @@ let
   nvimPluginModuleNames =
     let
       pluginFiles = lib.filterAttrs (name: type: type == "regular" && lib.hasSuffix ".lua" name) (
-        builtins.readDir ../config/nvim/lua/plugins
+        builtins.readDir ../modules/nvim/files/lua/plugins
       );
     in
     map (name: "plugins.${lib.removeSuffix ".lua" name}") (builtins.attrNames pluginFiles);
@@ -186,7 +186,7 @@ let
 
   nvimLuaConfig = pkgs.runCommand "nvim-lua-config" { } ''
     mkdir -p "$out"
-    cp -R ${../config/nvim/lua}/. "$out/"
+    cp -R ${../modules/nvim/files/lua}/. "$out/"
     chmod -R u+w "$out"
     cat > "$out/nix-managed-plugins.lua" <<'EOF'
     ${nixManagedPluginsLua}

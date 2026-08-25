@@ -86,13 +86,13 @@ in
   '';
 
   configFiles = {
-    "aerospace/aerospace.toml".source = ../../config/aerospace/aerospace.toml;
+    "aerospace/aerospace.toml".source = ../../modules/aerospace/files/aerospace.toml;
     "aerospace/workspace-local" = {
-      source = ../../config/aerospace/workspace-local;
+      source = ../../modules/aerospace/files/workspace-local;
       executable = true;
     };
     "aerospace/assign-windows" = {
-      source = ../../config/aerospace/assign-windows;
+      source = ../../modules/aerospace/files/assign-windows;
       executable = true;
     };
   };

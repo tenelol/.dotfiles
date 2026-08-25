@@ -45,7 +45,7 @@ delib.module {
     environment.shells = with pkgs; [
       fish
     ];
-    # Keep system packages minimal; user-facing CLI tooling lives in home/home.nix.
+    # Keep system packages minimal; user-facing CLI tooling lives in denix home modules.
     environment.systemPackages = with pkgs; [
       fish
       git

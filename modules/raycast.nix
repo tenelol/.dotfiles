@@ -13,12 +13,12 @@ delib.module {
   home.ifEnabled = {
     home.file = {
       ".config/raycast/scripts/dotfiles-rebuild-macbook.sh" = {
-        source = ../config/raycast/scripts/dotfiles-rebuild-macbook.sh;
+        source = ./raycast/files/scripts/dotfiles-rebuild-macbook.sh;
         executable = true;
       };
 
       ".config/raycast/scripts/open-ghostty.sh" = {
-        source = ../config/raycast/scripts/open-ghostty.sh;
+        source = ./raycast/files/scripts/open-ghostty.sh;
         executable = true;
       };
     };

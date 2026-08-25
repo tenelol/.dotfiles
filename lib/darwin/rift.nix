@@ -107,17 +107,17 @@ in
   '';
 
   configFiles = {
-    "rift/config.toml".source = ../../config/rift/config.toml;
+    "rift/config.toml".source = ../../modules/rift/files/config.toml;
     "rift/assign-windows" = {
-      source = ../../config/rift/assign-windows;
+      source = ../../modules/rift/files/assign-windows;
       executable = true;
     };
     "rift/sketchybar-workspace-subscribe" = {
-      source = ../../config/rift/sketchybar-workspace-subscribe;
+      source = ../../modules/rift/files/sketchybar-workspace-subscribe;
       executable = true;
     };
     "rift/apply-horizontal-fullscreen" = {
-      source = ../../config/rift/apply-horizontal-fullscreen;
+      source = ../../modules/rift/files/apply-horizontal-fullscreen;
       executable = true;
     };
   };

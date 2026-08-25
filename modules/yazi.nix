@@ -11,7 +11,7 @@ delib.module {
   home.always = lib.mkIf (!host.isServer) (
     {
       home.packages = lib.optionals pkgs.stdenv.hostPlatform.isLinux [ pkgs.yazi ];
-      xdg.configFile."yazi".source = ../config/yazi;
+      xdg.configFile."yazi".source = ./yazi/files;
     }
     // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
       xdg.mimeApps = {

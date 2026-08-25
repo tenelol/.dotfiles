@@ -1,4 +1,0 @@
-# Use a custom theme from ~/.config/walker/themes.
-theme = "liquid-glass"
-theme_location = ["~/.config/walker/themes"]
-hotreload_theme = true

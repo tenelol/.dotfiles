@@ -7,7 +7,7 @@ delib.module {
   home.ifEnabled = {
     xdg.configFile."herdr/config.toml" = {
       force = true;
-      source = ../config/herdr/config.toml;
+      source = ./herdr/files/config.toml;
     };
   };
 }

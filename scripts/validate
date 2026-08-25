@@ -36,7 +36,7 @@ run_structure_check() {
       failed=1
     fi
   done < <(
-    find flake.nix hosts modules rices home packages lib shared \
+    find flake.nix hosts modules rices packages lib shared \
       -type f \
       -name '*.nix' \
       -print 2>/dev/null | sort

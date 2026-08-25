@@ -11,7 +11,7 @@ let
   isDesktop = isDarwinDesktop || isLinuxDesktop;
   # Give Linux apps a macOS-style Command layer without running Kinto's mutable
   # installer. macOS still uses common.kbd unchanged.
-  linuxMacConfig = builtins.readFile ../config/kanata/linux-mac.kbd;
+  linuxMacConfig = builtins.readFile ./kanata/files/linux-mac.kbd;
   darwinKanata = import ../lib/darwin/kanata.nix { inherit profile; };
 in
 delib.module {
@@ -54,8 +54,8 @@ delib.module {
       brews = [ "tener/dotfiles/kanata-with-cmd" ];
     };
 
-    environment.etc."kanata/kanata.kbd".source = ../config/kanata/kanata.kbd;
-    environment.etc."kanata/common.kbd".source = ../config/kanata/common.kbd;
+    environment.etc."kanata/kanata.kbd".source = ./kanata/files/kanata.kbd;
+    environment.etc."kanata/common.kbd".source = ./kanata/files/common.kbd;
 
     launchd.daemons.kanata = darwinKanata.daemon;
 

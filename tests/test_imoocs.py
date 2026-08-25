@@ -6,7 +6,7 @@ from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-SCRIPT_PATH = REPO_ROOT / "config" / "scripts" / "imoocs"
+SCRIPT_PATH = REPO_ROOT / "packages" / "imoocs" / "imoocs"
 
 
 def load_imoocs_python():

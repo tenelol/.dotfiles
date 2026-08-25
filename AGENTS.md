@@ -27,7 +27,10 @@
 ## denix structure
 - `hosts/<name>/default.nix` should stay thin: host metadata plus hardware imports.
 - Shared and host-specific behavior belongs in `modules/`.
-- `denix` auto-discovers `hosts/` and `modules/`, so new `.nix` files should be committed to Git if they are meant to participate in flake evaluation.
+- Express integrated Home Manager behavior through each denix module's `home.*` sections; do not add a separate shared `home/` module tree.
+- Colocate deployed non-Nix sources under the owning `modules/<feature>/files/` directory. Package-owned sources belong beside their definition in `packages/`.
+- `denix` recursively auto-discovers `.nix` files in `hosts/`, `modules/`, and `rices/`, so every `.nix` file there must be a denix module or an explicitly excluded generated hardware module.
+- Do not manually import local denix modules. Keep `imports` for external Nix modules, generated hardware modules, and deliberate reusable-module boundaries.
 - `lib/` is for explicitly imported helpers and generated-data builders; keep bloat-prone implementation details there instead of growing auto-discovered modules.
 - `legacy/` is not part of the active flake unless the user explicitly asks to revive or compare it.
 

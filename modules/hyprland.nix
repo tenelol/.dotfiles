@@ -25,6 +25,6 @@ delib.module {
   };
 
   home.ifEnabled = lib.mkIf isLinuxDesktop {
-    xdg.configFile."hypr/hyprland.conf".source = ../config/hypr/persona.conf;
+    xdg.configFile."hypr/hyprland.conf".source = ./hyprland/files/persona.conf;
   };
 }

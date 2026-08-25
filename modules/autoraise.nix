@@ -60,6 +60,6 @@ delib.module {
   home.ifEnabled = lib.mkIf isDarwinDesktop {
     home.packages = [ autoraisePackage ];
 
-    xdg.configFile."AutoRaise/config".source = ../config/autoraise/config;
+    xdg.configFile."AutoRaise/config".source = ./autoraise/files/config;
   };
 }
