@@ -3,6 +3,7 @@ result
 result-*
 .direnv
 .nvimlog
+.playwright-mcp/
 __pycache__/
 node_modules/
 *.pyc
