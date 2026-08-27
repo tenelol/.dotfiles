@@ -30,8 +30,7 @@ matcher = "^Bash$"
   statusMessage = "Checking final Vault capture gate"
 
 [mcp_servers."vault-context"]
-command = "node"
-args = ["/Users/tener/.codex/mcp/vault-context-mcp/dist/src/server.js"]
+command = "/Users/tener/.codex/mcp/vault-context-mcp/bin/vault-context-server"
 
 [mcp_servers."vault-context".env]
 VAULT_CONTEXT_ROOT = "/Users/tener/obsidian"

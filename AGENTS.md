@@ -67,4 +67,10 @@
 - `<Title>` must be imperative present tense and concise.
 - Issue number is optional and not required here.
 - Merge/Revert commits may keep default messages.
+## Project Context
+
+- `.codex/project-context.json`の安定した`project_key`から中央Vault manifestを解決する。
+- substantive turnごとにrouteを検証し、manifestが列挙する共通protocolだけを読む。
+- 永続contextや生成viewをrepositoryへ複製しない。
+
 </INSTRUCTIONS>

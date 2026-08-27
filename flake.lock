@@ -592,11 +592,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1786122842,
-        "narHash": "sha256-L9PmnCD8Rn/VDt8AHZVOKt5KUx1yb8B5SrODYn8+OCs=",
+        "lastModified": 1787841337,
+        "narHash": "sha256-71waGhTbbGevpjNQq+PiSQzQgjUjyUchJyKWu8ale0c=",
         "ref": "refs/heads/main",
-        "rev": "62242b83c40c453e9d21ce88873e5fe91a60e03f",
-        "revCount": 9,
+        "rev": "fc0e65cb69d0951e793294e0a4837bd84c3d7122",
+        "revCount": 10,
         "type": "git",
         "url": "ssh://git@github.com/tenelol/vault-context.git"
       },
