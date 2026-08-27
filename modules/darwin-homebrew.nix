@@ -56,6 +56,7 @@ delib.module {
         "mas"
         "mysql"
         "node"
+        "pi-coding-agent"
         "pkgconf"
         "platformio"
         "pnpm"
