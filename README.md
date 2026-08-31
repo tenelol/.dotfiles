@@ -40,13 +40,13 @@
 
 | Rice | Window management | Appearance |
 | --- | --- | --- |
-| `mac` | Native macOS | Default wallpaper and Ghostty theme |
-| `rift` | Rift | Rift wallpaper and Ghostty theme |
-| `aerospace` | AeroSpace + AutoRaise | AeroSpace wallpaper and Ghostty / SketchyBar / JankyBorders theme |
+| `mac` | Native macOS | wallpaper|
+| `rift` | Rift | wallpaper |
+| `aerospace` | AeroSpace + AutoRaise | wallpaper |
 
 ### Linux
 
 | Rice | Window management | Appearance |
 | --- | --- | --- |
-| `niri` | Niri | Black wallpaper |
-| `hyprland` | Hyprland | Hyprland wallpaper |
+| `niri` | Niri | wallpaper |
+| `hyprland` | Hyprland | wallpaper |
