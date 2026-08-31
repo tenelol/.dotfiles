@@ -34,32 +34,9 @@
 | [`.codex/skills`](./.codex/skills) | Git-managed user-authored Codex skills |
 | [`secrets`](./secrets) | sops-nix encrypted secrets |
 
+## Rice
 
-## Commands
-
-### Diagnose
-
-```sh
-dotfiles doctor
-dotfiles doctor --no-eval
-```
-
-### Validate when explicitly requested
-
-```sh
-nix flake check --all-systems --no-build
-```
-
-### Linux
-
-```sh
-nh os switch . -H surface
-
-nh os switch . -H nvidia-desktop
-```
-
-### macOS
-
-```sh
-nh darwin switch . -H macbook-rift
-```
+| Rice | Window management | Appearance |
+| --- | --- | --- |
+| `rift` | Rift | Rift wallpaper and Ghostty theme |
+| `aerospace` | AeroSpace + AutoRaise | AeroSpace wallpaper and Ghostty / SketchyBar / JankyBorders theme |
