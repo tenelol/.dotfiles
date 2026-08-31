@@ -30,16 +30,10 @@ let
         test -L ${vaultContextMcp}/share/vault-context-mcp/scripts/migrate-v2.mjs
         test -x ${vaultContextMcp}/share/vault-context-mcp/bin/vault-context
         test -x ${vaultContextMcp}/share/vault-context-mcp/bin/vault-context-server
-        PYTHONDONTWRITEBYTECODE=1 python3 \
-          ${./vault-context/files/codex/hooks}/tests/test_inject_vault_context_workflow.py -v
-        PYTHONDONTWRITEBYTECODE=1 python3 \
-          ${./vault-context/files/codex/hooks}/tests/test_vault_capture_gate_hooks.py -v
-        PYTHONDONTWRITEBYTECODE=1 python3 \
-          ${./vault-context/files/codex/hooks}/tests/test_enforce_worktree_layout.py -v
         DOTFILES_REPOSITORY=${../.} PYTHONDONTWRITEBYTECODE=1 python3 \
-          ${../tests}/test_sync_vault_context_runtime.py -v
+          ${./vault-context/tests}/test_sync_vault_context_runtime.py -v
         DOTFILES_REPOSITORY=${../.} PYTHONDONTWRITEBYTECODE=1 python3 \
-          ${../tests}/test_vault_git_sync.py -v
+          ${./vault-context/tests}/test_vault_git_sync.py -v
         touch "$out"
       '';
   vaultContextRuntime = pkgs.runCommand "vault-context-runtime" { } ''
@@ -103,6 +97,10 @@ delib.module {
     home.packages = [ pkgs.sqlite ];
 
     home.file = {
+      ".codex/AGENTS.md" = {
+        source = ./vault-context/files/codex/AGENTS.md;
+        force = true;
+      };
       ".codex/bin/vault-context" = {
         source = "${vaultContextCli}/bin/vault-context";
         executable = true;
@@ -111,18 +109,6 @@ delib.module {
         source = "${codexContextCli}/bin/codex-context";
         executable = true;
       };
-      ".codex/hooks/inject-vault-context-workflow.py" = {
-        source = ./vault-context/files/codex/hooks/inject-vault-context-workflow.py;
-      };
-      ".codex/hooks/mark-vault-capture-gate.py" = {
-        source = ./vault-context/files/codex/hooks/mark-vault-capture-gate.py;
-      };
-      ".codex/hooks/ensure-vault-capture-gate.py" = {
-        source = ./vault-context/files/codex/hooks/ensure-vault-capture-gate.py;
-      };
-      ".codex/hooks/enforce-worktree-layout.py" = {
-        source = ./vault-context/files/codex/hooks/enforce-worktree-layout.py;
-      };
       ".local/bin/sync-vault-context-runtime" = {
         source = "${syncRuntime}/bin/sync-vault-context-runtime";
         executable = true;
@@ -130,6 +116,7 @@ delib.module {
       ".local/bin/vault-git-sync" = {
         source = "${vaultGitSync}/bin/vault-git-sync";
         executable = true;
+        force = true;
       };
     };
 

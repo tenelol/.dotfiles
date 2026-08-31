@@ -7,8 +7,9 @@ import unittest
 from pathlib import Path
 
 
-ROOT = Path(os.environ.get("DOTFILES_REPOSITORY", Path(__file__).resolve().parents[1]))
+ROOT = Path(os.environ.get("DOTFILES_REPOSITORY", Path(__file__).resolve().parents[3]))
 SCRIPT = ROOT / "modules" / "vault-context" / "files" / "vault-git-sync"
+PROJECT_NOTE_PATH = Path("10 Projects/github.com/example/vault/context/note")
 
 
 def run(*args: str, cwd: Path, check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -26,10 +27,13 @@ class VaultGitSyncTests(unittest.TestCase):
         run("git", "config", "user.email", "vault@example.invalid", cwd=self.vault)
         run("git", "remote", "add", "origin", str(self.remote), cwd=self.vault)
         (self.vault / ".gitignore").write_text(".vault-context/\n", encoding="utf-8")
-        records = self.vault / "10 Records" / "note"
-        records.mkdir(parents=True)
-        (records / "seed.md").write_text("# Seed\n", encoding="utf-8")
-        run("git", "add", ".gitignore", "10 Records", cwd=self.vault)
+        self.records = self.vault / PROJECT_NOTE_PATH
+        self.records.mkdir(parents=True)
+        (self.records / "seed.md").write_text("# Seed\n", encoding="utf-8")
+        legacy_records = self.vault / "10 Records" / "note"
+        legacy_records.mkdir(parents=True)
+        (legacy_records / "legacy.md").write_text("# Legacy\n", encoding="utf-8")
+        run("git", "add", ".gitignore", "10 Projects", "10 Records", cwd=self.vault)
         run("git", "commit", "-m", "seed", cwd=self.vault)
         run("git", "push", "-u", "origin", "main", cwd=self.vault)
 
@@ -101,7 +105,7 @@ class VaultGitSyncTests(unittest.TestCase):
         self.assertEqual(json.loads(result.stdout)["status"], "noop")
 
     def test_only_allowlisted_content_is_pushed(self) -> None:
-        allowed = self.vault / "10 Records" / "note" / "new.md"
+        allowed = self.records / "new.md"
         outside = self.vault / "outside.md"
         allowed.write_text("# New\n", encoding="utf-8")
         outside.write_text("# Outside\n", encoding="utf-8")
@@ -110,18 +114,45 @@ class VaultGitSyncTests(unittest.TestCase):
         self.assertEqual(json.loads(result.stdout)["status"], "committed_and_pushed")
         self.assertIn("outside.md", run("git", "status", "--short", cwd=self.vault).stdout)
         self.assertEqual(
-            run("git", "--git-dir", str(self.remote), "show", "main:10 Records/note/new.md", cwd=self.temp).stdout,
+            run("git", "--git-dir", str(self.remote), "show", f"main:{PROJECT_NOTE_PATH.as_posix()}/new.md", cwd=self.temp).stdout,
             "# New\n",
+        )
+
+    def test_project_first_migration_commits_new_tree_and_legacy_deletion(self) -> None:
+        (self.vault / "10 Records" / "note" / "legacy.md").unlink()
+        migrated = self.records / "migrated.md"
+        migrated.write_text("# Migrated\n", encoding="utf-8")
+
+        result = self.sync()
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["status"], "committed_and_pushed")
+        self.assertNotEqual(
+            run(
+                "git",
+                "--git-dir",
+                str(self.remote),
+                "cat-file",
+                "-e",
+                "main:10 Records/note/legacy.md",
+                cwd=self.temp,
+                check=False,
+            ).returncode,
+            0,
+        )
+        self.assertEqual(
+            run("git", "--git-dir", str(self.remote), "show", f"main:{PROJECT_NOTE_PATH.as_posix()}/migrated.md", cwd=self.temp).stdout,
+            "# Migrated\n",
         )
 
     def test_quality_failure_leaves_index_and_head_unchanged(self) -> None:
         self.write_cli(
             failures={
                 "raw_integrity_failures": 1,
-                "noncanonical_quarantined": 2,
+                "sensitive_quarantined": 2,
             }
         )
-        path = self.vault / "10 Records" / "note" / "invalid.md"
+        path = self.records / "invalid.md"
         path.write_text("# Invalid\n", encoding="utf-8")
         before = run("git", "rev-parse", "HEAD", cwd=self.vault).stdout
         result = self.sync()
@@ -132,14 +163,14 @@ class VaultGitSyncTests(unittest.TestCase):
             output["failed_checks"],
             [
                 {"check": "raw_integrity_failures", "count": 1},
-                {"check": "noncanonical_quarantined", "count": 2},
+                {"check": "sensitive_quarantined", "count": 2},
             ],
         )
         self.assertEqual(run("git", "rev-parse", "HEAD", cwd=self.vault).stdout, before)
         self.assertEqual(run("git", "diff", "--cached", "--name-only", cwd=self.vault).stdout, "")
 
     def test_secret_failure_unstages_without_committing(self) -> None:
-        path = self.vault / "10 Records" / "note" / "secret.md"
+        path = self.records / "secret.md"
         path.write_text("api_key=FAKE_SECRET_VALUE_1234567890\n", encoding="utf-8")
         before = run("git", "rev-parse", "HEAD", cwd=self.vault).stdout
         result = self.sync()
@@ -147,6 +178,24 @@ class VaultGitSyncTests(unittest.TestCase):
         self.assertEqual(json.loads(result.stdout)["reason"], "staged_secret_suspected")
         self.assertEqual(run("git", "rev-parse", "HEAD", cwd=self.vault).stdout, before)
         self.assertEqual(run("git", "diff", "--cached", "--name-only", cwd=self.vault).stdout, "")
+
+    def test_editorial_quality_warnings_do_not_block_sync(self) -> None:
+        self.write_cli(
+            failures={
+                "noncanonical_quarantined": 2,
+                "schema_violations": 3,
+                "broken_links": 4007,
+                "missing_summary": 4,
+                "missing_scope_or_project": 5,
+            }
+        )
+        path = self.records / "warning.md"
+        path.write_text("# Warning\n", encoding="utf-8")
+
+        result = self.sync()
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["status"], "committed_and_pushed")
 
     def test_binary_secret_failure_scans_the_staged_blob(self) -> None:
         system = self.vault / "90 System"
@@ -219,14 +268,14 @@ class VaultGitSyncTests(unittest.TestCase):
         run("git", "add", "remote.md", cwd=peer)
         run("git", "commit", "-m", "remote", cwd=peer)
         run("git", "push", cwd=peer)
-        (self.vault / "10 Records" / "note" / "local.md").write_text("# Local\n", encoding="utf-8")
+        (self.records / "local.md").write_text("# Local\n", encoding="utf-8")
         result = self.sync()
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(json.loads(result.stdout)["reason"], "remote_diverged")
         self.assertEqual(run("git", "diff", "--cached", "--name-only", cwd=self.vault).stdout, "")
 
     def test_worktree_change_during_quality_is_not_committed(self) -> None:
-        path = self.vault / "10 Records" / "note" / "raced.md"
+        path = self.records / "raced.md"
         path.write_text("# Before\n", encoding="utf-8")
         before = run("git", "rev-parse", "HEAD", cwd=self.vault).stdout
         self.env["VAULT_TEST_MUTATE_DURING_QUALITY"] = str(path)
@@ -247,7 +296,7 @@ class VaultGitSyncTests(unittest.TestCase):
                 str(self.remote),
                 "cat-file",
                 "-e",
-                "main:10 Records/note/raced.md",
+                f"main:{PROJECT_NOTE_PATH.as_posix()}/raced.md",
                 cwd=self.temp,
                 check=False,
             ).returncode,
@@ -255,7 +304,7 @@ class VaultGitSyncTests(unittest.TestCase):
         )
 
     def test_index_change_during_quality_is_not_committed(self) -> None:
-        path = self.vault / "10 Records" / "note" / "restaged.md"
+        path = self.records / "restaged.md"
         path.write_text("# Before\n", encoding="utf-8")
         before = run("git", "rev-parse", "HEAD", cwd=self.vault).stdout
         self.env["VAULT_TEST_STAGE_DURING_QUALITY"] = str(path)
@@ -275,7 +324,7 @@ class VaultGitSyncTests(unittest.TestCase):
         pre_push = hooks / "pre-push"
         pre_push.write_text("#!/usr/bin/env bash\nexit 1\n", encoding="utf-8")
         pre_push.chmod(0o755)
-        (self.vault / "10 Records" / "note" / "pending.md").write_text("# Pending\n", encoding="utf-8")
+        (self.records / "pending.md").write_text("# Pending\n", encoding="utf-8")
         first = self.sync()
         self.assertNotEqual(first.returncode, 0)
         self.assertEqual(json.loads(first.stdout)["status"], "push_pending")

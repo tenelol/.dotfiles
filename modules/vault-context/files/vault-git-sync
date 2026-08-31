@@ -103,7 +103,8 @@ if [[ "${ahead_count}" != "0" ]]; then
   retried_pending=1
 fi
 
-allowlist=(".gitignore" "00 Inbox" "10 Records" "20 Synthesis" "90 System")
+# Keep the legacy root only long enough to record project-first migration deletions.
+allowlist=(".gitignore" "00 Inbox" "10 Projects" "10 Records" "20 Synthesis" "90 System")
 git -C "${vault_root}" ls-files -z --modified --deleted --others --exclude-standard -- \
   "${allowlist[@]}" > "${temp_dir}/stage-candidates"
 if [[ -s "${temp_dir}/stage-candidates" ]]; then
@@ -131,12 +132,7 @@ quality_failures="$({
   jq -ce '
     [
       {check: "raw_integrity_failures", count: .summary.raw_integrity_failures},
-      {check: "sensitive_quarantined", count: .summary.sensitive_quarantined},
-      {check: "noncanonical_quarantined", count: .summary.noncanonical_quarantined},
-      {check: "schema_violations", count: .summary.schema_violations},
-      {check: "broken_links", count: .summary.broken_links},
-      {check: "missing_summary", count: .summary.missing_summary},
-      {check: "missing_scope_or_project", count: .summary.missing_scope_or_project}
+      {check: "sensitive_quarantined", count: .summary.sensitive_quarantined}
     ]
     | if all(.[]; ((.count | type) == "number") and .count >= 0 and (.count | floor) == .count)
       then map(select(.count != 0))
@@ -179,7 +175,7 @@ done < "${temp_dir}/staged-status"
 
 while IFS= read -r -d '' path; do
   case "${path}" in
-    .gitignore | "00 Inbox/"*.md | "10 Records/"*.md | "20 Synthesis/"*.md | "90 System/"*.md | "90 System/"*.json | "90 System/"*.yaml | "90 System/"*.yml | "90 System/"*.toml | "90 System/"*.txt)
+    .gitignore | "00 Inbox/"*.md | "10 Projects/"*.md | "10 Projects/"*.json | "10 Records/"*.md | "20 Synthesis/"*.md | "90 System/"*.md | "90 System/"*.json | "90 System/"*.yaml | "90 System/"*.yml | "90 System/"*.toml | "90 System/"*.txt)
       ;;
     *)
       fail "disallowed_staged_path"

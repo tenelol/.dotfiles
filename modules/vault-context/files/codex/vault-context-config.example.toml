@@ -1,34 +1,5 @@
 # Non-secret fragment only. Codex owns ~/.codex/config.toml.
 
-[[hooks.PreToolUse]]
-matcher = "^Bash$"
-
-  [[hooks.PreToolUse.hooks]]
-  type = "command"
-  command = "python3 /Users/tener/.codex/hooks/enforce-worktree-layout.py"
-  timeout = 2
-  statusMessage = "Checking worktree layout"
-
-[[hooks.UserPromptSubmit]]
-  [[hooks.UserPromptSubmit.hooks]]
-  type = "command"
-  command = "python3 /Users/tener/.codex/hooks/inject-vault-context-workflow.py"
-  timeout = 5
-  statusMessage = "Injecting Obsidian Vault context"
-
-  [[hooks.UserPromptSubmit.hooks]]
-  type = "command"
-  command = "python3 /Users/tener/.codex/hooks/mark-vault-capture-gate.py"
-  timeout = 2
-  statusMessage = "Marking final Vault capture gate"
-
-[[hooks.Stop]]
-  [[hooks.Stop.hooks]]
-  type = "command"
-  command = "python3 /Users/tener/.codex/hooks/ensure-vault-capture-gate.py"
-  timeout = 2
-  statusMessage = "Checking final Vault capture gate"
-
 [mcp_servers."vault-context"]
 command = "/Users/tener/.codex/mcp/vault-context-mcp/bin/vault-context-server"
 

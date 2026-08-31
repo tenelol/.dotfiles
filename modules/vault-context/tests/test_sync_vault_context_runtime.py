@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 REPOSITORY = Path(
-    os.environ.get("DOTFILES_REPOSITORY", Path(__file__).resolve().parents[1])
+    os.environ.get("DOTFILES_REPOSITORY", Path(__file__).resolve().parents[3])
 )
 SCRIPT = REPOSITORY / "modules/vault-context/files/sync-vault-context-runtime"
 
