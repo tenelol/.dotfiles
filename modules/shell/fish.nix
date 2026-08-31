@@ -81,11 +81,14 @@ delib.module {
 
       '';
 
+      shellAliases = {
+        ls = "eza --icons";
+      };
+
       shellAbbrs = {
         cc = "claude";
         cg = "clang";
         cx = "codex";
-        ls = "eza --icons";
         nv = "nvim";
         rm = "gomi";
         tm = "tmux new-session -A -s main";
