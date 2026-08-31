@@ -7,7 +7,7 @@ delib.host {
 
   myconfig.boot.efiLimine = true;
   myconfig.nixbuild.enable = true;
-  rice = "persona";
+  rice = "niri";
 
   myconfig.nixos.desktop.networkBackend = "dhcpcd-resolved";
 

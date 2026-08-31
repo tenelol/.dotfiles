@@ -6,6 +6,12 @@
 }:
 let
   isLinuxDesktop = !host.isServer && builtins.match ".*-linux" host.system != null;
+  baseConfig = builtins.readFile ./hyprland/files/hyprland.conf;
+  displayConfig =
+    if host.name == "nvidia-desktop" then
+      builtins.readFile ./hyprland/files/nvidia-desktop.conf
+    else
+      "monitor = ,preferred,auto,1\n";
 in
 delib.module {
   name = "hyprland";
@@ -25,6 +31,6 @@ delib.module {
   };
 
   home.ifEnabled = lib.mkIf isLinuxDesktop {
-    xdg.configFile."hypr/hyprland.conf".source = ./hyprland/files/persona.conf;
+    xdg.configFile."hypr/hyprland.conf".text = displayConfig + "\n" + baseConfig;
   };
 }

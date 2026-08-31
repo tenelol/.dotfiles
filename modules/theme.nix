@@ -95,7 +95,7 @@ delib.module {
   options =
     with delib;
     moduleOptions {
-      wallpaper = strOption "wallpaper.png";
+      wallpaper = strOption (if pkgs.stdenv.hostPlatform.isLinux then "black.png" else "wallpaper.png");
       sketchybar = {
         transparent = strOption "0x00000000";
         glassBg = strOption "0x260b1018";

@@ -61,6 +61,17 @@
           lib.optional (builtins.pathExists hardwareConfiguration) hardwareConfiguration
         ) hostDirectories
       );
+      linuxServerHostPaths = [
+        ./hosts/adguard-home
+        ./hosts/nas
+        ./hosts/web-server
+        ./hosts/wsl
+      ];
+      linuxDesktopHostPaths = [
+        ./hosts/nvidia-desktop
+        ./hosts/surface
+      ];
+      darwinHostPaths = [ ./hosts/macbook ];
       profile = {
         username = "tener";
         gitName = "tenelol";
@@ -68,16 +79,16 @@
         sshPublicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFFkbcnmTY5/V7n2pf6Huiqdn8DPaR8qs0tHajYXQaIs";
       };
       mkConfigurations =
-        moduleSystem:
+        {
+          moduleSystem,
+          hostPaths,
+          ricePaths ? [ ],
+        }:
         denix.lib.configurations {
           inherit moduleSystem;
           homeManagerUser = profile.username;
 
-          paths = [
-            ./hosts
-            ./modules
-            ./rices
-          ];
+          paths = hostPaths ++ [ ./modules ] ++ ricePaths;
           # Keep generated hardware configs out of denix auto-discovery without
           # needing to update this list every time a new NixOS host is added.
           exclude = hardwareConfigurationExcludes;
@@ -87,7 +98,7 @@
             (base.withConfig {
               args.enable = true;
               hosts.features.features = [ "fullDesktop" ];
-              rices.enable = true;
+              rices.enable = ricePaths != [ ];
             })
           ];
 
@@ -122,10 +133,25 @@
           name: configuration: lib.nameValuePair "build-${name}" configuration.config.system.build.toplevel
         ) configurations;
 
-      # denix currently returns every host in both outputs, so filter them to keep
-      # the public flake interface aligned with the actual target platform.
-      nixosConfigurations = filterConfigurations isLinuxSystem (mkConfigurations "nixos");
-      darwinConfigurations = filterConfigurations isDarwinSystem (mkConfigurations "darwin");
+      # Keep rice expansion scoped to desktop hosts; server configurations do
+      # not import a rice module or expose meaningless rice variants.
+      nixosServerConfigurations = mkConfigurations {
+        moduleSystem = "nixos";
+        hostPaths = linuxServerHostPaths;
+      };
+      nixosDesktopConfigurations = mkConfigurations {
+        moduleSystem = "nixos";
+        hostPaths = linuxDesktopHostPaths;
+        ricePaths = [ ./rices/linux ];
+      };
+      nixosConfigurations = filterConfigurations isLinuxSystem (
+        nixosServerConfigurations // nixosDesktopConfigurations
+      );
+      darwinConfigurations = filterConfigurations isDarwinSystem (mkConfigurations {
+        moduleSystem = "darwin";
+        hostPaths = darwinHostPaths;
+        ricePaths = [ ./rices/darwin ];
+      });
       linuxCheckTargets = [
         "adguard-home"
         "surface"
@@ -139,8 +165,8 @@
         "macbook-aerospace"
         "macbook-mac"
       ];
-      # Keep every rice buildable, but avoid rechecking generated variants after
-      # Nix has already validated the public NixOS configurations.
+      # Evaluate the default host configurations in CI. Rice variants remain
+      # available as explicit switch targets without multiplying build checks.
       checkedNixosConfigurations = lib.getAttrs linuxCheckTargets nixosConfigurations;
       checkedConfigurations =
         checkedNixosConfigurations // lib.getAttrs darwinCheckTargets darwinConfigurations;
