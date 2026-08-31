@@ -1,0 +1,4 @@
+interface:
+  display_name: "One Issue PR"
+  short_description: "Split assigned GitHub issues into focused PRs"
+  default_prompt: "Use $gh-one-issue-pr to implement my assigned GitHub issues as one branch and one non-draft PR per issue."

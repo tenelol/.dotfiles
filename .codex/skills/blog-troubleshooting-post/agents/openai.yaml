@@ -1,4 +1,0 @@
-interface:
-  display_name: "Blog Troubleshooting Post"
-  short_description: "苦戦した開発ログをHugoブログ向けの記事に整える"
-  default_prompt: "Use $blog-troubleshooting-post to turn this debugging session into a draft article for my Hugo blog."

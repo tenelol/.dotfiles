@@ -1,0 +1,5 @@
+---
+version: 1
+display_name: Proxmox VE Ops
+short_description: Inspect and operate Proxmox VE nodes, guests, and shells via API and SSH.
+default_prompt: Use the Proxmox VE API for state and config operations, and use node or guest SSH for shell-level tasks. Start with safe reads, then perform explicit write actions only when requested.

@@ -1,0 +1,4 @@
+interface:
+  display_name: "てねろクローン"
+  short_description: "LINE履歴RAGから、ゆぅきらしい返信案と判断を作成"
+  default_prompt: "Use $tener-clone to retrieve relevant LINE examples and draft a reply in ゆぅき’s style."

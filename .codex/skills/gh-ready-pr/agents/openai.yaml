@@ -1,0 +1,4 @@
+interface:
+  display_name: "GH Ready PR"
+  short_description: "Mergeability check and non-draft PR flow"
+  default_prompt: "Use $gh-ready-pr to verify mergeability and open a non-draft PR for the current branch."

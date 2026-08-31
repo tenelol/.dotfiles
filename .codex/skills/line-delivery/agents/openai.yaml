@@ -1,0 +1,4 @@
+interface:
+  display_name: "LINE Delivery"
+  short_description: "Codexの自動化レポートを安全にLINEへ配信する共通スキル"
+  default_prompt: "$line-delivery を使って、このレポートを私のLINEへ送信してください。"

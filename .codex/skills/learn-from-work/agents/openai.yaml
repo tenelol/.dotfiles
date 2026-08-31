@@ -1,0 +1,6 @@
+interface:
+  display_name: "Learn from Work"
+  short_description: "Turn completed work into durable reviewed learnings"
+  default_prompt: "Use $learn-from-work to retrospect on this task, capture reusable evidence, and propose promotions without changing rules yet."
+policy:
+  allow_implicit_invocation: false

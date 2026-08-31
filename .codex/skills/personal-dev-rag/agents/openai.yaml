@@ -1,0 +1,14 @@
+interface:
+  display_name: "Personal Dev RAG"
+  short_description: "Search local developer memory via MCP"
+  default_prompt: "Use $personal-dev-rag to retrieve source-backed context for this coding task."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "personalDevRag"
+      description: "Local developer-memory RAG MCP server"
+      transport: "stdio"
+
+policy:
+  allow_implicit_invocation: true

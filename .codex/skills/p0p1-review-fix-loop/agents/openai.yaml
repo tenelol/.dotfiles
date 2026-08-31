@@ -1,0 +1,4 @@
+interface:
+  display_name: "P0/P1 Review Fix Loop"
+  short_description: "Fresh-agent review loop for P0/P1 fixes"
+  default_prompt: "Use $p0p1-review-fix-loop to create a fresh subagent for each review pass, fix actionable P0/P1 issues, and repeat until none remain."

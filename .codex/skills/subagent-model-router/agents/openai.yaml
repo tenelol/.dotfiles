@@ -1,0 +1,4 @@
+interface:
+  display_name: "Subagent Model Router"
+  short_description: "Route delegated work to explicit Codex models"
+  default_prompt: "Use $subagent-model-router to delegate these work packets with explicit model selection."

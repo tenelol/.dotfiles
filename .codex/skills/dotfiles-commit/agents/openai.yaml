@@ -1,4 +1,0 @@
-interface:
-  display_name: "Dotfiles Commit"
-  short_description: "Prepare commits for this dotfiles repo"
-  default_prompt: "Review the current diff, choose the correct Semantic Commit Message type and emoji for this repository, and prepare a concise commit message."
