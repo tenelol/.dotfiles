@@ -460,7 +460,7 @@ end
 
 return {
 	plugin.spec("image-nvim", {
-		lazy = true,
+		lazy = false,
 		opts = {
 			backend = "kitty",
 			processor = "magick_cli",
