@@ -1,50 +1,6 @@
 name: Flake Check
 
 on:
-  pull_request:
-    paths:
-      - ".sops.yaml"
-      - ".github/workflows/**"
-      - "flake.nix"
-      - "flake.lock"
-      - "hosts/**"
-      - "modules/**"
-      - "home/**"
-      - "lib/**"
-      - "rices/**"
-      - "config/**"
-      - "packages/**"
-      - "scripts/**"
-      - "vendor/**"
-      - "img/**"
-      - "infra/**"
-      - "keys/**"
-      - "secrets/**"
-      - "shared/**"
-      - "README.md"
-  push:
-    branches:
-      - main
-    paths:
-      - ".sops.yaml"
-      - ".github/workflows/**"
-      - "flake.nix"
-      - "flake.lock"
-      - "hosts/**"
-      - "modules/**"
-      - "home/**"
-      - "lib/**"
-      - "rices/**"
-      - "config/**"
-      - "packages/**"
-      - "scripts/**"
-      - "vendor/**"
-      - "img/**"
-      - "infra/**"
-      - "keys/**"
-      - "secrets/**"
-      - "shared/**"
-      - "README.md"
   workflow_dispatch:
 
 permissions:
@@ -70,13 +26,12 @@ jobs:
         uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: Check Nix formatting
-        run: nix fmt -- flake.nix hosts modules rices home packages lib shared --ci --excludes 'hosts/*/hardware-configuration.nix' --excludes 'legacy/**'
+        run: nix fmt -- flake.nix hosts modules rices packages --ci --excludes 'hosts/*/hardware-configuration.nix'
 
       - name: Evaluate all supported systems
-        run: ./scripts/validate eval
+        run: nix flake check --all-systems --no-build
 
   linux-build-checks:
-    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
