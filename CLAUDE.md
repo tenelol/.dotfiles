@@ -35,7 +35,7 @@
 - `flake.nix`: flake entrypoint; uses `denix.lib.configurations` to wire hosts and modules.
 - `hosts/`: thin per-host definitions (metadata + hardware import only).
 - `modules/`: denix auto-discovered shared and host-specific modules, with module-owned non-Nix assets under `files/`.
-- `rices/`: denix rice definitions (currently minimal — common wallpaper switching).
+- `rices/`: platform-specific denix rice definitions and shared wallpapers.
 - `packages/`: lightweight custom package definitions.
 
 ## Host inventory
