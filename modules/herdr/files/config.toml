@@ -2,3 +2,6 @@ onboarding = false
 
 [keys]
 prefix = "ctrl+b"
+
+[experimental]
+kitty_graphics = true
