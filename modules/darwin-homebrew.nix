@@ -116,6 +116,7 @@ delib.module {
         "google-chrome"
         "insomnia"
         "karabiner-elements"
+        "markdown-preview"
         "notion"
         {
           # Temporary: Homebrew marks this cask deprecated because it does not
@@ -124,6 +125,7 @@ delib.module {
           args.no_quarantine = true;
         }
         "raycast"
+        "rustcast"
         "tailscale-app"
         "thebrowsercompany-dia"
         "zed"
