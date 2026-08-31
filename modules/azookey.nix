@@ -1,9 +1,13 @@
 {
+  delib,
+  host,
   lib,
   pkgs,
   profile,
+  ...
 }:
 let
+  isMacbook = host.name == "macbook" && builtins.match ".*-darwin" host.system != null;
   azooKeyBundleID = "dev.ensan.inputmethod.azooKeyMac";
   abcInputSource = {
     InputSourceKind = "Keyboard Layout";
@@ -169,14 +173,30 @@ let
     ) inputSourceShortcutHotKeys
   );
 in
-{
-  inherit
-    enabledInputSources
-    enabledInputSourcesPlist
-    inputSourceShortcutCommands
-    selectInputSourceScript
-    selectedInputSources
-    selectedInputSourcesPlist
-    toggleInputSource
-    ;
+delib.module {
+  name = "darwin.azookey";
+
+  options = delib.singleEnableOption isMacbook;
+
+  darwin.ifEnabled = {
+    environment.systemPackages = [ toggleInputSource ];
+
+    system.defaults.CustomUserPreferences."com.apple.HIToolbox" = {
+      AppleEnabledInputSources = enabledInputSources;
+      AppleSelectedInputSources = selectedInputSources;
+    };
+
+    system.activationScripts.postActivation.text = lib.mkAfter ''
+      uid="$(id -u ${profile.username})"
+
+      launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/defaults write \
+        com.apple.HIToolbox AppleEnabledInputSources ${lib.escapeShellArg enabledInputSourcesPlist}
+      launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/defaults write \
+        com.apple.HIToolbox AppleSelectedInputSources ${lib.escapeShellArg selectedInputSourcesPlist}
+      launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/swift \
+        ${selectInputSourceScript}
+
+      ${inputSourceShortcutCommands}
+    '';
+  };
 }

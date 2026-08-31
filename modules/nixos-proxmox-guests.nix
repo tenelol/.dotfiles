@@ -2,6 +2,7 @@
   delib,
   host,
   inputs,
+  lib,
   profile,
   ...
 }:
@@ -18,16 +19,29 @@ delib.module {
   options = delib.singleEnableOption isProxmoxGuest;
 
   nixos.always = {
-    imports = [
-      inputs.sops-nix.nixosModules.sops
-      ../shared/nixos/modules/headless.nix
-      ../shared/nixos/modules/proxmox-guest.nix
-      ../shared/nixos/modules/server-security.nix
-    ];
+    imports = [ inputs.sops-nix.nixosModules.sops ];
   };
 
   nixos.ifEnabled = {
-    networking.hostName = host.name;
+    boot = {
+      growPartition = true;
+      initrd.availableKernelModules = [
+        "virtio_blk"
+        "virtio_pci"
+        "virtio_scsi"
+      ];
+      kernelModules = [
+        "virtio_balloon"
+        "virtio_console"
+      ];
+    };
+
+    networking = {
+      hostName = host.name;
+      useDHCP = lib.mkDefault true;
+      firewall.enable = true;
+    };
+
     nix.settings.trusted-users = [
       "root"
       profile.username
@@ -35,12 +49,45 @@ delib.module {
 
     sops.age.keyFile = "/var/lib/sops-nix/key.txt";
 
-    tenelol.headless.enable = true;
-    tenelol.proxmoxGuest.enable = true;
-    tenelol.serverSecurity = {
-      enable = true;
-      adminUsers = [ profile.username ];
-      authorizedKeyFiles = [ profile.sshPublicKey ];
+    services = {
+      cloud-init.enable = lib.mkForce false;
+      qemuGuest.enable = true;
+      logind.settings.Login = {
+        HandleLidSwitch = "ignore";
+        HandleLidSwitchDocked = "ignore";
+        HandleLidSwitchExternalPower = "ignore";
+      };
+      openssh = {
+        enable = true;
+        openFirewall = true;
+        settings = {
+          AllowUsers = [ profile.username ];
+          KbdInteractiveAuthentication = false;
+          PasswordAuthentication = false;
+          PermitRootLogin = "no";
+        };
+      };
     };
+
+    systemd.sleep.settings.Sleep = {
+      AllowSuspend = "no";
+      AllowHibernation = "no";
+      AllowHybridSleep = "no";
+      AllowSuspendThenHibernate = "no";
+    };
+
+    users.users.${profile.username}.openssh.authorizedKeys.keys = [ profile.sshPublicKey ];
+
+    security.sudo.extraRules = [
+      {
+        users = [ profile.username ];
+        commands = [
+          {
+            command = "ALL";
+            options = [ "NOPASSWD" ];
+          }
+        ];
+      }
+    ];
   };
 }

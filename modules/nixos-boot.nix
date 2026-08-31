@@ -20,7 +20,7 @@ delib.module {
         limine = {
           enable = true;
           style = {
-            wallpapers = [ ../img/rift.png ];
+            wallpapers = [ ../rices/wallpapers/rift.png ];
             wallpaperStyle = "centered";
           };
         };

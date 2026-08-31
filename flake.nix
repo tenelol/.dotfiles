@@ -65,7 +65,7 @@
         username = "tener";
         gitName = "tenelol";
         gitEmail = "tenelol@tenelol.dev";
-        sshPublicKey = ./keys/tener.pub;
+        sshPublicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFFkbcnmTY5/V7n2pf6Huiqdn8DPaR8qs0tHajYXQaIs";
       };
       mkConfigurations =
         moduleSystem:

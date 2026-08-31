@@ -15,7 +15,7 @@ delib.module {
     boot.kernelPackages = pkgs.linuxPackages_latest;
 
     users.users.${profile.username} = {
-      openssh.authorizedKeys.keyFiles = [ profile.sshPublicKey ];
+      openssh.authorizedKeys.keys = [ profile.sshPublicKey ];
     };
 
     services.openssh = {

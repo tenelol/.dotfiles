@@ -7,24 +7,58 @@
   ...
 }:
 let
-  hazkey = import ../lib/nixos/hazkey.nix { inherit host inputs pkgs; };
+  nix-hazkey = inputs.nix-hazkey;
+  inherit (pkgs.stdenv.hostPlatform) system;
+
+  hosts = [
+    "surface"
+    "nvidia-desktop"
+  ];
+
+  enabled = builtins.elem host.name hosts;
+  hasPackages = builtins.hasAttr system nix-hazkey.packages;
+  hasX86_64Binary = system == "x86_64-linux";
+  isSupportedSystem = hasPackages && hasX86_64Binary;
+
+  hazkeyVersion = "0.2.1";
+  hazkeySrc =
+    if hasX86_64Binary then
+      pkgs.fetchzip {
+        name = "fcitx5-hazkey-bin";
+        version = hazkeyVersion;
+        urls = [
+          "https://github.com/7ka-Hiira/fcitx5-hazkey/releases/download/${hazkeyVersion}/fcitx5-hazkey-${hazkeyVersion}-x86_64.tar.gz"
+          "https://ghproxy.net/https://github.com/7ka-Hiira/fcitx5-hazkey/releases/download/${hazkeyVersion}/fcitx5-hazkey-${hazkeyVersion}-x86_64.tar.gz"
+          "https://github.moeyy.xyz/https://github.com/7ka-Hiira/fcitx5-hazkey/releases/download/${hazkeyVersion}/fcitx5-hazkey-${hazkeyVersion}-x86_64.tar.gz"
+        ];
+        hash = "sha256-jwv1UTRz/FVHmeaumwP45Q4JZcSuZHTrF2/PAzrxeC8=";
+        stripRoot = false;
+      }
+    else
+      null;
+
+  packages = if hasPackages then nix-hazkey.packages.${system} else null;
+  overrideHazkeySrc =
+    name:
+    if isSupportedSystem then
+      packages.${name}.overrideAttrs (_: {
+        src = hazkeySrc;
+      })
+    else
+      null;
+
 in
 delib.module {
   name = "nixos.hazkey";
 
-  options = delib.singleEnableOption (hazkey.enabled && hazkey.isSupportedSystem);
+  options = delib.singleEnableOption (enabled && isSupportedSystem);
 
   nixos.always = {
     imports = [ inputs.nix-hazkey.nixosModules.hazkey ];
 
     warnings =
       lib.optional
-        (
-          hazkey.enabled
-          && !host.isServer
-          && builtins.match ".*-linux" host.system != null
-          && !hazkey.isSupportedSystem
-        )
+        (enabled && !host.isServer && builtins.match ".*-linux" host.system != null && !isSupportedSystem)
         "nixos.hazkey is enabled for ${host.name}, but the pinned upstream binary overrides are only packaged for x86_64-linux.";
   };
 
@@ -36,7 +70,7 @@ delib.module {
         waylandFrontend = true;
         addons = with pkgs; [
           fcitx5-skk
-          hazkey.fcitx5Addon
+          (overrideHazkeySrc "fcitx5-hazkey")
         ];
       };
     };
@@ -47,11 +81,11 @@ delib.module {
       enable = true;
       installFcitx5Addon = false;
       installHazkeySettings = false;
-      server.package = hazkey.server;
-      dictionary.package = hazkey.dictionary;
-      zenzai.package = hazkey.packages.zenzai_v3_1-small;
+      server.package = overrideHazkeySrc "hazkey-server";
+      dictionary.package = overrideHazkeySrc "dictionary";
+      zenzai.package = packages.zenzai_v3_1-small;
     };
 
-    environment.systemPackages = [ hazkey.settings ];
+    environment.systemPackages = [ (overrideHazkeySrc "hazkey-settings") ];
   };
 }

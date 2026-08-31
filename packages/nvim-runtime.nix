@@ -2,7 +2,7 @@
 let
   inherit (pkgs) lib;
 
-  winresizer = import ../packages/winresizer.nix { inherit pkgs; };
+  winresizer = import ./winresizer.nix { inherit pkgs; };
 
   jupyterPythonPackages = ps: [
     ps.cairosvg
