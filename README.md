@@ -1,3 +1,7 @@
+# dotfiles
+
+個人環境向けの`denix`ベースdotfilesです。1つのflakeからNixOSと`nix-darwin`を管理し、Home Managerは各system configurationへ統合しています。操作には`nh`を使います。
+
 ## Stack
 
 - NixOS / nix-darwin / Home Manager
@@ -27,11 +31,18 @@
 | [`flake.nix`](./flake.nix) | inputs and configuration outputs |
 | [`hosts`](./hosts) | host identity, platform, hardware imports |
 | [`modules`](./modules) | denix-discovered system/Home Manager modules and their colocated `files/` assets |
-| [`rices`](./rices) | theme and desktop variants |
-| [`lib`](./lib) | explicitly imported helpers |
-| [`packages`](./packages) | custom package definitions and package-owned sources |
+| [`rices`](./rices) | theme and desktop variants, including wallpapers |
+| [`packages`](./packages) | custom packages, runtime builders, package-owned sources, and their tests |
+| [`.codex/skills`](./.codex/skills) | Git-managed user-authored Codex skills |
+| [`secrets`](./secrets) | sops-nix encrypted secrets |
 
-`hosts/`、`modules/`、`rices/` 内のNixファイルはdenixが再帰的に自動で読みます。Home Manager設定も各denix moduleの `home.*` に記述し、アプリ固有の非Nixファイルは所有moduleの `files/` に併置します。新しいNixファイルはGit管理下に置きます。
+`hosts/`、`modules/`、`rices/`内のNixファイルはdenixが再帰的に自動で読みます。Home Manager設定も各denix moduleの`home.*`に記述し、アプリ固有の非Nixファイルは所有moduleの`files/`に併置します。明示的にimportするpackage/runtime生成は`packages/`、rice用画像は`rices/wallpapers/`、機能固有テストは所有元の`tests/`へ置きます。
+
+`.codex/skills/`はユーザー作成スキルの正本です。`codex-skills` moduleが`~/.codex/skills/`へ配備し、Codex管理の`.system`やplugin/runtimeスキルは対象にしません。
+
+## Workflow
+
+コミットメッセージは絵文字を含めず、`<type>: <title>`形式に統一します。GitHub ActionsのFlake Checkは`workflow_dispatch`による手動実行だけです。通常の変更では対象artifactのテスト・構文確認・diff確認を行い、Nix評価、host build、switchは明示的に依頼した場合だけ実行します。
 
 ## Commands
 
@@ -42,7 +53,7 @@ dotfiles doctor
 dotfiles doctor --no-eval
 ```
 
-### Check
+### Validate when explicitly requested
 
 ```sh
 nix flake check --all-systems --no-build
@@ -65,4 +76,4 @@ nh darwin build . -H macbook-rift
 nh darwin switch . -H macbook-rift
 ```
 
-`macbook-rift`、`macbook-aerospace`、`macbook-mac` のいずれかを明示して切り替えます。
+`macbook-rift`、`macbook-aerospace`、`macbook-mac`のいずれかを明示して切り替えます。build後のswitchも明示的に指定した場合だけ実行します。
