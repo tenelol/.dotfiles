@@ -1,0 +1,64 @@
+#!/bin/sh
+set -eu
+
+RIFT_CLI="${RIFT_CLI:-/opt/homebrew/bin/rift-cli}"
+JQ="${JQ:-/usr/bin/jq}"
+SHLOCK="${SHLOCK:-/usr/bin/shlock}"
+SLEEP="${SLEEP:-/bin/sleep}"
+LOCK_FILE="${RIFT_FOCUS_LOCK_FILE:-${TMPDIR:-/tmp}/rift-focus-without-animation.lock}"
+
+usage() {
+  echo "usage: $0 left|right|up|down" >&2
+  exit 2
+}
+
+direction="${1:-}"
+case "$direction" in
+  left | right | up | down) ;;
+  *) usage ;;
+esac
+
+[ -x "$RIFT_CLI" ] && [ -x "$JQ" ] && [ -x "$SHLOCK" ] || exit 1
+
+lock_acquired=0
+duration_changed=0
+original_duration=""
+
+release_lock() {
+  if [ "$lock_acquired" -eq 1 ]; then
+    /bin/rm -f "$LOCK_FILE"
+    lock_acquired=0
+  fi
+}
+
+cleanup() {
+  status=$?
+  trap - 0 1 2 15
+
+  if [ "$duration_changed" -eq 1 ]; then
+    "$RIFT_CLI" execute config set-animation-duration "$original_duration" >/dev/null 2>&1 || true
+  fi
+
+  release_lock
+  exit "$status"
+}
+
+tries=0
+while ! "$SHLOCK" -p "$$" -f "$LOCK_FILE"; do
+  tries=$((tries + 1))
+  if [ "$tries" -ge 100 ]; then
+    exit 1
+  fi
+  "$SLEEP" 0.01
+done
+lock_acquired=1
+trap cleanup 0 1 2 15
+
+if ! original_duration="$("$RIFT_CLI" execute config get 2>/dev/null \
+  | "$JQ" -er ".settings.animation_duration | numbers")"; then
+  exit 1
+fi
+
+"$RIFT_CLI" execute config set-animation-duration 0 >/dev/null
+duration_changed=1
+"$RIFT_CLI" execute window focus "$direction" >/dev/null

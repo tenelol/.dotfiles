@@ -158,14 +158,14 @@ display_move = "Alt + Ctrl + Shift"
 "Alt + Ctrl + Down" = "snap_strip"
 "Alt + Ctrl + Up" = "center_selection"
 
-"Alt + H" = { move_focus = "left" }
-"Alt + J" = { move_focus = "down" }
-"Alt + K" = { move_focus = "up" }
-"Alt + L" = { move_focus = "right" }
-"Alt + Left" = { move_focus = "left" }
-"Alt + Down" = { move_focus = "down" }
-"Alt + Up" = { move_focus = "up" }
-"Alt + Right" = { move_focus = "right" }
+"Alt + H" = { exec = ["/bin/sh", "-lc", "exec \"$HOME/.config/rift/focus-without-animation\" left"] }
+"Alt + J" = { exec = ["/bin/sh", "-lc", "exec \"$HOME/.config/rift/focus-without-animation\" down"] }
+"Alt + K" = { exec = ["/bin/sh", "-lc", "exec \"$HOME/.config/rift/focus-without-animation\" up"] }
+"Alt + L" = { exec = ["/bin/sh", "-lc", "exec \"$HOME/.config/rift/focus-without-animation\" right"] }
+"Alt + Left" = { exec = ["/bin/sh", "-lc", "exec \"$HOME/.config/rift/focus-without-animation\" left"] }
+"Alt + Down" = { exec = ["/bin/sh", "-lc", "exec \"$HOME/.config/rift/focus-without-animation\" down"] }
+"Alt + Up" = { exec = ["/bin/sh", "-lc", "exec \"$HOME/.config/rift/focus-without-animation\" up"] }
+"Alt + Right" = { exec = ["/bin/sh", "-lc", "exec \"$HOME/.config/rift/focus-without-animation\" right"] }
 
 "move + H" = { move_node = "left" }
 "move + J" = { move_node = "down" }

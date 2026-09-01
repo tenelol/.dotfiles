@@ -35,7 +35,7 @@ background-opacity = 0
 background-opacity-cells = false
 # Native macOS 26 glass effect. Use "macos-glass-clear" if regular feels too solid.
 background-blur = "macos-glass-regular"
-unfocused-split-opacity = 0.72
+unfocused-split-opacity = 1
 window-padding-x = 18
 window-padding-y = 15
 window-padding-balance = true

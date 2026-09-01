@@ -128,6 +128,10 @@ let
       source = ./rift/files/apply-horizontal-fullscreen;
       executable = true;
     };
+    "rift/focus-without-animation" = {
+      source = ./rift/files/focus-without-animation;
+      executable = true;
+    };
   };
 in
 delib.module {
