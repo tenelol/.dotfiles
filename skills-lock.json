@@ -1,11 +1,41 @@
 {
   "version": 1,
   "skills": {
+    "code-comments": {
+      "source": "keitakn/engineering-skills",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/code-comments/SKILL.md",
+      "computedHash": "120c2383a681531d3d6b26559fe47dcbc23661ba88b2da3cea2bce6db2095db4"
+    },
+    "code-naming": {
+      "source": "keitakn/engineering-skills",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/code-naming/SKILL.md",
+      "computedHash": "97f8b2bef04ebeab231b7e2b605ecebcfde49fd850210806a4243e10c74b4679"
+    },
+    "codex-plan-review-loop": {
+      "source": "keitakn/engineering-skills",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/codex-plan-review-loop/SKILL.md",
+      "computedHash": "66a02e8d0eddd87bc1155670cbdfa943845910959cced9966072844f6e6f92df"
+    },
+    "codex-pr-review-loop": {
+      "source": "keitakn/engineering-skills",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/codex-pr-review-loop/SKILL.md",
+      "computedHash": "f5603293976f1c701818ea08f8354c36cb38d7008fb1a0ee23f27c72bca677ec"
+    },
     "domain-modeling": {
       "source": "mattpocock/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/domain-modeling/SKILL.md",
       "computedHash": "a11713c0ff7870efa3c331b2e273f09116158485246edc89ae5088eefd1b0b48"
+    },
+    "explain-visually": {
+      "source": "keitakn/engineering-skills",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/explain-visually/SKILL.md",
+      "computedHash": "1599a8efd9791f5a0d6163d9b1e0975c2503bc7cd1831a7a6cdf6527f541bc6a"
     },
     "grill-with-docs": {
       "source": "mattpocock/skills",
