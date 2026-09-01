@@ -29,7 +29,7 @@
 
 ## Subagents and recovery
 
-- モデル分散を前提に、task全体のplan作成・更新、packet分割、モデル配分は親Codexが保持し、子へplan策定を委譲しない。独立調査・独立review・分離可能な複数workstreamだけを、親のplanから切り出した自己完結packetとして委譲する。
+- モデル分散を目的に、task全体のplan作成・更新、packet分割、モデル配分は親Codexが保持し、子へplan策定を委譲しない。substantiveなtaskでは単独workstreamでも、安全に分離できるbounded packetを原則1つ以上、親のplanから切り出して委譲する。trivialなtask、判断待ち、分離不能なcritical path、重なるwrite setは親が保持する。
 - `$subagent-model-router`は同名toolではなく親が`spawn_agent`へ適用するrouting policyとして使い、同名toolが無いことを理由に利用不能と報告しない。子の実modelは必ず`gpt-5.6-terra`か`gpt-5.6-luna`を明示し、親と同じSolを子へ継承させない。Terra＝実装/複数file/write debug、Luna＝明確な調査/機械的変更/再現/独立review。effortは両方`xhigh`か`max`（通常xhigh、高リスク・最終reviewはmax）。利用不能時はnative schemaとfiltered CLI catalogの両方を確認してから報告し、黙ってfallbackしない。offloadは`fork_turns="none"`の自己完結packetにする。
 - 親は権限・Vault採否・競合解消・子の主張の一次証拠確認・統合・最終検証/capture・最終回答を保持する。
 - compaction後はsummary、plan、diff、task artifactから再開する。同じstatus/search/readはrevision変更・新規不確実性・不完全出力時だけ再実行し、回復passはmaterial progressなしで1回まで。

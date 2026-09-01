@@ -7,7 +7,7 @@ description: Route packets from a parent-owned plan to explicit gpt-5.6-terra or
 
 This skill is the routing policy the parent applies; it is not a tool named `subagent-model-router`. Do not report the skill as unavailable merely because no same-named callable tool exists. Inspect the visible `spawn_agent` schema and pass the selected model and effort directly.
 
-The parent owns the task plan, packet split, model assignment, permissions, integration, verification, and final answer. Route only bounded work that benefits from isolated context or parallelism. Keep small critical-path tasks and planning in the parent.
+The parent owns the task plan, packet split, model assignment, permissions, integration, verification, and final answer. For every substantive task, route at least one safely isolated bounded packet, including a single workstream; model distribution itself is sufficient and parallelism is not required. Keep trivial tasks, inseparable critical-path work, and planning in the parent.
 
 ## Route the packet
 
