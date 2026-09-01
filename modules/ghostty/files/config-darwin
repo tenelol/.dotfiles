@@ -33,8 +33,8 @@ palette = 15=ffffff
 window-colorspace = "display-p3"
 background-opacity = 0
 background-opacity-cells = false
-# Standard blur avoids the focus-dependent tinting of macOS Liquid Glass.
-background-blur = 96
+# Keep transparency without compositor blur.
+background-blur = false
 unfocused-split-opacity = 1
 window-padding-x = 18
 window-padding-y = 15
