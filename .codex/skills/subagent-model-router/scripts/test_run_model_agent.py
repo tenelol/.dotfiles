@@ -93,10 +93,10 @@ class RunnerTests(unittest.TestCase):
 
     def test_tier_dry_runs_include_explicit_model_and_effort(self) -> None:
         expected = {
-            "fast": ("gpt-5.6-luna", "low"),
-            "standard": ("gpt-5.6-terra", "medium"),
-            "deep": ("gpt-5.6-sol", "xhigh"),
-            "review": ("gpt-5.6-sol", "max"),
+            "fast": ("gpt-5.6-luna", "xhigh"),
+            "standard": ("gpt-5.6-terra", "xhigh"),
+            "deep": ("gpt-5.6-terra", "max"),
+            "review": ("gpt-5.6-luna", "max"),
         }
         for tier, (model, effort) in expected.items():
             with self.subTest(tier=tier):
@@ -115,41 +115,46 @@ class RunnerTests(unittest.TestCase):
             "--tier",
             "fast",
             "--model",
-            "gpt-5.4-mini",
+            "gpt-5.6-luna",
             "--reasoning-effort",
-            "high",
+            "max",
             prompt=prompt,
         )
         self.assertEqual(completed.returncode, 0, completed.stderr)
         self.assertEqual(completed.stdout.strip(), "WORKER_OK")
         captured = json.loads(self.capture.read_text(encoding="utf-8"))
-        self.assertIn("gpt-5.4-mini", captured["argv"])
+        self.assertIn("gpt-5.6-luna", captured["argv"])
         self.assertIn(prompt, captured["stdin"])
         self.assertFalse((self.root / "SHOULD_NOT_EXIST").exists())
 
-    def test_unavailable_model_fails_instead_of_inheriting(self) -> None:
+    def test_unknown_model_is_rejected_instead_of_inheriting(self) -> None:
         completed = self.run_router("--model", "not-a-model")
         self.assertEqual(completed.returncode, 2)
-        self.assertIn("not picker-visible", completed.stderr)
+        self.assertIn("limited to gpt-5.6-terra or gpt-5.6-luna", completed.stderr)
 
-    def test_policy_is_native_first_and_cli_luna_is_explicit(self) -> None:
+    def test_sol_child_is_rejected(self) -> None:
+        completed = self.run_router("--model", "gpt-5.6-sol")
+        self.assertEqual(completed.returncode, 2)
+        self.assertIn("limited to gpt-5.6-terra or gpt-5.6-luna", completed.stderr)
+
+    def test_policy_is_native_and_not_a_same_named_tool(self) -> None:
         skill = SKILL.read_text(encoding="utf-8")
         policy = POLICY.read_text(encoding="utf-8")
-        self.assertIn("Default to the native backend", skill)
-        self.assertIn("CLI Luna is an exception", skill)
-        self.assertIn("| `fast` | native | `gpt-5.6-terra` | `low` |", policy)
-        self.assertIn("CLI Luna is explicit/exceptional", policy)
-        self.assertNotIn("normal route for isolated `fast` scans on Luna", skill)
+        self.assertIn("not a tool named `subagent-model-router`", skill)
+        self.assertIn("Native Luna is valid", skill)
+        self.assertIn("| `fast` | native | `gpt-5.6-luna` | `xhigh` |", policy)
+        self.assertIn("permits only Terra/Luna with `xhigh` or `max`", policy)
+        self.assertNotIn("CLI Luna is an exception", skill)
 
     def test_workspace_write_requires_acknowledgement(self) -> None:
         completed = self.run_router("--sandbox", "workspace-write")
         self.assertEqual(completed.returncode, 2)
         self.assertIn("requires --allow-write", completed.stderr)
 
-    def test_ultra_is_rejected_for_leaf_workers(self) -> None:
-        completed = self.run_router("--reasoning-effort", "ultra")
+    def test_low_effort_is_rejected_for_leaf_workers(self) -> None:
+        completed = self.run_router("--reasoning-effort", "low")
         self.assertEqual(completed.returncode, 2)
-        self.assertIn("not allowed for bounded CLI leaf workers", completed.stderr)
+        self.assertIn("limited to xhigh or max", completed.stderr)
 
     def test_leaf_worker_disables_nested_agents(self) -> None:
         completed = self.run_router("--tier", "fast")

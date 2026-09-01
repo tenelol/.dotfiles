@@ -16,22 +16,25 @@ from typing import Any
 
 ROUTES: dict[str, dict[str, Any]] = {
     "fast": {
-        "models": ["gpt-5.6-luna", "gpt-5.4-mini", "gpt-5.3-codex-spark"],
-        "effort": "low",
-    },
-    "standard": {
-        "models": ["gpt-5.6-terra", "gpt-5.5", "gpt-5.4"],
-        "effort": "medium",
-    },
-    "deep": {
-        "models": ["gpt-5.6-sol", "gpt-5.5", "gpt-5.4"],
+        "models": ["gpt-5.6-luna"],
         "effort": "xhigh",
     },
+    "standard": {
+        "models": ["gpt-5.6-terra"],
+        "effort": "xhigh",
+    },
+    "deep": {
+        "models": ["gpt-5.6-terra"],
+        "effort": "max",
+    },
     "review": {
-        "models": ["gpt-5.6-sol", "gpt-5.5", "gpt-5.4"],
+        "models": ["gpt-5.6-luna"],
         "effort": "max",
     },
 }
+
+ALLOWED_MODELS = frozenset(("gpt-5.6-terra", "gpt-5.6-luna"))
+ALLOWED_EFFORTS = frozenset(("xhigh", "max"))
 
 ENV_MODEL = {
     "fast": "CODEX_SUBAGENT_MODEL_FAST",
@@ -132,6 +135,10 @@ def resolve_route(
     explicit_model = args.model or os.environ.get(ENV_MODEL[args.tier])
     if explicit_model:
         model = explicit_model
+        if model not in ALLOWED_MODELS:
+            raise RouterError(
+                "Subagent models are limited to gpt-5.6-terra or gpt-5.6-luna."
+            )
         if model not in catalog:
             available = ", ".join(sorted(catalog)) or "none"
             raise RouterError(
@@ -148,10 +155,9 @@ def resolve_route(
             )
 
     effort = args.reasoning_effort or ROUTES[args.tier]["effort"]
-    if effort == "ultra":
+    if effort not in ALLOWED_EFFORTS:
         raise RouterError(
-            "Ultra reasoning is not allowed for bounded CLI leaf workers because it can "
-            "trigger recursive delegation. Use max or lower."
+            "Subagent reasoning effort is limited to xhigh or max."
         )
 
     model_info = catalog.get(model)

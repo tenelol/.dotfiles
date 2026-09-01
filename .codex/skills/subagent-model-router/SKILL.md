@@ -1,11 +1,13 @@
 ---
 name: subagent-model-router
-description: Route delegated Codex work to explicit models and reasoning levels. Use when a user asks for subagents, parallel agents, a swarm, model selection, cheaper or faster workers, stronger review agents, or per-task model control. Prefer native spawn_agent with context-isolated packets; use bounded Codex CLI workers only when the user or packet explicitly requires a CLI-only model.
+description: Route packets from a parent-owned plan to explicit gpt-5.6-terra or gpt-5.6-luna workers at xhigh or max effort. Use for subagents, parallel work, model distribution, independent review, or per-task model control. This is a routing policy applied through spawn_agent, not a separately callable router tool.
 ---
 
 # Subagent Model Router
 
-Route only work that benefits from isolated context or parallelism. Keep small critical-path tasks in the parent agent.
+This skill is the routing policy the parent applies; it is not a tool named `subagent-model-router`. Do not report the skill as unavailable merely because no same-named callable tool exists. Inspect the visible `spawn_agent` schema and pass the selected model and effort directly.
+
+The parent owns the task plan, packet split, model assignment, permissions, integration, verification, and final answer. Route only bounded work that benefits from isolated context or parallelism. Keep small critical-path tasks and planning in the parent.
 
 ## Route the packet
 
@@ -13,8 +15,8 @@ Classify every delegated packet before dispatch:
 
 - `fast`: read-heavy discovery, deterministic checks, or mechanical one-to-two-file work with a complete specification.
 - `standard`: normal implementation, multi-file integration, debugging, tests, or ordinary review.
-- `deep`: architecture, ambiguous failures, security, concurrency, migrations, broad synthesis, or final review.
-- `review`: independent correctness, security, or release review. Treat this as `deep` unless the review is narrowly mechanical.
+- `deep`: bounded high-risk implementation, ambiguous failure investigation, security, concurrency, or migrations after the parent has set the plan.
+- `review`: independent correctness, security, or release review.
 
 Read [references/routing-policy.md](references/routing-policy.md) for current model defaults, escalation, and write-isolation rules. Resolve the live catalog before dispatch; never silently inherit or silently downgrade when an explicit model was requested.
 
@@ -32,7 +34,7 @@ Expected output:
 Verification:
 ```
 
-Do not rely on parent history when overriding a child model. Pass only the context needed for that packet.
+Do not ask the child to create the overall plan and do not rely on parent history. Pass only the context needed for that packet.
 
 ## Choose the backend
 
@@ -40,23 +42,30 @@ Inspect the visible `spawn_agent` schema.
 
 ### Native backend
 
-If the schema exposes `model` and `reasoning_effort`, pass both actual arguments. When overriding either value, use `fork_turns: "none"`; full-history forks inherit the parent configuration and reject overrides.
+If the schema exposes `model` and `reasoning_effort`, pass both actual arguments. Use these routes:
+
+- `fast`: `gpt-5.6-luna` / `xhigh`
+- `standard`: `gpt-5.6-terra` / `xhigh`
+- `deep`: `gpt-5.6-terra` / `max`
+- `review`: `gpt-5.6-luna` / `max`
+
+Do not use Sol for a child and do not silently lower effort. When overriding either value, use `fork_turns: "none"`; full-history forks inherit the parent configuration and reject overrides.
 
 ```json
 {
   "task_name": "scan_api",
   "message": "<self-contained packet>",
   "fork_turns": "none",
-  "model": "gpt-5.6-terra",
-  "reasoning_effort": "low"
+  "model": "gpt-5.6-luna",
+  "reasoning_effort": "xhigh"
 }
 ```
 
-Default to the native backend whenever its visible schema advertises a suitable model. For `fast`, use native `gpt-5.6-terra/low` with `fork_turns: "none"`; this offloads parent context while preserving agent-tree coordination, follow-ups, waiting, and UI visibility. Do not pass a CLI-only model such as Luna to `spawn_agent`.
+Default to the native backend whenever its visible schema advertises the selected Terra or Luna route. Native Luna is valid when the schema exposes it. This preserves agent-tree coordination, follow-ups, waiting, and UI visibility.
 
 ### CLI backend
 
-Use the CLI backend only when the user explicitly requests CLI/Luna, or when the parent explicitly selects a fully isolated read-only one-shot whose required model is picker-visible in the filtered CLI catalog but absent from the native catalog. CLI Luna is an exception, not the `fast` default. Do not silently move an explicit native-model request to CLI. The bundled leaf worker invokes `codex exec --model <resolved-model>` with an explicit reasoning override:
+Use the CLI backend only when the selected Terra or Luna route is absent from the native schema but picker-visible in the filtered CLI catalog, or when the user explicitly requests a CLI leaf. Check both backends before reporting the requested route unavailable. Do not silently move an explicit native-model request to CLI. The bundled leaf worker invokes `codex exec --model <resolved-model>` with an explicit reasoning override:
 
 ```bash
 python3 "$HOME/.codex/skills/subagent-model-router/scripts/run_model_agent.py" \
@@ -76,7 +85,7 @@ The CLI backend is an independent process. It cannot use native `wait_agent`, `s
 - Split the packet when it was too broad.
 - Escalate one tier when reasoning or capability was insufficient.
 - Verify worker claims against repository or runtime evidence.
-- Run final review at `deep` for risky or broad changes.
+- Run an independent `review` packet at Luna/max for risky or broad changes when review is warranted.
 - Never use `ultra` for CLI leaf workers; it can trigger recursive delegation.
 
 When using `codex-dynamic-workflows`, let that skill own packet planning, integration, and verification. Use this skill only to attach `tier`, `model`, `reasoning_effort`, and backend to each packet.

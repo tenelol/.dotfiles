@@ -1,4 +1,4 @@
 interface:
   display_name: "Subagent Model Router"
   short_description: "Route delegated work to explicit Codex models"
-  default_prompt: "Use $subagent-model-router to delegate these work packets with explicit model selection."
+  default_prompt: "Use $subagent-model-router: keep the plan in the parent and route bounded packets to explicit Terra or Luna workers at xhigh or max."
