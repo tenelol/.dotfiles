@@ -1,5 +1,5 @@
 [settings]
-animate = true
+animate = false
 animation_duration = 0
 animation_fps = 100.0
 default_disable = false
@@ -32,7 +32,7 @@ master_side = "left"
 new_window_placement = "master"
 
 [settings.layout.scrolling]
-animate = true
+animate = false
 column_width_ratio = 0.7
 min_column_width_ratio = 0.3
 max_column_width_ratio = 0.9
