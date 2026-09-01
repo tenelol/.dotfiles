@@ -264,7 +264,7 @@ return {
           hl.IblScope = { fg = theme.ibl_scope, bg = "none" }
           hl.IblWhitespace = { fg = theme.ibl_indent, bg = "none" }
 
-          hl.CursorLine = { bg = theme.bg_highlight }
+          hl.CursorLine = { bg = "none" }
           hl.CursorLineNr = { fg = theme.fg_bright, bold = true }
           hl.Visual = { bg = theme.bg_selection }
           hl.Search = { fg = theme.bg_dark, bg = theme.yellow }
