@@ -24,6 +24,7 @@
 ## Permission and safety
 
 - 単一責務でscopeが明確な小規模repository変更は、直接artifact testとdiff確認後に明示許可なしでcommitしてよい。大規模変更・複数責務を跨ぐ変更・履歴変更のcommitは明示許可を待つ。
+- ブランチ名とPRタイトルには `codex`（大文字小文字を問わない）を含めず、repository規約に沿った変更目的ベースの名前を使う。ユーザーが明示指定した場合だけ例外とする。
 - push、merge、deploy、提出、購入、予約、登録、外部送信、task状態変更は明示許可なしに行わない。
 - 削除・上書き・移行は対象をread-onlyで確定しscopeを守る。broad path、未解決変数、危険なrecursive操作を避け、可能ならCAS・backup・rollbackを使う。worktree guardやhost security controlを迂回しない。
 
