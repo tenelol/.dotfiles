@@ -39,7 +39,7 @@ Use this workflow to turn assigned GitHub issues into small, reviewable PRs with
    - Ask before implementing unassigned prerequisite issues.
 
 4. Create one work lane per ready issue:
-   - Branch name: `codex/issue-<number>-<short-slug>`.
+   - Branch name: `issue-<number>-<short-slug>`.
    - Base it on the issue's base branch, usually `origin/develop`.
    - If using subagents, spawn exactly one worker per ready issue. Tell the worker it is not alone in the codebase, owns only that issue, must not revert others' edits, and must list changed files and validation results.
    - Require one isolated workspace per issue: either the subagent's forked workspace or a dedicated `git worktree` path. Do not run parallel issue agents in the same checkout path.
@@ -81,7 +81,7 @@ Use this shape when spawning a worker:
 ```text
 You own exactly GitHub issue #<number>: <title>.
 Base branch: <base>.
-Branch: codex/issue-<number>-<slug>.
+Branch: issue-<number>-<slug>.
 
 You are not alone in the codebase. Do not revert edits made by others. Do not work on any other issue.
 Use an isolated workspace for this issue. Do not run `git switch`, `git add`, `git commit`, merge checks, or pushes in a shared checkout used by another issue agent.
