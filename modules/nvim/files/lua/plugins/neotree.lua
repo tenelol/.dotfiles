@@ -58,7 +58,9 @@ return {
         close_if_last_window = true,
         popup_border_style = "rounded",
         enable_git_status = true,
-        enable_diagnostics = true,
+        -- DiagnosticChanged redraws every open tree while editing and makes
+        -- the sidebar visibly jitter. Diagnostics remain visible in buffers.
+        enable_diagnostics = false,
         default_component_configs = {
           name = {
             use_git_status_colors = false,
@@ -89,7 +91,9 @@ return {
             leave_dirs_open = false,
           },
           hijack_netrw_behavior = "open_default",
-          use_libuv_file_watcher = true,
+          -- Per-directory watchers can exhaust file descriptors in large trees
+          -- and cause repeated filesystem and Git refreshes.
+          use_libuv_file_watcher = false,
           filtered_items = {
             hide_dotfiles = false,
             hide_gitignored = false,
