@@ -124,10 +124,6 @@ let
       source = ./rift/files/sketchybar-workspace-subscribe;
       executable = true;
     };
-    "rift/apply-horizontal-fullscreen" = {
-      source = ./rift/files/apply-horizontal-fullscreen;
-      executable = true;
-    };
   };
 in
 delib.module {

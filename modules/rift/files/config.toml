@@ -17,13 +17,12 @@ auto_focus_blacklist = [
 ]
 run_on_start = [
   "/bin/sh -lc \"$HOME/.config/rift/sketchybar-workspace-subscribe\"",
-  "/bin/sh -lc \"$HOME/.config/rift/apply-horizontal-fullscreen --all-workspaces\"",
   "/bin/sh -lc \"$HOME/.config/rift/assign-windows\"",
 ]
 hot_reload = true
 
 [settings.layout]
-mode = "traditional"
+mode = "scrolling"
 
 [settings.layout.master_stack]
 master_ratio = 0.6
@@ -102,11 +101,11 @@ preserve_focus_per_workspace = true
 workspace_auto_back_and_forth = false
 reapply_app_rules_on_title_change = false
 workspace_rules = [
-  { workspace = 0, layout = "traditional" },
-  { workspace = 1, layout = "traditional" },
-  { workspace = 2, layout = "traditional" },
-  { workspace = 3, layout = "traditional" },
-  { workspace = 4, layout = "traditional" },
+  { workspace = 0, layout = "scrolling" },
+  { workspace = 1, layout = "scrolling" },
+  { workspace = 2, layout = "scrolling" },
+  { workspace = 3, layout = "scrolling" },
+  { workspace = 4, layout = "scrolling" },
 ]
 default_workspace = 3
 workspace_names = [
@@ -150,7 +149,6 @@ display_move = "Alt + Ctrl + Shift"
 "Alt + Slash" = { set_workspace_layout = { mode = "scrolling" } }
 "Alt + B" = { set_workspace_layout = { mode = "bsp" } }
 "Alt + M" = { set_workspace_layout = { mode = "master_stack" } }
-"Meta + M" = { exec = ["/bin/sh", "-lc", "$HOME/.config/rift/apply-horizontal-fullscreen --current"] }
 "Alt + Comma" = { set_workspace_layout = { mode = "stack" } }
 "Alt + Period" = { set_workspace_layout = { mode = "traditional" } }
 "Alt + Ctrl + Left" = { scroll_strip = { delta = -0.5 } }
