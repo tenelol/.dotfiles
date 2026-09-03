@@ -185,6 +185,7 @@ delib.module {
         "steam"
         "vesktop"
         "visual-studio-code"
+        "zoom"
       ];
     };
   };
