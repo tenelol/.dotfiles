@@ -11,8 +11,9 @@ let
   skillFiles = lib.mapAttrs' (
     name: _:
     lib.nameValuePair ".codex/skills/${name}" {
+      # Link each skill atomically so existing agent symlinks cannot redirect
+      # recursive Home Manager writes back into the repository source.
       source = skillRoot + "/${name}";
-      recursive = true;
       force = true;
     }
   ) skills;
