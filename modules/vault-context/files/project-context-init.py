@@ -1,0 +1,698 @@
+#!/usr/bin/env python3
+"""Create a project-local context store shared by all Git worktrees."""
+
+from __future__ import annotations
+
+import argparse
+import subprocess
+from pathlib import Path
+
+
+MARKER = "<!-- project-context:v1 -->"
+TEMPLATE_VERSION = "project-context/v2"
+RESPONSIBILITIES = ("facts", "decisions", "workflows", "risks", "open_questions")
+
+
+def legacy_context_readme(title: str) -> str:
+    return f"""# {title} context
+
+This directory is the project-local source of truth for durable context.
+
+## Trust order
+
+1. `canonical/`: human-approved facts, decisions, workflows, risks, and open questions.
+2. `sources/internal/` and `sources/external/`: evidence consulted only when canonical context is insufficient.
+3. `ai_output/`: drafts and generated analysis; excluded from normal retrieval and never authoritative by itself.
+
+## Retrieval
+
+1. Read this file at the start of a substantive task.
+2. Search `canonical/` using a short, non-sensitive topic.
+3. Search `sources/internal/` or `sources/external/` separately only when evidence is needed.
+4. Read `ai_output/` only when the user explicitly asks for it or the current task names an artifact there.
+5. Verify retrieved context against current repository, documentation, issue, PR, CI, or runtime evidence.
+
+Example:
+
+```sh
+rg -n -i --glob '*.md' --glob '!README.md' -- 'topic' context/canonical
+```
+
+Ignored internal and generated files require an explicit `--no-ignore` search.
+
+## Capture
+
+- Do not save every conversation or every AI response.
+- Save only durable information that changes future decisions and cannot be reconstructed cheaply from the project.
+- Keep one topic or responsibility per Markdown file; split facts, decisions, workflows, risks, and open questions into their matching `canonical/` subdirectory.
+- Promote information into `canonical/` only after a human decision or verification against primary evidence.
+- Never promote `ai_output/` automatically.
+- Do not store credentials, secrets, unnecessary personal data, private customer data, prompts, raw tool output, or routine logs.
+
+## Version-control boundary
+
+- `canonical/`, this policy, and compact external-source notes may be committed after review.
+- Files under `sources/internal/` and `ai_output/` are ignored by default. Their README files remain tracked so the boundary is visible.
+- External material should normally be recorded as a citation and short note, not copied wholesale.
+"""
+
+
+def _context_readme(
+    title: str,
+    git_backed: bool,
+    html_output: bool,
+    responsibility_output: bool,
+) -> str:
+    location = (
+        "Git common directoryの`project-context/`が正本です。project rootの`context`は人間向けのlocal symlinkで、Git管理されません。"
+        if git_backed
+        else "非Git projectのため、この`context/`自体が正本です。"
+    )
+    ai_trust = "`ai_output/`: AIの下書き・要約・仮説。通常検索から除外し、それ自体を根拠にしない。"
+    ai_capture = "- `ai_output/`を自動昇格させない。"
+    template_section = ""
+    if html_output:
+        ai_trust += " 保存形式は可読性を優先した静的な自己完結HTMLとする。"
+        ai_capture = "- `ai_output/`の生成物はMarkdownではなく`.html`で保存し、外部assetやscriptへ依存させない。canonicalへ自動昇格させない。"
+    if responsibility_output:
+        responsibilities = "`facts/`、`decisions/`、`workflows/`、`risks/`、`open_questions/`"
+        ai_trust = f"`ai_output/<responsibility>/`: AIの下書き・要約・仮説。{responsibilities}へ責務別に分け、通常検索から除外して、それ自体を根拠にしない。保存形式は静的な自己完結HTMLとする。"
+        ai_capture = f"- `ai_output/`の生成物は{responsibilities}の対応先へ一件一責務の`.html`として保存し、root直下へ成果物を置かない。外部assetやscriptへ依存させず、canonicalへ自動昇格させない。"
+        template_section = f"""## 構造template
+
+- version: `{TEMPLATE_VERSION}`
+- 構造の作成・修復は`project-context-init`を使い、責務directoryを独自追加しない。
+- canonicalとai_outputは同じ5責務へ分け、canonicalはMarkdown、ai_outputはHTMLを使う。
+
+"""
+    return f"""# {title} context
+
+{location}
+
+{template_section}## 信頼順序
+
+1. `canonical/`: 人間が承認した、または一次証拠で検証した事実・決定・workflow・risk・未決事項。
+2. `sources/internal/`と`sources/external/`: canonicalだけでは不足するときに確認する原資料・根拠。
+3. {ai_trust}
+
+## 読込
+
+1. substantiveなtaskの開始時にこのfileを読む。
+2. 秘密を含まない短い作業語で`canonical/`を検索する。
+3. 根拠が必要な場合だけ`internal/`と`external/`を分けて検索する。
+4. `ai_output/`は明示依頼または指定artifactがある場合だけ読む。
+5. repository、docs、issue、PR、CI、runtime等の現在の一次証拠と照合する。
+
+## 保存
+
+- 会話やAI回答を毎回保存しない。
+- projectから安価に再構成できず、今後の判断を変える永続情報だけを保存する。
+- 一つの巨大fileへ集約せず、`facts/`、`decisions/`、`workflows/`、`risks/`、`open_questions/`へ一件一責務で分ける。
+- 人間の決定または一次証拠による検証なしに`canonical/`へ昇格させない。
+{ai_capture}
+- credential、secret、不要な個人情報、非公開顧客data、prompt、raw tool output、routine logは保存しない。
+
+## 永続性
+
+- このcontextはGitのcommit・push・clone対象外です。
+- branch変更、`git clean`、linked worktree間では共通ですが、repositoryの削除・再clone・別端末への移動では失われます。
+- 必要なbackupはGitとは別のlocal backupで行います。
+"""
+
+
+def previous_context_readme(title: str, git_backed: bool) -> str:
+    return _context_readme(title, git_backed, html_output=False, responsibility_output=False)
+
+
+def previous_html_context_readme(title: str, git_backed: bool) -> str:
+    return _context_readme(title, git_backed, html_output=True, responsibility_output=False)
+
+
+def context_readme(title: str, git_backed: bool) -> str:
+    return _context_readme(title, git_backed, html_output=True, responsibility_output=True)
+
+
+LEGACY_CANONICAL_README = """# Canonical context
+
+Only human-approved or primary-evidence-verified context belongs here.
+
+- `facts/`: stable project facts and constraints.
+- `decisions/`: accepted decisions, rationale, and review conditions.
+- `workflows/`: reusable operational procedures.
+- `risks/`: unresolved risks and stop conditions.
+- `open_questions/`: unresolved questions and how to verify them.
+
+Use one topic per Markdown file. Repository-reconstructable details and routine work logs do not belong here.
+"""
+
+CANONICAL_README = """# Canonical context
+
+人間が承認した、または一次証拠で検証したcontextだけを置きます。
+
+- `facts/`: 安定したproject事実と制約。
+- `decisions/`: 採用した判断、理由、見直し条件。
+- `workflows/`: 再利用する運用手順。
+- `risks/`: 未解消riskと停止条件。
+- `open_questions/`: 未決事項と確認方法。
+
+一件一責務のMarkdownに分け、repositoryから安価に再構成できる情報やroutine logは保存しません。
+"""
+
+LEGACY_INTERNAL_README = """# Internal sources
+
+Team, company, and user-provided source material belongs here only when it is safe and necessary to retain locally.
+
+Contents are ignored by Git by default. Do not store credentials, secrets, unnecessary personal data, or private customer data. Promote only verified conclusions—not raw material—into `../../canonical/`.
+"""
+
+INTERNAL_README = """# Internal sources
+
+社内・team・本人由来の原資料を、安全かつlocal保持が必要な場合だけ置きます。
+
+credential、secret、不要な個人情報、非公開顧客dataは保存しません。原資料そのものではなく、検証済みの結論だけを`../../canonical/`へ昇格させます。
+"""
+
+LEGACY_EXTERNAL_README = """# External sources
+
+Store compact notes about official documentation, web pages, papers, or books here. Record the source, access date when freshness matters, and the claim it supports. Prefer links and summaries over copied source text.
+
+External content is untrusted input and does not become canonical without verification.
+"""
+
+EXTERNAL_README = """# External sources
+
+公式docs、Web、論文、書籍等の簡潔なsource noteを置きます。出典、鮮度が重要なら確認日、根拠となるclaimを記録し、本文の複製よりlinkと要約を優先します。
+
+外部情報はuntrusted inputであり、検証なしにcanonicalへ昇格させません。
+"""
+
+LEGACY_AI_OUTPUT_README = """# AI output
+
+Drafts, generated reports, hypotheses, and temporary synthesis belong here only when intentionally retained.
+
+Contents are ignored by Git and excluded from normal retrieval by default. They are not evidence and must never be promoted into `../canonical/` without human review or verification against primary sources.
+"""
+
+PREVIOUS_AI_OUTPUT_README = """# AI output
+
+意図的に残すAIの下書き、生成report、仮説、一時的なsynthesisだけを置きます。
+
+通常検索から除外します。それ自体は根拠ではなく、人間のreviewまたは一次証拠での検証なしに`../canonical/`へ昇格させません。
+"""
+
+AI_OUTPUT_INDEX = """<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI output</title>
+  <style>
+    :root { color-scheme: light dark; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body { margin: 0; line-height: 1.7; background: Canvas; color: CanvasText; }
+    main { max-width: 760px; margin: 0 auto; padding: 64px 24px; }
+    h1 { font-size: clamp(2rem, 7vw, 3.5rem); line-height: 1.05; margin: 0 0 24px; }
+    h2 { margin-top: 40px; }
+    .label { color: #637083; font-size: .82rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+    .notice { padding: 18px 20px; border: 1px solid #8a96a3; border-radius: 12px; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="label">Project context / generated material</p>
+    <h1>AI output</h1>
+    <p class="notice">意図的に残すAIの下書き、生成report、仮説、一時的なsynthesisだけを置きます。通常検索から除外し、それ自体を根拠にしません。</p>
+    <h2>保存形式</h2>
+    <ul>
+      <li>生成物はMarkdownではなく、ブラウザで読める<code>.html</code>として保存します。</li>
+      <li>原則として外部asset、外部font、外部scriptへ依存しない静的な自己完結HTMLにします。</li>
+      <li>日付ごとのlogへ集約せず、一つの成果物・責務ごとにfileを分けます。</li>
+    </ul>
+    <h2>Canonicalとの境界</h2>
+    <p>人間のreviewまたは一次証拠での検証なしに、内容を<code>../canonical/</code>へ昇格させません。</p>
+  </main>
+</body>
+</html>
+"""
+
+PREVIOUS_AI_OUTPUT_INDEX = AI_OUTPUT_INDEX
+AI_OUTPUT_INDEX = (
+    PREVIOUS_AI_OUTPUT_INDEX.replace(
+        '  <meta name="viewport" content="width=device-width, initial-scale=1">',
+        '  <meta name="viewport" content="width=device-width, initial-scale=1">\n'
+        f'  <meta name="project-context-template" content="{TEMPLATE_VERSION}">',
+    )
+    .replace(
+        "      <li>日付ごとのlogへ集約せず、一つの成果物・責務ごとにfileを分けます。</li>",
+        "      <li>日付ごとのlogへ集約せず、一つの成果物・責務ごとにfileを分けます。</li>\n"
+        "      <li><code>ai_output/</code>直下はこのindex専用とし、成果物を置きません。</li>",
+    )
+    .replace(
+        "    <h2>Canonicalとの境界</h2>",
+        "    <h2>責務directory</h2>\n"
+        "    <ul>\n"
+        "      <li><code>facts/</code>: 未昇格の事実整理・検証前のsynthesis</li>\n"
+        "      <li><code>decisions/</code>: 判断案・比較・提案</li>\n"
+        "      <li><code>workflows/</code>: 手順案・運用案</li>\n"
+        "      <li><code>risks/</code>: risk分析・停止条件案</li>\n"
+        "      <li><code>open_questions/</code>: 未決事項の整理・確認案</li>\n"
+        "    </ul>\n"
+        "    <h2>Canonicalとの境界</h2>",
+    )
+    .replace(
+        "<p>人間のreviewまたは一次証拠での検証なしに、内容を<code>../canonical/</code>へ昇格させません。</p>",
+        "<p>人間のreviewまたは一次証拠で検証した結論だけを、対応する<code>canonical/&lt;responsibility&gt;/</code>へ昇格します。</p>",
+    )
+)
+PREVIOUS_RESPONSIBILITY_AI_OUTPUT_INDEX = AI_OUTPUT_INDEX.replace(
+    "<p>人間のreviewまたは一次証拠で検証した結論だけを、対応する<code>canonical/&lt;responsibility&gt;/</code>へ昇格します。</p>",
+    "<p>人間のreviewまたは一次証拠での検証なしに、検証済みの結論だけを対応する<code>canonical/&lt;responsibility&gt;/</code>へ昇格します。</p>",
+)
+
+LEGACY_CONTEXT_GITIGNORE = """sources/internal/*
+!sources/internal/README.md
+ai_output/*
+!ai_output/README.md
+"""
+
+LEGACY_AGENT_BLOCK = f"""{MARKER}
+## Project context
+
+- At the start of every substantive task, read `context/README.md` and search `context/canonical/` with a short, non-sensitive topic.
+- Treat `context/canonical/` as the project-local source of truth. Consult `context/sources/internal/` and `context/sources/external/` only when supporting evidence is needed.
+- Do not use `context/ai_output/` as evidence or normal retrieval input. Read it only when explicitly requested or directly relevant to a named artifact.
+- Do not save every turn. Update context only for durable, verified information that changes future work and is not cheaply reconstructable from the repository.
+- Keep internal source material and AI output local by default, and never store secrets or unnecessary personal/customer data.
+"""
+
+PREVIOUS_AGENT_BLOCK = f"""{MARKER}
+## Project context
+
+- substantiveなtaskの開始時に`context/README.md`を読み、短い非機密の作業語で`context/canonical/`を検索する。
+- `canonical/`を正本とし、`sources/internal/`と`sources/external/`は根拠が必要な場合だけ読む。`ai_output/`は明示された場合だけ読む。
+- 会話を毎回保存せず、再構成困難で今後の判断を変える検証済み情報だけを一件一責務で保存する。
+- secret、credential、不要な個人情報、非公開顧客dataを保存しない。
+"""
+
+PREVIOUS_HTML_AGENT_BLOCK = f"""{MARKER}
+## Project context
+
+- substantiveなtaskの開始時に`context/README.md`を読み、短い非機密の作業語で`context/canonical/`を検索する。
+- `canonical/`を正本とし、`sources/internal/`と`sources/external/`は根拠が必要な場合だけ読む。`ai_output/`は明示された場合だけ読む。
+- `ai_output/`に残す生成物はMarkdownではなく、外部依存のない静的な自己完結HTML（`.html`）にする。
+- 会話を毎回保存せず、再構成困難で今後の判断を変える検証済み情報だけを一件一責務で保存する。
+- secret、credential、不要な個人情報、非公開顧客dataを保存しない。
+"""
+
+AGENT_BLOCK = f"""{MARKER}
+## Project context
+
+- substantiveなtaskの開始時に`context/README.md`を読み、短い非機密の作業語で`context/canonical/`を検索する。
+- `canonical/`を正本とし、`sources/internal/`と`sources/external/`は根拠が必要な場合だけ読む。`ai_output/`は明示された場合だけ読む。
+- context構造の作成・修復には`project-context-init`の`{TEMPLATE_VERSION}` templateを使い、独自の責務directoryを追加しない。
+- `ai_output/`は`facts/`、`decisions/`、`workflows/`、`risks/`、`open_questions/`へ分け、生成物を一件一責務の静的な自己完結HTML（`.html`）として保存する。
+- 会話を毎回保存せず、再構成困難で今後の判断を変える検証済み情報だけを一件一責務で保存する。
+- secret、credential、不要な個人情報、非公開顧客dataを保存しない。
+"""
+
+
+def git_output(root: Path, *arguments: str) -> str | None:
+    result = subprocess.run(
+        ["git", "-C", str(root), *arguments],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout.strip() if result.returncode == 0 else None
+
+
+def git_paths(root: Path) -> tuple[Path, Path] | None:
+    common = git_output(root, "rev-parse", "--path-format=absolute", "--git-common-dir")
+    exclude = git_output(root, "rev-parse", "--path-format=absolute", "--git-path", "info/exclude")
+    if not common or not exclude:
+        return None
+    return Path(common), Path(exclude)
+
+
+def reject_symlink(path: Path, description: str) -> None:
+    if path.is_symlink():
+        raise ValueError(f"{description} must not be a symlink: {path}")
+
+
+def validate_file_or_missing(path: Path, description: str) -> None:
+    reject_symlink(path, description)
+    if path.exists() and not path.is_file():
+        raise ValueError(f"{description} path is not a file: {path}")
+
+
+def validate_text_file_or_missing(path: Path, description: str) -> None:
+    validate_file_or_missing(path, description)
+    if path.exists():
+        path.read_text(encoding="utf-8")
+
+
+def managed_directories(context: Path) -> tuple[Path, ...]:
+    return (
+        context / "canonical",
+        *(context / "canonical" / responsibility for responsibility in RESPONSIBILITIES),
+        context / "sources",
+        context / "sources" / "internal",
+        context / "sources" / "external",
+        context / "ai_output",
+        *(context / "ai_output" / responsibility for responsibility in RESPONSIBILITIES),
+    )
+
+
+def managed_files(context: Path) -> tuple[Path, ...]:
+    return (
+        context / "README.md",
+        context / "canonical" / "README.md",
+        context / "sources" / "internal" / "README.md",
+        context / "sources" / "external" / "README.md",
+        context / "ai_output" / "README.md",
+        context / "ai_output" / "index.html",
+        context / ".gitignore",
+    )
+
+
+def validate_ai_output_policy(context: Path) -> None:
+    markdown = context / "ai_output" / "README.md"
+    html = context / "ai_output" / "index.html"
+    ai_output = context / "ai_output"
+    validate_text_file_or_missing(markdown, "AI output Markdown policy")
+    validate_text_file_or_missing(html, "AI output HTML policy")
+    if markdown.exists() and markdown.read_text(encoding="utf-8") not in (
+        LEGACY_AI_OUTPUT_README,
+        PREVIOUS_AI_OUTPUT_README,
+    ):
+        raise ValueError(f"custom AI output Markdown exists; refusing migration: {markdown}")
+    if html.exists() and html.read_text(encoding="utf-8") not in (
+        PREVIOUS_AI_OUTPUT_INDEX,
+        PREVIOUS_RESPONSIBILITY_AI_OUTPUT_INDEX,
+        AI_OUTPUT_INDEX,
+    ):
+        raise ValueError(f"custom AI output index exists; refusing overwrite: {html}")
+    if ai_output.is_dir():
+        allowed_root_names = {"README.md", "index.html", *RESPONSIBILITIES}
+        for entry in ai_output.iterdir():
+            if entry.name not in allowed_root_names:
+                if entry.suffix.lower() == ".md":
+                    raise ValueError(
+                        f"AI output Markdown artifact requires manual HTML conversion: {entry}"
+                    )
+                raise ValueError(
+                    f"AI output root artifact or custom directory requires manual classification: {entry}"
+                )
+        for responsibility in RESPONSIBILITIES:
+            directory = ai_output / responsibility
+            if not directory.exists():
+                continue
+            for artifact in directory.iterdir():
+                if artifact.is_symlink():
+                    raise ValueError(f"AI output artifact must not be a symlink: {artifact}")
+                if not artifact.is_file():
+                    raise ValueError(f"nested AI output path is not allowed: {artifact}")
+                if artifact.suffix.lower() != ".html":
+                    if artifact.suffix.lower() == ".md":
+                        raise ValueError(
+                            f"AI output Markdown artifact requires manual HTML conversion: {artifact}"
+                        )
+                    raise ValueError(f"AI output artifact must be HTML: {artifact}")
+
+
+def validate_context_tree(context: Path) -> None:
+    reject_symlink(context, "context root")
+    if not context.exists():
+        return
+    if not context.is_dir():
+        raise ValueError(f"context root is not a directory: {context}")
+    for directory in managed_directories(context):
+        reject_symlink(directory, "managed directory")
+        if directory.exists() and not directory.is_dir():
+            raise ValueError(f"managed directory path is not a directory: {directory}")
+    for path in managed_files(context):
+        validate_text_file_or_missing(path, "managed file")
+    validate_ai_output_policy(context)
+
+
+def ensure_directory(path: Path) -> None:
+    reject_symlink(path, "managed directory")
+    if path.exists():
+        if not path.is_dir():
+            raise ValueError(f"managed directory path is not a directory: {path}")
+        return
+    path.mkdir()
+
+
+def write_managed(path: Path, content: str, legacy: tuple[str, ...], changes: list[str]) -> None:
+    validate_file_or_missing(path, "managed file")
+    if path.exists():
+        current = path.read_text(encoding="utf-8")
+        if current == content:
+            return
+        if current not in legacy:
+            return
+    else:
+        path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="utf-8")
+    changes.append(str(path))
+
+
+def remove_managed_gitignore(context: Path, changes: list[str]) -> None:
+    path = context / ".gitignore"
+    reject_symlink(path, "managed .gitignore")
+    if path.is_file() and path.read_text(encoding="utf-8") == LEGACY_CONTEXT_GITIGNORE:
+        path.unlink()
+        changes.append(str(path))
+
+
+def migrate_ai_output_policy(context: Path, changes: list[str]) -> None:
+    markdown = context / "ai_output" / "README.md"
+    html = context / "ai_output" / "index.html"
+    validate_ai_output_policy(context)
+    if not html.exists() or html.read_text(encoding="utf-8") != AI_OUTPUT_INDEX:
+        html.write_text(AI_OUTPUT_INDEX, encoding="utf-8")
+        changes.append(str(html))
+    if markdown.exists():
+        markdown.unlink()
+        changes.append(str(markdown))
+
+
+def validate_non_git_agent_entry(agents: Path) -> None:
+    validate_text_file_or_missing(agents, "AGENTS.md")
+    if not agents.exists():
+        return
+    original = agents.read_text(encoding="utf-8")
+    known_blocks = (
+        LEGACY_AGENT_BLOCK,
+        PREVIOUS_AGENT_BLOCK,
+        PREVIOUS_HTML_AGENT_BLOCK,
+        AGENT_BLOCK,
+    )
+    if any(block in original for block in known_blocks):
+        if original.count(MARKER) != 1:
+            raise ValueError(f"managed AGENTS block is ambiguous; refusing update: {agents}")
+        return
+    if MARKER in original:
+        raise ValueError(f"managed AGENTS block was edited; refusing update: {agents}")
+
+
+def update_non_git_agents(root: Path, changes: list[str]) -> None:
+    agents = root / "AGENTS.md"
+    validate_non_git_agent_entry(agents)
+    if not agents.exists():
+        agents.write_text(f"<INSTRUCTIONS>\n{AGENT_BLOCK}</INSTRUCTIONS>\n", encoding="utf-8")
+        changes.append(str(agents))
+        return
+    original = agents.read_text(encoding="utf-8")
+    for previous in (LEGACY_AGENT_BLOCK, PREVIOUS_AGENT_BLOCK, PREVIOUS_HTML_AGENT_BLOCK):
+        if previous in original:
+            agents.write_text(original.replace(previous, AGENT_BLOCK), encoding="utf-8")
+            changes.append(str(agents))
+            return
+    if AGENT_BLOCK in original:
+        return
+    closing = "</INSTRUCTIONS>"
+    position = original.rfind(closing)
+    if position >= 0:
+        updated = original[:position].rstrip() + "\n\n" + AGENT_BLOCK + original[position:]
+    else:
+        updated = original.rstrip() + "\n\n" + AGENT_BLOCK
+    agents.write_text(updated, encoding="utf-8")
+    changes.append(str(agents))
+
+
+def removable_git_agent_block(agents: Path) -> tuple[str, str] | None:
+    validate_text_file_or_missing(agents, "AGENTS.md")
+    if not agents.is_file():
+        return None
+    original = agents.read_text(encoding="utf-8")
+    if MARKER not in original:
+        return None
+    block = next(
+        (
+            value
+            for value in (
+                LEGACY_AGENT_BLOCK,
+                PREVIOUS_AGENT_BLOCK,
+                PREVIOUS_HTML_AGENT_BLOCK,
+                AGENT_BLOCK,
+            )
+            if value in original
+        ),
+        None,
+    )
+    if block is None:
+        raise ValueError(f"managed AGENTS block was edited; refusing removal: {agents}")
+    return original, block
+
+
+def remove_git_agent_entry(root: Path, changes: list[str]) -> None:
+    agents = root / "AGENTS.md"
+    removable = removable_git_agent_block(agents)
+    if removable is None:
+        return
+    original, block = removable
+    start = original.index(block)
+    left = original[:start]
+    right = original[start + len(block) :]
+    if left.endswith("\n\n"):
+        left = left[:-1]
+    updated = left + right
+    if updated.strip() == "<INSTRUCTIONS>\n</INSTRUCTIONS>":
+        agents.unlink()
+    else:
+        agents.write_text(updated, encoding="utf-8")
+    changes.append(str(agents))
+
+
+def ensure_excluded(exclude: Path, changes: list[str]) -> None:
+    validate_text_file_or_missing(exclude, "Git exclude file")
+    current = exclude.read_text(encoding="utf-8") if exclude.exists() else ""
+    if any(line.strip() == "/context" for line in current.splitlines()):
+        return
+    exclude.parent.mkdir(parents=True, exist_ok=True)
+    prefix = current
+    if prefix and not prefix.endswith("\n"):
+        prefix += "\n"
+    exclude.write_text(prefix + "# Local project context shared by worktrees\n/context\n", encoding="utf-8")
+    changes.append(str(exclude))
+
+
+def migrate_git_context(root: Path, common: Path, changes: list[str]) -> Path:
+    source = root / "context"
+    target = common / "project-context"
+    reject_symlink(target, "Git common-dir context")
+    if target.exists() and not target.is_dir():
+        raise ValueError(f"Git common-dir context is not a directory: {target}")
+    if source.is_symlink():
+        if source.resolve() != target.resolve():
+            raise ValueError(f"context symlink points elsewhere: {source}")
+        if not target.exists():
+            target.mkdir(parents=True)
+            changes.append(str(target))
+        if not source.readlink().is_absolute():
+            source.unlink()
+            source.symlink_to(target, target_is_directory=True)
+            changes.append(str(source))
+        return target
+    if source.exists():
+        if not source.is_dir():
+            raise ValueError(f"context path is not a directory: {source}")
+        if target.exists():
+            raise ValueError(f"both context source and target exist: {source}, {target}")
+        source.rename(target)
+        changes.extend((str(source), str(target)))
+    else:
+        if not target.exists():
+            target.mkdir(parents=True)
+            changes.append(str(target))
+    source.symlink_to(target, target_is_directory=True)
+    changes.append(str(source))
+    return target
+
+
+def validate_git_migration(root: Path, common: Path, exclude: Path) -> None:
+    source = root / "context"
+    target = common / "project-context"
+    removable_git_agent_block(root / "AGENTS.md")
+    validate_text_file_or_missing(exclude, "Git exclude file")
+    reject_symlink(target, "Git common-dir context")
+    if target.exists() and not target.is_dir():
+        raise ValueError(f"Git common-dir context is not a directory: {target}")
+    if source.is_symlink():
+        if source.resolve() != target.resolve():
+            raise ValueError(f"context symlink points elsewhere: {source}")
+        validate_context_tree(target)
+        return
+    if source.exists():
+        if not source.is_dir():
+            raise ValueError(f"context path is not a directory: {source}")
+        if target.exists():
+            raise ValueError(f"both context source and target exist: {source}, {target}")
+        validate_context_tree(source)
+        return
+    validate_context_tree(target)
+
+
+def initialize(root: Path, title: str) -> list[str]:
+    if not root.is_dir():
+        raise ValueError(f"project root is not a directory: {root}")
+    if not title.strip() or "\n" in title or "\r" in title:
+        raise ValueError("title must be a non-empty single line")
+
+    changes: list[str] = []
+    paths = git_paths(root)
+    git_backed = paths is not None
+    if paths:
+        common, exclude = paths
+        validate_git_migration(root, common, exclude)
+        context = migrate_git_context(root, common, changes)
+        ensure_excluded(exclude, changes)
+        remove_git_agent_entry(root, changes)
+    else:
+        context = root / "context"
+        validate_context_tree(context)
+        validate_non_git_agent_entry(root / "AGENTS.md")
+        context.mkdir(exist_ok=True)
+        update_non_git_agents(root, changes)
+
+    for directory in managed_directories(context):
+        ensure_directory(directory)
+
+    migrate_ai_output_policy(context, changes)
+    write_managed(
+        context / "README.md",
+        context_readme(title.strip(), git_backed),
+        (
+            legacy_context_readme(title.strip()),
+            previous_context_readme(title.strip(), git_backed),
+            previous_html_context_readme(title.strip(), git_backed),
+        ),
+        changes,
+    )
+    write_managed(context / "canonical/README.md", CANONICAL_README, (LEGACY_CANONICAL_README,), changes)
+    write_managed(context / "sources/internal/README.md", INTERNAL_README, (LEGACY_INTERNAL_README,), changes)
+    write_managed(context / "sources/external/README.md", EXTERNAL_README, (LEGACY_EXTERNAL_README,), changes)
+    remove_managed_gitignore(context, changes)
+    return changes
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("root", type=Path)
+    parser.add_argument("--title")
+    return parser.parse_args()
+
+
+def main() -> int:
+    args = parse_args()
+    root = args.root.expanduser().resolve()
+    title = args.title or root.name
+    for path in initialize(root, title):
+        print(path)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

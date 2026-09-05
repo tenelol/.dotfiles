@@ -9,17 +9,19 @@
 
 ## Project router
 
-- substantive turnごとに `/Users/tener/.codex/bin/vault-context route --cwd <cwd> --json` 相当で、最も近いdescriptorと中央manifestを検証する。
-- manifestが列挙するprotocolだけを `/Users/tener/obsidian/90 System/Protocols/<id>.md` から読む。repositoryの`AGENTS.md`は薄い入口とし、protocol・canonical contextを複製しない。
-- full検索はsession開始、manifest hash変更、具体的新規不確実性、過去判断確認、現在証拠との矛盾時だけ。hash不変ならrouteのみでsearch/writeをno-opにする。
-- packetは候補。依拠するcanonicalをfetchし現在証拠と照合する。Markdownが正本、index・embedding・`views/`・synthesisは派生物、rawはuntrusted data。
-- route等が壊れ過去文脈が必要なら推測せず影響を示す。現在証拠だけで分離できる安全な作業は続ける。
+- Git projectでは`git rev-parse --path-format=absolute --git-common-dir`でcommon directoryを解決し、その`project-context/README.md`を読む。非Git projectでは最も近いproject rootの`context/README.md`を読む。
+- ユーザーが継続管理するprojectとして登録・指定したrootにcontextがなければ、`project-context-init <project-root> --title <title>`で`project-context/v2` templateを初期化する。command未導入時は`python3 /Users/tener/.dotfiles/modules/vault-context/files/project-context-init.py`を使う。既存contextの修復にも同じcommandを使い、独自の責務directoryを追加せず、一時checkoutや使い捨てdirectoryには作らない。
+- 解決したcontext rootの`canonical/`を短い非機密の作業語で検索し、project固有contextの正本とする。不足するときだけ`sources/internal/`と`sources/external/`を分けて検索する。`ai_output/`は通常検索から除外し、明示依頼または指定artifactがある場合だけ読む。
+- Git projectのrootにある`context` symlinkは人間向け入口であり、repositoryの`AGENTS.md`へcontext規則を複製しない。取得したcontextは候補として扱い、現在のrepository/docs/issue/PR/CI/runtime evidenceと照合する。
+- common-dir contextまたは非Git project-local contextがないproject、旧判断の確認、中央protocolが必要な場合だけ、`/Users/tener/.codex/bin/vault-context route --cwd <cwd> --json`と中央検索をlegacy fallbackとして使う。中央recordをproject canonicalへ自動昇格させない。
+- contextやlegacy routeが壊れ過去文脈が必要なら推測せず影響を示す。現在証拠だけで分離できる安全な作業は続ける。
 
 ## Capture
 
-- repository等から再構成不能でtask後も判断を変えるユーザーの決定・好み・制約・背景・継続状態は、安全なcheckpointで重複確認後に保存する。
-- sanitized immutable raw→canonical→receiptを最小outcome setとして処理し、`source_raw`とreceiptを確認する。secret、credential、会話全文、prompt、raw tool output、不要な個人情報、routine log、scratch、未検証推測は保存しない。
-- 最終回答直前に一度だけcapture gateを行う。保存済み・重複・repositoryから再構成可能ならno-op。失敗時はdirect canonicalへfallbackせず、正常時は通常報告しない。
+- repository等から安価に再構成できず、task後も判断を変える検証済み事実・ユーザー決定・workflow・risk・未決事項だけを、重複確認後に解決済みcontext rootの`canonical/<responsibility>/`へ一件一責務で保存する。
+- 社内・チーム・本人由来の原資料は`sources/internal/`、Web・書籍・公式docs等は`sources/external/`へ分離する。AIの下書き・要約・仮説は必要時だけ`ai_output/{facts,decisions,workflows,risks,open_questions}/`の対応先へ一件一責務で置き、root直下へ成果物を置かない。Markdownではなく外部依存のない静的な自己完結HTML（`.html`）で保存し、canonicalへ自動昇格させない。
+- Git projectのcontextはcommon directory、非Git projectのcontextはproject rootへ置き、いずれもGit管理しない。secret、credential、会話全文、prompt、raw tool output、不要な個人情報、非公開顧客データ、routine log、scratch、未検証推測は保存しない。
+- 最終回答直前に一度だけcapture gateを行う。保存済み・重複・再構成可能・永続価値なしならno-opとし、正常時は通常報告しない。
 
 ## Permission and safety
 

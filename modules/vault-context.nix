@@ -34,6 +34,8 @@ let
           ${./vault-context/tests}/test_sync_vault_context_runtime.py -v
         DOTFILES_REPOSITORY=${../.} PYTHONDONTWRITEBYTECODE=1 python3 \
           ${./vault-context/tests}/test_vault_git_sync.py -v
+        DOTFILES_REPOSITORY=${../.} PYTHONDONTWRITEBYTECODE=1 python3 \
+          ${./vault-context/tests}/test_project_context_init.py -v
         touch "$out"
       '';
   vaultContextRuntime = pkgs.runCommand "vault-context-runtime" { } ''
@@ -87,6 +89,13 @@ let
       exec /Users/tener/.codex/mcp/vault-context-mcp/bin/vault-context "$@"
     '';
   };
+  projectContextInit = pkgs.writeShellApplication {
+    name = "project-context-init";
+    runtimeInputs = [ pkgs.python3 ];
+    text = ''
+      exec python3 ${./vault-context/files/project-context-init.py} "$@"
+    '';
+  };
 in
 delib.module {
   name = "vault-context";
@@ -117,6 +126,10 @@ delib.module {
         source = "${vaultGitSync}/bin/vault-git-sync";
         executable = true;
         force = true;
+      };
+      ".local/bin/project-context-init" = {
+        source = "${projectContextInit}/bin/project-context-init";
+        executable = true;
       };
     };
 
