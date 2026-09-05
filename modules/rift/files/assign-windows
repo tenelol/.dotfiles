@@ -30,4 +30,10 @@ assign_app() {
       done
 }
 
-assign_app com.google.Chrome 3
+assign_app com.mitchellh.ghostty 0
+assign_app company.thebrowser.dia 0
+assign_app com.tinyspeck.slackmacgap 2
+assign_app jp.naver.line.mac 3
+assign_app com.apple.mail 4
+assign_app com.apple.Notes 7
+assign_app com.openai.codex 8

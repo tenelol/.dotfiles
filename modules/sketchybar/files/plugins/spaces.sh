@@ -1,7 +1,8 @@
 #!/bin/sh
 
-SKETCHYBAR_BIN="/opt/homebrew/bin/sketchybar"
-RIFT_CLI="/opt/homebrew/bin/rift-cli"
+SKETCHYBAR_BIN="${SKETCHYBAR_BIN:-/opt/homebrew/bin/sketchybar}"
+RIFT_CLI="${RIFT_CLI:-/opt/homebrew/bin/rift-cli}"
+JQ="${JQ:-/usr/bin/jq}"
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/sketchybar"
 FOCUSED_STATE_FILE="$STATE_DIR/focused_workspace"
 PREVIOUS_STATE_FILE="$STATE_DIR/previous_workspace"
@@ -17,12 +18,20 @@ aerospace_running() {
 }
 
 managed_workspaces() {
-  printf '%s\n' "1 2 3 4 5 6 7 8 9"
+  if aerospace_running; then
+    printf '%s\n' "1 2 3 4 5 6 7 8 9"
+  else
+    printf '%s\n' "$rift_workspaces" | "$JQ" -r '.[] | .index + 1'
+  fi
 }
 
 space_item_name() {
   workspace_id="$1"
-  local_workspace=$(( (workspace_id - 1) % 9 + 1 ))
+  if aerospace_running; then
+    local_workspace=$(( (workspace_id - 1) % 9 + 1 ))
+  else
+    local_workspace="$workspace_id"
+  fi
 
   printf 'space.%s.%s\n' "$workspace_id" "$local_workspace"
 }
@@ -33,11 +42,8 @@ query_focused_workspace() {
     return
   fi
 
-  "$RIFT_CLI" query workspaces 2>/dev/null \
-    | tr '{' '\n' \
-    | sed -nE 's/.*"index"[[:space:]]*:[[:space:]]*([0-9]+).*"is_active"[[:space:]]*:[[:space:]]*true.*/\1/p' \
-    | head -n 1 \
-    | awk '{ print $1 + 1 }'
+  printf '%s\n' "$rift_workspaces" \
+    | "$JQ" -r '[.[] | select(.is_active) | .index + 1][0] // empty'
 }
 
 is_managed_workspace() {
@@ -60,7 +66,12 @@ set_inactive() {
   "$SKETCHYBAR_BIN" --set "$(space_item_name "$1")" label.color="$WORKSPACE_INACTIVE"
 }
 
-focused_workspace="$FOCUSED"
+if aerospace_running; then
+  focused_workspace="${FOCUSED:-}"
+else
+  rift_workspaces="$("$RIFT_CLI" query workspaces 2>/dev/null)" || exit 0
+  focused_workspace=""
+fi
 [ -n "$focused_workspace" ] || focused_workspace="$(query_focused_workspace)"
 [ -n "$focused_workspace" ] || exit 0
 

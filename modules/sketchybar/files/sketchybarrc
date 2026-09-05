@@ -1,7 +1,8 @@
 #!/bin/bash
 
-SKETCHYBAR_BIN="/opt/homebrew/bin/sketchybar"
-RIFT_CLI="/opt/homebrew/bin/rift-cli"
+SKETCHYBAR_BIN="${SKETCHYBAR_BIN:-/opt/homebrew/bin/sketchybar}"
+RIFT_CLI="${RIFT_CLI:-/opt/homebrew/bin/rift-cli}"
+JQ="${JQ:-/usr/bin/jq}"
 PLUGIN_DIR="$CONFIG_DIR/plugins"
 
 TRANSPARENT=0x00000000
@@ -22,10 +23,7 @@ focused_workspace() {
   fi
 
   "$RIFT_CLI" query workspaces 2>/dev/null \
-    | tr '{' '\n' \
-    | sed -nE 's/.*"index"[[:space:]]*:[[:space:]]*([0-9]+).*"is_active"[[:space:]]*:[[:space:]]*true.*/\1/p' \
-    | head -n 1 \
-    | awk '{ print $1 + 1 }'
+    | "$JQ" -r '[.[] | select(.is_active) | .index + 1][0] // empty'
 }
 
 add_workspace_item() {
@@ -157,7 +155,11 @@ if /usr/bin/pgrep -qx AeroSpace >/dev/null 2>&1 && [ -x /opt/homebrew/bin/aerosp
     add_workspace_group "" "0" "9"
   fi
 else
-  add_workspace_group "" "0" "9"
+  workspace_count="$("$RIFT_CLI" query workspaces 2>/dev/null | "$JQ" -r 'length' 2>/dev/null)"
+  case "$workspace_count" in
+    ""|0|*[!0-9]*) workspace_count=9 ;;
+  esac
+  add_workspace_group "" "0" "$workspace_count"
 fi
 
 space_observer=(
