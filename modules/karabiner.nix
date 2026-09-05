@@ -28,11 +28,6 @@ delib.module {
       };
     };
 
-    home.file.".local/bin/toggle-ghostty-quick-terminal" = {
-      source = ./karabiner/files/toggle-ghostty-quick-terminal;
-      executable = true;
-    };
-
     xdg.configFile."karabiner/karabiner.json" = {
       force = true;
       source = ./karabiner/files/config/karabiner.json;
