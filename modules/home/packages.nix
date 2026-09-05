@@ -127,7 +127,6 @@ let
   ];
 
   linuxFullDesktopPackages = with pkgs; [
-    google-chrome
     sqlitebrowser
     obsidian
     slack

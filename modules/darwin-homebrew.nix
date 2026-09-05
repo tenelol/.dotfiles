@@ -152,7 +152,6 @@ delib.module {
         "font-noto-color-emoji"
         "font-noto-sans-cjk"
         "ghostty"
-        "google-chrome"
         "insomnia"
         "karabiner-elements"
         "markdown-preview"
