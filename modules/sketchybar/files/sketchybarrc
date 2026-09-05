@@ -157,7 +157,7 @@ if /usr/bin/pgrep -qx AeroSpace >/dev/null 2>&1 && [ -x /opt/homebrew/bin/aerosp
     add_workspace_group "" "0" "9"
   fi
 else
-  add_workspace_group "" "0" "5"
+  add_workspace_group "" "0" "9"
 fi
 
 space_observer=(

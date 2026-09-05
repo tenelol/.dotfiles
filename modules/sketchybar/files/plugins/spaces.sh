@@ -17,11 +17,7 @@ aerospace_running() {
 }
 
 managed_workspaces() {
-  if aerospace_running; then
-    printf '%s\n' "1 2 3 4 5 6 7 8 9"
-  else
-    printf '%s\n' "1 2 3 4 5"
-  fi
+  printf '%s\n' "1 2 3 4 5 6 7 8 9"
 }
 
 space_item_name() {
