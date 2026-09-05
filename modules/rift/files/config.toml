@@ -126,7 +126,6 @@ app_rules = [
   { app_id = "org.qutebrowser.qutebrowser", workspace = 1 },
   { app_id = "com.apple.mail", workspace = 2 },
   { app_id = "com.tinyspeck.slackmacgap", workspace = 2 },
-  { app_id = "dev.vencord.vesktop", workspace = 2 },
   { app_id = "jp.naver.line.mac", workspace = 2 },
   { app_id = "com.google.Chrome", workspace = 3 },
   { app_id = "com.spotify.client", workspace = 3 },

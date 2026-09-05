@@ -130,7 +130,6 @@ let
     google-chrome
     sqlitebrowser
     obsidian
-    vesktop
     slack
     libreoffice-fresh
   ];

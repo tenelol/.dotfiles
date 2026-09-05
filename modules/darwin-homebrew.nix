@@ -183,9 +183,7 @@ delib.module {
         "slack"
         "spotify"
         "steam"
-        "vesktop"
         "visual-studio-code"
-        "zoom"
       ];
     };
   };
