@@ -65,8 +65,8 @@ custom-shader = ~/.config/ghostty/shaders/ripple_rectangle_cursor.glsl
 custom-shader-animation = always
 
 # Quick terminal
-# Ctrl+Enter toggles the quick terminal while Ghostty is focused.
-keybind = "ctrl+enter=toggle_quick_terminal"
+# Ctrl+Enter toggles the quick terminal from any application.
+keybind = "global:ctrl+enter=toggle_quick_terminal"
 command-palette-entry = "title:Quick Terminal,action:toggle_quick_terminal"
 quick-terminal-position = "center"
 quick-terminal-size = "1000px,700px"
