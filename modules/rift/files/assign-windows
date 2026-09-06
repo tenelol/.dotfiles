@@ -32,6 +32,7 @@ assign_app() {
 
 assign_app com.mitchellh.ghostty 0
 assign_app company.thebrowser.dia 0
+assign_app com.hnc.Discord 1
 assign_app com.tinyspeck.slackmacgap 2
 assign_app jp.naver.line.mac 3
 assign_app com.apple.mail 4
