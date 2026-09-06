@@ -10,6 +10,7 @@ vim.api.nvim_create_user_command("SelectAll", "normal! ggVG", {
   desc = "Select the entire buffer",
 })
 
+map("n", "<Esc>", "<Cmd>nohlsearch<CR><Esc>", { silent = true, desc = "Clear search highlighting" })
 map("i", "kj", "<Esc>", { silent = true })
 map("t", "<C-s>", [[<C-\><C-n>]], { noremap = true, silent = true })
 map({ "n", "i", "v" }, "<leader>va", select_all, { silent = true, desc = "Select all" })

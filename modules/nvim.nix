@@ -236,6 +236,15 @@ let
     ];
     keymaps = [
       {
+        mode = "n";
+        key = "<Esc>";
+        action = "<Cmd>nohlsearch<CR><Esc>";
+        options = {
+          silent = true;
+          desc = "Clear search highlighting";
+        };
+      }
+      {
         mode = "i";
         key = "kj";
         action = "<Esc>";
