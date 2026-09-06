@@ -5,8 +5,7 @@
 )
 
 (defalias
-  caps-prefix (one-shot 750 (layer-while-held caps-prefix))
-  capctl (tap-hold 160 130 (tap-dance-eager 160 (esc @caps-prefix)) lctl)
+  capctl (tap-hold 160 130 (tap-dance-eager 160 (esc C-b)) lctl)
   fsyms (tap-hold-tap-keys 200 150 f (layer-while-held symbols) (a e i o u))
   vnav (tap-hold-tap-keys 200 150 v (layer-while-held navigation) (a e i o u))
   scru (mwheel-up 50 120)
@@ -23,12 +22,6 @@
   @capctl @fsyms @vnav h j k l u i o p n m comm . scln / @lcmd
   a e spc
   brdn brup mctl sls dtn dnd prev pp next mute vold volu
-)
-
-(deflayer caps-prefix
-  XX XX XX C-b XX XX XX XX XX XX XX XX XX XX XX XX XX XX
-  XX XX XX
-  XX XX XX XX XX XX XX XX XX XX XX XX
 )
 
 (deflayer symbols
