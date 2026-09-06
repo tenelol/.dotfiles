@@ -371,24 +371,28 @@ let
       ps.magick
     ];
 
-    extraPackages = with pkgs; [
-      lua-language-server
-      clang-tools
-      pyright
-      gopls
-      nil
-      nvim.jupyterPython
-      imagemagick
-      vscode-langservers-extracted
-      fd
-      lazygit
-      ripgrep
-      stylua
-      nixfmt
-      gofumpt
-      gotools
-      deno
-    ];
+    extraPackages =
+      with pkgs;
+      [
+        lua-language-server
+        pyright
+        gopls
+        nil
+        nvim.jupyterPython
+        imagemagick
+        vscode-langservers-extracted
+        stylua
+        nixfmt
+        gofumpt
+        gotools
+        deno
+      ]
+      ++ lib.optionals (!stdenv.hostPlatform.isDarwin) [
+        clang-tools
+        fd
+        lazygit
+        ripgrep
+      ];
   };
 in
 delib.module {

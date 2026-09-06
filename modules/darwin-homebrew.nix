@@ -105,6 +105,7 @@ delib.module {
         "python@3.14"
         "ripgrep"
         "rust"
+        "sqlite"
         "supabase"
         "swiftlint"
         "tre-command"

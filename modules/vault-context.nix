@@ -103,8 +103,6 @@ delib.module {
   options = delib.singleEnableOption isMacbook;
 
   home.ifEnabled = lib.mkIf isMacbook {
-    home.packages = [ pkgs.sqlite ];
-
     home.file = {
       ".codex/AGENTS.md" = {
         source = ./vault-context/files/codex/AGENTS.md;

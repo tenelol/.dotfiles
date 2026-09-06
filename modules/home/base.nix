@@ -35,6 +35,7 @@ delib.module {
       "/opt/homebrew/opt/grep/libexec/gnubin"
       "/opt/homebrew/opt/llvm/bin"
       "/opt/homebrew/opt/make/libexec/gnubin"
+      "/opt/homebrew/opt/sqlite/bin"
       "/opt/homebrew/bin"
       "/opt/homebrew/sbin"
       "/usr/local/bin"
