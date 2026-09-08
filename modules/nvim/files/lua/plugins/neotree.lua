@@ -58,9 +58,7 @@ return {
         close_if_last_window = true,
         popup_border_style = "rounded",
         enable_git_status = true,
-        -- DiagnosticChanged redraws every open tree while editing and makes
-        -- the sidebar visibly jitter. Diagnostics remain visible in buffers.
-        enable_diagnostics = false,
+        enable_diagnostics = true,
         default_component_configs = {
           name = {
             use_git_status_colors = false,
