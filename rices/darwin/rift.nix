@@ -10,7 +10,7 @@ delib.rice {
       wallpaper = "rift.png";
       ghostty = {
         foreground = "b3bbc7";
-        background = "11151d";
+        background = "0a0a0a";
         backgroundBlur = 96;
         readabilityScrim = 0.52;
         cursor = "5f7695";

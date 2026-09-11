@@ -108,7 +108,7 @@ delib.module {
       };
       ghostty = {
         foreground = strOption "c0caf5";
-        background = strOption "24283b";
+        background = strOption (if pkgs.stdenv.hostPlatform.isDarwin then "0a0a0a" else "24283b");
         backgroundBlur = intOption (if pkgs.stdenv.hostPlatform.isDarwin then 96 else 64);
         readabilityScrim = floatOption 0.42;
         cursor = strOption "5f7695";

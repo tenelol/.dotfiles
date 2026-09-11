@@ -19,7 +19,7 @@ delib.rice {
       };
       ghostty = {
         foreground = "dbeafe";
-        background = "101827";
+        background = "0a0a0a";
         backgroundBlur = 192;
         readabilityScrim = 0.58;
         cursor = "5f7695";
