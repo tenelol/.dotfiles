@@ -65,7 +65,7 @@ If the user wants persistence across sessions, prefer a local config file such a
 Prefer the bundled helper:
 
 ```bash
-/Users/tener/.codex/skills/proxmox-pve/scripts/pve-api.sh /version
+/Users/tener/.agents/skills/proxmox-pve/scripts/pve-api.sh /version
 ```
 
 The helpers auto-load this file when present:
@@ -96,13 +96,13 @@ curl -ksS \
 For node shell access:
 
 ```bash
-/Users/tener/.codex/skills/proxmox-pve/scripts/pve-node-ssh.sh hostname
+/Users/tener/.agents/skills/proxmox-pve/scripts/pve-node-ssh.sh hostname
 ```
 
 For LXC commands through the node:
 
 ```bash
-/Users/tener/.codex/skills/proxmox-pve/scripts/pve-lxc-exec.sh 103 -- uname -a
+/Users/tener/.agents/skills/proxmox-pve/scripts/pve-lxc-exec.sh 103 -- uname -a
 ```
 
 ## Common API paths

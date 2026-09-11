@@ -52,7 +52,7 @@
 - Do not rewrite the repo as a generic public template unless the user asks for that.
 
 ## Codex skills
-- Keep user-authored Codex skills under `.codex/skills/` as the Git-managed source of truth. The `codex-skills` module deploys each skill into `~/.codex/skills/` without managing Codex-owned `.system` or runtime/plugin skills.
+- Keep user-authored Codex skills under `.agents/skills/` as the Git-managed source of truth. The `codex-skills` module deploys each skill into `~/.agents/skills/` without managing Codex-owned `.system` or runtime/plugin skills.
 - `dotfiles-workflow`: use when changing this repo's Nix structure, docs, or validation workflow.
 - `windows-via-crd`: use only when operating the personal Windows PC `Tener` through Chrome Remote Desktop.
 

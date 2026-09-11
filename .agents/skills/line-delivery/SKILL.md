@@ -16,7 +16,7 @@ Deliver the final user-facing report through the `send_line_report` MCP tool. Th
 4. Only in an interactive session where the MCP tool is unavailable, use the deterministic CLI fallback through standard input:
 
 ```sh
-skill_dir="${CODEX_HOME:-$HOME/.codex}/skills/line-delivery"
+skill_dir="$HOME/.agents/skills/line-delivery"
 printf '%s' "$REPORT" | node "$skill_dir/scripts/send-line.mjs" --title "$TITLE"
 ```
 

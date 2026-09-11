@@ -17,7 +17,7 @@ description: Edit, review, validate, build, switch, or document the personal den
 - Keep `hosts/<name>/default.nix` thin: host metadata plus hardware imports.
 - Put denix-discovered behavior in `modules/`, including nested module files, and rice variants in `rices/`.
 - Put integrated Home Manager behavior in each denix module's `home.*` sections. Do not create a separate shared `home/` module tree or standalone `homeConfigurations` without an explicit architecture change.
-- Colocate deployed non-Nix sources under the owning `modules/<feature>/files/` directory, rice wallpapers in `rices/wallpapers/`, package-owned sources beside their definition in `packages/`, and user-authored Codex skills in `.codex/skills/`. Keep Codex-owned `.system` and runtime/plugin skills outside the repository.
+- Colocate deployed non-Nix sources under the owning `modules/<feature>/files/` directory, rice wallpapers in `rices/wallpapers/`, package-owned sources beside their definition in `packages/`, and user-authored Codex skills in `.agents/skills/`. Keep Codex-owned `.system` and runtime/plugin skills outside the repository.
 - Put artifact tests beside their owner under a feature-local `tests/` directory; use `.codex/tests/` only for Codex configuration and skill tests.
 - Do not manually import local denix modules. Keep imports for external modules, generated hardware modules, and deliberate reusable-module boundaries.
 - Keep single-consumer behavior in its owning denix module. Put explicitly imported package and runtime value generation in `packages/`; do not create a top-level `lib/` solely as an escape hatch from denix auto-discovery.

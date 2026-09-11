@@ -68,7 +68,7 @@ Default to the native backend whenever its visible schema advertises the selecte
 Use the CLI backend only when the selected Terra or Luna route is absent from the native schema but picker-visible in the filtered CLI catalog, or when the user explicitly requests a CLI leaf. Check both backends before reporting the requested route unavailable. Do not silently move an explicit native-model request to CLI. The bundled leaf worker invokes `codex exec --model <resolved-model>` with an explicit reasoning override:
 
 ```bash
-python3 "$HOME/.codex/skills/subagent-model-router/scripts/run_model_agent.py" \
+python3 "$HOME/.agents/skills/subagent-model-router/scripts/run_model_agent.py" \
   --tier fast \
   --sandbox read-only \
   --cwd "$PWD" \

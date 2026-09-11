@@ -31,7 +31,7 @@
 | [`modules`](./modules) | denix-discovered system/Home Manager modules and their colocated `files/` assets |
 | [`rices`](./rices) | theme and desktop variants, including wallpapers |
 | [`packages`](./packages) | custom packages, runtime builders, package-owned sources, and their tests |
-| [`.codex/skills`](./.codex/skills) | Git-managed user-authored Codex skills |
+| [`.agents/skills`](./.agents/skills) | Git-managed user-authored Codex skills |
 | [`secrets`](./secrets) | sops-nix encrypted secrets |
 
 ## Rice
