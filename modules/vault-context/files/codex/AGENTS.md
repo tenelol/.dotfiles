@@ -27,6 +27,6 @@
 ## Subagents and recovery
 
 - 並列化・独立レビュー・文脈分離に具体的な利点があるbounded taskだけ委譲する。モデル分散だけを目的に起動せず、子を使わないというユーザー指定を尊重する。
-- 委譲時は `$subagent-model-router` に従い、調査・要約・独立レビューはSol、実装・デバッグ・テスト修正はTerraを基本に、モデルと`xhigh`を明示する。Lunaは使わず、`max`は明示指定時だけ。必要な文脈だけを渡し、利用不能時に黙って別モデルへ切り替えない。
+- 委譲時は `$subagent-model-router` に従う。
 - 親は全体計画・分割・モデル配分・権限・context採否・競合解消・統合・最終検証/capture・最終回答を保持し、子の主張を一次証拠で確認する。
 - compaction後はsummary、plan、diff、task artifactから再開する。同じstatus/search/readはrevision変更・新規不確実性・不完全出力時だけ再実行し、回復passはmaterial progressなしで1回まで。
