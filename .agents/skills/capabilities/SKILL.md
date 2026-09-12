@@ -1,6 +1,9 @@
 ---
 name: capabilities
-description: "shinkokuの対応範囲・対象者・制限を尋ねられたときに使う。一般的なCodexの機能説明には使わない。"
+description: >
+  Display shinkoku's current capabilities, supported personas, and known
+  limitations. Use when the user asks "what can you do?", "what's supported?",
+  or similar questions.
 ---
 
 # shinkoku 対応状況

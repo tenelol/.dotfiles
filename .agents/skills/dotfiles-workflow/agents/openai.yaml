@@ -1,4 +1,0 @@
-interface:
-  display_name: "Dotfiles Workflow"
-  short_description: "Work safely in this denix + nh dotfiles repo"
-  default_prompt: "Use $dotfiles-workflow to make this dotfiles change, run the narrowest sufficient validation, and preserve the active Darwin rice."
