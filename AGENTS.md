@@ -54,7 +54,6 @@
 ## Codex skills
 - Keep user-authored Codex skills under `.agents/skills/` as the Git-managed source of truth. The `codex-skills` module deploys each skill into `~/.agents/skills/` without managing Codex-owned `.system` or runtime/plugin skills.
 - `dotfiles-workflow`: use when changing this repo's Nix structure, docs, or validation workflow.
-- `windows-via-crd`: use only when operating the personal Windows PC `Tener` through Chrome Remote Desktop.
 
 ## Commit message format (required)
 - Use Semantic Commit Message format for every commit:
