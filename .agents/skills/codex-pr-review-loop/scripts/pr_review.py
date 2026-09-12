@@ -76,8 +76,8 @@ DEFAULT_CONFIG = {
     # （些末な指摘で修正ループを回さないため）
     "blockingSeverities": ["high", "medium"],
     "autoWaiveCategories": ["speculative_future", "unnecessary_fallback"],
-    "requireHumanOnFirstRound": True,
-    "requireHumanOnNewHighSeverity": True,
+    "requireHumanOnFirstRound": False,
+    "requireHumanOnNewHighSeverity": False,
     "perspectives": {
         "correctness": "変更されたコードにバグ・論理誤り・境界条件の見落としがないか",
         "spec_mismatch": "PR説明文とリンクされたIssue等の要件に対して、実装内容が一致しているか",
@@ -638,6 +638,48 @@ def run_subprocess(cmd, prompt, timeout, stdout_path, stderr_path):
     return proc.returncode
 
 
+def codex_review_args(extra_args):
+    """Apply review defaults without losing explicit model/effort overrides."""
+    extra_args = list(extra_args or [])
+    if not all(isinstance(value, str) for value in extra_args):
+        die("codexExtraArgs must be an array of strings")
+    models = []
+    efforts = []
+    for index, value in enumerate(extra_args):
+        if value in ("--model", "-m"):
+            if index + 1 >= len(extra_args):
+                die("Missing review model")
+            models.append(extra_args[index + 1])
+        elif value.startswith("--model="):
+            models.append(value.split("=", 1)[1])
+        elif value.startswith("-m") and len(value) > 2:
+            models.append(value[2:])
+        assignment = ""
+        if value in ("-c", "--config") and index + 1 < len(extra_args):
+            assignment = extra_args[index + 1]
+        elif value.startswith("--config="):
+            assignment = value.split("=", 1)[1]
+        elif value.startswith("-c") and len(value) > 2:
+            assignment = value[2:]
+        key, _, setting = assignment.partition("=")
+        setting = setting.strip().strip("\"'")
+        if key.strip() == "model":
+            models.append(setting)
+        elif key.strip() == "model_reasoning_effort":
+            efforts.append(setting)
+    if any(value not in ("gpt-5.6-sol", "gpt-5.6-terra") for value in models):
+        die("Review models are limited to gpt-5.6-sol or gpt-5.6-terra")
+    if any(value not in ("xhigh", "max") for value in efforts):
+        die("Review effort must be xhigh or explicitly requested max")
+    defaults = []
+    if not models:
+        defaults += ["--model", "gpt-5.6-sol"]
+    if not efforts:
+        defaults += ["-c", 'model_reasoning_effort="xhigh"']
+    # A reviewer is a bounded leaf even when the parent allows delegation.
+    return defaults + extra_args + ["-c", "agents.enabled=false"]
+
+
 def run_codex(state, run_dir, prompt, tag, fresh_prompt=None):
     config = state["config"]
     schema_path = os.path.join(run_dir, "findings-schema.json")
@@ -651,7 +693,7 @@ def run_codex(state, run_dir, prompt, tag, fresh_prompt=None):
         "-c", "sandbox_workspace_write.network_access=true",
         "--output-schema", schema_path,
         "-o", last_path,
-    ] + list(config.get("codexExtraArgs") or []) + ["-"]
+    ] + codex_review_args(config.get("codexExtraArgs")) + ["-"]
 
     def invoke(resume_id, prompt_text):
         if resume_id:

@@ -1,7 +1,7 @@
 import unittest
 from pathlib import Path
 
-SKILL = Path(__file__).resolve().parents[1] / "SKILL.md"
+SKILL = Path(__file__).resolve().parents[1] / "references" / "look-directions.md"
 
 
 class SingleFinalChromaPassTest(unittest.TestCase):

@@ -1,6 +1,6 @@
 ---
 name: line-delivery
-description: Configure and send concise Codex reports, alerts, monitoring findings, daily briefs, follow-ups, and weekly reviews to the user's LINE account through the LINE Messaging API. Use for scheduled automations whose primary purpose is sharing information with the user, whenever the user asks to deliver a result via LINE, or when LINE delivery credentials need setup or repair.
+description: "結果や通知をユーザーのLINEへ送る依頼、またはLINE配信の設定・修復に使う。"
 ---
 
 # LINE delivery

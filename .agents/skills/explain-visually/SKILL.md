@@ -1,8 +1,8 @@
 ---
 name: explain-visually
-description: 長大な設計文書・Pull Request・Issueを読み解き、図と短い文を組み合わせた解説HTMLを生成してブラウザで開く。生成したページ内の識別子を指定すると、その項目だけを掘り下げたページも作る。
-argument-hint: "<PR/IssueのURLか番号、または設計文書のパス>"
-disable-model-invocation: true
+description: 長い設計文書・PR・Issueを図付きHTMLで解説し、項目別に深掘りするときに使う。
+metadata:
+  argument-hint: <PR/IssueのURLか番号、または設計文書のパス>
 ---
 
 # ビジュアル付きの解説ページを作る

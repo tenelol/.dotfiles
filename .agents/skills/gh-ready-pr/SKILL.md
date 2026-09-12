@@ -1,6 +1,6 @@
 ---
 name: gh-ready-pr
-description: Non-draft GitHub PR publishing workflow with preflight validation, local merge conflict checks against the base branch, PR creation without draft mode, and post-create GitHub mergeability/status checks. Use when the user asks to draftなしでmerge可否を確認し、PRを投げてください, 非draft PRを作成, open a ready PR, check mergeability and create PR, or similar.
+description: "非draftのGitHub PRを作成し、検証結果とmerge可否を確認する依頼に使う。"
 ---
 
 # GH Ready PR

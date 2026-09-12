@@ -128,8 +128,43 @@ def previous_html_context_readme(title: str, git_backed: bool) -> str:
     return _context_readme(title, git_backed, html_output=True, responsibility_output=False)
 
 
-def context_readme(title: str, git_backed: bool) -> str:
+def previous_v2_context_readme(title: str, git_backed: bool) -> str:
     return _context_readme(title, git_backed, html_output=True, responsibility_output=True)
+
+
+def context_readme(title: str, git_backed: bool) -> str:
+    location = (
+        "Git common directoryの`project-context/`が正本。project rootの`context`は人間向けsymlinkです。"
+        if git_backed
+        else "非Git projectのため、このproject rootの`context/`が正本です。"
+    )
+    return f"""# {title} context
+
+{location}
+
+## 必要時だけ参照
+
+過去の判断・継続作業・現在の一次情報だけでは分からない制約が必要な場合にだけ、このREADMEと対象の記録を読みます。誤字修正など現在の証拠で完結する作業では検索・初期化しません。
+
+- 短い非機密の作業語で`canonical/`だけを検索し、現在のrepository/docs/issue/PR/CI/runtimeと照合します。
+- Gitのignoreに隠れる記録も対象にするため、解決したcanonical内に限定して`rg --hidden --no-ignore`を使います。
+- 根拠が不足するときだけ`sources/internal/`と`sources/external/`を分けて読みます。
+- `ai_output/`は明示されたartifactまたはユーザー指定時だけ読み、それ自体を正本にしません。
+
+## 保存と構造
+
+- version: `{TEMPLATE_VERSION}`。作成・修復は`project-context-init`を使い、独自の責務directoryを追加しません。
+- `canonical/{{facts,decisions,workflows,risks,open_questions}}/`: 人間の決定または一次証拠で検証した永続情報を、一件一責務のMarkdownで保存します。
+- `sources/internal/`: 必要な社内・チーム・本人由来の原資料。`sources/external/`: 外部の出典と短い記録。
+- `ai_output/{{facts,decisions,workflows,risks,open_questions}}/`: 必要なAI下書きを、一件一責務の静的な自己完結HTML（`.html`）で保存します。root直下に置かず、外部assetやscriptへ依存させず、自動昇格しません。
+- 保存候補がある場合だけ重複確認します。再構成可能な情報、secret、credential、不要な個人情報、会話全文、prompt、raw tool output、routine logは保存しません。
+
+参照・保存・legacy fallbackの詳細が必要な場合だけ`~/.codex/project-context-protocol.md`を読みます。初期化は継続管理するprojectで保存・明示された初期化・修復が必要になった場合に限ります。
+
+## 永続性
+
+context全体をGit管理しません。Git projectではbranch変更・linked worktree間で共有されますが、repository削除・再clone・別端末への移動では失われるため、必要なbackupはGitとは別に行います。
+"""
 
 
 LEGACY_CANONICAL_README = """# Canonical context
@@ -304,7 +339,7 @@ PREVIOUS_HTML_AGENT_BLOCK = f"""{MARKER}
 - secret、credential、不要な個人情報、非公開顧客dataを保存しない。
 """
 
-AGENT_BLOCK = f"""{MARKER}
+PREVIOUS_V2_AGENT_BLOCK = f"""{MARKER}
 ## Project context
 
 - substantiveなtaskの開始時に`context/README.md`を読み、短い非機密の作業語で`context/canonical/`を検索する。
@@ -313,6 +348,15 @@ AGENT_BLOCK = f"""{MARKER}
 - `ai_output/`は`facts/`、`decisions/`、`workflows/`、`risks/`、`open_questions/`へ分け、生成物を一件一責務の静的な自己完結HTML（`.html`）として保存する。
 - 会話を毎回保存せず、再構成困難で今後の判断を変える検証済み情報だけを一件一責務で保存する。
 - secret、credential、不要な個人情報、非公開顧客dataを保存しない。
+"""
+
+
+AGENT_BLOCK = f"""{MARKER}
+## Project context
+
+- 過去の判断・継続作業・現在の一次情報だけでは分からない制約が必要なときだけ`context/README.md`を読む。現在の証拠で完結する作業では検索・初期化しない。
+- 将来の判断に効く再構成困難な情報がある場合だけ、READMEと`~/.codex/project-context-protocol.md`に従って重複確認・保存する。AI下書きは静的な自己完結HTMLとして正本から分離する。
+- 構造は`{TEMPLATE_VERSION}`を維持し、作成・修復は`project-context-init`を使う。secret・不要な個人情報・raw logは保存しない。
 """
 
 
@@ -487,6 +531,7 @@ def validate_non_git_agent_entry(agents: Path) -> None:
         LEGACY_AGENT_BLOCK,
         PREVIOUS_AGENT_BLOCK,
         PREVIOUS_HTML_AGENT_BLOCK,
+        PREVIOUS_V2_AGENT_BLOCK,
         AGENT_BLOCK,
     )
     if any(block in original for block in known_blocks):
@@ -505,7 +550,7 @@ def update_non_git_agents(root: Path, changes: list[str]) -> None:
         changes.append(str(agents))
         return
     original = agents.read_text(encoding="utf-8")
-    for previous in (LEGACY_AGENT_BLOCK, PREVIOUS_AGENT_BLOCK, PREVIOUS_HTML_AGENT_BLOCK):
+    for previous in (LEGACY_AGENT_BLOCK, PREVIOUS_AGENT_BLOCK, PREVIOUS_HTML_AGENT_BLOCK, PREVIOUS_V2_AGENT_BLOCK):
         if previous in original:
             agents.write_text(original.replace(previous, AGENT_BLOCK), encoding="utf-8")
             changes.append(str(agents))
@@ -536,6 +581,7 @@ def removable_git_agent_block(agents: Path) -> tuple[str, str] | None:
                 LEGACY_AGENT_BLOCK,
                 PREVIOUS_AGENT_BLOCK,
                 PREVIOUS_HTML_AGENT_BLOCK,
+                PREVIOUS_V2_AGENT_BLOCK,
                 AGENT_BLOCK,
             )
             if value in original
@@ -668,6 +714,7 @@ def initialize(root: Path, title: str) -> list[str]:
             legacy_context_readme(title.strip()),
             previous_context_readme(title.strip(), git_backed),
             previous_html_context_readme(title.strip(), git_backed),
+            previous_v2_context_readme(title.strip(), git_backed),
         ),
         changes,
     )

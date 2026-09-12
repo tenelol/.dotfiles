@@ -1,9 +1,6 @@
 ---
 name: skill-scanner
-description: Scan agent skills for security issues. Use when asked to "scan a skill",
-  "audit a skill", "review skill security", "check skill for injection", "validate SKILL.md",
-  or assess whether an agent skill is safe to install. Checks for prompt injection,
-  malicious scripts, excessive permissions, secret exposure, and supply chain risks.
+description: "スキルの安全性を監査する、または導入前に不審な指示・script・権限を調べる依頼に使う。"
 allowed-tools: Read, Grep, Glob, Bash
 ---
 

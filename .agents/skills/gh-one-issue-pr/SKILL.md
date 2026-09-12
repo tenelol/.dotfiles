@@ -1,6 +1,6 @@
 ---
 name: gh-one-issue-pr
-description: Implement GitHub issues with strict one-issue isolation. Use when the user asks to implement assigned issues, use subagents for issue work, create one branch per issue, create one non-draft PR per issue, avoid mega-PRs, or check PR mergeability for issue implementations.
+description: "GitHub Issueを一件ずつ分離して実装し、一件につき一つのPRを作る依頼に使う。"
 ---
 
 # GH One Issue PR
@@ -17,7 +17,7 @@ Use this workflow to turn assigned GitHub issues into small, reviewable PRs with
 - Do not merge PRs. Only create PRs and report mergeability.
 - Keep each branch scoped to the issue's allowed files and acceptance criteria.
 - If the user explicitly asks for subagents, assign one worker agent to one issue. Never assign the same issue to multiple agents.
-- If the user does not explicitly ask for subagents, work one issue at a time locally.
+- Otherwise delegate only when parallel issue work provides a concrete benefit and current instructions permit it. Respect a no-subagent request. Use `subagent-model-router` for model and effort.
 - Never let multiple agents share one Git worktree. `git switch`, staging, committing, and conflict checks mutate worktree-local Git state and can interfere across agents.
 
 ## Workflow
@@ -62,7 +62,7 @@ Use this workflow to turn assigned GitHub issues into small, reviewable PRs with
    - Use a non-mutating local conflict check such as `git merge-tree --write-tree HEAD origin/<base>` when available.
    - If conflicts exist, stop that issue and report conflicting files. Do not open a ready PR.
 
-8. Commit, push, and create the PR:
+8. Commit, push, and create the PR only when those operations are authorized by the request or session:
    - Stage only files for that issue.
    - Commit with a clear issue-scoped message.
    - Push with upstream tracking.
@@ -92,7 +92,7 @@ Allowed files:
 Do not touch:
 <issue do-not-touch list>
 
-Implement the issue acceptance criteria, run the closest validation, commit, push, and create a non-draft PR if validation and local merge checks pass. Return the PR URL, mergeability status, validation commands, and changed files.
+Implement the issue acceptance criteria and run the closest validation. Commit, push, and create a non-draft PR only when the parent packet explicitly includes the user's authorization and the checks pass. Return the PR URL, mergeability status, validation commands, and changed files.
 ```
 
 ## Stop Conditions

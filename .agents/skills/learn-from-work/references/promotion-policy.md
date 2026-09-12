@@ -1,6 +1,6 @@
 # Promotion policy
 
-Promotion moves a proven learning to the narrowest place that can reliably change future behavior. It is always proposed first and requires explicit user approval before mutation.
+Promotion moves a proven learning to the narrowest place that can reliably change future behavior. Apply only an already approved destination and change; a recurrence threshold alone is not authorization.
 
 ## Evidence thresholds
 
@@ -19,10 +19,10 @@ The number three controls when to review a pattern. It is not proof, and it neve
 | --- | --- |
 | Mechanically detectable invariant or recurring bug | Test, type constraint, schema validation, linter, or CI check |
 | Stable repository-specific convention | Repository `AGENTS.md` or focused versioned documentation |
-| Cross-project rule worth loading every task | Minimal user-level instruction or a genuinely startup-worthy Pinned Context Item |
+| Cross-project rule worth loading every task | Minimal user-level instruction, only after approval |
 | Multi-step procedure used on demand | Codex skill |
 | Mandatory pre/post action tied to an event | Hook, CI job, or Codex automation when supported and explicitly approved |
-| Time-sensitive fact or unresolved judgment | Context Item with Review After; do not promote |
+| Time-sensitive fact or unresolved judgment | Project canonical record with a review date; do not promote |
 
 Prefer deterministic enforcement over prose when a machine can check the invariant. Prefer a skill over an always-loaded rule when the procedure is only relevant to some tasks.
 

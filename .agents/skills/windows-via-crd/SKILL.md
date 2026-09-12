@@ -1,6 +1,6 @@
 ---
 name: windows-via-crd
-description: MacからChrome Remote Desktopで個人Windows PC「Tener」へ接続し、Windows GUI、Windows Codex、Desktop VPNなどの作業を安全に実行する。ユーザーが「Windowsで作業して」「Tenerへ接続して」「Chrome Remote Desktopで操作して」「Windows経由でDesktop VPNを使って」などと依頼したときに使用する。
+description: "MacからChrome Remote Desktopで個人Windows PC「Tener」を操作する依頼に使う。"
 ---
 
 # Windows via Chrome Remote Desktop

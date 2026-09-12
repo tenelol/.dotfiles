@@ -160,6 +160,57 @@ class ProjectContextInitTests(unittest.TestCase):
         self.assertEqual(agents.read_text(encoding="utf-8").count(MODULE.MARKER), 1)
         self.assertIn(MODULE.TEMPLATE_VERSION, agents.read_text(encoding="utf-8"))
 
+    def test_previous_v2_upgrades_without_changing_records_or_custom_agent_text(self) -> None:
+        context = self.root / "context"
+        record = context / "canonical/decisions/choice.md"
+        record.parent.mkdir(parents=True)
+        record.write_text("# Approved choice\nKeep this decision.\n", encoding="utf-8")
+        (context / "README.md").write_text(
+            MODULE.previous_v2_context_readme("Example", False), encoding="utf-8"
+        )
+        agents = self.root / "AGENTS.md"
+        agents.write_text(
+            f"Custom before\n\n{MODULE.PREVIOUS_V2_AGENT_BLOCK}\nCustom after\n",
+            encoding="utf-8",
+        )
+
+        MODULE.initialize(self.root, "Example")
+
+        self.assertEqual(record.read_text(), "# Approved choice\nKeep this decision.\n")
+        self.assertEqual((context / "README.md").read_text(), MODULE.context_readme("Example", False))
+        self.assertEqual(
+            agents.read_text(), f"Custom before\n\n{MODULE.AGENT_BLOCK}\nCustom after\n"
+        )
+        self.assertEqual(MODULE.initialize(self.root, "Example"), [])
+
+    def test_customized_v2_readme_is_preserved(self) -> None:
+        context = self.root / "context"
+        context.mkdir()
+        readme = context / "README.md"
+        custom = MODULE.previous_v2_context_readme("Example", False) + "\nCustom project policy\n"
+        readme.write_text(custom, encoding="utf-8")
+
+        MODULE.initialize(self.root, "Example")
+
+        self.assertEqual(readme.read_text(), custom)
+
+    def test_git_v2_upgrade_keeps_shared_context_and_records(self) -> None:
+        run("git", "init", "--initial-branch=main", cwd=self.root)
+        MODULE.initialize(self.root, "Example")
+        context = self.root / ".git/project-context"
+        (context / "README.md").write_text(
+            MODULE.previous_v2_context_readme("Example", True), encoding="utf-8"
+        )
+        record = context / "canonical/decisions/choice.md"
+        record.write_text("shared decision\n", encoding="utf-8")
+
+        MODULE.initialize(self.root, "Example")
+
+        self.assertEqual((self.root / "context").resolve(), context.resolve())
+        self.assertEqual(record.read_text(), "shared decision\n")
+        self.assertEqual((context / "README.md").read_text(), MODULE.context_readme("Example", True))
+        self.assertEqual(MODULE.initialize(self.root, "Example"), [])
+
     def test_custom_ai_output_markdown_fails_closed(self) -> None:
         markdown = self.root / "context/ai_output/README.md"
         markdown.parent.mkdir(parents=True)

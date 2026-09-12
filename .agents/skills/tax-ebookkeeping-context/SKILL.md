@@ -1,13 +1,6 @@
 ---
 name: tax-ebookkeeping-context
-description: >
-  Background context for the Electronic Bookkeeping Act (電子帳簿保存法) in the
-  shinkoku tax filing plugin. Contains requirements for electronic bookkeeping,
-  scanner storage, mandatory electronic transaction data storage, and shinkoku's
-  compliance status.
-  This skill is not user-invocable — Claude loads it automatically when
-  responding to electronic bookkeeping compliance questions.
-user-invocable: false
+description: 日本の電子帳簿保存法やshinkokuの電帳法対応を確認するときに参照する。
 ---
 
 # 電帳法コンテキスト（Electronic Bookkeeping Context）

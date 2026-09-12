@@ -108,6 +108,10 @@ delib.module {
         source = ./vault-context/files/codex/AGENTS.md;
         force = true;
       };
+      ".codex/project-context-protocol.md" = {
+        source = ./vault-context/files/codex/project-context-protocol.md;
+        force = true;
+      };
       ".codex/bin/vault-context" = {
         source = "${vaultContextCli}/bin/vault-context";
         executable = true;

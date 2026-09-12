@@ -1,6 +1,6 @@
 ---
 name: dotfiles-workflow
-description: Edit, review, validate, build, switch, or document the personal denix-based NixOS and nix-darwin repository at /Users/tener/.dotfiles or /home/tener/.dotfiles. Use for work on flake.nix, hosts, modules, rices, Home Manager, config, packages, lib, scripts, repository docs, validation, or host activation. Covers nh-based operations and rice-safe Darwin target selection.
+description: "この個人用denix dotfilesの構造変更・検証・nhによるbuildやswitchを扱うときに使う。"
 ---
 
 # Dotfiles Workflow
@@ -14,17 +14,7 @@ description: Edit, review, validate, build, switch, or document the personal den
 
 ## Keep the denix structure
 
-- Keep `hosts/<name>/default.nix` thin: host metadata plus hardware imports.
-- Put denix-discovered behavior in `modules/`, including nested module files, and rice variants in `rices/`.
-- Put integrated Home Manager behavior in each denix module's `home.*` sections. Do not create a separate shared `home/` module tree or standalone `homeConfigurations` without an explicit architecture change.
-- Colocate deployed non-Nix sources under the owning `modules/<feature>/files/` directory, rice wallpapers in `rices/wallpapers/`, package-owned sources beside their definition in `packages/`, and user-authored Codex skills in `.agents/skills/`. Keep Codex-owned `.system` and runtime/plugin skills outside the repository.
-- Put artifact tests beside their owner under a feature-local `tests/` directory; use `.codex/tests/` only for Codex configuration and skill tests.
-- Do not manually import local denix modules. Keep imports for external modules, generated hardware modules, and deliberate reusable-module boundaries.
-- Keep single-consumer behavior in its owning denix module. Put explicitly imported package and runtime value generation in `packages/`; do not create a top-level `lib/` solely as an escape hatch from denix auto-discovery.
-- Treat `flake.nix` as the source of truth for platform-filtered `nixosConfigurations`, `darwinConfigurations`, `checks`, and `formatter` outputs.
-- Add every new flake-referenced file to Git before evaluation; flakes omit untracked files.
-- Keep active Nix files at or below the repository's 500-line structure limit.
-- Describe this repository as personal, `denix`-based, and `nh`-operated; do not recast it as a generic starter template.
+Use the repository's AGENTS.md for structure and ownership boundaries; do not duplicate that inventory here. Keep host definitions thin, behavior in denix modules, integrated Home Manager under `home.*`, and non-Nix assets beside their owning feature. Preserve user-authored skills in `.agents/skills/` and leave runtime/plugin skills with their owner.
 
 ## Validate with the narrowest useful work
 
@@ -54,5 +44,5 @@ For Darwin:
 ## Finish the change
 
 1. Review the final diff and status; keep unrelated paths out of the commit.
-2. Commit only when the user explicitly asks; otherwise leave the verified scoped diff ready for review.
+2. Commit a verified, single-responsibility small change unless the user asks not to. For large, multi-responsibility, or history-rewriting changes, leave the scoped diff ready and wait for explicit commit permission.
 3. Report artifact checks, flake validation, host build/switch results, the Darwin target when applicable, and any pre-existing dirty paths.

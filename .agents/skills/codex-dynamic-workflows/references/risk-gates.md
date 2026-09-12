@@ -1,35 +1,9 @@
-# Risk Gates
+# Workflow authorization boundaries
 
-Use this checklist before launching or continuing a dynamic workflow.
+Reuse authorization already established by the user's request or session. A plan, audit, or skill invocation does not grant unrelated external actions.
 
-## Ask For Approval
+Proceed with scoped reversible edits, read-only inspection and targeted checks that the task authorizes. Delegate only when useful and allowed by the current instructions; a no-subagent request also excludes CLI reviewers.
 
-Ask one clear approval question before work that may:
+Clarify before an unapproved external send, submission, purchase, deployment, destructive operation, major scope change or unusually costly run. First prepare the concrete reviewable result and continue work that does not depend on that decision. Do not ask again for authorization already given.
 
-- delete, overwrite, mass-rename, force-push, or rewrite history
-- deploy, publish, email, post, create public resources, or mutate external systems
-- run database migrations, broad codemods, or dependency upgrades
-- touch credentials, secrets, billing, production data, user accounts, or private customer data
-- spawn many agents, run expensive jobs, or consume unusual time or compute
-- make changes outside the requested repository or workspace
-
-## Safe Without Extra Approval
-
-Usually safe:
-
-- reading local files in the requested workspace
-- drafting plans, packet prompts, reports, or local artifacts
-- running narrow tests, linters, typechecks, and dry runs
-- creating non-destructive workflow directories under `.workflow/`
-- spawning a small number of subagents when the user explicitly asked for subagents, a swarm, or this dynamic workflow skill to run
-
-## If Risk Is Ambiguous
-
-Prefer a reversible next step:
-
-1. Do a read-only inspection.
-2. Draft the exact command or action.
-3. Explain the likely effect.
-4. Ask for approval before execution.
-
-Do not bury multiple risky approvals in one broad question.
+Follow tool-enforced permissions and repository-specific operational boundaries. Do not use alternative tools to bypass a rejection.

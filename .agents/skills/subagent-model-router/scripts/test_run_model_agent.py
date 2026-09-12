@@ -93,10 +93,10 @@ class RunnerTests(unittest.TestCase):
 
     def test_tier_dry_runs_include_explicit_model_and_effort(self) -> None:
         expected = {
-            "fast": ("gpt-5.6-luna", "xhigh"),
+            "fast": ("gpt-5.6-sol", "xhigh"),
             "standard": ("gpt-5.6-terra", "xhigh"),
-            "deep": ("gpt-5.6-terra", "max"),
-            "review": ("gpt-5.6-luna", "max"),
+            "deep": ("gpt-5.6-terra", "xhigh"),
+            "review": ("gpt-5.6-sol", "xhigh"),
         }
         for tier, (model, effort) in expected.items():
             with self.subTest(tier=tier):
@@ -115,7 +115,7 @@ class RunnerTests(unittest.TestCase):
             "--tier",
             "fast",
             "--model",
-            "gpt-5.6-luna",
+            "gpt-5.6-sol",
             "--reasoning-effort",
             "max",
             prompt=prompt,
@@ -123,28 +123,29 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(completed.returncode, 0, completed.stderr)
         self.assertEqual(completed.stdout.strip(), "WORKER_OK")
         captured = json.loads(self.capture.read_text(encoding="utf-8"))
-        self.assertIn("gpt-5.6-luna", captured["argv"])
+        self.assertIn("gpt-5.6-sol", captured["argv"])
         self.assertIn(prompt, captured["stdin"])
         self.assertFalse((self.root / "SHOULD_NOT_EXIST").exists())
 
     def test_unknown_model_is_rejected_instead_of_inheriting(self) -> None:
         completed = self.run_router("--model", "not-a-model")
         self.assertEqual(completed.returncode, 2)
-        self.assertIn("limited to gpt-5.6-terra or gpt-5.6-luna", completed.stderr)
+        self.assertIn("limited to gpt-5.6-terra or gpt-5.6-sol", completed.stderr)
 
-    def test_sol_child_is_rejected(self) -> None:
-        completed = self.run_router("--model", "gpt-5.6-sol")
+    def test_luna_child_is_rejected(self) -> None:
+        completed = self.run_router("--model", "gpt-5.6-luna")
         self.assertEqual(completed.returncode, 2)
-        self.assertIn("limited to gpt-5.6-terra or gpt-5.6-luna", completed.stderr)
+        self.assertIn("limited to gpt-5.6-terra or gpt-5.6-sol", completed.stderr)
 
-    def test_policy_is_native_and_not_a_same_named_tool(self) -> None:
-        skill = SKILL.read_text(encoding="utf-8")
-        policy = POLICY.read_text(encoding="utf-8")
-        self.assertIn("not a tool named `subagent-model-router`", skill)
-        self.assertIn("Native Luna is valid", skill)
-        self.assertIn("| `fast` | native | `gpt-5.6-luna` | `xhigh` |", policy)
-        self.assertIn("permits only Terra/Luna with `xhigh` or `max`", policy)
-        self.assertNotIn("CLI Luna is an exception", skill)
+    def test_unavailable_allowed_model_does_not_start_worker(self) -> None:
+        self.fake_codex.write_text(
+            self.fake_codex.read_text().replace('"gpt-5.6-sol"', '"hidden-sol"'),
+            encoding="utf-8",
+        )
+        completed = self.run_router("--tier", "review", "--dry-run")
+        self.assertEqual(completed.returncode, 2)
+        self.assertIn("No catalog model matches", completed.stderr)
+        self.assertFalse(self.capture.exists())
 
     def test_workspace_write_requires_acknowledgement(self) -> None:
         completed = self.run_router("--sandbox", "workspace-write")

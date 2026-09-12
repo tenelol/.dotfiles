@@ -72,7 +72,7 @@ Use $codex-dynamic-workflows to review this feature for security and reliability
 
 Expected behavior:
 
-- Simulate subagents with isolated packet notes under `results/`.
+- Continue locally with focused notes only when continuity requires them; do not claim independent agents.
 - Keep security and reliability findings separate until integration.
 - Produce a synthesized final report.
 

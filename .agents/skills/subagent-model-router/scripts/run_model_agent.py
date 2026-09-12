@@ -16,7 +16,7 @@ from typing import Any
 
 ROUTES: dict[str, dict[str, Any]] = {
     "fast": {
-        "models": ["gpt-5.6-luna"],
+        "models": ["gpt-5.6-sol"],
         "effort": "xhigh",
     },
     "standard": {
@@ -25,15 +25,15 @@ ROUTES: dict[str, dict[str, Any]] = {
     },
     "deep": {
         "models": ["gpt-5.6-terra"],
-        "effort": "max",
+        "effort": "xhigh",
     },
     "review": {
-        "models": ["gpt-5.6-luna"],
-        "effort": "max",
+        "models": ["gpt-5.6-sol"],
+        "effort": "xhigh",
     },
 }
 
-ALLOWED_MODELS = frozenset(("gpt-5.6-terra", "gpt-5.6-luna"))
+ALLOWED_MODELS = frozenset(("gpt-5.6-terra", "gpt-5.6-sol"))
 ALLOWED_EFFORTS = frozenset(("xhigh", "max"))
 
 ENV_MODEL = {
@@ -137,7 +137,7 @@ def resolve_route(
         model = explicit_model
         if model not in ALLOWED_MODELS:
             raise RouterError(
-                "Subagent models are limited to gpt-5.6-terra or gpt-5.6-luna."
+                "Subagent models are limited to gpt-5.6-terra or gpt-5.6-sol."
             )
         if model not in catalog:
             available = ", ".join(sorted(catalog)) or "none"

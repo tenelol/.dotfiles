@@ -1,6 +1,6 @@
 # Learning record schema
 
-Use one canonical record per normalized pattern. Store structured fields in the body when the durable-context database does not have dedicated properties.
+Use one canonical record per normalized pattern. Store only the fields required for the current audit in the existing Markdown record.
 
 ## Canonical fields
 
@@ -27,18 +27,11 @@ Use one canonical record per normalized pattern. Store structured fields in the 
 
 ## Durable-context mapping
 
-Map to the existing Context Items schema rather than inventing new database properties:
+Use the resolved project's existing `canonical/<responsibility>/` Markdown records. Keep one topic per record, and put the fields needed for recurrence analysis in that record rather than a new database. A stable pattern key and explicit project scope identify matches.
 
-- **Type**: choose the closest valid existing type such as decision, risk, task, investigation, or handoff.
-- **Status**: use a valid workspace status; do not invent an enum value.
-- **Priority**: reflect recurrence impact, not how interesting the observation feels.
-- **Context Key**: combine stable scope identity with `pattern_key`.
-- **Source**: identify the retrospective or promotion audit without copying raw input.
-- **Confidence**: match evidence quality.
-- **Evidence URL**: prefer a durable issue, PR, commit, documentation, or live-source URL.
-- **Review After**: use for unpromoted, time-sensitive, or weakly supported records.
-- **Related Items**: link separate but related patterns and independent occurrence records.
-- **Pinned**: reserve for globally useful startup context only.
+Map accepted decisions to `decisions`, repeated procedures to `workflows`, verified facts to `facts`, unresolved risks to `risks`, and missing decisions to `open_questions`. Keep supporting evidence as concise source references. Only legacy migration requests need the old Notion Context Items properties.
+
+Do not pin records into every task's startup context. Read a record when its application condition matches the task. For a global learning, use the existing central protocol only when the global scope and destination are established; do not guess a new store.
 
 ## Identity and counting rules
 
