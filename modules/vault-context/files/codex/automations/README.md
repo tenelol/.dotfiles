@@ -1,13 +1,10 @@
-# Vault automations
+# Retired Vault automations
 
-Codex app owns the live automation TOML files. Apply or update them only through
-the app automation API; do not symlink generated IDs, project IDs, timestamps, or
-runtime state from Home Manager.
+The user retired Vault朝次整理, Vault週次統合, and Vault Git同期 on
+2026-09-13. Their live schedules were deleted through the Codex app automation
+API. Do not recreate them as part of Home Manager activation or context repair.
 
-- 06:30 daily: process immutable raw notes, rebuild the semantic index, record the KPI snapshot, and alert through LINE only on blocked/warn/fail.
-- 09:00 daily: run `/Users/tener/.local/bin/vault-git-sync`; success and no-op stay silent, while blocked/push-pending/failure alert through LINE.
-- Sunday 10:00: generate the weekly synthesis, record and compare KPI history, and send one combined weekly LINE report.
-
-The morning and weekly prompt contracts live in the Vault under
-`90 System/Prompts/`, including `kpi-observability.md`. The Git synchronization prompt is
-`vault-git-sync.md` in this directory.
+Project context is read and saved on demand; it does not require scheduled
+Vault synthesis, search-index maintenance, KPI collection, or LINE reports.
+The retained `vault-git-sync` command is a manual tool for the legacy Obsidian
+Vault, not a scheduled job or a backup of Git common-directory project context.
