@@ -6,7 +6,6 @@ delib.host {
   features = [ "fullDesktop" ];
 
   myconfig.nixbuild.enable = true;
-  myconfig.karabiner.enable = true;
   myconfig.codex-notion-token.enable = false;
 
   rice = "rift";

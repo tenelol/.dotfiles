@@ -48,6 +48,9 @@ let
   disabledPostActivation = ''
     uid="$(id -u ${profile.username})"
 
+    /bin/launchctl enable system/org.pqrs.service.daemon.Karabiner-Core-Service >/dev/null 2>&1 || true
+    /bin/launchctl enable "gui/$uid/org.pqrs.service.agent.Karabiner-Core-Service-rev2" >/dev/null 2>&1 || true
+
     /bin/launchctl bootout system/org.nixos.kanata >/dev/null 2>&1 || true
     /bin/launchctl bootout "gui/$uid/org.nixos.kanata" >/dev/null 2>&1 || true
     /usr/bin/pkill -f '/Applications/Kanata.app/Contents/MacOS/kanata' >/dev/null 2>&1 || true
@@ -65,6 +68,10 @@ let
 
   enabledPostActivation = ''
     uid="$(id -u ${profile.username})"
+
+    # Keep Karabiner's remapper from reclaiming the keyboard; retain its HID driver.
+    /bin/launchctl disable system/org.pqrs.service.daemon.Karabiner-Core-Service >/dev/null 2>&1 || true
+    /bin/launchctl disable "gui/$uid/org.pqrs.service.agent.Karabiner-Core-Service-rev2" >/dev/null 2>&1 || true
 
     # Keep the Input Monitoring path stable while sourcing the binary from the
     # immutable Nix store.
