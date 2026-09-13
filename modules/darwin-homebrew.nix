@@ -140,8 +140,6 @@ delib.module {
         "claude"
         "codex"
         "chatgpt"
-        "chatgpt-atlas"
-        "codex-app"
         "cursor"
         "font-caskaydia-cove-nerd-font"
         "font-fira-code"
