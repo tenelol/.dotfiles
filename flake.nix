@@ -29,9 +29,6 @@
     nix-hazkey.url = "github:aster-void/nix-hazkey";
     nix-hazkey.inputs.nixpkgs.follows = "nixpkgs";
 
-    hermes-agent.url = "github:NousResearch/hermes-agent";
-    hermes-agent.inputs.nixpkgs.follows = "nixpkgs";
-
     herdr.url = "github:ogulcancelik/herdr/v0.7.1";
     herdr.inputs.nixpkgs.follows = "nixpkgs";
 

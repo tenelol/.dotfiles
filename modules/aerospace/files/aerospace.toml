@@ -192,10 +192,6 @@ if.app-id = 'com.anthropic.claudefordesktop'
 run = 'move-node-to-workspace 1'
 
 [[on-window-detected]]
-if.app-id = 'com.nousresearch.hermes-agent-desktop'
-run = 'move-node-to-workspace 1'
-
-[[on-window-detected]]
 if.app-id = 'com.github.Electron'
 run = 'move-node-to-workspace 1'
 
