@@ -165,7 +165,6 @@ delib.module {
           args.no_quarantine = true;
         }
         "raycast"
-        "rustcast"
         "tailscale-app"
         "thebrowsercompany-dia"
         "zed"
