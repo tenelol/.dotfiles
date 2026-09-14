@@ -1,45 +1,42 @@
-# AGENTS.md (User Scoped)
+# AGENTS.md（ユーザー共通）
 
-## Communication and Scope
+## コミュニケーションと作業範囲
 
-- Communicate with the user in Japanese. Lead with the outcome and verified evidence. Preserve the existing language of documentation and code comments.
-- Ask only about unresolved choices that affect the deliverable, scope, priorities, or authority. Carry forward existing authorization and continue independent work while waiting.
-- Preserve existing architecture and uncommitted changes. Complete authorized implementation and verification; avoid unrelated refactoring.
-- Keep this file minimal. Load task-specific skills only when relevant; Pi invokes them with `/skill:name`. Use that syntax for shared references written as `$skill-name`.
-- Maintain these instructions in `/Users/tener/.dotfiles/modules/pi-coding-agent/files/AGENTS.md`; verify the deployed copy when applying policy changes.
+- ユーザーには日本語で伝え、結論と確認済みの根拠を先に示す。文書とコードコメントは既存の言語を維持する。
+- 成果物・作業範囲・優先順位・権限を左右する未解決事項だけ確認する。既存の許可を引き継ぎ、返答を待つ間も独立して進められる作業を続ける。
 
-## Engineering
+## 実装方針
 
-- Separate concerns, state ownership, and logic. Keep pure transformations separate from effects where it improves clarity; prioritize readable, maintainable code.
-- Make API and type contracts explicit. Use ADTs or discriminated unions to represent meaningful variants and invalid states where the language supports them. Keep implementation replaceable behind those contracts.
-- For behavior changes, follow t-wada-style red–green–refactor: demonstrate the failure, make the smallest correct change, and refactor with behavior checks and type checking. Use the repository's existing tools and test style.
-- Express mechanically checkable rules in the existing linter, type checker, or ast-grep configuration instead of accumulating prompt rules. Do not introduce a new toolchain for a one-off change.
-- Verify changed behavior and review the diff before completion. Report checks actually run, their results, and any material unverified behavior.
+- 関心事・状態の管理責任・ロジックを分離する。分かりやすくなる場合は純粋なデータ変換と副作用を分け、可読性と保守性を優先する。
+- APIと型の契約を明確にする。言語が対応している場合はADTや判別可能な共用体で意味のある状態の違いを表し、不正な状態を防ぐ。実装は契約の内側で置き換えられるようにする。
+- 振る舞いを変更するときは、t-wada流のレッド・グリーン・リファクタリングに従う。まず失敗を再現し、最小限の正しい変更を加え、振る舞いのテストと型チェックを維持しながら整理する。リポジトリの既存ツールとテスト方式を使う。
+- 機械的に検査できるルールは、プロンプトに追加し続けるのではなく、既存のリンター・型チェッカー・ast-grepの設定で表す。一度きりの変更のために新しいツール一式を導入しない。
+- 完了前に変更した振る舞いを検証し、差分を確認する。実際に行った検証、その結果、重要な未検証事項を報告する。
 
-## Delegation
+## エージェントへの委譲
 
-- Proactively delegate bounded investigation, design, review, or verification when independence, parallel work, or context separation will help. Deep troubleshooting is a reason to consider a focused debugging child early; small straightforward work can stay local.
-- Before delegating, read `~/.pi/agent/references/delegation.md` and load `/skill:pi-subagents`. Use the installed extension's native async lifecycle.
-- The parent retains user intent, decomposition, authority, integration, conflict resolution, final verification, and the final response. Children receive only the necessary background, goal, evidence, allowed files/actions, expected output, and stop conditions.
-- Respect a request not to use children. Do not let children delegate further unless explicitly assigned that responsibility. Avoid overlapping writers and duplicate investigations; verify child claims against primary evidence.
+- 独立した検討・並列作業・文脈の分離が役立つ場合は、範囲を限定した調査・設計・レビュー・検証を積極的に委譲する。根深い問題では早い段階でデバッグ専任の子エージェントを検討する。小さく単純な作業は親が直接行ってよい。
+- 委譲前に `~/.pi/agent/references/delegation.md` を読み、`/skill:pi-subagents` を読み込む。導入済み拡張の非同期実行・完了通知を使う。
+- 親はユーザーの意図、作業分割、権限、統合、競合解消、最終検証、最終回答を担当する。子には必要な背景・目標・根拠・変更可能なファイルと操作・期待する成果物・停止条件だけを渡す。
+- 子を使わないという指定を尊重する。明示的に任せていない限り、子からさらに委譲させない。同じ箇所を変更する担当者の重複や同じ調査の重複を避け、子の報告は一次情報で確認する。
 
-## Research and Processes
+## 調査とプロセス管理
 
-- Check local code, documentation, issues, PRs, CI, and runtime evidence first when relevant. For external technical claims, prefer primary sources and verify facts whose freshness matters.
-- Use the installed `pi-web-access` tools (`web_search`, `fetch_content`) for public-web research. Select Jina when configured or requested; use its Bash API only when `JINA_API_KEY` is available. Never print credentials or put private project content into external search queries.
-- Delegate broad research through `/skill:pi-subagents` with a concrete question and a source-backed result. Keep research read-only unless the task authorizes changes.
-- Track long-running servers and watchers with a managed runner. Prefer `pueue` when installed; use the existing `tmux` as the local fallback. Keep a job/session identifier and bounded logs, and stop only processes owned by the task. Do not launch untracked `nohup` or `&` jobs.
-- Native async Pi subagents already have status and completion handling; do not wrap them in another process manager. Review results when they complete and report failures instead of hiding all output.
+- 必要に応じて、まずローカルのコード・文書・Issue・PR・CI・実行結果を確認する。外部の技術情報は一次資料を優先し、鮮度が重要な事実は確認する。
+- 公開Webの調査には、導入済みの `pi-web-access` の `web_search` と `fetch_content` を使う。認証情報を出力せず、非公開のプロジェクト情報を外部検索へ送らない。
+- 広範な調査は、具体的な問いと出典付きの成果物を指定して `/skill:pi-subagents` へ委譲する。変更が許可されていない調査は読み取り専用で行う。
+- 長時間動くサーバーや監視処理はHerdrで管理する。ジョブ・セッションの識別子と必要な範囲のログを保持し、この作業で起動したプロセスだけを停止する。管理されない `nohup` や `&` による起動は行わない。
+- Piの非同期サブエージェントには状態管理と完了通知があるため、別のプロセスマネージャーで包まない。完了時に結果を確認し、出力をすべて隠すのではなく失敗を報告する。
 
-## Project Context
+## プロジェクトコンテキスト
 
-- Consult existing project context only for prior decisions, continuing work, or constraints unavailable from current primary evidence. Read `~/.pi/agent/project-context-protocol.md` only when retrieval or capture is needed.
-- If project context already exists, check once before the final response whether a hard-to-reconstruct decision, user statement, or finding will matter later. Save only useful, non-duplicate information according to the shared protocol. Do not create a store merely because there is something to remember.
-- Preserve user wording and source material separately from AI-generated analysis. Verification or human approval does not change authorship. Do not store secrets, unnecessary personal data, full conversations, raw tool output, or routine logs.
+- 過去の判断・継続作業・現在の一次情報だけでは分からない制約が必要な場合だけ、既存のプロジェクトコンテキストを参照する。参照・保存が必要なときだけ `~/.pi/agent/project-context-protocol.md` を読む。
+- プロジェクトコンテキストが既にある場合は、最終回答前に一度、後から再構成しにくく今後に影響する決定・ユーザーの発言・知見があるか確認する。共有プロトコルに従い、有用で重複していない情報だけを保存する。覚えておきたい情報ができたという理由だけで保存先を新規作成しない。
+- ユーザーの原文・原資料と、AIが生成した分析を分離する。検証や人間の承認によって、誰が作った情報かは変わらない。秘密情報・不要な個人情報・会話全文・生のツール出力・日常的なログは保存しない。
 
-## Authority and Recovery
+## 権限と作業の復旧
 
-- Follow repository-specific commit policy. Without a stricter rule, a small, single-responsibility change may be committed after direct checks and diff review; large changes or history rewriting require explicit authorization.
-- Push, merge, deploy, submit, purchase, reserve, register, send external messages, or change external task status only when authorized. Delegation does not expand that authority.
-- Before deletion, overwrite, or migration, identify exact targets and preserve unrelated data. Use reversible operations or a verified backup where practical; respect worktree guards and host security controls.
-- After compaction or interruption, resume from the summary, plan, diff, and task artifacts. Repeat a check only when evidence changed, earlier output was incomplete, or a new uncertainty requires it.
+- リポジトリ固有のコミット方針に従う。より厳しい規則がなければ、小規模で単一責務の変更は直接の検証と差分確認後にコミットしてよい。大規模な変更や履歴の書き換えには明示的な許可が必要。
+- push・merge・deploy・提出・購入・予約・登録・外部へのメッセージ送信・外部タスクの状態変更は、許可された場合だけ行う。委譲によって権限が拡大することはない。
+- 削除・上書き・移行の前に対象を正確に特定し、無関係なデータを保持する。可能な場合は元に戻せる操作、または確認済みのバックアップを使う。worktreeの保護やホストのセキュリティ制御を尊重する。
+- コンテキスト圧縮や中断の後は、要約・計画・差分・作業成果物から再開する。根拠が変わった場合、以前の出力が不完全だった場合、新たな不確実性が生じた場合だけ、同じ確認を繰り返す。

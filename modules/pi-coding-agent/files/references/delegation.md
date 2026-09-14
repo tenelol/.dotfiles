@@ -1,29 +1,29 @@
-# Pi Delegation
+# Piのエージェント委譲
 
-Use the installed `pi-subagents` extension and its skill for launch, status, cancellation, and result handling. This document supplies personal model policy; it does not replace the extension's API contract.
+起動・状態確認・キャンセル・結果の受け取りには、導入済みの `pi-subagents` 拡張とそのスキルを使う。この文書は個人のモデル選択方針を定める。APIの呼び出し契約は拡張側の文書に従う。
 
-## Model Selection
+## モデル選択
 
-| Responsibility | Default Pi model selector |
+| 責務 | Piで指定する既定モデル |
 | --- | --- |
-| Research, summaries, document analysis, independent review | `openai-codex/gpt-5.6-sol:xhigh` |
-| Implementation, debugging, multi-file changes, test fixes | `openai-codex/gpt-5.6-terra:xhigh` |
+| 調査・要約・文書分析・独立レビュー | `openai-codex/gpt-5.6-sol:xhigh` |
+| 実装・デバッグ・複数ファイルの変更・テスト修正 | `openai-codex/gpt-5.6-terra:xhigh` |
 
-These preserve the existing responsibility-based model policy. Follow an explicit user model override. Check available models with `subagent({ action: "models" })` before launching; `pi --offline --list-models` is also available for local inspection.
+既存の責務別モデル方針を維持する。ユーザーがモデルを明示した場合はその指定に従う。起動前に `subagent({ action: "models" })` で利用可能なモデルを確認する。ローカルでの確認には `pi --offline --list-models` も使える。
 
-Pass the thinking level in the `model` suffix. In the installed extension, a separate top-level `thinking` field is ignored for dispatch.
+推論強度は `model` の接尾辞で指定する。導入済み拡張では、起動時に独立したトップレベルの `thinking` フィールドを渡しても無視される。
 
 ```javascript
 subagent({
   agent: "reviewer",
   model: "openai-codex/gpt-5.6-sol:xhigh",
   context: "fresh",
-  task: "Review the specified diff. Include the repository/ref, scope, constraints, evidence, acceptance criteria, and expected report here."
+  task: "指定した差分をレビューしてください。ここにリポジトリ・ref、対象範囲、制約、根拠、受け入れ条件、期待する報告形式を記載します。"
 })
 ```
 
-Use a fresh context with a self-contained task when isolation is useful. Prefer native async execution and completion notifications; do useful parent work while a child runs.
+文脈の分離が役立つ場合は、必要な情報を含む自己完結した依頼を新しいコンテキストへ渡す。拡張の非同期実行と完了通知を優先し、子の実行中は親が独立して進められる作業を行う。
 
-Do not silently substitute providers, lower reasoning, or escalate to `max`. Pi's current core CLI does not expose `--fallback-models`; use the extension's supported `fallbackModels` configuration only for an explicitly authorized candidate list. Check availability before use and report exhaustion or infrastructure failures with the retained run state.
+黙ってプロバイダーを変更したり、推論強度を下げたり、`max` へ引き上げたりしない。現在のPi本体CLIには `--fallback-models` がないため、明示的に許可された候補がある場合だけ、拡張が対応する `fallbackModels` 設定を使う。利用可能性を事前に確認し、候補の枯渇や実行基盤の障害は、保持されている実行状態とともに報告する。
 
-If an explicit CLI child is required, use the documented `pi --model 'provider/model:effort' -p 'instructions'` form. A required skill can be included in its prompt as `/skill:skill-name instructions`. Keep shell quoting intact, preserve failure output, and manage background CLI children through the chosen process manager.
+CLIによる子の起動が明示的に必要な場合は、`pi --model 'provider/model:effort' -p 'instructions'` の形式を使う。必要なスキルはプロンプト内に `/skill:skill-name instructions` として指定できる。シェルの引用符を正しく扱い、失敗時の出力を保持する。バックグラウンドのCLI子プロセスはHerdrで管理する。
