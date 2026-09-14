@@ -2,10 +2,11 @@ import { createHash } from "node:crypto";
 import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { Type } from "typebox";
-import { getAgentDir, truncateTail, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { truncateTail, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
-const cli = join(getAgentDir(), "npm/node_modules/@playwright/cli/playwright-cli.js");
+const cli = fileURLToPath(new URL("./node_modules/@playwright/cli/playwright-cli.js", import.meta.url));
 
 export default function (pi: ExtensionAPI) {
   pi.registerTool({

@@ -1,5 +1,6 @@
 {
   delib,
+  hm,
   host,
   lib,
   ...
@@ -17,12 +18,20 @@ let
       force = true;
     }
   ) skills;
-  packageSkillTargets = {
-    council-mode = ".pi/agent/npm/node_modules/pi-subagents/skills/council-mode";
-    pi-subagents = ".pi/agent/npm/node_modules/pi-subagents/skills/pi-subagents";
-    playwright-cli = ".pi/agent/npm/node_modules/@playwright/cli/skills/playwright-cli";
-    ponytail-bundle = ".pi/agent/npm/node_modules/@dietrichgebert/ponytail/skills";
+  extensionSkillTargets = {
+    council-mode = ".pi/agent/extensions/pi-subagents/skills/council-mode";
+    pi-subagents = ".pi/agent/extensions/pi-subagents/skills/pi-subagents";
+    playwright-cli = ".pi/agent/extensions/playwright-cli/node_modules/@playwright/cli/skills/playwright-cli";
+    ponytail-bundle = ".pi/agent/extensions/ponytail/skills";
   };
+  linkExtensionSkills = lib.concatStringsSep "\n" (
+    lib.mapAttrsToList (
+      name: target:
+      ''
+        $DRY_RUN_CMD ln -sfn "$HOME/${target}" "$HOME/.agents/skills/${name}"
+      ''
+    ) extensionSkillTargets
+  );
 in
 delib.module {
   name = "codex-skills";
@@ -30,24 +39,11 @@ delib.module {
   options = delib.singleEnableOption isMacbook;
 
   home.ifEnabled = lib.mkIf isMacbook {
-    imports = [
-      (
-        { config, ... }:
-        let
-          link = config.lib.file.mkOutOfStoreSymlink;
-          homeDirectory = config.home.homeDirectory;
-          packageSkills = lib.mapAttrs' (
-            name: target:
-            lib.nameValuePair ".agents/skills/${name}" {
-              source = link "${homeDirectory}/${target}";
-              force = true;
-            }
-          ) packageSkillTargets;
-        in
-        {
-          home.file = repositorySkills // packageSkills;
-        }
-      )
-    ];
+    home.file = repositorySkills;
+
+    home.activation.linkPiExtensionSkills = hm.dag.entryAfter [ "linkGeneration" ] ''
+      $DRY_RUN_CMD mkdir -p "$HOME/.agents/skills"
+      ${linkExtensionSkills}
+    '';
   };
 }

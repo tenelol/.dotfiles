@@ -19,6 +19,18 @@ FORBIDDEN_NAMES = {
     "web-search-cache",
 }
 SENSITIVE_KEYS = re.compile(r"(?:api.?key|auth|credential|password|secret|token)", re.IGNORECASE)
+EXPECTED_EXTENSIONS = {
+    "pi-plan-mode",
+    "pi-subagents",
+    "pi-tool-display",
+    "pi-vim",
+    "pi-web-access",
+    "pi-zentui",
+    "playwright-cli",
+    "ponytail",
+    "rpiv-ask-user-question",
+    "rpiv-todo",
+}
 
 
 def keys(value):
@@ -33,17 +45,20 @@ def keys(value):
 
 class PiConfigTests(unittest.TestCase):
     def test_runtime_state_and_credentials_are_not_copied(self):
-        self.assertFalse(FORBIDDEN_NAMES.intersection(path.name for path in FILES.rglob("*")))
+        self.assertFalse(FORBIDDEN_NAMES.intersection(path.name for path in FILES.iterdir()))
         for path in (FILES / "settings.json", FILES / "models.json"):
             self.assertFalse(
                 [key for key in keys(json.loads(path.read_text())) if SENSITIVE_KEYS.search(key)],
                 path,
             )
 
-    def test_packages_are_pinned(self):
-        packages = json.loads((FILES / "settings.json").read_text())["packages"]
-        self.assertTrue(packages)
-        self.assertTrue(all(re.fullmatch(r"npm:.+@\d+\.\d+\.\d+", package) for package in packages))
+    def test_extensions_remain_editable_local_sources(self):
+        settings = json.loads((FILES / "settings.json").read_text())
+        self.assertEqual(settings["packages"], [])
+        extensions = FILES / "extensions"
+        self.assertTrue(all((extensions / name / "package.json").is_file() for name in EXPECTED_EXTENSIONS))
+        self.assertFalse((extensions / "playwright-cli.ts").exists())
+        self.assertTrue((FILES / "disabled-extensions/compact-shell/index.ts").is_file())
 
     def test_config_merge_preserves_runtime_fields(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -67,6 +82,26 @@ class PiConfigTests(unittest.TestCase):
                 },
             )
             self.assertEqual(stat.S_IMODE(target.stat().st_mode), 0o600)
+
+    def test_source_link_refuses_to_replace_regular_files(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "source"
+            target = root / "target"
+            source.write_text("source")
+
+            subprocess.run([FILES / "link-source.sh", source, target], check=True)
+            self.assertEqual(target.resolve(), source.resolve())
+
+            target.unlink()
+            target.write_text("keep")
+            result = subprocess.run(
+                [FILES / "link-source.sh", source, target],
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(target.read_text(), "keep")
 
 
 if __name__ == "__main__":

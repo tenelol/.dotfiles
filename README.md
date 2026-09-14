@@ -45,11 +45,11 @@ Keep provider files unchanged when refreshing a skill. Local integrations are li
 | `frontend-design` | [anthropics/skills](https://github.com/anthropics/skills) |
 | `find-skills` | [vercel-labs/skills](https://github.com/vercel-labs/skills) |
 
-`hatch-pet` uses the v2 skill bundled in ChatGPT.app through `~/.agents/skills/hatch-pet`; it is not copied into this repository. Pi package-owned skills are linked from Pi's package directory rather than duplicated. Skill security checks use the upstream [Cisco AI Defense scanner](https://github.com/cisco-ai-defense/skill-scanner) CLI (`skill-scanner`).
+`hatch-pet` uses the v2 skill bundled in ChatGPT.app through `~/.agents/skills/hatch-pet`; it is not copied into this repository. Pi extension-owned skills are linked from their editable extension directories rather than duplicated. Skill security checks use the upstream [Cisco AI Defense scanner](https://github.com/cisco-ai-defense/skill-scanner) CLI (`skill-scanner`).
 
 ## Pi
 
-[`modules/pi-coding-agent`](./modules/pi-coding-agent) deploys the global Pi settings, model overrides, local extensions, and theme. Third-party Pi packages are pinned in `settings.json`; credentials, trust decisions, sessions, missions, caches, and generated model catalogs remain local under `~/.pi/agent`.
+[`modules/pi-coding-agent`](./modules/pi-coding-agent) manages the global Pi settings, model overrides, local extensions, and theme. Extensions remain editable under [`modules/pi-coding-agent/files/extensions`](./modules/pi-coding-agent/files/extensions) and are linked into `~/.pi/agent/extensions`; their `node_modules` stay local and Git-ignored. Credentials, trust decisions, sessions, missions, caches, and generated model catalogs remain local under `~/.pi/agent`.
 
 ## Rice
 
