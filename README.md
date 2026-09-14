@@ -49,7 +49,9 @@ Keep provider files unchanged when refreshing a skill. Local integrations are li
 
 ## Pi
 
-[`modules/pi-coding-agent`](./modules/pi-coding-agent) manages the global Pi settings, model overrides, local extensions, and theme. Extensions remain editable under [`modules/pi-coding-agent/files/extensions`](./modules/pi-coding-agent/files/extensions) and are linked into `~/.pi/agent/extensions`; their `node_modules` stay local and Git-ignored. Credentials, trust decisions, sessions, missions, caches, and generated model catalogs remain local under `~/.pi/agent`.
+[`modules/pi-coding-agent`](./modules/pi-coding-agent) uses denix and Home Manager's `home.file` declarations for Pi configuration and resource links. `settings.json` and `models.json` are maintained in dotfiles and applied with the normal `nh` workflow; Pi's own settings saves are not persisted. The settings include the installed Pi changelog version so a fresh session does not try to write this marker to its read-only configuration; review it when upgrading Pi.
+
+Local AI tools live in `files/tools/`, and the dashboard hook, artwork, and theme live together in `files/hooks/dashboard/`. Combined third-party extensions stay under `files/extensions/`. Their standard `~/.pi/agent/extensions/<name>` entrypoints link to editable local sources through `mkOutOfStoreSymlink`; required `node_modules` remain local and Git-ignored. Prompt templates remain with their owning extension and are linked into `~/.pi/agent/prompts`; reference documents are loaded only when instructions request them. Credentials, trust decisions, sessions, missions, caches, and generated model catalogs remain local under `~/.pi/agent`.
 
 ## Rice
 

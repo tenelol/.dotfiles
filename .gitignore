@@ -14,7 +14,7 @@ config/graphify-out/
 *.nixlear
 
 # Pi credentials and runtime state
-.pi/agent/
+.pi/
 modules/pi-coding-agent/files/auth.json
 modules/pi-coding-agent/files/models-store.json
 modules/pi-coding-agent/files/trust.json

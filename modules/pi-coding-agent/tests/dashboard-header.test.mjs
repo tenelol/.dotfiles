@@ -5,14 +5,13 @@ import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { stripVTControlCharacters } from "node:util";
 
-process.env.PI_CODING_AGENT_DIR = fileURLToPath(new URL("../files", import.meta.url));
 const root = process.env.PI_PACKAGE_DIR || "/opt/homebrew/opt/pi-coding-agent/libexec/lib/node_modules/@earendil-works/pi-coding-agent";
 const { loadExtensions } = await import(pathToFileURL(join(root, "dist/core/extensions/loader.js")));
-const path = fileURLToPath(new URL("../files/extensions/dashboard-header.ts", import.meta.url));
+const path = fileURLToPath(new URL("../files/hooks/dashboard/index.ts", import.meta.url));
 const { extensions, errors } = await loadExtensions([path], process.cwd());
 assert.deepEqual(errors, []);
 const start = extensions[0].handlers.get("session_start")[0];
-const art = readFileSync(new URL("../files/art/dashboard-character.txt", import.meta.url), "utf8").trimEnd().split("\n");
+const art = readFileSync(new URL("../files/hooks/dashboard/art/dashboard-character.txt", import.meta.url), "utf8").trimEnd().split("\n");
 const logo = ["██████╗ ██╗", "██╔══██╗██║", "██████╔╝██║", "██╔═══╝ ██║", "██║     ██║", "╚═╝     ╚═╝"];
 let component;
 await start({ reason: "startup" }, {
