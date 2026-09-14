@@ -1,9 +1,8 @@
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
-import { getAgentDir, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 
-const art = readFileSync(join(getAgentDir(), "art/dashboard-character.txt"), "utf8").trimEnd().split("\n");
+const art = readFileSync(new URL("../art/dashboard-character.txt", import.meta.url), "utf8").trimEnd().split("\n");
 const logo = [
 	"██████╗ ██╗",
 	"██╔══██╗██║",
