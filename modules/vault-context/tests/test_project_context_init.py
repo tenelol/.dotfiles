@@ -36,7 +36,8 @@ class ProjectContextInitTests(unittest.TestCase):
         self.assertFalse((self.root / "context").is_symlink())
         self.assertIn("非Git project", (self.root / "context/README.md").read_text())
         self.assertIn(MODULE.TEMPLATE_VERSION, (self.root / "context/README.md").read_text())
-        self.assertTrue((self.root / "context/canonical/facts").is_dir())
+        self.assertTrue((self.root / "context/canonical").is_dir())
+        self.assertFalse((self.root / "context/canonical/facts").exists())
         for responsibility in MODULE.RESPONSIBILITIES:
             self.assertTrue((self.root / "context/ai_output" / responsibility).is_dir())
         self.assertFalse((self.root / "context/ai_output/README.md").exists())
@@ -72,7 +73,8 @@ class ProjectContextInitTests(unittest.TestCase):
         target = self.root / ".git/project-context"
         self.assertTrue((self.root / "context").is_symlink())
         self.assertEqual((self.root / "context").resolve(), target.resolve())
-        self.assertTrue((target / "canonical/facts").is_dir())
+        self.assertTrue((target / "canonical").is_dir())
+        self.assertFalse((target / "canonical/facts").exists())
         for responsibility in MODULE.RESPONSIBILITIES:
             self.assertTrue((target / "ai_output" / responsibility).is_dir())
         self.assertTrue((target / "ai_output/index.html").is_file())
@@ -143,7 +145,7 @@ class ProjectContextInitTests(unittest.TestCase):
 
         self.assertEqual(html.read_text(encoding="utf-8"), MODULE.AI_OUTPUT_INDEX)
 
-    def test_previous_html_context_and_agent_block_upgrade_to_v2(self) -> None:
+    def test_previous_html_context_and_agent_block_upgrade_to_current_template(self) -> None:
         context = self.root / "context"
         context.mkdir()
         readme = context / "README.md"
@@ -202,6 +204,7 @@ class ProjectContextInitTests(unittest.TestCase):
             MODULE.previous_v2_context_readme("Example", True), encoding="utf-8"
         )
         record = context / "canonical/decisions/choice.md"
+        record.parent.mkdir(parents=True, exist_ok=True)
         record.write_text("shared decision\n", encoding="utf-8")
 
         MODULE.initialize(self.root, "Example")
@@ -209,6 +212,43 @@ class ProjectContextInitTests(unittest.TestCase):
         self.assertEqual((self.root / "context").resolve(), context.resolve())
         self.assertEqual(record.read_text(), "shared decision\n")
         self.assertEqual((context / "README.md").read_text(), MODULE.context_readme("Example", True))
+        self.assertEqual(MODULE.initialize(self.root, "Example"), [])
+
+    def test_provenance_upgrade_preserves_raw_and_legacy_records(self) -> None:
+        context = self.root / "context"
+        (context / "canonical/risks").mkdir(parents=True)
+        (context / "sources/internal").mkdir(parents=True)
+        (context / "sources/external").mkdir(parents=True)
+        (context / "ai_output/risks").mkdir(parents=True)
+        previous = {
+            "README.md": MODULE.previous_on_demand_context_readme("Example", False),
+            "canonical/README.md": MODULE.PREVIOUS_CANONICAL_README,
+            "sources/internal/README.md": MODULE.PREVIOUS_INTERNAL_README,
+            "sources/external/README.md": MODULE.PREVIOUS_EXTERNAL_README,
+            "ai_output/index.html": MODULE.PREVIOUS_V2_AI_OUTPUT_INDEX,
+        }
+        for name, content in previous.items():
+            (context / name).write_text(content, encoding="utf-8")
+        records = {
+            "canonical/raw-user.md": "---\nsource_kind: user\n---\n\naiのautoputは、  別に。\n",
+            "canonical/risks/legacy.md": "# AI analysis under v2\nPreserve for origin review.\n",
+            "ai_output/risks/current.html": "<!doctype html><title>Risk</title><p>Preserve.</p>\n",
+        }
+        for name, content in records.items():
+            (context / name).write_text(content, encoding="utf-8")
+        agents = self.root / "AGENTS.md"
+        agents.write_text("Custom before\n" + MODULE.PREVIOUS_ON_DEMAND_AGENT_BLOCK + "Custom after\n")
+
+        MODULE.initialize(self.root, "Example")
+
+        self.assertEqual((context / "README.md").read_text(), MODULE.context_readme("Example", False))
+        self.assertEqual((context / "canonical/README.md").read_text(), MODULE.CANONICAL_README)
+        self.assertEqual((context / "sources/internal/README.md").read_text(), MODULE.INTERNAL_README)
+        self.assertEqual((context / "sources/external/README.md").read_text(), MODULE.EXTERNAL_README)
+        self.assertEqual((context / "ai_output/index.html").read_text(), MODULE.AI_OUTPUT_INDEX)
+        self.assertEqual(agents.read_text(), "Custom before\n" + MODULE.AGENT_BLOCK + "Custom after\n")
+        for name, content in records.items():
+            self.assertEqual((context / name).read_text(), content)
         self.assertEqual(MODULE.initialize(self.root, "Example"), [])
 
     def test_custom_ai_output_markdown_fails_closed(self) -> None:
@@ -344,7 +384,7 @@ class ProjectContextInitTests(unittest.TestCase):
 
         self.assertTrue(context.is_symlink())
         self.assertTrue(context.readlink().is_absolute())
-        self.assertTrue((target / "canonical/facts").is_dir())
+        self.assertTrue((target / "canonical").is_dir())
         self.assertFalse((self.root / "AGENTS.md").exists())
         self.assertIn("/context", (self.root / ".git/info/exclude").read_text())
 

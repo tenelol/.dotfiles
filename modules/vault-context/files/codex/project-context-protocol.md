@@ -7,14 +7,14 @@
 - Git projectでは `git rev-parse --path-format=absolute --git-common-dir` が返すcommon directoryの `project-context/` を使う。linked worktreeでも同じ正本を共有する。
 - 非Git projectでは、ユーザーが指定したproject root、または現在位置から最も近い既存project rootの `context/` を使う。rootを特定できなければ保存先を確認し、推測で別のstoreを作らない。
 - 参照が必要な場合に、その正本の `README.md` と、短い非機密の作業語に一致する `canonical/` の記録を読む。`.git`配下も検索できるよう、解決済みのcanonicalだけを対象に `rg --hidden --no-ignore -n -i --glob '*.md' --glob '!README.md' -- '<topic>' '<context-root>/canonical'` を使う。
-- 不足する根拠だけ `sources/internal/` と `sources/external/` を分けて検索する。`ai_output/` は明示されたartifactまたはユーザー指定時だけ読む。
+- 不足する原資料だけ `sources/internal/` と `sources/external/` を分けて検索する。過去の分析・risk・手順が必要なら `ai_output/` の該当分類を別に検索し、出典の原文と現在の一次情報で確認する。AI出力だけを一次情報として扱わない。
 - 記録は現在の一次証拠と照合する。project rootの `context` symlinkは人間向け入口であり、repositoryのAGENTS.mdへこの手順を複製しない。
 
 ## 作成・修復
 
 ユーザーが継続管理するprojectとして指定したrootで、保存または明示された初期化・修復が必要な場合に限り `project-context-init <project-root> --title <title>` を使う。command未導入時は `python3 /Users/tener/.dotfiles/modules/vault-context/files/project-context-init.py` を使う。
 
-構造は `project-context/v2` を維持する。一時checkoutや使い捨てdirectoryへ作らず、独自の責務directoryを追加しない。既知の旧テンプレートだけ更新し、独自編集・既存記録は保持する。別projectを一括修復しない。
+構造は `project-context/v3` を使う。一時checkoutや使い捨てdirectoryへ作らず、独自の責務directoryを追加しない。初期化処理は既知の旧テンプレートだけ更新し、独自編集・既存記録は保持する。別projectを一括修復しない。
 
 ## 保存先と採用基準
 
@@ -22,14 +22,21 @@
 
 | 保存先 | 内容 |
 | --- | --- |
-| `canonical/{facts,decisions,workflows,risks,open_questions}/` | 人間の決定、または一次証拠で検証した永続情報。一件一責務のMarkdown |
-| `sources/internal/` | 社内・チーム・本人由来の原資料。必要で安全なものだけ |
-| `sources/external/` | Web・書籍・公式docs等の出典と必要な短い記録 |
-| `ai_output/{facts,decisions,workflows,risks,open_questions}/` | 必要なAI下書き・要約・分析。一件一責務の静的な自己完結HTML |
+| `canonical/` | ユーザーの発言・人間が記したcontextの原文。AIが生成・言い換え・補足した本文を含めない |
+| `sources/internal/` | 添付資料など、社内・チーム・本人から受け取った原資料。canonicalと同じ原文を複製しない |
+| `sources/external/` | Web・書籍・公式docs等の原資料・出典。著者の由来が不明な資料を人間の原文と断定しない |
+| `ai_output/{facts,decisions,workflows,risks,open_questions}/` | AIによる抽出・要約・分析・risk・判断・手順。検証済み・人間承認済みもここに置く。静的な自己完結HTML |
 
-AI生成物をroot直下に置かず、外部assetやscriptへ依存させず、canonicalへ自動昇格させない。承認済みの判断の保存と、スキル・AGENTS・hook等の規則変更は別の操作として扱う。
+- canonicalには必要な発言・原文だけをMarkdownで保存する。AIによる転記は可だが、誤字・表記・語順・文意を修正せず、補足や解釈を混ぜない。抜粋するなら連続した範囲をそのまま残し、選択範囲を明示する。訂正・撤回も元の原文を上書きせず、別の原文として記録する。
+- 出典（会話・文書の識別子や位置）、発言者、記録日などの保存用metadataは原文本文と分離する。不明な出典・原文を推測で復元しない。READMEなどの運用文書は原文の記録ではない。
+- AIがユーザーの決定を要約した文章もai_outputへ置き、出典のcanonicalまたはsourcesを参照する。検証・承認の状態は出力内に記載し、canonicalへ昇格させない。原文の由来と内容の正しさは別に判断する。
+- AI生成物をroot直下に置かず、外部assetやscriptへ依存させない。承認済みの判断の記録と、スキル・AGENTS・hook等の規則変更は別の操作として扱う。
 
-secret、credential、会話全文、prompt、raw tool output、不要な個人情報、非公開顧客データ、routine log、scratch、未検証の主張をcanonicalへ保存しない。
+secret、credential、不要な個人情報、非公開顧客データ、会話全文の蓄積、システム・開発者prompt、raw tool output、routine log、scratchは保存しない。ユーザーの原文に含まれる未検証の主張は原文として保持できるが、検証済みの事実とは扱わない。
+
+## 旧canonicalの扱い
+
+v2以前のcanonicalにはAIが整理した文章が含まれる。配置だけで原文と判定しない。必要な記録の由来を確認し、AIによる文章は内容を失わずai_outputの該当分類へ移す。原文を確認できない場合はその旨を示し、原文を創作しない。初期化処理による記録の自動分類・移動は行わない。
 
 ## Legacyと障害時
 
