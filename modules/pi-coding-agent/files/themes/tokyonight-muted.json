@@ -1,0 +1,32 @@
+{
+  "$schema": "https://raw.githubusercontent.com/earendil-works/pi/main/packages/coding-agent/src/modes/interactive/theme/theme-schema.json",
+  "name": "tokyonight-muted",
+  "vars": {
+    "surface": "#171b23", "selection": "#293448", "fg": "#b3bbc7",
+    "bright": "#d8dde6", "muted": "#8993a3", "gutter": "#4f5968",
+    "blue": "#7f9bc4", "cyan": "#5f7695", "green": "#88c0b8",
+    "purple": "#a894c7", "red": "#c4a0e8", "yellow": "#94b8c7",
+    "comment": "#626c7a"
+  },
+  "colors": {
+    "accent": "blue", "border": "cyan", "borderAccent": "blue", "borderMuted": "gutter",
+    "success": "green", "error": "red", "warning": "yellow", "muted": "muted",
+    "dim": "comment", "text": "fg", "thinkingText": "muted",
+    "scrollbarTrack": "gutter", "scrollbarThumb": "cyan",
+    "selectedBg": "selection", "searchMatchBg": "selection", "searchMatchText": "bright",
+    "userMessageBg": "", "userMessageText": "fg",
+    "customMessageBg": "", "customMessageText": "fg", "customMessageLabel": "blue",
+    "toolPendingBg": "", "toolSuccessBg": "", "toolErrorBg": "surface",
+    "toolTitle": "blue", "toolOutput": "muted",
+    "mdHeading": "bright", "mdLink": "blue", "mdLinkUrl": "muted",
+    "mdCode": "green", "mdCodeBlock": "fg", "mdCodeBlockBorder": "gutter",
+    "mdQuote": "muted", "mdQuoteBorder": "cyan", "mdHr": "gutter", "mdListBullet": "cyan",
+    "toolDiffAdded": "green", "toolDiffRemoved": "red", "toolDiffContext": "muted",
+    "syntaxComment": "comment", "syntaxKeyword": "purple", "syntaxFunction": "blue",
+    "syntaxVariable": "fg", "syntaxString": "green", "syntaxNumber": "yellow",
+    "syntaxType": "yellow", "syntaxOperator": "cyan", "syntaxPunctuation": "muted",
+    "thinkingOff": "gutter", "thinkingMinimal": "cyan", "thinkingLow": "blue",
+    "thinkingMedium": "yellow", "thinkingHigh": "purple", "thinkingXhigh": "red", "thinkingMax": "bright",
+    "bashMode": "yellow"
+  }
+}

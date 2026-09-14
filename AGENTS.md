@@ -30,6 +30,7 @@
 ## denix structure
 - `hosts/<name>/default.nix` should stay thin: host metadata plus hardware imports.
 - Shared and host-specific behavior belongs in `modules/`.
+- Keep module definitions inside their feature directories, normally `modules/<feature>/default.nix`, beside `files/` and `tests/`.
 - Express integrated Home Manager behavior through each denix module's `home.*` sections; do not add a separate shared `home/` module tree.
 - Colocate deployed non-Nix sources under the owning `modules/<feature>/files/` directory. Rice wallpapers live in `rices/wallpapers/`, and package-owned sources belong beside their definition in `packages/`.
 - Colocate artifact tests under the owning feature's `tests/` directory. Reserve `.codex/tests/` for Codex configuration and skill tests.

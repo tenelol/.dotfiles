@@ -1,0 +1,7 @@
+{
+  "readOutputMode": "summary",
+  "searchOutputMode": "count",
+  "mcpOutputMode": "summary",
+  "bashOutputMode": "summary",
+  "enableNativeUserMessageBox": false
+}

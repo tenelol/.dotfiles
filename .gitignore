@@ -12,3 +12,14 @@ node_modules/
 #*#
 config/graphify-out/
 *.nixlear
+
+# Pi credentials and runtime state
+.pi/agent/
+modules/pi-coding-agent/files/auth.json
+modules/pi-coding-agent/files/models-store.json
+modules/pi-coding-agent/files/trust.json
+modules/pi-coding-agent/files/web-search.json
+modules/pi-coding-agent/files/missions/
+modules/pi-coding-agent/files/npm/
+modules/pi-coding-agent/files/sessions/
+modules/pi-coding-agent/files/web-search-cache/

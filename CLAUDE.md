@@ -26,6 +26,7 @@
 ## denix structure
 - `hosts/<name>/default.nix` should stay thin: host metadata plus hardware imports.
 - Shared and host-specific behavior belongs in `modules/`.
+- Keep module definitions inside their feature directories, normally `modules/<feature>/default.nix`, beside `files/` and `tests/`.
 - Integrated Home Manager behavior belongs in each denix module's `home.*` sections.
 - Deployed non-Nix sources belong in the owning `modules/<feature>/files/` directory; package-owned sources belong beside their package definition.
 - `denix` recursively auto-discovers `.nix` files in `hosts/`, `modules/`, and `rices/`, so local denix modules do not need manual imports and new `.nix` files must be committed to Git.
@@ -56,8 +57,8 @@
 
 ## macOS conventions
 - GUI apps: cross-platform tools via Nix, App Store / cask-first tools via Homebrew.
-- Darwin common base: `modules/darwin-base.nix`
-- macbook-specific UX tweaks: `modules/darwin-host-macbook.nix`
+- Darwin common base: `modules/darwin-base/default.nix`
+- macbook-specific UX tweaks: `modules/darwin-host-macbook/default.nix`
 - Darwin local build target: `macbook-rift` by default, or the active rice-specific target when switching.
 - Raycast is installed via Homebrew cask; Script Commands are deployed to `~/.config/raycast/scripts`.
 

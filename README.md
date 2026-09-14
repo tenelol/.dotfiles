@@ -28,7 +28,7 @@
 | --- | --- |
 | [`flake.nix`](./flake.nix) | inputs and configuration outputs |
 | [`hosts`](./hosts) | host identity, platform, hardware imports |
-| [`modules`](./modules) | denix-discovered system/Home Manager modules and their colocated `files/` assets |
+| [`modules`](./modules) | denix-discovered system/Home Manager modules; feature directories contain their Nix definitions (normally `default.nix`), `files/`, and `tests/` |
 | [`rices`](./rices) | theme and desktop variants, including wallpapers |
 | [`packages`](./packages) | custom packages, runtime builders, package-owned sources, and their tests |
 | [`.agents/skills`](./.agents/skills) | Provider-original Codex skills and local integrations, deployed by Home Manager |
@@ -41,11 +41,15 @@ Keep provider files unchanged when refreshing a skill. Local integrations are li
 | Skills | Provider |
 | --- | --- |
 | Tax and document-reading skills (24) | [kazukinagata/shinkoku](https://github.com/kazukinagata/shinkoku) |
-| `grilling`, `grill-with-docs`, `domain-modeling`, `setup-matt-pocock-skills` | [mattpocock/skills](https://github.com/mattpocock/skills) |
+| Engineering and productivity skills (25) | [mattpocock/skills](https://github.com/mattpocock/skills) |
 | `frontend-design` | [anthropics/skills](https://github.com/anthropics/skills) |
 | `find-skills` | [vercel-labs/skills](https://github.com/vercel-labs/skills) |
 
-`hatch-pet` uses the v2 skill bundled in ChatGPT.app through `~/.agents/skills/hatch-pet`; it is not copied into this repository. Skill security checks use the upstream [Cisco AI Defense scanner](https://github.com/cisco-ai-defense/skill-scanner) CLI (`skill-scanner`).
+`hatch-pet` uses the v2 skill bundled in ChatGPT.app through `~/.agents/skills/hatch-pet`; it is not copied into this repository. Pi package-owned skills are linked from Pi's package directory rather than duplicated. Skill security checks use the upstream [Cisco AI Defense scanner](https://github.com/cisco-ai-defense/skill-scanner) CLI (`skill-scanner`).
+
+## Pi
+
+[`modules/pi-coding-agent`](./modules/pi-coding-agent) deploys the global Pi settings, model overrides, local extensions, and theme. Third-party Pi packages are pinned in `settings.json`; credentials, trust decisions, sessions, missions, caches, and generated model catalogs remain local under `~/.pi/agent`.
 
 ## Rice
 
