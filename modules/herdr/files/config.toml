@@ -2,6 +2,8 @@ onboarding = false
 
 [keys]
 prefix = "ctrl+b"
+previous_workspace = "prefix+u"
+next_workspace = "prefix+i"
 
 [experimental]
 kitty_graphics = true
