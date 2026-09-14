@@ -38,6 +38,10 @@ class ProjectContextInitTests(unittest.TestCase):
         self.assertIn(MODULE.TEMPLATE_VERSION, (self.root / "context/README.md").read_text())
         self.assertTrue((self.root / "context/canonical").is_dir())
         self.assertFalse((self.root / "context/canonical/facts").exists())
+        self.assertTrue((self.root / "context/canonical/user").is_dir())
+        self.assertTrue((self.root / "context/canonical/sources/internal").is_dir())
+        self.assertTrue((self.root / "context/canonical/sources/external").is_dir())
+        self.assertFalse((self.root / "context/sources").exists())
         for responsibility in MODULE.RESPONSIBILITIES:
             self.assertTrue((self.root / "context/ai_output" / responsibility).is_dir())
         self.assertFalse((self.root / "context/ai_output/README.md").exists())
@@ -229,6 +233,8 @@ class ProjectContextInitTests(unittest.TestCase):
         }
         for name, content in previous.items():
             (context / name).write_text(content, encoding="utf-8")
+        attachment = context / "sources/internal/original.pdf"
+        attachment.write_bytes(b"%PDF-1.7\n\x00\xfforiginal bytes\n")
         records = {
             "canonical/raw-user.md": "---\nsource_kind: user\n---\n\naiのautoputは、  別に。\n",
             "canonical/risks/legacy.md": "# AI analysis under v2\nPreserve for origin review.\n",
@@ -243,13 +249,46 @@ class ProjectContextInitTests(unittest.TestCase):
 
         self.assertEqual((context / "README.md").read_text(), MODULE.context_readme("Example", False))
         self.assertEqual((context / "canonical/README.md").read_text(), MODULE.CANONICAL_README)
-        self.assertEqual((context / "sources/internal/README.md").read_text(), MODULE.INTERNAL_README)
-        self.assertEqual((context / "sources/external/README.md").read_text(), MODULE.EXTERNAL_README)
+        self.assertEqual((context / "canonical/sources/internal/README.md").read_text(), MODULE.INTERNAL_README)
+        self.assertEqual((context / "canonical/sources/external/README.md").read_text(), MODULE.EXTERNAL_README)
+        self.assertEqual((context / "canonical/sources/internal/original.pdf").read_bytes(), b"%PDF-1.7\n\x00\xfforiginal bytes\n")
+        self.assertFalse((context / "sources").exists())
         self.assertEqual((context / "ai_output/index.html").read_text(), MODULE.AI_OUTPUT_INDEX)
         self.assertEqual(agents.read_text(), "Custom before\n" + MODULE.AGENT_BLOCK + "Custom after\n")
         for name, content in records.items():
             self.assertEqual((context / name).read_text(), content)
         self.assertEqual(MODULE.initialize(self.root, "Example"), [])
+
+    def test_sources_collision_preserves_both_trees_before_git_migration(self) -> None:
+        run("git", "init", "--initial-branch=main", cwd=self.root)
+        context = self.root / "context"
+        legacy = context / "sources/internal/source.md"
+        destination = context / "canonical/sources/internal/source.md"
+        for path, text in [(legacy, "legacy"), (destination, "existing")]:
+            path.parent.mkdir(parents=True)
+            path.write_text(text)
+
+        with self.assertRaisesRegex(ValueError, "both legacy sources and canonical/sources"):
+            MODULE.initialize(self.root, "Example")
+
+        self.assertEqual(legacy.read_text(), "legacy")
+        self.assertEqual(destination.read_text(), "existing")
+        self.assertFalse(context.is_symlink())
+        self.assertFalse((self.root / ".git/project-context").exists())
+
+    def test_sources_symlink_is_rejected_before_initialization(self) -> None:
+        context = self.root / "context"
+        context.mkdir()
+        external = self.root.parent / "external"
+        external.mkdir()
+        (context / "sources").symlink_to(external, target_is_directory=True)
+
+        with self.assertRaisesRegex(ValueError, "managed directory must not be a symlink"):
+            MODULE.initialize(self.root, "Example")
+
+        self.assertEqual(list(external.iterdir()), [])
+        self.assertFalse((context / "canonical").exists())
+        self.assertFalse((self.root / "AGENTS.md").exists())
 
     def test_custom_ai_output_markdown_fails_closed(self) -> None:
         markdown = self.root / "context/ai_output/README.md"
