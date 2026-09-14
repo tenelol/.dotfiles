@@ -259,13 +259,13 @@ class ProjectContextInitTests(unittest.TestCase):
             self.assertEqual((context / name).read_text(), content)
         self.assertEqual(MODULE.initialize(self.root, "Example"), [])
 
-    def test_manual_capture_policy_upgrade_preserves_records_and_custom_instructions(self) -> None:
+    def test_initialization_policy_upgrade_preserves_records_and_custom_instructions(self) -> None:
         MODULE.initialize(self.root, "Example")
         context = self.root / "context"
         readme = context / "README.md"
-        readme.write_text(MODULE.previous_nested_context_readme("Example", False))
+        readme.write_text(MODULE.previous_manual_capture_context_readme("Example", False))
         agents = self.root / "AGENTS.md"
-        agents.write_text("Custom before\n" + MODULE.PREVIOUS_PROVENANCE_AGENT_BLOCK + "Custom after\n")
+        agents.write_text("Custom before\n" + MODULE.PREVIOUS_MANUAL_CAPTURE_AGENT_BLOCK + "Custom after\n")
         record = context / "canonical/user/original.md"
         record.write_bytes("ユーザーの原文をそのまま。\n".encode())
         contents = record.read_bytes()

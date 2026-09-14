@@ -1,10 +1,10 @@
 # Project context protocol
 
-過去判断の参照が必要なとき、またはユーザーがcontextの保存・初期化・修復を指示したときだけ読む。現在のrepository・docs・issue・PR・CI・runtimeで完結する作業では読み込みも初期化も不要。
+作成済みcontextの参照・保存が必要なときだけ読む。現在のrepository・docs・issue・PR・CI・runtimeで完結する作業では読み込みも初期化も不要。
 
-## 作成・保存の指示
+## 初期化と日常運用
 
-新規作成・追加・更新・修復は、ユーザーの明示指示がある場合に限る。「これを覚えておいて」「この資料をcontextに追加して」など、指示された対象・範囲を保存する。通常の実装依頼やtask完了を保存の指示とみなさず、最終回答前の保存候補チェックや自動保存は行わない。既存の記録の読み取りは必要時に行える。
+構造の初期導入・修復を依頼された場合は`$project-context-init`を使う。一度作成した構造はtask・スレッド間で再利用する。記録の参照・追加・更新は必要に応じて行い、その都度ユーザーの指示を求めない。未導入projectでは記録候補があっても構造を自動作成しない。
 
 ## 正本の解決と検索
 
@@ -14,15 +14,9 @@
 - ユーザーの発言は `canonical/user/`、不足する原資料は `canonical/sources/internal/` と `canonical/sources/external/` を分けて検索する。過去の分析・risk・手順が必要なら `ai_output/` の該当分類を別に検索し、出典の原文と現在の一次情報で確認する。AI出力だけを一次情報として扱わない。
 - 記録は現在の一次証拠と照合する。project rootの `context` symlinkは人間向け入口であり、repositoryのAGENTS.mdへこの手順を複製しない。
 
-## 作成・修復
-
-ユーザーが保存・初期化・修復を明示したproject rootで、指示を実行するために必要な場合だけ `project-context-init <project-root> --title <title>` を使う。参照先が存在しないだけでは実行しない。command未導入時は `python3 /Users/tener/.dotfiles/modules/vault-context/files/project-context-init.py` を使う。
-
-構造は `project-context/v3` を使う。一時checkoutや使い捨てdirectoryへ作らず、独自の責務directoryを追加しない。初期化処理は既知の旧テンプレートだけ更新し、独自編集・既存記録は保持する。別projectを一括修復しない。
-
 ## 保存先と採用基準
 
-保存指示を受けたときに既存記録の重複を確認する。指示されていない関連情報まで追加せず、同じ原文・資料を重複保存しない。
+導入済みprojectでは、再構成しにくく将来の判断に効く情報がある場合に既存記録との重複を確認し、必要な原文・資料・AIの整理結果を由来に応じて保存する。repositoryから容易に再構成できる情報やroutine logを蓄積しない。ユーザーが保存対象・範囲を明示した場合はその指定を優先する。
 
 | 保存先 | 内容 |
 | --- | --- |

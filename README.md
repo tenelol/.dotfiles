@@ -36,7 +36,7 @@
 
 ## Codex skills
 
-Keep provider files unchanged when refreshing a skill. Local integrations are limited to `imoocs`, `proxmox-pve`, `line-delivery`, and the personal `subagent-model-router` policy. The existing denix module and Home Manager deployment remain unchanged.
+Keep provider files unchanged when refreshing a skill. Local integrations are limited to `imoocs`, `proxmox-pve`, `line-delivery`, `project-context-init`, and the personal `subagent-model-router` policy. The existing denix module and Home Manager deployment remain unchanged.
 
 | Skills | Provider |
 | --- | --- |

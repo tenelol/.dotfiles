@@ -226,7 +226,7 @@ def previous_nested_context_readme(title: str, git_backed: bool) -> str:
     )
 
 
-def context_readme(title: str, git_backed: bool) -> str:
+def previous_manual_capture_context_readme(title: str, git_backed: bool) -> str:
     return (
         previous_nested_context_readme(title, git_backed)
         .replace(
@@ -236,6 +236,20 @@ def context_readme(title: str, git_backed: bool) -> str:
         .replace(
             "将来の判断に効く再構成困難な情報だけを、重複を確認して保存します。",
             "保存指示を受けたときに重複を確認し、指示されていない関連情報まで追加しません。",
+        )
+    )
+
+
+def context_readme(title: str, git_backed: bool) -> str:
+    return (
+        previous_nested_context_readme(title, git_backed)
+        .replace(
+            "## 必要時だけ参照",
+            "## 日常運用\n\n作成済みの構造をtask・スレッド間で再利用し、記録の参照・追加・更新は必要に応じて行います。その都度のユーザー指示は不要です。未導入projectでは保存のために構造を自動作成しません。構造の初期導入・修復を依頼された場合は`$project-context-init`を使います。\n\n## 必要時だけ参照",
+        )
+        .replace(
+            "作成・修復は`project-context-init`を使います。",
+            "構造の初期導入・修復は`$project-context-init`スキルが担当します。",
         )
     )
 
@@ -503,9 +517,18 @@ PREVIOUS_PROVENANCE_AGENT_BLOCK = f"""{MARKER}
 """
 
 
-AGENT_BLOCK = PREVIOUS_PROVENANCE_AGENT_BLOCK.replace(
+PREVIOUS_MANUAL_CAPTURE_AGENT_BLOCK = PREVIOUS_PROVENANCE_AGENT_BLOCK.replace(
     "将来の判断に効く再構成困難な情報だけ、READMEと`~/.codex/project-context-protocol.md`に従って保存する。",
     "新規作成・追加・更新・修復はユーザーの明示指示があるときだけ、READMEと`~/.codex/project-context-protocol.md`に従って行う。通常作業の完了時に自動保存せず、参照先が未作成でも読み取りのために新規作成しない。",
+)
+
+
+AGENT_BLOCK = PREVIOUS_PROVENANCE_AGENT_BLOCK.replace(
+    "将来の判断に効く再構成困難な情報だけ、READMEと`~/.codex/project-context-protocol.md`に従って保存する。",
+    "既存のproject contextへ将来の判断に効く再構成困難な情報だけ、READMEと`~/.codex/project-context-protocol.md`に従って必要時に保存する。その都度のユーザー指示は不要で、記録を残すためだけに保存先を新規作成しない。",
+).replace(
+    "作成・修復は`project-context-init`で行う。",
+    "構造の初期導入・修復を依頼された場合は`$project-context-init`を使う。",
 )
 
 
@@ -694,6 +717,7 @@ def validate_non_git_agent_entry(agents: Path) -> None:
         PREVIOUS_V2_AGENT_BLOCK,
         PREVIOUS_ON_DEMAND_AGENT_BLOCK,
         PREVIOUS_PROVENANCE_AGENT_BLOCK,
+        PREVIOUS_MANUAL_CAPTURE_AGENT_BLOCK,
         AGENT_BLOCK,
     )
     if any(block in original for block in known_blocks):
@@ -712,7 +736,7 @@ def update_non_git_agents(root: Path, changes: list[str]) -> None:
         changes.append(str(agents))
         return
     original = agents.read_text(encoding="utf-8")
-    for previous in (LEGACY_AGENT_BLOCK, PREVIOUS_AGENT_BLOCK, PREVIOUS_HTML_AGENT_BLOCK, PREVIOUS_V2_AGENT_BLOCK, PREVIOUS_ON_DEMAND_AGENT_BLOCK, PREVIOUS_PROVENANCE_AGENT_BLOCK):
+    for previous in (LEGACY_AGENT_BLOCK, PREVIOUS_AGENT_BLOCK, PREVIOUS_HTML_AGENT_BLOCK, PREVIOUS_V2_AGENT_BLOCK, PREVIOUS_ON_DEMAND_AGENT_BLOCK, PREVIOUS_PROVENANCE_AGENT_BLOCK, PREVIOUS_MANUAL_CAPTURE_AGENT_BLOCK):
         if previous in original:
             agents.write_text(original.replace(previous, AGENT_BLOCK), encoding="utf-8")
             changes.append(str(agents))
@@ -746,6 +770,7 @@ def removable_git_agent_block(agents: Path) -> tuple[str, str] | None:
                 PREVIOUS_V2_AGENT_BLOCK,
                 PREVIOUS_ON_DEMAND_AGENT_BLOCK,
                 PREVIOUS_PROVENANCE_AGENT_BLOCK,
+                PREVIOUS_MANUAL_CAPTURE_AGENT_BLOCK,
                 AGENT_BLOCK,
             )
             if value in original
@@ -892,6 +917,7 @@ def initialize(root: Path, title: str) -> list[str]:
             previous_on_demand_context_readme(title.strip(), git_backed),
             previous_provenance_context_readme(title.strip(), git_backed),
             previous_nested_context_readme(title.strip(), git_backed),
+            previous_manual_capture_context_readme(title.strip(), git_backed),
         ),
         changes,
     )
