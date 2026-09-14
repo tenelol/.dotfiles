@@ -1,6 +1,10 @@
 # Project context protocol
 
-過去判断の参照、永続情報の保存、context構造の修復が必要なときだけ読む。現在のrepository・docs・issue・PR・CI・runtimeで完結する作業では読み込みも初期化も不要。
+過去判断の参照が必要なとき、またはユーザーがcontextの保存・初期化・修復を指示したときだけ読む。現在のrepository・docs・issue・PR・CI・runtimeで完結する作業では読み込みも初期化も不要。
+
+## 作成・保存の指示
+
+新規作成・追加・更新・修復は、ユーザーの明示指示がある場合に限る。「これを覚えておいて」「この資料をcontextに追加して」など、指示された対象・範囲を保存する。通常の実装依頼やtask完了を保存の指示とみなさず、最終回答前の保存候補チェックや自動保存は行わない。既存の記録の読み取りは必要時に行える。
 
 ## 正本の解決と検索
 
@@ -12,13 +16,13 @@
 
 ## 作成・修復
 
-ユーザーが継続管理するprojectとして指定したrootで、保存または明示された初期化・修復が必要な場合に限り `project-context-init <project-root> --title <title>` を使う。command未導入時は `python3 /Users/tener/.dotfiles/modules/vault-context/files/project-context-init.py` を使う。
+ユーザーが保存・初期化・修復を明示したproject rootで、指示を実行するために必要な場合だけ `project-context-init <project-root> --title <title>` を使う。参照先が存在しないだけでは実行しない。command未導入時は `python3 /Users/tener/.dotfiles/modules/vault-context/files/project-context-init.py` を使う。
 
 構造は `project-context/v3` を使う。一時checkoutや使い捨てdirectoryへ作らず、独自の責務directoryを追加しない。初期化処理は既知の旧テンプレートだけ更新し、独自編集・既存記録は保持する。別projectを一括修復しない。
 
 ## 保存先と採用基準
 
-保存候補がある場合だけ既存記録を検索する。repositoryから安価に再構成できる情報、重複、routine logは保存しない。
+保存指示を受けたときに既存記録の重複を確認する。指示されていない関連情報まで追加せず、同じ原文・資料を重複保存しない。
 
 | 保存先 | 内容 |
 | --- | --- |

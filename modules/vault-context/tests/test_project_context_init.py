@@ -259,6 +259,25 @@ class ProjectContextInitTests(unittest.TestCase):
             self.assertEqual((context / name).read_text(), content)
         self.assertEqual(MODULE.initialize(self.root, "Example"), [])
 
+    def test_manual_capture_policy_upgrade_preserves_records_and_custom_instructions(self) -> None:
+        MODULE.initialize(self.root, "Example")
+        context = self.root / "context"
+        readme = context / "README.md"
+        readme.write_text(MODULE.previous_nested_context_readme("Example", False))
+        agents = self.root / "AGENTS.md"
+        agents.write_text("Custom before\n" + MODULE.PREVIOUS_PROVENANCE_AGENT_BLOCK + "Custom after\n")
+        record = context / "canonical/user/original.md"
+        record.write_bytes("ユーザーの原文をそのまま。\n".encode())
+        contents = record.read_bytes()
+
+        MODULE.initialize(self.root, "Example")
+
+        self.assertEqual(readme.read_text(), MODULE.context_readme("Example", False))
+        self.assertEqual(agents.read_text(), "Custom before\n" + MODULE.AGENT_BLOCK + "Custom after\n")
+        self.assertEqual(record.read_bytes(), contents)
+        self.assertEqual(list((context / "canonical/user").iterdir()), [record])
+        self.assertEqual(MODULE.initialize(self.root, "Example"), [])
+
     def test_sources_collision_preserves_both_trees_before_git_migration(self) -> None:
         run("git", "init", "--initial-branch=main", cwd=self.root)
         context = self.root / "context"

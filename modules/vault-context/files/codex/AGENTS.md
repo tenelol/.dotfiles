@@ -9,12 +9,12 @@
 
 ## Project router
 
-- 過去の判断・継続作業・現在の一次情報だけでは分からない制約が必要な場合にだけproject contextを参照する。誤字修正など現在の証拠で完結する作業では検索・初期化しない。
+- 過去の判断・継続作業・現在の一次情報だけでは分からない制約が必要な場合にだけ既存のproject contextを参照する。現在の証拠で完結する作業では検索せず、参照のために新規作成しない。
 - 参照・保存・修復が必要になったときだけ `~/.codex/project-context-protocol.md` を読む。未反映時の管理元は `/Users/tener/.dotfiles/modules/vault-context/files/codex/project-context-protocol.md`。Git common-dirの`project-context/`または非Git projectの`context/`を正本とし、現在の一次証拠と照合する。
 
 ## Capture
 
-- 最終回答前に一度だけ、再構成しにくく今後の判断に効く検証済み情報・ユーザー決定があるか確認する。該当時だけプロトコルに従って重複確認・保存し、該当しなければ検索も保存も報告も不要。
+- project contextの新規作成・追加・更新・修復は、「これを覚えておいて」「contextに保存して」などユーザーが明示的に指示した範囲だけ行う。通常作業の完了時に保存候補を探したり、自動保存したりしない。詳細はプロトコルに従う。
 - secret・不要な個人情報・会話全文・raw tool output・routine logは保存しない。必要なユーザー原文とAIが加工した情報をプロトコルに従って分離し、検証・承認によって由来を変えない。
 
 ## Permission and safety
