@@ -162,10 +162,6 @@ display_move = "Alt + Ctrl + Shift"
 "Alt + J" = { move_focus = "down" }
 "Alt + K" = { move_focus = "up" }
 "Alt + L" = { move_focus = "right" }
-"Alt + Left" = { move_focus = "left" }
-"Alt + Down" = { move_focus = "down" }
-"Alt + Up" = { move_focus = "up" }
-"Alt + Right" = { move_focus = "right" }
 
 "move + H" = { move_node = "left" }
 "move + J" = { move_node = "down" }
