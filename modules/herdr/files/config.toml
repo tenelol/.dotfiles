@@ -1,5 +1,26 @@
 onboarding = false
 
+[theme]
+name = "tokyo-night"
+
+[theme.custom]
+panel_bg = "#171b23"
+surface0 = "#202631"
+surface1 = "#293448"
+surface_dim = "#11151d"
+overlay0 = "#4f5968"
+overlay1 = "#626c7a"
+text = "#b3bbc7"
+subtext0 = "#8993a3"
+accent = "#7f9bc4"
+blue = "#7f9bc4"
+teal = "#5f7695"
+mauve = "#a894c7"
+green = "#88c0b8"
+yellow = "#94b8c7"
+red = "#c4a0e8"
+peach = "#8fa6bd"
+
 [keys]
 prefix = "ctrl+b"
 previous_workspace = "prefix+u"
