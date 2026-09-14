@@ -42,6 +42,10 @@ delib.module {
         in
         {
           home.file = extensionFiles // promptFiles // {
+            ".dotfiles/.pi/settings.json" = {
+              source = ./files/dotfiles-project-settings.json;
+              force = true;
+            };
             ".pi/agent/settings.json" = {
               source = ./files/settings.json;
               force = true;

@@ -51,6 +51,8 @@ Keep provider files unchanged when refreshing a skill. Local integrations are li
 
 [`modules/pi-coding-agent`](./modules/pi-coding-agent) uses denix and Home Manager's `home.file` declarations for Pi configuration and resource links. `settings.json` and `models.json` are maintained in dotfiles and applied with the normal `nh` workflow; Pi's own settings saves are not persisted. The settings include the installed Pi changelog version so a fresh session does not try to write this marker to its read-only configuration; review it when upgrading Pi.
 
+The dotfiles-only skill exclusion lives in `modules/pi-coding-agent/files/dotfiles-project-settings.json`. Home Manager exposes it at the Git-ignored `.pi/settings.json` entrypoint so Pi uses the shared home skills without also loading their repository sources. Other projects keep normal skill discovery.
+
 Local AI tools live in `files/tools/`, and the dashboard hook, artwork, and theme live together in `files/hooks/dashboard/`. Combined third-party extensions stay under `files/extensions/`. Their standard `~/.pi/agent/extensions/<name>` entrypoints link to editable local sources through `mkOutOfStoreSymlink`; required `node_modules` remain local and Git-ignored. Prompt templates remain with their owning extension and are linked into `~/.pi/agent/prompts`; reference documents are loaded only when instructions request them. Credentials, trust decisions, sessions, missions, caches, and generated model catalogs remain local under `~/.pi/agent`.
 
 ## Rice
