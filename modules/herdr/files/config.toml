@@ -25,6 +25,8 @@ peach = "#8fa6bd"
 prefix = "ctrl+b"
 previous_workspace = "prefix+u"
 next_workspace = "prefix+i"
+previous_agent = "prefix+shift+u"
+next_agent = "prefix+shift+i"
 
 [experimental]
 kitty_graphics = true
