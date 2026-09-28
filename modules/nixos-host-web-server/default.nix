@@ -8,7 +8,7 @@
   ...
 }:
 let
-  runnerGuard = pkgs.writeShellScript "github-runner-blog-guard" ''
+  runnerGuard = pkgs.writeShellScript "github-runner-blog-guard.sh" ''
     if [[ "''${GITHUB_REPOSITORY:-}" != "tenelol/blog" ]]; then
       echo "refusing job outside tenelol/blog" >&2
       exit 1
@@ -16,6 +16,14 @@ let
 
     if [[ "''${GITHUB_REF:-}" != "refs/heads/main" ]]; then
       echo "refusing job outside refs/heads/main" >&2
+      exit 1
+    fi
+  '';
+  todoRunnerGuard = pkgs.writeShellScript "github-runner-todo-guard" ''
+    if [[ "''${GITHUB_REPOSITORY:-}" != "tenelol/dpgk-todo" ||
+          "''${GITHUB_REF:-}" != "refs/heads/main" ||
+          "''${GITHUB_EVENT_NAME:-}" != "push" ]]; then
+      echo "refusing non-main push outside tenelol/dpgk-todo" >&2
       exit 1
     fi
   '';
@@ -39,6 +47,7 @@ delib.module {
       cloudflared = { };
       web-deploy = { };
       todo = { };
+      todo-deploy = { };
     };
     users.users = {
       cloudflared = {
@@ -54,6 +63,12 @@ delib.module {
       todo = {
         isSystemUser = true;
         group = "todo";
+      };
+      github-runner-todo = {
+        isSystemUser = true;
+        group = "todo-deploy";
+        home = "/var/lib/github-runner-todo";
+        createHome = true;
       };
       ${profile.username}.extraGroups = [ "web-deploy" ];
     };
@@ -131,9 +146,10 @@ delib.module {
     systemd.tmpfiles.rules = [
       "d /var/www/hmp 2775 ${profile.username} web-deploy -"
       "d /var/www/me.tenelol.dev 2775 ${profile.username} web-deploy -"
-      "d /var/www/todo.tenelol.dev 2775 ${profile.username} web-deploy -"
-      "d /opt/nest-react-todo 0755 ${profile.username} web-deploy -"
+      "d /var/www/todo.tenelol.dev 2775 ${profile.username} todo-deploy -"
+      "d /opt/nest-react-todo 2775 ${profile.username} todo-deploy -"
       "d /var/lib/github-runner-blog 0700 github-runner web-deploy -"
+      "d /var/lib/github-runner-todo 0700 github-runner-todo todo-deploy -"
     ];
 
     systemd.services = {
@@ -142,7 +158,7 @@ delib.module {
         wantedBy = [ "multi-user.target" ];
         requires = [ "mysql.service" ];
         after = [ "mysql.service" ];
-        unitConfig.ConditionPathExists = "/opt/nest-react-todo/backend/dist/main.js";
+        unitConfig.ConditionPathExists = "/opt/nest-react-todo/current/dist/main.js";
         environment = {
           NODE_ENV = "production";
           PORT = "3000";
@@ -154,7 +170,7 @@ delib.module {
         serviceConfig = {
           User = "todo";
           Group = "todo";
-          WorkingDirectory = "/opt/nest-react-todo/backend";
+          WorkingDirectory = "/opt/nest-react-todo/current";
           ExecStartPre = "${pkgs.nodejs_24}/bin/node ./node_modules/typeorm/cli.js migration:run -d dist/data-source.js";
           ExecStart = "${pkgs.nodejs_24}/bin/node dist/main.js";
           Restart = "on-failure";
@@ -225,7 +241,59 @@ delib.module {
           ];
         };
       };
+      github-runner-todo = {
+        description = "GitHub Actions runner for tenelol/dpgk-todo";
+        wantedBy = [ "multi-user.target" ];
+        wants = [ "network-online.target" ];
+        after = [ "network-online.target" ];
+        unitConfig.ConditionPathExists = "/var/lib/github-runner-todo/.runner";
+        path = with pkgs; [
+          bash
+          coreutils
+          curl
+          git
+          gnutar
+          nodejs_24
+          pnpm
+          rsync
+        ];
+        environment = {
+          ACTIONS_RUNNER_HOOK_JOB_STARTED = todoRunnerGuard;
+          HOME = "/var/lib/github-runner-todo";
+          RUNNER_ROOT = "/var/lib/github-runner-todo";
+        };
+        serviceConfig = {
+          User = "github-runner-todo";
+          Group = "todo-deploy";
+          WorkingDirectory = "/var/lib/github-runner-todo";
+          ExecStart = "${pkgs.github-runner}/bin/Runner.Listener run --startuptype service";
+          Restart = "on-failure";
+          RestartSec = 5;
+          KillSignal = "SIGINT";
+          PrivateDevices = true;
+          PrivateTmp = true;
+          ProtectHome = true;
+          ProtectSystem = "strict";
+          ReadWritePaths = [
+            "/var/lib/github-runner-todo"
+            "/var/www/todo.tenelol.dev"
+            "/opt/nest-react-todo"
+          ];
+        };
+      };
     };
+
+    security.sudo.extraRules = [
+      {
+        users = [ "github-runner-todo" ];
+        commands = [
+          {
+            command = "/run/current-system/sw/bin/systemctl restart todo-backend.service";
+            options = [ "NOPASSWD" ];
+          }
+        ];
+      }
+    ];
 
     networking.firewall.allowedTCPPorts = [ 80 ];
   };
