@@ -212,6 +212,8 @@ delib.module {
           bash
           coreutils
           git
+          gnutar
+          gzip
           nodejs_22
           pnpm
           rsync
