@@ -1,8 +1,13 @@
+import ctypes
+import json
 import os
+import sys
 import tempfile
 import unittest
 import urllib.parse
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import Mock, patch
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -27,6 +32,58 @@ def load_imoocs_python():
         else:
             os.environ["BACKEND"] = previous_backend
     return namespace
+
+
+class ImoocsCookieStoreTests(unittest.TestCase):
+    def test_macos_save_updates_without_deleting_and_preserves_failed_writes(self):
+        imoocs = load_imoocs_python()
+        jar = imoocs["http"].cookiejar.CookieJar()
+        jar.set_cookie(imoocs["cookie_from_dict"]({"name": "session", "value": "test-session"}))
+        keyring = Mock()
+        keyring.delete_password.side_effect = RuntimeError(-25244, "Invalid owner edit")
+        keyring.set_password.side_effect = RuntimeError(-25244, "Delete before add failed")
+        imoocs["keyring"] = keyring
+        api = SimpleNamespace(
+            _sec=SimpleNamespace(SecItemUpdate=Mock()),
+            _found=SimpleNamespace(CFDataCreate=Mock(return_value=1), CFRelease=Mock()),
+            OS_status=ctypes.c_int32,
+            create_query=Mock(side_effect=lambda **kwargs: kwargs),
+            k_=lambda name: name,
+            error=SimpleNamespace(item_not_found=-25300),
+            SecItemAdd=Mock(return_value=0),
+            Error=SimpleNamespace(raise_for_status=Mock()),
+        )
+
+        def check_status(status):
+            if status:
+                raise RuntimeError(status)
+
+        api.Error.raise_for_status.side_effect = check_status
+        with patch.object(sys, "platform", "darwin"), patch.dict(
+            sys.modules, {"keyring.backends.macOS": SimpleNamespace(api=api)}
+        ):
+            for status in (0, -25300, -25244):
+                with self.subTest(status=status):
+                    api._sec.SecItemUpdate.return_value = status
+                    api.SecItemAdd.reset_mock()
+                    if status == -25244:
+                        with self.assertRaises(RuntimeError):
+                            imoocs["save_cookie_jar"](jar)
+                    else:
+                        imoocs["save_cookie_jar"](jar)
+                    query, attributes = api._sec.SecItemUpdate.call_args.args
+                    self.assertEqual(query, {
+                        "kSecClass": "kSecClassGenericPassword",
+                        "kSecAttrService": "imoocs",
+                        "kSecAttrAccount": "moocs-session-cookies",
+                    })
+                    self.assertEqual(set(attributes), {"kSecValueData"})
+                    self.assertEqual(api.SecItemAdd.call_count, int(status == -25300))
+                    _, raw, size = api._found.CFDataCreate.call_args.args
+                    self.assertEqual(len(raw), size)
+                    self.assertEqual(json.loads(raw)[0]["value"], "test-session")
+        keyring.delete_password.assert_not_called()
+        keyring.set_password.assert_not_called()
 
 
 class ImoocsMultipleAssignmentTests(unittest.TestCase):

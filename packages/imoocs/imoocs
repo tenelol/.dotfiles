@@ -309,12 +309,46 @@ def save_cookie_jar(jar):
         if any(cookie.domain.lstrip(".").lower().endswith(domain) for domain in allowed_domains)
     ]
     value = json.dumps(cookies, ensure_ascii=False)
-    for _ in range(5):
-        try:
-            keyring.delete_password(SERVICE, ACCOUNT)
-        except Exception:
-            break
-    keyring.set_password(SERVICE, ACCOUNT, value)
+    if sys.platform != "darwin":
+        keyring.set_password(SERVICE, ACCOUNT, value)
+        return
+
+    # keyring's macOS set_password deletes first, which can fail with -25244
+    # and discards the old session if the subsequent add fails. Update in place.
+    import ctypes
+    from keyring.backends.macOS import api
+
+    update = api._sec.SecItemUpdate
+    update.restype = api.OS_status
+    update.argtypes = (ctypes.c_void_p, ctypes.c_void_p)
+    data_create = api._found.CFDataCreate
+    data_create.restype = ctypes.c_void_p
+    data_create.argtypes = (ctypes.c_void_p, ctypes.c_void_p, ctypes.c_long)
+    release = api._found.CFRelease
+    release.argtypes = (ctypes.c_void_p,)
+    release.restype = None
+    raw = value.encode("utf-8")
+    data = ctypes.c_void_p(data_create(None, raw, len(raw)))
+    identity = {
+        "kSecClass": api.k_("kSecClassGenericPassword"),
+        "kSecAttrService": SERVICE,
+        "kSecAttrAccount": ACCOUNT,
+    }
+    query = api.create_query(**identity)
+    changes = api.create_query(kSecValueData=data)
+    try:
+        status = update(query, changes)
+        if status == api.error.item_not_found:
+            new_item = api.create_query(**identity, kSecValueData=data)
+            try:
+                status = api.SecItemAdd(new_item, None)
+            finally:
+                release(new_item)
+        api.Error.raise_for_status(status)
+    finally:
+        release(changes)
+        release(query)
+        release(data)
 
 
 def delete_cookie_jar():
