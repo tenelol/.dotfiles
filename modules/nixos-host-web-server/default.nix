@@ -253,6 +253,7 @@ delib.module {
           curl
           git
           gnutar
+          gzip
           nodejs_24
           pnpm
           rsync
