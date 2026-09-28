@@ -19,7 +19,7 @@ let
       exit 1
     fi
   '';
-  todoRunnerGuard = pkgs.writeShellScript "github-runner-todo-guard" ''
+  todoRunnerGuard = pkgs.writeShellScript "github-runner-todo-guard.sh" ''
     if [[ "''${GITHUB_REPOSITORY:-}" != "tenelol/dpgk-todo" ||
           "''${GITHUB_REF:-}" != "refs/heads/main" ||
           "''${GITHUB_EVENT_NAME:-}" != "push" ]]; then
