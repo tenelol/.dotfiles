@@ -38,6 +38,7 @@ delib.module {
     users.groups = {
       cloudflared = { };
       web-deploy = { };
+      todo = { };
     };
     users.users = {
       cloudflared = {
@@ -50,7 +51,26 @@ delib.module {
         home = "/var/lib/github-runner-blog";
         createHome = true;
       };
+      todo = {
+        isSystemUser = true;
+        group = "todo";
+      };
       ${profile.username}.extraGroups = [ "web-deploy" ];
+    };
+
+    environment.systemPackages = [ pkgs.nodejs_24 pkgs.pnpm ];
+
+    services.mysql = {
+      enable = true;
+      package = pkgs.mariadb;
+      ensureDatabases = [ "todo" ];
+      ensureUsers = [
+        {
+          name = "todo";
+          ensurePermissions."todo.*" = "ALL PRIVILEGES";
+        }
+      ];
+      settings.mysqld.bind-address = "127.0.0.1";
     };
 
     services.nginx = {
@@ -65,6 +85,20 @@ delib.module {
           default = true;
           root = "/var/www/hmp/current";
           locations."/".tryFiles = "$uri $uri/ =404";
+        };
+        "todo.tenelol.dev" = {
+          root = "/var/www/todo.tenelol.dev/current";
+          locations = {
+            "/".tryFiles = "$uri $uri/ /index.html";
+            "/api/".proxyPass = "http://127.0.0.1:3000/";
+            "/assets/" = {
+              tryFiles = "$uri =404";
+              extraConfig = ''
+                expires 1y;
+                add_header Cache-Control "public, immutable";
+              '';
+            };
+          };
         };
         "me.tenelol.dev" = {
           root = "/var/www/me.tenelol.dev/current";
@@ -97,10 +131,40 @@ delib.module {
     systemd.tmpfiles.rules = [
       "d /var/www/hmp 2775 ${profile.username} web-deploy -"
       "d /var/www/me.tenelol.dev 2775 ${profile.username} web-deploy -"
+      "d /var/www/todo.tenelol.dev 2775 ${profile.username} web-deploy -"
+      "d /opt/nest-react-todo 0755 ${profile.username} web-deploy -"
       "d /var/lib/github-runner-blog 0700 github-runner web-deploy -"
     ];
 
     systemd.services = {
+      todo-backend = {
+        description = "Todo API";
+        wantedBy = [ "multi-user.target" ];
+        requires = [ "mysql.service" ];
+        after = [ "mysql.service" ];
+        unitConfig.ConditionPathExists = "/opt/nest-react-todo/backend/dist/main.js";
+        environment = {
+          NODE_ENV = "production";
+          PORT = "3000";
+          BIND_HOST = "127.0.0.1";
+          DB_SOCKET = "/run/mysqld/mysqld.sock";
+          DB_NAME = "todo";
+          DB_USERNAME = "todo";
+        };
+        serviceConfig = {
+          User = "todo";
+          Group = "todo";
+          WorkingDirectory = "/opt/nest-react-todo/backend";
+          ExecStartPre = "${pkgs.nodejs_24}/bin/node ./node_modules/typeorm/cli.js migration:run -d dist/data-source.js";
+          ExecStart = "${pkgs.nodejs_24}/bin/node dist/main.js";
+          Restart = "on-failure";
+          NoNewPrivileges = true;
+          PrivateTmp = true;
+          ProtectHome = true;
+          ProtectSystem = "strict";
+        };
+      };
+
       cloudflared = {
         description = "Cloudflare Tunnel";
         wantedBy = [ "multi-user.target" ];
