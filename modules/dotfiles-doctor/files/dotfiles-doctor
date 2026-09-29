@@ -264,7 +264,7 @@ check_rebuild_processes() {
 }
 
 check_darwin_desktop() {
-  local target wallpaper wallpaper_target latest_log latest_log_mtime
+  local target latest_log latest_log_mtime
   local raycast_script
 
   [ "$uname_s" = "Darwin" ] || return
@@ -277,26 +277,17 @@ check_darwin_desktop() {
   elif has pgrep && { pgrep -qx rift >/dev/null 2>&1 || pgrep -qx Rift >/dev/null 2>&1; }; then
     target="macbook-rift"
     status ok "window manager" "Rift is running"
-  elif [ -e "$HOME/.config/theme/wallpaper.png" ] \
-    && [ "$(readlink "$HOME/.config/theme/wallpaper.png" 2>/dev/null | sed 's#.*/##')" = "wallpaper.png" ]; then
-    target="macbook-mac"
-    status ok "window manager" "native macOS rice"
   elif [ -e "$HOME/.config/aerospace/aerospace.toml" ]; then
     target="macbook-aerospace"
     status warn "window manager" "AeroSpace config exists, but process is not running"
-  else
+  elif [ -e "$HOME/.config/rift/config.toml" ]; then
     target="macbook-rift"
-    status warn "window manager" "Rift/AeroSpace process not detected"
+    status warn "window manager" "Rift config exists, but process is not running"
+  else
+    target="macbook-mac"
+    status ok "window manager" "native macOS rice"
   fi
   status info "switch target" "$target"
-
-  wallpaper="$HOME/.config/theme/wallpaper.png"
-  if [ -e "$wallpaper" ]; then
-    wallpaper_target="$(readlink "$wallpaper" 2>/dev/null || printf present)"
-    status ok "wallpaper" "$wallpaper_target"
-  else
-    status warn "wallpaper" "$wallpaper is missing"
-  fi
 
   if has pgrep && pgrep -qx sketchybar >/dev/null 2>&1; then
     status ok "sketchybar" "running"

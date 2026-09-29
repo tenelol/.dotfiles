@@ -7,6 +7,5 @@ delib.rice {
     autoraise.enable = false;
     jankyborders.enable = false;
     rift.enable = false;
-    theme.wallpaper = "wallpaper.png";
   };
 }

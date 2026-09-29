@@ -22,7 +22,7 @@
 - When explicitly requested validation is confined to macOS/Darwin, skip Linux host builds; run the all-system no-build evaluation and only the confirmed Darwin target build.
 - For docs, skills, tests, hooks, shell/Python assets, and static Home Manager file wiring, skip all-system Nix evaluation and host build/switch; run direct artifact tests instead.
 - Preferred switch commands mirror the build commands with `switch` instead of `build`.
-- For rebuild/switch on rice-enabled hosts, preserve the active rice by targeting the rice-specific configuration. On `macbook`, use `dotfiles doctor --no-eval` to resolve the current switch target; if unavailable, inspect the desktop process/config or active wallpaper. Use the confirmed rice-specific target instead of bare `macbook`.
+- For rebuild/switch on rice-enabled hosts, preserve the active rice by targeting the rice-specific configuration. On `macbook`, use `dotfiles doctor --no-eval` to resolve the current switch target; if unavailable, inspect the desktop process/config. Use the confirmed rice-specific target instead of bare `macbook`.
 - Before running any rebuild/switch command, check that another `nh ... build`, `nh ... switch`, `darwin-rebuild`, or `nixos-rebuild` process is not already running. If one is active, do not start a conflicting activation.
 - Never follow a build with a switch unless the user explicitly requested the switch.
 - After a verified, single-responsibility small change, create a commit unless the user asks not to. For large, multi-responsibility, or history-rewriting changes, wait for explicit commit permission.

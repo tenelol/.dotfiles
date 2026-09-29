@@ -7,7 +7,6 @@ delib.rice {
     autoraise.enable = true;
     rift.enable = false;
     theme = {
-      wallpaper = "aerospace.png";
       sketchybar = {
         glassBg = "0x2a07111f";
         glassBorder = "0x387dd3fc";

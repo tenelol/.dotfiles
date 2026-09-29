@@ -26,19 +26,6 @@ let
     )
     + "\n";
 
-  darwinApplyWallpaperActivation = ''
-    wallpaper="$(${pkgs.coreutils}/bin/readlink -f "$HOME/.config/theme/wallpaper.png")"
-
-    if [ -f "$wallpaper" ]; then
-      $DRY_RUN_CMD /usr/bin/osascript \
-        -e 'on run argv' \
-        -e 'set wallpaperPath to POSIX file (item 1 of argv)' \
-        -e 'tell application "System Events" to set picture of every desktop to wallpaperPath' \
-        -e 'end run' \
-        "$wallpaper" >/dev/null 2>&1 || true
-    fi
-  '';
-
   linuxApplyWallpaperBin = {
     executable = true;
     text = ''
@@ -95,7 +82,7 @@ delib.module {
   options =
     with delib;
     moduleOptions {
-      wallpaper = strOption (if pkgs.stdenv.hostPlatform.isLinux then "black.png" else "wallpaper.png");
+      wallpaper = strOption "black.png";
       sketchybar = {
         transparent = strOption "0x00000000";
         glassBg = strOption "0x260b1018";
@@ -127,20 +114,15 @@ delib.module {
     lib.mkIf (!host.isServer) (
       lib.mkMerge [
         {
-          xdg.configFile = {
-            "theme/wallpaper.png".source = ../../rices/wallpapers + "/${myconfig.theme.wallpaper}";
-            "theme/sketchybar.env".text = sketchybarEnv myconfig.theme.sketchybar;
-            "wallpapers".source = ../../rices/wallpapers;
-          };
+          xdg.configFile."theme/sketchybar.env".text = sketchybarEnv myconfig.theme.sketchybar;
         }
 
-        (lib.mkIf pkgs.stdenv.hostPlatform.isDarwin {
-          home.activation.applyThemeWallpaper = hm.dag.entryAfter [
-            "linkGeneration"
-          ] darwinApplyWallpaperActivation;
-        })
-
         (lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
+          xdg.configFile = {
+            "theme/wallpaper.png".source = ../../rices/wallpapers + "/${myconfig.theme.wallpaper}";
+            "wallpapers".source = ../../rices/wallpapers;
+          };
+
           home.pointerCursor = {
             enable = true;
             gtk.enable = true;

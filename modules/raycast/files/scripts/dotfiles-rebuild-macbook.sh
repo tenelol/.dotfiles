@@ -36,25 +36,18 @@ is_rebuild_running() {
 }
 
 detect_target_configuration() {
-  local rice wallpaper wallpaper_name
-
-  wallpaper="${HOME}/.config/theme/wallpaper.png"
-  wallpaper_name="$(
-    /usr/bin/readlink "$wallpaper" 2>/dev/null \
-      | /usr/bin/sed 's#.*/##' \
-      || true
-  )"
+  local rice
 
   if /usr/bin/pgrep -qx AeroSpace >/dev/null 2>&1; then
     rice="aerospace"
   elif /usr/bin/pgrep -qx rift >/dev/null 2>&1 || /usr/bin/pgrep -qx Rift >/dev/null 2>&1; then
     rice="rift"
-  elif [ "$wallpaper_name" = "aerospace.png" ]; then
+  elif [ -e "$HOME/.config/aerospace/aerospace.toml" ]; then
     rice="aerospace"
-  elif [ "$wallpaper_name" = "wallpaper.png" ]; then
-    rice="mac"
-  else
+  elif [ -e "$HOME/.config/rift/config.toml" ]; then
     rice="rift"
+  else
+    rice="mac"
   fi
 
   printf 'macbook-%s\n' "$rice"

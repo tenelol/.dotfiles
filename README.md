@@ -69,11 +69,13 @@ Local AI tools live in `files/tools/`, and the dashboard hook, artwork, and them
 
 ### mac
 
-| Rice | Window management | Appearance |
-| --- | --- | --- |
-| `mac` | Native macOS | wallpaper|
-| `rift` | Rift | wallpaper |
-| `aerospace` | AeroSpace + AutoRaise | wallpaper |
+| Rice | Window management |
+| --- | --- |
+| `mac` | Native macOS |
+| `rift` | Rift |
+| `aerospace` | AeroSpace + AutoRaise |
+
+macOS wallpapers are managed in System Settings. denix/Home Manager does not set them during `nh darwin switch`.
 
 ### Linux
 

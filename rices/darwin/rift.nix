@@ -7,7 +7,6 @@ delib.rice {
     autoraise.enable = false;
     rift.enable = true;
     theme = {
-      wallpaper = "rift.png";
       ghostty = {
         foreground = "b3bbc7";
         background = "0a0a0a";
