@@ -169,6 +169,7 @@ delib.module {
         "raycast"
         "tailscale-app"
         "thebrowsercompany-dia"
+        "wireshark-app"
         "zed"
         "zen"
       ]
