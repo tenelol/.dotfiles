@@ -1,6 +1,6 @@
 ---
 name: subagent-model-router
-description: "委譲する作業の責務に応じ、SolまたはTerraと推論強度を明示して子エージェントを起動するときに使う。"
+description: "委譲する作業にgpt-6-solと推論強度を明示して子エージェントを起動するときに使う。"
 ---
 
 # Subagent Model Router
@@ -13,12 +13,12 @@ The parent owns the overall plan, packet split, model assignment, permissions, i
 
 | Tier (existing CLI name) | Responsibility | Model | Default effort |
 | --- | --- | --- | --- |
-| `fast` | Research, summaries, document analysis, deterministic inspection | `gpt-5.6-sol` | `xhigh` |
-| `standard` | Implementation, debugging, integration, test fixes | `gpt-5.6-terra` | `xhigh` |
-| `deep` | Bounded complex implementation or failure investigation | `gpt-5.6-terra` | `xhigh` |
-| `review` | Independent correctness or release review | `gpt-5.6-sol` | `xhigh` |
+| `fast` | Research, summaries, document analysis, deterministic inspection | `gpt-6-sol` | `xhigh` |
+| `standard` | Implementation, debugging, integration, test fixes | `gpt-6-sol` | `xhigh` |
+| `deep` | Bounded complex implementation or failure investigation | `gpt-6-sol` | `xhigh` |
+| `review` | Independent correctness or release review | `gpt-6-sol` | `xhigh` |
 
-Luna is excluded. Use `max` only when explicitly requested; risk alone does not raise effort automatically.
+Use `gpt-6-sol` for every tier. Use `max` only when explicitly requested; risk alone does not raise effort automatically.
 
 ## Dispatch and integrate
 

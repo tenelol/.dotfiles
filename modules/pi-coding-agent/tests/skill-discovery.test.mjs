@@ -8,7 +8,7 @@ import { pathToFileURL } from "node:url";
 const piRoot = process.env.PI_PACKAGE_DIR || "/opt/homebrew/opt/pi-coding-agent/libexec/lib/node_modules/@earendil-works/pi-coding-agent";
 const { DefaultResourceLoader } = await import(pathToFileURL(join(piRoot, "dist/core/resource-loader.js")));
 const temporary = mkdtempSync(join(tmpdir(), "pi-skill-discovery-"));
-const project = join(temporary, "project");
+const project = join(temporary, ".dotfiles");
 const agentDir = join(temporary, "agent");
 const name = "fixture-shared-skill";
 const projectSkill = join(project, ".agents/skills", name, "SKILL.md");

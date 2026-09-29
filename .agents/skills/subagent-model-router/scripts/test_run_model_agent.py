@@ -29,7 +29,7 @@ CATALOG = {
                 for effort in ("low", "medium", "high", "xhigh", "max", "ultra")
             ],
         }
-        for slug in ("gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol", "gpt-5.4-mini")
+        for slug in ("gpt-6-sol", "gpt-6-luna", "gpt-6-astra", "gpt-5.6-terra", "gpt-5.6-sol")
     ]
 }
 
@@ -93,10 +93,10 @@ class RunnerTests(unittest.TestCase):
 
     def test_tier_dry_runs_include_explicit_model_and_effort(self) -> None:
         expected = {
-            "fast": ("gpt-5.6-sol", "xhigh"),
-            "standard": ("gpt-5.6-terra", "xhigh"),
-            "deep": ("gpt-5.6-terra", "xhigh"),
-            "review": ("gpt-5.6-sol", "xhigh"),
+            "fast": ("gpt-6-sol", "xhigh"),
+            "standard": ("gpt-6-sol", "xhigh"),
+            "deep": ("gpt-6-sol", "xhigh"),
+            "review": ("gpt-6-sol", "xhigh"),
         }
         for tier, (model, effort) in expected.items():
             with self.subTest(tier=tier):
@@ -115,7 +115,7 @@ class RunnerTests(unittest.TestCase):
             "--tier",
             "fast",
             "--model",
-            "gpt-5.6-sol",
+            "gpt-6-sol",
             "--reasoning-effort",
             "max",
             prompt=prompt,
@@ -123,23 +123,26 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(completed.returncode, 0, completed.stderr)
         self.assertEqual(completed.stdout.strip(), "WORKER_OK")
         captured = json.loads(self.capture.read_text(encoding="utf-8"))
-        self.assertIn("gpt-5.6-sol", captured["argv"])
+        self.assertIn("gpt-6-sol", captured["argv"])
         self.assertIn(prompt, captured["stdin"])
         self.assertFalse((self.root / "SHOULD_NOT_EXIST").exists())
 
     def test_unknown_model_is_rejected_instead_of_inheriting(self) -> None:
         completed = self.run_router("--model", "not-a-model")
         self.assertEqual(completed.returncode, 2)
-        self.assertIn("limited to gpt-5.6-terra or gpt-5.6-sol", completed.stderr)
+        self.assertIn("limited to gpt-6-sol", completed.stderr)
 
-    def test_luna_child_is_rejected(self) -> None:
-        completed = self.run_router("--model", "gpt-5.6-luna")
-        self.assertEqual(completed.returncode, 2)
-        self.assertIn("limited to gpt-5.6-terra or gpt-5.6-sol", completed.stderr)
+    def test_other_models_are_rejected(self) -> None:
+        for model in ("gpt-6-luna", "gpt-6-astra", "gpt-5.6-terra", "gpt-5.6-sol"):
+            with self.subTest(model=model):
+                completed = self.run_router("--model", model)
+                self.assertEqual(completed.returncode, 2)
+                self.assertIn("limited to gpt-6-sol", completed.stderr)
+                self.assertFalse(self.capture.exists())
 
     def test_unavailable_allowed_model_does_not_start_worker(self) -> None:
         self.fake_codex.write_text(
-            self.fake_codex.read_text().replace('"gpt-5.6-sol"', '"hidden-sol"'),
+            self.fake_codex.read_text().replace('"gpt-6-sol"', '"hidden-sol"'),
             encoding="utf-8",
         )
         completed = self.run_router("--tier", "review", "--dry-run")

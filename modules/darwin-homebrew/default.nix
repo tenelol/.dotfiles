@@ -58,6 +58,10 @@ delib.module {
 
       taps = [
         {
+          name = "openclaw/tap";
+          trusted = true;
+        }
+        {
           name = "homebrew-zathura/zathura";
           trusted = true;
         }
@@ -87,11 +91,14 @@ delib.module {
         "go"
         "gomi"
         "grep"
+        "herdr"
         "homebrew-zathura/zathura/zathura"
         "homebrew-zathura/zathura/zathura-cb"
         "homebrew-zathura/zathura/zathura-djvu"
         "homebrew-zathura/zathura/zathura-pdf-mupdf"
         "homebrew-zathura/zathura/zathura-ps"
+        "ideviceinstaller"
+        "ios-deploy"
         "lazygit"
         "llvm"
         "lolcat"
@@ -99,6 +106,7 @@ delib.module {
         "mas"
         "mysql"
         "node"
+        "openclaw/tap/peekaboo"
         "pi-coding-agent"
         "pkgconf"
         "platformio"
@@ -107,6 +115,7 @@ delib.module {
         "prettier"
         "prettierd"
         "python@3.14"
+        "qrencode"
         "ripgrep"
         "rust"
         "sqlite"

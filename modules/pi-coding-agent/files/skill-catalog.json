@@ -1,0 +1,17 @@
+{
+  "shared": [
+    "codebase-design",
+    "domain-modeling",
+    "frontend-design",
+    "grilling",
+    "proxmox-pve",
+    "wizard",
+    "writing-for-agents"
+  ],
+  "extensions": {
+    "pi-subagents": "extensions/pi-subagents/skills/pi-subagents",
+    "council-mode": "extensions/pi-subagents/skills/council-mode",
+    "playwright-cli": "extensions/playwright-cli/node_modules/@playwright/cli/skills/playwright-cli",
+    "ponytail-bundle": "extensions/ponytail/skills"
+  }
+}

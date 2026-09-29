@@ -29,8 +29,10 @@
     nix-hazkey.url = "github:aster-void/nix-hazkey";
     nix-hazkey.inputs.nixpkgs.follows = "nixpkgs";
 
-    herdr.url = "github:ogulcancelik/herdr/v0.7.1";
-    herdr.inputs.nixpkgs.follows = "nixpkgs";
+    herdr.url = "github:herdrdev/herdr/v0.9.1";
+    herdr.flake = false;
+    herdr-bin.url = "github:herdrdev/herdr-nix";
+    herdr-bin.inputs.nixpkgs.follows = "nixpkgs";
 
     sops-nix.url = "github:Mic92/sops-nix";
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";

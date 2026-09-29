@@ -1,0 +1,10 @@
+{
+  "components": {
+    "workingLine": {
+      "enabled": true,
+      "turnSummary": true,
+      "textAnimation": "static",
+      "messages": { "custom": false }
+    }
+  }
+}

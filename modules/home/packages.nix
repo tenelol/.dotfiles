@@ -12,7 +12,12 @@ let
   isLinux = pkgs.stdenv.hostPlatform.isLinux;
   isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
   system = pkgs.stdenv.hostPlatform.system;
-  herdrPackage = inputs.herdr.packages.${system}.default;
+  herdrPackage =
+    let
+      binary = inputs.herdr-bin.packages.${system}.default;
+    in
+    assert binary.version == (lib.importTOML "${inputs.herdr}/Cargo.toml").package.version;
+    binary;
   ccpocketBridgePackage = import ../../packages/ccpocket-bridge.nix {
     inherit pkgs lib;
   };
@@ -53,11 +58,11 @@ let
   ];
 
   nonServerPackages = [
-    herdrPackage
     imoocsPackage
   ];
 
   linuxNonServerPackages = with pkgs; [
+    herdrPackage
     cargo
     platformio
     pnpm

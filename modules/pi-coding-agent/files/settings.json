@@ -3,8 +3,31 @@
   "tuiMode": "fullscreen",
   "theme": "tokyonight-muted",
   "defaultProvider": "openai-codex",
-  "defaultModel": "gpt-5.6-sol",
+  "defaultModel": "gpt-6-sol",
   "defaultThinkingLevel": "xhigh",
+  "skills": ["!**/.agents/skills/**"],
+  "subagents": {
+    "defaultModel": "openai-codex/gpt-6-sol",
+    "defaultThinking": "xhigh",
+    "watchdog": {
+      "enabled": true,
+      "main": {
+        "model": "openai-codex/gpt-6-sol",
+        "thinking": "xhigh"
+      },
+      "agentEndTimeoutMs": 120000,
+      "cadence": { "everyNTools": null },
+      "children": { "enabled": false }
+    },
+    "agentOverrides": {
+      "scout": { "thinking": "xhigh" },
+      "researcher": { "thinking": "xhigh" },
+      "worker": { "thinking": "xhigh" },
+      "reviewer": { "thinking": "xhigh" },
+      "oracle": { "thinking": "xhigh" },
+      "evidence-auditor": { "thinking": "xhigh" }
+    }
+  },
   "packages": [],
   "lastChangelogVersion": "0.85.1"
 }

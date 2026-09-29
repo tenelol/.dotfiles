@@ -16,24 +16,24 @@ from typing import Any
 
 ROUTES: dict[str, dict[str, Any]] = {
     "fast": {
-        "models": ["gpt-5.6-sol"],
+        "models": ["gpt-6-sol"],
         "effort": "xhigh",
     },
     "standard": {
-        "models": ["gpt-5.6-terra"],
+        "models": ["gpt-6-sol"],
         "effort": "xhigh",
     },
     "deep": {
-        "models": ["gpt-5.6-terra"],
+        "models": ["gpt-6-sol"],
         "effort": "xhigh",
     },
     "review": {
-        "models": ["gpt-5.6-sol"],
+        "models": ["gpt-6-sol"],
         "effort": "xhigh",
     },
 }
 
-ALLOWED_MODELS = frozenset(("gpt-5.6-terra", "gpt-5.6-sol"))
+ALLOWED_MODELS = frozenset(("gpt-6-sol",))
 ALLOWED_EFFORTS = frozenset(("xhigh", "max"))
 
 ENV_MODEL = {
@@ -137,7 +137,7 @@ def resolve_route(
         model = explicit_model
         if model not in ALLOWED_MODELS:
             raise RouterError(
-                "Subagent models are limited to gpt-5.6-terra or gpt-5.6-sol."
+                "Subagent models are limited to gpt-6-sol."
             )
         if model not in catalog:
             available = ", ".join(sorted(catalog)) or "none"

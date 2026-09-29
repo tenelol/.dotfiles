@@ -1,7 +1,10 @@
 {
-  "readOutputMode": "summary",
-  "searchOutputMode": "count",
-  "mcpOutputMode": "summary",
-  "bashOutputMode": "summary",
+  "readOutputMode": "preview",
+  "searchOutputMode": "preview",
+  "mcpOutputMode": "preview",
+  "bashOutputMode": "preview",
+  "previewLines": 4,
+  "diffCollapsedLines": 12,
+  "showTruncationHints": true,
   "enableNativeUserMessageBox": false
 }

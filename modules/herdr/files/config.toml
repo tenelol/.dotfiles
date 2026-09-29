@@ -28,5 +28,15 @@ next_workspace = "prefix+i"
 previous_agent = "prefix+shift+u"
 next_agent = "prefix+shift+i"
 
+[ui.sidebar.agents]
+rows = [
+  ["state_icon", "agent", "state_text"],
+  ["workspace", "tab"],
+]
+
+[ui.toast]
+delivery = "terminal"
+delay_seconds = 1
+
 [experimental]
 kitty_graphics = true
