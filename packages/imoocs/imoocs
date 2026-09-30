@@ -28,6 +28,8 @@ Notes:
   auth and reset print text and use the exit code for status.
   slide collect uses the stored imoocs auth session and can import local browser Google cookies.
   drive commands use the stored Google cookies and default to the configured INIAD 2026 parent folder.
+  If browser cookie import does not restore Google access, set IMOOCS_USERNAME and run
+  IMOOCS_AUTH_WITH_GOOGLE=1 imoocs auth login --keychain to refresh Google through INIAD SSO.
   In non-interactive shells, pass --course/--lecture/--page or explicit --all.
 EOF
 }
@@ -1713,6 +1715,7 @@ def slide_auth_required_payload(path, year, store_status, browser_import=None):
         next_steps = [
             "The stored MOOCs session is usable, but Google Slides requires a Google Docs session.",
             "Run `imoocs auth import-browser --browser auto`, then retry `imoocs slide collect`.",
+            "If browser cookie import still fails, set IMOOCS_USERNAME and run `IMOOCS_AUTH_WITH_GOOGLE=1 imoocs auth login --keychain`, then retry.",
             "No Keychain, collect-cli, BrowserUse, Playwright, or manual slide inspection was performed.",
         ]
         message = "Google Slides authentication is required or the stored Google session expired."
@@ -2000,6 +2003,7 @@ def drive_auth_required_payload(action, parent_id, store_status, browser_import=
         "authScope": "google_drive",
         "next": [
             "Run `imoocs auth import-browser --browser auto`, then retry the drive command.",
+            "If browser cookie import still fails, set IMOOCS_USERNAME and run `IMOOCS_AUTH_WITH_GOOGLE=1 imoocs auth login --keychain`, then retry.",
             "No Google password, BrowserUse, Playwright, or manual browser fallback was performed.",
         ],
     }

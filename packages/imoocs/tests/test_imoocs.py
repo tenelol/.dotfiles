@@ -267,6 +267,13 @@ class ImoocsSlideCollectionTests(unittest.TestCase):
         ])
         self.assertTrue(options["refresh_google"])
 
+    def test_google_auth_errors_explain_keychain_recovery(self):
+        hint = "IMOOCS_AUTH_WITH_GOOGLE=1 imoocs auth login --keychain"
+        slide = self.imoocs["slide_auth_required_payload"]("/tmp/slides", "2026", "google_expired")
+        drive = self.imoocs["drive_auth_required_payload"]("ls", "", "google_expired")
+        self.assertTrue(any(hint in step for step in slide["data"]["next"]))
+        self.assertTrue(any(hint in step for step in drive["data"]["next"]))
+
     def test_content_disposition_repairs_utf8_decoded_as_latin1(self):
         expected = "確率統計2.pdf"
         mojibake = expected.encode("utf-8").decode("latin-1")
