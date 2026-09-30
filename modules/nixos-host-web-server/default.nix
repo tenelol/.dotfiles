@@ -137,6 +137,7 @@ delib.module {
             };
           };
           extraConfig = ''
+            add_header Cache-Control "no-cache" always;
             error_page 404 /404.html;
           '';
         };
