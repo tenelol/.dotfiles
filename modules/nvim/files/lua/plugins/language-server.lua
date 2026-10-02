@@ -222,6 +222,14 @@ return {
                 on_attach = on_attach,
             })
 
+            vim.lsp.config("nil_ls", {
+                settings = {
+                    ["nil"] = {
+                        nix = { flake = { autoArchive = false } },
+                    },
+                },
+            })
+
             for _, server in ipairs(servers) do
                 if server ~= "ts_ls" and server ~= "eslint" and server ~= "clangd" then
                     vim.lsp.config(server, {

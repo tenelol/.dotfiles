@@ -84,6 +84,14 @@ return {
           },
         },
         filesystem = {
+          find_by_full_path_words = true,
+          window = {
+            mappings = {
+              ["/"] = "fuzzy_finder",
+              ["f"] = "filter_as_you_type",
+              ["<C-x>"] = "clear_filter",
+            },
+          },
           follow_current_file = {
             enabled = true,
             leave_dirs_open = false,

@@ -76,6 +76,16 @@ local function setup_lualine()
         return vim.api.nvim_win_get_width(0)
     end
 
+    local function breadcrumbs()
+        local ok, navic = pcall(require, "nvim-navic")
+        local location = ok and navic.is_available() and navic.get_location() or ""
+        if location ~= "" then
+            return location
+        end
+        local name = vim.fn.expand("%:t")
+        return name ~= "" and name:gsub("%%", "%%%%") or "[No Name]"
+    end
+
     require('lualine').setup {
         options = {
             theme = custom_theme,
@@ -87,6 +97,7 @@ local function setup_lualine()
                 right = '',
             },
             globalstatus = false, -- ウィンドウごとに異なるステータスライン
+            disabled_filetypes = { winbar = { "neo-tree", "toggleterm", "dashboard", "aerial" } },
         },
         sections = {
             lualine_a = {
@@ -217,17 +228,7 @@ local function setup_lualine()
         winbar = {
             lualine_c = {
                 {
-                    function()
-                        local navic = require("nvim-navic")
-                        if navic.is_available() then
-                            return navic.get_location()
-                        end
-                        return ""
-                    end,
-                    cond = function()
-                        local ok, navic = pcall(require, "nvim-navic")
-                        return ok and navic.is_available()
-                    end,
+                    breadcrumbs,
                     color = { fg = colors.fg3, bg = colors.bg },
                 },
             },
@@ -235,17 +236,7 @@ local function setup_lualine()
         inactive_winbar = {
             lualine_c = {
                 {
-                    function()
-                        local navic = require("nvim-navic")
-                        if navic.is_available() then
-                            return navic.get_location()
-                        end
-                        return ""
-                    end,
-                    cond = function()
-                        local ok, navic = pcall(require, "nvim-navic")
-                        return ok and navic.is_available()
-                    end,
+                    breadcrumbs,
                     color = { fg = colors.fg3, bg = colors.bg3 },
                 },
             },
@@ -261,6 +252,6 @@ return {
         config = function()
             setup_lualine()
         end,
-        event = 'VeryLazy',
+        lazy = false,
     }),
 }

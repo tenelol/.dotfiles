@@ -137,6 +137,7 @@ let
     nvim-treesitter = pkgs.vimPlugins.nvim-treesitter.withPlugins (
       parsers: with parsers; [
         lua
+        nix
         c
         cpp
         javascript
