@@ -78,6 +78,7 @@ let
 
   nixManagedPlugins = {
     mini-animate = pkgs.vimPlugins.mini-animate;
+    snacks-nvim = pkgs.vimPlugins.snacks-nvim;
     emmet-vim = pkgs.vimPlugins.emmet-vim;
     which-key-nvim = pkgs.vimPlugins.which-key-nvim;
     nvim-autopairs = pkgs.vimPlugins.nvim-autopairs;
@@ -85,7 +86,6 @@ let
     vim-astro = pkgs.vimPlugins.vim-astro;
     bufferline-nvim = pkgs.vimPlugins.bufferline-nvim;
     gitsigns-nvim = pkgs.vimPlugins.gitsigns-nvim;
-    indent-blankline-nvim = pkgs.vimPlugins.indent-blankline-nvim;
     diffview-nvim = pkgs.vimPlugins.diffview-nvim;
     neogit = pkgs.vimPlugins.neogit;
     trouble-nvim = pkgs.vimPlugins.trouble-nvim;

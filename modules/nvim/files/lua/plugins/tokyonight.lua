@@ -260,10 +260,7 @@ return {
           hl.TabLineSel = { fg = theme.fg_bright, bg = theme.bg_highlight, bold = true }
           hl.TabLineFill = { fg = theme.fg_gutter, bg = "none" }
           hl.WinSeparator = { fg = theme.fg_gutter, bg = "none" }
-          hl.IblIndent = { fg = theme.ibl_indent, bg = "none" }
-          hl.IblScope = { fg = theme.ibl_scope, bg = "none", bold = true }
-          hl.IblScopeHead = { fg = theme.ibl_scope_head, bg = "none", bold = true }
-          hl.IblWhitespace = { fg = theme.ibl_indent, bg = "none" }
+          hl.SnacksIndentScope = { fg = theme.indent_scope, bg = "none", bold = true }
 
           hl.CursorLine = { bg = "none" }
           hl.CursorLineNr = { fg = theme.fg_bright, bold = true }
