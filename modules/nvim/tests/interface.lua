@@ -45,7 +45,7 @@ require("plugins.language-server")[1].config()
 vim.lsp.enable = enable
 local settings = vim.lsp.config.nil_ls.settings or {}
 local flake = (settings["nil"] or {}).nix or {}
-check((flake.flake or {}).autoArchive == false, "nil still asks whether to fetch missing flake inputs")
+check((flake.flake or {}).autoArchive == true, "nil must fetch missing flake inputs instead of ignoring them")
 
 require("plugins.neotree")[1].config()
 local state = require("neo-tree.sources.manager").get_state("filesystem")

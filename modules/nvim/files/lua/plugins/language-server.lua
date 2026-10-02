@@ -225,7 +225,7 @@ return {
             vim.lsp.config("nil_ls", {
                 settings = {
                     ["nil"] = {
-                        nix = { flake = { autoArchive = false } },
+                        nix = { flake = { autoArchive = true } },
                     },
                 },
             })
