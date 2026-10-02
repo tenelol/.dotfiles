@@ -77,6 +77,7 @@ let
   '';
 
   nixManagedPlugins = {
+    mini-animate = pkgs.vimPlugins.mini-animate;
     emmet-vim = pkgs.vimPlugins.emmet-vim;
     which-key-nvim = pkgs.vimPlugins.which-key-nvim;
     nvim-autopairs = pkgs.vimPlugins.nvim-autopairs;
