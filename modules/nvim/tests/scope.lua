@@ -18,6 +18,9 @@ animate.animate = function(callback, _, opts)
 	action, steps = callback, opts.max_steps
 end
 require("plugins.indent-blankline")[1].config()
+assert(vim.api.nvim_get_hl(0, { name = "IblScope" }).fg == 0x00E5FF, "Scope line must use neon cyan")
+assert(vim.api.nvim_get_hl(0, { name = "IblScopeHead" }).fg == 0xE6FFFF, "Animation head must be bright")
+assert(require("ibl.config").get_config(0).scope.char == "┃", "Scope line must be thicker")
 require("ibl").refresh(0)
 assert(
 	vim.wait(1000, function()
@@ -46,6 +49,19 @@ action(0)
 assert(#highlighted_rows() == 0, "Scope was highlighted before animation began")
 assert(action(math.floor(steps / 2)), "Animation stopped halfway")
 local middle = highlighted_rows()
+local head_rows = {}
+for _, mark in
+	ipairs(
+		vim.api.nvim_buf_get_extmarks(0, vim.api.nvim_create_namespace("indent_blankline"), 0, -1, { details = true })
+	)
+do
+	for _, chunk in ipairs(mark[4].virt_text or {}) do
+		if chunk[2] == "IblScopeHead" or (type(chunk[2]) == "table" and vim.tbl_contains(chunk[2], "IblScopeHead")) then
+			head_rows[#head_rows + 1] = mark[2]
+		end
+	end
+end
+assert(#head_rows == 1 and head_rows[1] > middle[#middle], "Bright head must lead the filled cyan line")
 assert(#middle > 0 and middle[1] == 2, "Scope must light up from its top, not the cursor")
 assert(middle[#middle] < 11, "Lower lines lit up before animation reached them")
 assert(not action(steps), "Animation must stop at its final frame")

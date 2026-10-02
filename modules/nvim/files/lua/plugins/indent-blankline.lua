@@ -48,11 +48,11 @@ local function animate_scope()
 			states[buf] = nil
 			state = nil
 		end
-		if state and row > state.row then
+		if state and row >= state.row then
 			for _, chunk in ipairs(text) do
 				for i, highlight in ipairs(chunk[2]) do
 					if highlight:match("^@ibl%.scope%.char%.") then
-						chunk[2][i] = "IblIndent"
+						chunk[2][i] = row == state.row and "IblScopeHead" or "IblIndent"
 					end
 				end
 			end
@@ -66,7 +66,8 @@ end
 
 local function apply_highlights()
 	vim.api.nvim_set_hl(0, "IblIndent", { fg = theme.ibl_indent })
-	vim.api.nvim_set_hl(0, "IblScope", { fg = theme.ibl_scope })
+	vim.api.nvim_set_hl(0, "IblScope", { fg = theme.ibl_scope, bold = true })
+	vim.api.nvim_set_hl(0, "IblScopeHead", { fg = theme.ibl_scope_head, bold = true })
 	vim.api.nvim_set_hl(0, "IblWhitespace", { fg = theme.ibl_indent })
 end
 
@@ -85,6 +86,7 @@ return {
 				indent = { highlight = "IblIndent" },
 				scope = {
 					highlight = "IblScope",
+					char = "┃",
 					show_start = false,
 					show_end = false,
 					include = { node_type = { nix = { "attrset_expression" } } },
