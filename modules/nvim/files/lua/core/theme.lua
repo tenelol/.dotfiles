@@ -45,7 +45,7 @@ local theme = {
 }
 
 theme.ibl_indent = blend(theme.fg_gutter, theme.bg, 0.35)
-theme.ibl_scope = "#00e5ff"
-theme.ibl_scope_head = "#e6ffff"
+theme.ibl_scope = "#ffffff"
+theme.ibl_scope_head = "#ffffff"
 
 return theme

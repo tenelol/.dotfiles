@@ -18,8 +18,8 @@ animate.animate = function(callback, _, opts)
 	action, steps = callback, opts.max_steps
 end
 require("plugins.indent-blankline")[1].config()
-assert(vim.api.nvim_get_hl(0, { name = "IblScope" }).fg == 0x00E5FF, "Scope line must use neon cyan")
-assert(vim.api.nvim_get_hl(0, { name = "IblScopeHead" }).fg == 0xE6FFFF, "Animation head must be bright")
+assert(vim.api.nvim_get_hl(0, { name = "IblScope" }).fg == 0xFFFFFF, "Scope line must use pure white")
+assert(vim.api.nvim_get_hl(0, { name = "IblScopeHead" }).fg == 0xFFFFFF, "Animation head must use pure white")
 assert(require("ibl.config").get_config(0).scope.char == "┃", "Scope line must be thicker")
 require("ibl").refresh(0)
 assert(
