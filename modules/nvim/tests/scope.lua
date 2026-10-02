@@ -18,8 +18,8 @@ animate.animate = function(callback, _, opts)
 	action, steps = callback, opts.max_steps
 end
 require("plugins.indent-blankline")[1].config()
-assert(vim.api.nvim_get_hl(0, { name = "IblScope" }).fg == 0xFFFFFF, "Scope line must use pure white")
-assert(vim.api.nvim_get_hl(0, { name = "IblScopeHead" }).fg == 0xFFFFFF, "Animation head must use pure white")
+assert(vim.api.nvim_get_hl(0, { name = "IblScope" }).fg == 0x9EABC0, "Scope line must use muted silver")
+assert(vim.api.nvim_get_hl(0, { name = "IblScopeHead" }).fg == 0xC8D3E0, "Animation head must use a soft highlight")
 assert(require("ibl.config").get_config(0).scope.char == "┃", "Scope line must be thicker")
 require("ibl").refresh(0)
 assert(
@@ -61,7 +61,7 @@ do
 		end
 	end
 end
-assert(#head_rows == 1 and head_rows[1] > middle[#middle], "Bright head must lead the filled cyan line")
+assert(#head_rows == 1 and head_rows[1] > middle[#middle], "Bright head must lead the filled scope line")
 assert(#middle > 0 and middle[1] == 2, "Scope must light up from its top, not the cursor")
 assert(middle[#middle] < 11, "Lower lines lit up before animation reached them")
 assert(not action(steps), "Animation must stop at its final frame")
