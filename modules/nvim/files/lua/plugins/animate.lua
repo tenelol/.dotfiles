@@ -24,7 +24,19 @@ return {
             return math.min(scroll_timing(step, steps), 10)
           end,
         },
-        resize = { timing = timing },
+        resize = {
+          timing = timing,
+          subresize = animate.gen_subresize.equal({
+            predicate = function(sizes)
+              for win in pairs(sizes) do
+                if vim.api.nvim_win_is_valid(win) and vim.w[win].dotfiles_panel_animation then
+                  return false
+                end
+              end
+              return true
+            end,
+          }),
+        },
         open = {
           timing = timing,
           winconfig = animate.gen_winconfig.wipe({ direction = "from_edge" }),

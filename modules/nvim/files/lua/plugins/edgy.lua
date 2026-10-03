@@ -63,8 +63,9 @@ return {
           {
             ft = "toggleterm",
             size = { height = 10 },
-            filter = function(_, win)
-              return vim.api.nvim_win_get_config(win).relative == ""
+            filter = function(buf, win)
+              local term = require("toggleterm.terminal").get(vim.b[buf].toggle_number, true)
+              return vim.api.nvim_win_get_config(win).relative == "" and term and term.direction == "horizontal"
             end,
           },
         },

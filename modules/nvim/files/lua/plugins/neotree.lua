@@ -3,6 +3,7 @@ local plugin = require("nix-plugin")
 return {
   plugin.spec("neo-tree-nvim", {
     dependencies = {
+      plugin.dep("edgy-nvim"),
       plugin.dep("plenary-nvim"),
       plugin.dep("nvim-web-devicons"),
       plugin.dep("nui-nvim"),
@@ -86,6 +87,7 @@ return {
         filesystem = {
           find_by_full_path_words = true,
           window = {
+            width = 1,
             mappings = {
               ["/"] = "fuzzy_finder",
               ["f"] = "filter_as_you_type",
