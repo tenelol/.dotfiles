@@ -16,7 +16,7 @@ v0.6.0 が、scrolling layout で「scroll gesture 無効なら通常の workspa
 
 ## 既存の公式バイナリで試せる選択肢
 
-[v0.6.3 の公式ソース](https://github.com/acsandmann/rift/blob/v0.6.3/src/actor/gesture.rs#L50-L89)以降は、scrolling layout に合う scroll action がなければ同じ本数の通常 workspace action にフォールバックする。従って `scrolling.gestures.enabled = false` と `gestures.enabled = true`、両方 `fingers = 3` の組合せは、公式バイナリのまま直接 workspace swipe に戻せる**コード上の見込み**がある。これは v0.6.0 に対して用意された局所 patch と同じ目的を、後続版で実現する経路である。公式 [v0.6.3](https://github.com/acsandmann/rift/releases/tag/v0.6.3) と [v0.6.4](https://github.com/acsandmann/rift/releases/tag/v0.6.4) に macOS universal のリリースアーカイブがある。ただしローカル Nix cache にあるか、起動・権限・実操作がどうなるかは未検証。
+[v0.6.3 の公式ソース](https://github.com/acsandmann/rift/blob/v0.6.3/src/actor/gesture.rs#L50-L89)以降は、scrolling layout に合う scroll action がなければ同じ本数の通常 workspace action にフォールバックする。従って `scrolling.gestures.enabled = false` と `gestures.enabled = true`、両方 `fingers = 3` の組合せで、公式バイナリのまま直接 workspace swipe に戻せる。これは v0.6.0 に対して用意された局所 patch と同じ目的を、後続版で実現する経路である。公式 [v0.6.3](https://github.com/acsandmann/rift/releases/tag/v0.6.3) と [v0.6.4](https://github.com/acsandmann/rift/releases/tag/v0.6.4) に macOS universal のリリースアーカイブがあり、v0.6.4は下記のとおり起動・権限・実操作まで確認した。
 
 scroll gesture を有効にしたままの場合、後続版も scrolling action を優先する。[v0.6.4 の action 選択](https://github.com/acsandmann/rift/blob/v0.6.4/src/actor/gesture.rs#L85-L89)。その経路の開始条件は selected window と geometry を要求するので、空 workspace の直接 swipe 代替にはならない。[v0.6.4 の viewport 開始条件](https://github.com/acsandmann/rift/blob/v0.6.4/src/layout_engine/systems/scrolling.rs#L1233-L1257)。
 

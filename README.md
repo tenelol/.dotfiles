@@ -56,9 +56,11 @@ the AeroSpace selection. Use these selectors when changing a rice with the usual
 The `macbook` declarations use Nix for the packages previously managed by
 Homebrew. `brew-nix` and the pinned `brew-api` provide Cask source metadata;
 the Homebrew executable is not needed to build those packages. The evaluated
-Darwin target has `homebrew.enable = false`. Existing Homebrew installations
-remain on disk until their own targeted cleanup. As of 2026-10-04, this
-configuration has not been switched onto the host.
+Darwin target has `homebrew.enable = false`. The configuration was switched
+onto `macbook-rift` on 2026-10-04. All 179 installed formulae were removed;
+the final running chat app awaits a restart before its old Cask is removed.
+App profiles, caches, Keychain data and the old MySQL data remain on disk,
+with browser data backed up before cleanup.
 
 | Scope | Repository owner | Contents |
 | --- | --- | --- |

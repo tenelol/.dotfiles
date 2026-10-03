@@ -23,14 +23,15 @@ RiftとPeekabooは固定されたnixpkgsにはないため、[Rift package](../.
 
 [reconcile.py](../../modules/darwin-installers/files/reconcile.py) は、PKGの署名、appのbundle ID・Team ID・version、receipt、必要なsystem fileを確認する。更新が必要なappが動作中ならpreflightで止める。全件preflightの後でのみinstallerまたはapp copyを実行する。`--plan` はread-onlyの状態一覧を出す。azooKeyの既存導入判定だけは、固定hashの旧Homebrew PKGを移行用の一次証拠として参照する。
 
-Steamはユーザーが不要と指定したためinstaller宣言から外した。旧Caskは通常の `brew uninstall --cask steam` で削除し、`/Applications/Steam.app` と Caskroom のSteam entryがないことを確認した。`--zap` は使わずgame/library dataは削除対象にしていない。Dockerは稼働中コンテナを停止して4.93へ更新した。コンテナとvolumeは削除していない。Officeも更新対象が稼働中なら同様に止まる。Mac App Storeの8件は `mas list` で確認し、不足があればconsole userに既に所有するアプリの手動installを案内してactivationを止める。購入やApple ID認証は自動化しない。
+Steamはユーザーが不要と指定したためinstaller宣言から外した。旧Caskは通常の `brew uninstall --cask steam` で削除し、`/Applications/Steam.app` と Caskroom のSteam entryがないことを確認した。`--zap` は使わずgame/library dataは削除対象にしていない。Dockerは稼働中コンテナを停止して4.93へ更新し、Desktopを再起動した。停止前に記録した16件のうち再起動後にも存在するMySQL・PostgreSQLの2件は起動を確認した。他14件は存在せず、必要なものは特にないというユーザー回答に沿って再作成していない。volume削除・prune操作は行っていない。Officeも更新対象が稼働中なら同様に止まる。Mac App Storeの8件は `mas list` で確認し、不足があればconsole userに既に所有するアプリの手動installを案内してactivationを止める。購入やApple ID認証は自動化しない。
 
 ## 検証と稼働状態
 
 - 58 CLI packageの一括direct artifact buildが成功。代表CLIのversionと、Zathuraのpdf-mupdf・ps・cbなどのplugin検出を確認した。
 - 21 GUI Caskのdirect artifact buildと署名検査が成功。Cask metadata、配置、CLI linkとcompletionは直接fixtureで検査した。
 - 署名付きinstallerのmetadataとreconcileのunit testを確認した。Darwinのbuild/switchとDocker・Officeのinstaller/app更新を確認した。Nix版Diaは既存プロフィールのDBを開き、保存login record数45件を維持した。ログイン操作とMAS新規導入は未実施。
-- 旧Homebrewの非稼働Caskとnative installerの旧trackingを整理した。MySQL dataとapp data/cacheは保持する。稼働中の旧appとformulaの残りは個別に整理する。
+- 旧Homebrew formula 179件を削除し、formula一覧が空であることを確認した。旧GUI本体は通常のCask uninstallで削除し、Dock等の既存パスにはNix版へのlinkを残した。native installerの旧trackingだけを削除し、導入済みdriver/helperは保持した。最後に残るCaskはこの会話を表示するchat appで、終了後に旧本体・trackingだけを整理する手順を準備した。MySQL dataとapp data/cacheは保持する。
+- Ghosttyはユーザーが作業を保存して終了した後に旧本体を削除し、Nix版1.3.1を起動した。CLIはNix側から解決することを確認し、`llvm-config`にはbinary cache取得済みLLVM 22の開発outputへのlinkを追加した。
 
 直接検査はdenixの自動検出を避ける `.nix-test` を使う。例：
 
