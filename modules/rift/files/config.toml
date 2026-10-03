@@ -39,12 +39,12 @@ alignment = "left"
 focus_navigation_style = "niri"
 
 [settings.layout.scrolling.gestures]
-enabled = false
+enabled = true
 invert_horizontal = false
 vertical_tolerance = 0.4
 fingers = 3
 distance_pct = 0.08
-propagate_to_workspace_swipe = false
+propagate_to_workspace_swipe = true
 workspace_switch_threshold = 0.625
 
 [settings.layout.stack]
