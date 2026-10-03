@@ -36,5 +36,6 @@ assign_app com.hnc.Discord 1
 assign_app com.tinyspeck.slackmacgap 2
 assign_app jp.naver.line.mac 3
 assign_app com.apple.mail 4
+assign_app com.apple.Music 5
 assign_app com.apple.Notes 7
 assign_app com.openai.codex 8

@@ -131,6 +131,7 @@ app_rules = [
   { app_id = "com.tinyspeck.slackmacgap", workspace = 2 },
   { app_id = "jp.naver.line.mac", workspace = 3 },
   { app_id = "com.apple.mail", workspace = 4 },
+  { app_id = "com.apple.Music", workspace = 5 },
   { app_id = "com.apple.Notes", workspace = 7 },
   { app_id = "com.openai.codex", workspace = 8 },
   { app_name = "System Settings", manage = false },

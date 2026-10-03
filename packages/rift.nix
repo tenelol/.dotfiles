@@ -5,20 +5,20 @@
 }:
 stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "rift";
-  # Preserve the working Homebrew release while migrating its runtime to Nix.
-  version = "0.5.8.1";
+  version = "0.6.0";
 
   src = fetchurl {
     url = "https://github.com/acsandmann/rift/releases/download/v${finalAttrs.version}/rift-universal-macos-${finalAttrs.version}.tar.gz";
-    hash = "sha256-cBzVzP4KaQQ5AnAkdmkbAPszAUBiOAW7h1BiYriLubY=";
+    hash = "sha256-zhLBnH4EFqV8q1ONRBs2d6ZCXrhFhkaI5xAxtEmQY54=";
   };
 
   dontUnpack = true;
   dontFixup = true;
   installPhase = ''
     runHook preInstall
-    mkdir -p "$out/bin"
+    mkdir -p "$out/bin" "$out/share/rift"
     tar -xzf "$src" -C "$out/bin" rift rift-cli
+    tar -xzf "$src" -C "$out/share/rift" rift.default.toml
     chmod 755 "$out/bin/rift" "$out/bin/rift-cli"
     /usr/bin/codesign --force --sign - "$out/bin/rift"
     /usr/bin/codesign --force --sign - "$out/bin/rift-cli"
