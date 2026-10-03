@@ -14,7 +14,7 @@ cells = {}
 
 def settle():
     frames = []
-    nvim.exec_lua("local channel = ...; vim.defer_fn(function() vim.rpcnotify(channel, 'scope-test-done') end, 300)", nvim.channel_id)
+    nvim.exec_lua("local channel = ...; vim.defer_fn(function() vim.rpcnotify(channel, 'scope-test-done') end, Snacks.config.indent.animate.duration.total + 100)", nvim.channel_id)
     while True:
         kind, name, args = nvim.next_message()
         if name == "scope-test-done":

@@ -28,7 +28,7 @@ return {
           animate = {
             style = "down",
             easing = "outQuad",
-            duration = { step = 15, total = 180 },
+            duration = { step = 45, total = 500 },
           },
         },
       })
