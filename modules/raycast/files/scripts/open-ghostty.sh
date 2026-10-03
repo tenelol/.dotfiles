@@ -11,4 +11,9 @@
 
 set -euo pipefail
 
-open -na "Ghostty.app"
+managed_app="$HOME/Applications/Home Manager Apps/Ghostty.app"
+if [ -d "$managed_app" ]; then
+  exec open -na "$managed_app"
+fi
+
+exec open -na "Ghostty.app"

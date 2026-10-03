@@ -151,11 +151,7 @@ delib.module {
       # taps and apps with Homebrew-specific integration stay here.
       casks = [
         "azookey"
-        "blender"
-        "claude"
         "codex"
-        "chatgpt"
-        "cursor"
         "font-caskaydia-cove-nerd-font"
         "font-fira-code"
         "font-fira-code-nerd-font"
@@ -165,37 +161,25 @@ delib.module {
         "font-material-symbols"
         "font-noto-color-emoji"
         "font-noto-sans-cjk"
-        "ghostty"
         "google-chrome"
         "tenelol/input-compat/karabiner-elements"
-        "markdown-preview"
         {
           # Temporary: Homebrew marks this cask deprecated because it does not
           # pass the macOS Gatekeeper check.
           name = "qutebrowser";
           args.no_quarantine = true;
         }
-        "raycast"
         "tailscale-app"
-        "thebrowsercompany-dia"
         "wireshark-app"
-        "zed"
-        "zen"
       ]
       ++ lib.optionals host.fullDesktopFeatured [
-        "db-browser-for-sqlite"
-        "discord"
         "docker-desktop"
         "microsoft-excel"
         "microsoft-onenote"
         "microsoft-powerpoint"
         "microsoft-word"
-        "obsidian"
-        "palmier-pro"
-        "slack"
         "spotify"
         "steam"
-        "visual-studio-code"
       ];
     };
   };

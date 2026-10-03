@@ -1,7 +1,7 @@
 let
   packages = import ./packages.nix-test;
   lock = builtins.fromJSON (builtins.readFile ../../../flake.lock);
-  locked = lock.nodes.brew-api.locked;
+  locked = lock.nodes.${lock.nodes.root.inputs.brew-api}.locked;
   api =
     (builtins.fetchTree {
       inherit (locked)
@@ -13,10 +13,8 @@ let
         ;
     }).outPath;
   data = builtins.fromJSON (builtins.readFile (api + "/cask.json"));
-  selected = [
-    "insomnia"
-    "notion"
-  ];
+  apps = builtins.fromJSON (builtins.readFile ../files/apps.json);
+  selected = map (app: app.name) (apps.base ++ apps.fullDesktop);
   metadata = builtins.map (
     name:
     let
@@ -28,13 +26,14 @@ let
       package = packages.${name};
     in
     assert builtins.match "[0-9a-f]{64}" cask.sha256 != null;
-    assert builtins.length installArtifacts == 1 && builtins.length artifacts == 1;
+    assert builtins.length artifacts == 1;
+    assert builtins.all (artifact: !(artifact ? pkg || artifact ? installer || artifact ? font)) installArtifacts;
     assert package.sourceRoot == builtins.head (builtins.head artifacts).app;
     {
       inherit name;
       inherit (package) version drvPath sourceRoot;
       sourceHash = package.src.outputHash;
-    }
+    } // (if package ? completionPackage then { completionDrvPath = package.completionPackage.drvPath; } else { })
   ) selected;
 in
 assert lock.nodes.brew-nix.inputs.brew-api == [ "brew-api" ];

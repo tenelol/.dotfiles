@@ -6,7 +6,7 @@
 - denix / nh / nixvim
 - sops-nix / Tailscale / systemd-resolved
 - nixbuild.net remote builders
-- brew-nix for Insomnia / Notion; Homebrew for other macOS apps, fonts and CLI tools
+- brew-nix for supported macOS GUI apps; Homebrew for installers, fonts and CLI tools
 - GitHub Actions / Determinate Nix / Magic Nix Cache
 - Neovim / Fish / Ghostty
 - Niri（Linux）/ Rift・AeroSpace（macOS）
@@ -53,8 +53,13 @@ the AeroSpace selection. Use these selectors when changing a rice with the usual
 
 ## macOS app packages
 
-[`modules/brew-casks`](./modules/brew-casks) manages Insomnia and Notion through
-brew-nix's `pkgs.brewCasks` overlay and integrated Home Manager. Their versions and
+[`modules/brew-casks`](./modules/brew-casks) manages 18 GUI apps through
+brew-nix's `pkgs.brewCasks` overlay and integrated Home Manager. The
+[app manifest](./modules/brew-casks/files/apps.json) has 12 base apps and 6 apps
+selected by `fullDesktop`. It preserves app-provided CLI entry points, Ghostty's
+man pages/completions and Zed's shell completions, including PowerShell.
+Selected CLI commands are linked into `~/.local/bin` so they take precedence
+over remaining Homebrew copies. Their versions and
 Cask metadata are pinned by `brew-nix` and `brew-api` in `flake.lock`. They appear
 under `~/Applications/Home Manager Apps` after an authorized `nh darwin switch`.
 The initial migration leaves existing Homebrew copies installed; Homebrew
