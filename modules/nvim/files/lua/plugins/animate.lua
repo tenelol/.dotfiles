@@ -11,7 +11,12 @@ return {
       animate.setup({
         cursor = {
           timing = animate.gen_timing.quadratic({ duration = 120, unit = "total", easing = "out" }),
-          path = animate.gen_path.line({ max_output_steps = 30 }),
+          path = animate.gen_path.line({
+            max_output_steps = 30,
+            predicate = function(destination)
+              return math.abs(destination[1]) > 1 or math.abs(destination[2]) > 3
+            end,
+          }),
         },
         scroll = {
           -- Keep small scrolls responsive when holding a movement key.

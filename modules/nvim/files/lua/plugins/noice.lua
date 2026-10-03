@@ -22,6 +22,7 @@ return {
         minimum_width = 24,
         render = "wrapped-compact",
         stages = "fade_in_slide_out",
+        fps = 60,
         timeout = 2000,
       })
 
@@ -65,7 +66,7 @@ return {
               event = "notify",
               kind = "info",
             },
-            view = "mini",
+            view = "notify",
           },
           {
             filter = {

@@ -73,7 +73,8 @@ return {
           bottom = { size = 10 },
         },
         animate = {
-          enabled = false,
+          enabled = true,
+          fps = 60,
         },
         exit_when_last = true,
         close_when_all_hidden = true,

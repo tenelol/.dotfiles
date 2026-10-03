@@ -14,6 +14,8 @@ for _, action in ipairs({ "cursor", "scroll", "resize", "open", "close" }) do
 end
 assert(animate.config.cursor.timing(1, 30) < animate.config.cursor.timing(30, 30), "Cursor should ease out")
 assert(#animate.config.cursor.path({ 100, 100 }) <= 30, "Long cursor jumps need a bounded path")
+assert(#animate.config.cursor.path({ 0, 8 }) > 0, "Word jumps should show a cursor trail")
+assert(#animate.config.cursor.path({ 0, 1 }) == 0, "Typing should not flash a cursor trail")
 assert(animate.config.scroll.timing(1, 1) == 10, "Single-line scroll must stay responsive")
 local duration = 0
 for step = 1, 60 do
