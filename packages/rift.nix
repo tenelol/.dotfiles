@@ -17,9 +17,8 @@ stdenvNoCC.mkDerivation (finalAttrs: {
   dontFixup = true;
   installPhase = ''
     runHook preInstall
-    mkdir -p "$out/bin" "$out/share/rift"
+    mkdir -p "$out/bin"
     tar -xzf "$src" -C "$out/bin" rift rift-cli
-    tar -xzf "$src" -C "$out/share/rift" rift.default.toml
     chmod 755 "$out/bin/rift" "$out/bin/rift-cli"
     /usr/bin/codesign --force --sign - "$out/bin/rift"
     /usr/bin/codesign --force --sign - "$out/bin/rift-cli"
