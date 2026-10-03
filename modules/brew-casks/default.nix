@@ -4,6 +4,8 @@
   host,
   inputs,
   pkgs,
+  hm,
+  profile,
   ...
 }:
 let
@@ -20,6 +22,7 @@ let
   fontPackages = map (
     font: brewCask (builtins.removeAttrs font [ "name" ] // { cask = pkgs.brewCasks.${font.name}; })
   ) apps.fonts;
+  installHash = pkgs.callPackage ../../packages/firefox-install-hash.nix { };
 in
 delib.scopedModule {
   name = "brew-casks";
@@ -31,6 +34,11 @@ delib.scopedModule {
   darwin.ifEnabled.fonts.packages = fontPackages;
 
   home.ifEnabled = {
+    home.activation.preserveZenProfile = hm.dag.entryAfter [ "writeBoundary" ] ''
+      $DRY_RUN_CMD ${pkgs.python3}/bin/python3 ${./files/preserve-zen-profile.py} \
+        ${pkgs.lib.escapeShellArg "/Users/${profile.username}"} \
+        ${packages.zen}/Applications/Zen.app ${installHash}/bin/firefox-install-hash
+    '';
     home.packages =
       pkgs.lib.attrValues packages
       ++ pkgs.lib.concatMap (

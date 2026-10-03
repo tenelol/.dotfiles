@@ -9,7 +9,7 @@
 }:
 let
   homeDir = "/Users/${profile.username}";
-  path = "/run/current-system/sw/bin:/run/current-system/sw/bin:/usr/bin:/bin:/usr/sbin:/sbin";
+  path = "/run/current-system/sw/bin:/usr/bin:/bin:/usr/sbin:/sbin";
 
   package = pkgs.aerospace;
   appPath = "/Applications/Nix Apps/AeroSpace.app";

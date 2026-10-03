@@ -36,7 +36,7 @@ delib.module {
     system.activationScripts.postActivation.text = lib.mkAfter ''
       uid="$(id -u ${profile.username})"
 
-      if [ -d /Applications/Nix Apps/boringNotch.app ]; then
+      if [ -d "/Applications/Nix Apps/boringNotch.app" ]; then
         launchctl asuser "$uid" sudo --user=${profile.username} \
           /bin/launchctl kickstart -k "gui/$uid/theboringteam.boringnotch" \
           >/dev/null 2>&1 || true
