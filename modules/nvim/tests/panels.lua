@@ -17,6 +17,7 @@ for _ = 1, 2 do
   require("neo-tree.command").execute({ source = "filesystem", dir = directory, position = "left", action = "focus" })
   local state = require("neo-tree.sources.manager").get_state("filesystem")
   local tree_window = state.winid
+  assert(vim.api.nvim_win_get_width(tree_window) <= 2, "Neo-tree was shown at full width before opening animation")
   local intermediate = false
   local early_content = false
   assert(

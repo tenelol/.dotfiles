@@ -99,29 +99,8 @@ return {
         enable_git_status = true,
         enable_diagnostics = true,
         commands = { slide_close = close_tree },
-        event_handlers = {
-          {
-            event = "after_render",
-            handler = function(state)
-              local win = state.winid
-              if
-                state.name == "filesystem"
-                and state.current_position == "left"
-                and win
-                and vim.api.nvim_win_is_valid(win)
-                and not vim.w[win].dotfiles_tree_revealed
-              then
-                vim.w[win].dotfiles_tree_revealed = true
-                vim.schedule(function()
-                  if vim.api.nvim_win_is_valid(win) then
-                    vim.api.nvim_win_set_width(win, 1)
-                  end
-                end)
-              end
-            end,
-          },
-        },
         default_component_configs = {
+          container = { min_width = 28 },
           name = {
             use_git_status_colors = false,
           },
@@ -148,6 +127,7 @@ return {
         filesystem = {
           find_by_full_path_words = true,
           window = {
+            width = 1,
             mappings = {
               ["/"] = "fuzzy_finder",
               ["f"] = "filter_as_you_type",
