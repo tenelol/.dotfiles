@@ -91,6 +91,14 @@ try:
     settle()
     assert len(guides()) == 2, ("Inactive window still shows guides", guides())
     nvim.command("close")
+    nvim.current.buffer.options["filetype"] = "dashboard"
+    nvim.current.buffer[:] = ["NEOVIM", "    Find File", "    Recent Files", "footer"]
+    nvim.current.window.cursor = (2, 4)
+    nvim.command("doautocmd CursorMoved")
+    nvim.command("redraw!")
+    settle()
+    assert not guides(), ("Dashboard must not show indent scopes", guides())
+    nvim.current.buffer.options["filetype"] = "text"
     nvim.current.buffer[:] = ["plain", "unindented", "text"]
     nvim.command("doautocmd CursorMoved")
     nvim.command("redraw!")

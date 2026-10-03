@@ -158,6 +158,7 @@ delib.module {
         undofile = true;
         updatetime = 250;
         winblend = 12;
+        winbar = " ";
       };
       diagnostic.settings = {
         severity_sort = true;

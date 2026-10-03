@@ -1,5 +1,10 @@
 local plugin = require("nix-plugin")
 
+local function editor_window(win)
+  local ft = vim.bo[vim.api.nvim_win_get_buf(win)].filetype
+  return ft ~= "neo-tree" and ft ~= "toggleterm"
+end
+
 return {
   plugin.spec("mini-animate", {
     event = "VeryLazy",
@@ -39,12 +44,12 @@ return {
         },
         open = {
           timing = timing,
-          winconfig = animate.gen_winconfig.wipe({ direction = "from_edge" }),
+          winconfig = animate.gen_winconfig.wipe({ direction = "from_edge", predicate = editor_window }),
           winblend = animate.gen_winblend.linear({ from = 60, to = 100 }),
         },
         close = {
           timing = timing,
-          winconfig = animate.gen_winconfig.wipe({ direction = "to_edge" }),
+          winconfig = animate.gen_winconfig.wipe({ direction = "to_edge", predicate = editor_window }),
           winblend = animate.gen_winblend.linear({ from = 100, to = 60 }),
         },
       })

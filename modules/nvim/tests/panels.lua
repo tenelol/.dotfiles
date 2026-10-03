@@ -18,17 +18,40 @@ for _ = 1, 2 do
   local state = require("neo-tree.sources.manager").get_state("filesystem")
   local tree_window = state.winid
   local intermediate = false
+  local early_content = false
   assert(
     vim.wait(1500, function()
       local width = vim.api.nvim_win_get_width(tree_window)
+      if width == 1 then
+        vim.api.nvim_exec_autocmds("WinResized", {})
+      end
       intermediate = intermediate or (width > 1 and width < 34)
+      if width > 1 and width < 34 then
+        early_content = early_content
+          or table.concat(vim.api.nvim_buf_get_lines(state.bufnr, 0, -1, false), "\n"):find("example.txt", 1, true)
+            ~= nil
+      end
       return edgy.get_win(tree_window) and width == 34 and not animation.is_active()
     end, 5),
     "Neo-tree opening animation did not settle"
   )
   assert(intermediate, "Neo-tree snapped open without sliding")
+  assert(early_content, "Neo-tree filenames appeared only after opening animation")
   assert(vim.g.minianimate_disable == false, "MiniAnimate stayed disabled after sidebar animation")
-  require("neo-tree.command").execute({ source = "filesystem", position = "left", action = "close" })
+  state.commands.slide_close(state)
+  local closing = false
+  assert(
+    vim.wait(1500, function()
+      if not vim.api.nvim_win_is_valid(tree_window) then
+        return true
+      end
+      local width = vim.api.nvim_win_get_width(tree_window)
+      closing = closing or (width > 1 and width < 34)
+      return false
+    end, 5),
+    "Neo-tree closing animation did not finish"
+  )
+  assert(closing, "Neo-tree snapped closed without sliding")
   vim.api.nvim_set_current_win(main)
   vim.wait(200, function()
     return false
@@ -71,10 +94,13 @@ for _, direction in ipairs({ "horizontal", "vertical", "float" }) do
       "Edgy did not adopt the horizontal terminal after opening"
     )
     assert(term.job_id == job and vim.fn.jobwait({ job }, 0)[1] == -1, "Animation replaced or stopped the terminal job")
-    assert(vim.wait(1000, function()
-      local output = table.concat(vim.api.nvim_buf_get_lines(term.bufnr, 0, -1, false), ""):gsub("%s", "")
-      return output:find("slide-test", 1, true) ~= nil
-    end), "Terminal output was lost during animation")
+    assert(
+      vim.wait(1000, function()
+        local output = table.concat(vim.api.nvim_buf_get_lines(term.bufnr, 0, -1, false), ""):gsub("%s", "")
+        return output:find("slide-test", 1, true) ~= nil
+      end),
+      "Terminal output was lost during animation"
+    )
     if direction == "horizontal" then
       assert(
         size(win) == 10 and edgy.get_win(win),
