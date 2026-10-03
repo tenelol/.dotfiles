@@ -38,9 +38,9 @@ delib.scopedModule {
         $DRY_RUN_CMD /usr/bin/open -gj -a Karabiner-Elements >/dev/null 2>&1 || true
       fi
 
-      if [ -x /opt/homebrew/bin/karabiner_cli ]; then
+      if [ -x "/Library/Application Support/org.pqrs/Karabiner-Elements/bin/karabiner_cli" ]; then
         $DRY_RUN_CMD /bin/sleep 0.5
-        $DRY_RUN_CMD /opt/homebrew/bin/karabiner_cli --select-profile 'Default profile' >/dev/null 2>&1 || true
+        $DRY_RUN_CMD "/Library/Application Support/org.pqrs/Karabiner-Elements/bin/karabiner_cli" --select-profile 'Default profile' >/dev/null 2>&1 || true
       fi
     '';
   };

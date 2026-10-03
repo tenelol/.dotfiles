@@ -1,7 +1,7 @@
 #!/bin/sh
 
-SKETCHYBAR_BIN="${SKETCHYBAR_BIN:-/opt/homebrew/bin/sketchybar}"
-RIFT_CLI="${RIFT_CLI:-/opt/homebrew/bin/rift-cli}"
+SKETCHYBAR_BIN="${SKETCHYBAR_BIN:-/run/current-system/sw/bin/sketchybar}"
+RIFT_CLI="${RIFT_CLI:-/run/current-system/sw/bin/rift-cli}"
 JQ="${JQ:-/usr/bin/jq}"
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/sketchybar"
 FOCUSED_STATE_FILE="$STATE_DIR/focused_workspace"
@@ -14,7 +14,7 @@ WORKSPACE_ACTIVE="${WORKSPACE_ACTIVE:-0xcff5f7fa}"
 WORKSPACE_INACTIVE="${WORKSPACE_INACTIVE:-0x78f5f7fa}"
 
 aerospace_running() {
-  /usr/bin/pgrep -qx AeroSpace >/dev/null 2>&1 && [ -x /opt/homebrew/bin/aerospace ]
+  /usr/bin/pgrep -qx AeroSpace >/dev/null 2>&1 && [ -x /run/current-system/sw/bin/aerospace ]
 }
 
 managed_workspaces() {
@@ -38,7 +38,7 @@ space_item_name() {
 
 query_focused_workspace() {
   if aerospace_running; then
-    /opt/homebrew/bin/aerospace list-workspaces --focused 2>/dev/null | head -n 1
+    /run/current-system/sw/bin/aerospace list-workspaces --focused 2>/dev/null | head -n 1
     return
   fi
 

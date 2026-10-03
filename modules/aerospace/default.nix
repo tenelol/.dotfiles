@@ -1,5 +1,6 @@
 {
   delib,
+  pkgs,
   desktopSelection,
   hostTraits,
   hm,
@@ -8,17 +9,10 @@
 }:
 let
   homeDir = "/Users/${profile.username}";
-  path = "/opt/homebrew/bin:/opt/homebrew/sbin:/run/current-system/sw/bin:/usr/bin:/bin:/usr/sbin:/sbin";
+  path = "/run/current-system/sw/bin:/run/current-system/sw/bin:/usr/bin:/bin:/usr/sbin:/sbin";
 
-  homebrew = {
-    taps = [
-      {
-        name = "nikitabobko/tap";
-        trusted = true;
-      }
-    ];
-    casks = [ "nikitabobko/tap/aerospace" ];
-  };
+  package = pkgs.aerospace;
+  appPath = "/Applications/Nix Apps/AeroSpace.app";
 
   agent = {
     serviceConfig = {
@@ -31,7 +25,7 @@ let
         "XDG_CONFIG_HOME=${homeDir}/.config"
         "--env"
         "PATH=${path}"
-        "/Applications/AeroSpace.app"
+        appPath
         "--args"
         "--config-path"
         "${homeDir}/.config/aerospace/aerospace.toml"
@@ -60,23 +54,14 @@ let
   '';
 
   prepareApp = ''
-    if [ ! -d /Applications/AeroSpace.app ] && [ -x /opt/homebrew/bin/brew ]; then
-      $DRY_RUN_CMD /usr/bin/env HOMEBREW_NO_AUTO_UPDATE=1 /opt/homebrew/bin/brew reinstall --cask aerospace >/dev/null 2>&1 || true
-    fi
-
-    if [ -d /Applications/AeroSpace.app ]; then
-      $DRY_RUN_CMD /usr/bin/xattr -dr com.apple.quarantine /Applications/AeroSpace.app >/dev/null 2>&1 || true
+    if [ -d "${appPath}" ]; then
       $DRY_RUN_CMD /usr/bin/open -g \
         --env HOME=${homeDir} \
         --env XDG_CONFIG_HOME=${homeDir}/.config \
         --env PATH=${path} \
-        /Applications/AeroSpace.app \
-        --args --config-path ${homeDir}/.config/aerospace/aerospace.toml >/dev/null 2>&1 || true
+        "${appPath}" --args --config-path ${homeDir}/.config/aerospace/aerospace.toml >/dev/null 2>&1 || true
     fi
-
-    if [ -x /opt/homebrew/bin/aerospace ]; then
-      $DRY_RUN_CMD /opt/homebrew/bin/aerospace reload-config --no-gui >/dev/null 2>&1 || true
-    fi
+    $DRY_RUN_CMD ${package}/bin/aerospace reload-config --no-gui >/dev/null 2>&1 || true
   '';
 
   assignWindows = ''
@@ -86,8 +71,8 @@ let
   '';
 
   refreshSketchybar = ''
-    if [ -x /opt/homebrew/bin/sketchybar ]; then
-      $DRY_RUN_CMD /opt/homebrew/bin/sketchybar --trigger workspace_change REFRESH=all >/dev/null 2>&1 || true
+    if [ -x /run/current-system/sw/bin/sketchybar ]; then
+      $DRY_RUN_CMD /run/current-system/sw/bin/sketchybar --trigger workspace_change REFRESH=all >/dev/null 2>&1 || true
     fi
   '';
 
@@ -111,7 +96,7 @@ delib.scopedModule {
     enable = delib.readOnly (delib.boolOption desktopSelection.aerospace);
   };
 
-  darwin.always = { inherit homebrew; };
+  darwin.always.environment.systemPackages = [ package ];
 
   darwin.ifEnabled = {
     launchd.user.agents.aerospace = agent;

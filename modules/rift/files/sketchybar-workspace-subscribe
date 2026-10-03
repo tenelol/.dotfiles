@@ -1,8 +1,8 @@
 #!/bin/sh
 set -eu
 
-RIFT_CLI="${RIFT_CLI:-/opt/homebrew/bin/rift-cli}"
-SKETCHYBAR_BIN="${SKETCHYBAR_BIN:-/opt/homebrew/bin/sketchybar}"
+RIFT_CLI="${RIFT_CLI:-/run/current-system/sw/bin/rift-cli}"
+SKETCHYBAR_BIN="${SKETCHYBAR_BIN:-/run/current-system/sw/bin/sketchybar}"
 JQ="${JQ:-/usr/bin/jq}"
 callback='exec "$1" --trigger workspace_change REFRESH=all'
 

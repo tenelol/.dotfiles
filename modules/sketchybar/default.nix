@@ -13,22 +13,14 @@ delib.module {
   );
 
   darwin.ifEnabled = {
-    homebrew = {
-      taps = [
-        {
-          name = "FelixKratz/formulae";
-          trusted = true;
-        }
-      ];
-      brews = [ "FelixKratz/formulae/sketchybar" ];
-    };
+    environment.systemPackages = [ pkgs.sketchybar ];
 
     launchd.user.agents.sketchybar = {
       serviceConfig = {
         ProgramArguments = [
           "/bin/sh"
           "-lc"
-          "/opt/homebrew/bin/sketchybar"
+          "/run/current-system/sw/bin/sketchybar"
         ];
         KeepAlive = true;
         RunAtLoad = true;
@@ -59,7 +51,7 @@ delib.module {
     home.activation.restartSketchybar = hm.dag.entryAfter [ "linkGeneration" ] ''
       uid="$(/usr/bin/id -u)"
 
-      if [ -x /opt/homebrew/bin/sketchybar ]; then
+      if [ -x /run/current-system/sw/bin/sketchybar ]; then
         $DRY_RUN_CMD /bin/launchctl kickstart -k "gui/$uid/org.nixos.sketchybar" >/dev/null 2>&1 || true
       fi
     '';

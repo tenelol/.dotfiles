@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-RIFT_CLI="${RIFT_CLI:-/opt/homebrew/bin/rift-cli}"
+RIFT_CLI="${RIFT_CLI:-/run/current-system/sw/bin/rift-cli}"
 JQ="${JQ:-/usr/bin/jq}"
 SLEEP="${SLEEP:-/bin/sleep}"
 

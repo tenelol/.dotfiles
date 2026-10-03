@@ -1,7 +1,7 @@
 #!/bin/bash
 
-SKETCHYBAR_BIN="${SKETCHYBAR_BIN:-/opt/homebrew/bin/sketchybar}"
-RIFT_CLI="${RIFT_CLI:-/opt/homebrew/bin/rift-cli}"
+SKETCHYBAR_BIN="${SKETCHYBAR_BIN:-/run/current-system/sw/bin/sketchybar}"
+RIFT_CLI="${RIFT_CLI:-/run/current-system/sw/bin/rift-cli}"
 JQ="${JQ:-/usr/bin/jq}"
 PLUGIN_DIR="$CONFIG_DIR/plugins"
 
@@ -17,8 +17,8 @@ WORKSPACE_INACTIVE="${WORKSPACE_INACTIVE:-0x78f5f7fa}"
 WORKSPACE_SEPARATOR="${WORKSPACE_SEPARATOR:-0x44f5f7fa}"
 
 focused_workspace() {
-  if /usr/bin/pgrep -qx AeroSpace >/dev/null 2>&1 && [ -x /opt/homebrew/bin/aerospace ]; then
-    /opt/homebrew/bin/aerospace list-workspaces --focused 2>/dev/null | head -n 1
+  if /usr/bin/pgrep -qx AeroSpace >/dev/null 2>&1 && [ -x /run/current-system/sw/bin/aerospace ]; then
+    /run/current-system/sw/bin/aerospace list-workspaces --focused 2>/dev/null | head -n 1
     return
   fi
 
@@ -50,7 +50,7 @@ add_workspace_item() {
     label.padding_left=0
     label.padding_right=0
     background.drawing=off
-    click_script="/bin/sh -lc 'if /usr/bin/pgrep -qx AeroSpace && [ -x /opt/homebrew/bin/aerospace ] && [ -x \"$HOME/.config/aerospace/workspace-local\" ]; then \"$HOME/.config/aerospace/workspace-local\" focus-absolute $workspace_id; else /opt/homebrew/bin/rift-cli execute workspace switch $workspace_index; fi'"
+    click_script="/bin/sh -lc 'if /usr/bin/pgrep -qx AeroSpace && [ -x /run/current-system/sw/bin/aerospace ] && [ -x \"$HOME/.config/aerospace/workspace-local\" ]; then \"$HOME/.config/aerospace/workspace-local\" focus-absolute $workspace_id; else /run/current-system/sw/bin/rift-cli execute workspace switch $workspace_index; fi'"
   )
 
   "$SKETCHYBAR_BIN" --add item "$item_name" left \
@@ -138,7 +138,7 @@ default=(
 
 "$SKETCHYBAR_BIN" --add event workspace_change
 
-if /usr/bin/pgrep -qx AeroSpace >/dev/null 2>&1 && [ -x /opt/homebrew/bin/aerospace ]; then
+if /usr/bin/pgrep -qx AeroSpace >/dev/null 2>&1 && [ -x /run/current-system/sw/bin/aerospace ]; then
   workspace_group_added=0
   while IFS='|' read -r sketchybar_display_id display_name; do
     [ -n "$sketchybar_display_id" ] || continue
@@ -149,7 +149,7 @@ if /usr/bin/pgrep -qx AeroSpace >/dev/null 2>&1 && [ -x /opt/homebrew/bin/aerosp
         break
         ;;
     esac
-  done < <(/opt/homebrew/bin/aerospace list-monitors --format '%{monitor-appkit-nsscreen-screens-id}|%{monitor-name}')
+  done < <(/run/current-system/sw/bin/aerospace list-monitors --format '%{monitor-appkit-nsscreen-screens-id}|%{monitor-name}')
 
   if [ "$workspace_group_added" -eq 0 ]; then
     add_workspace_group "" "0" "9"

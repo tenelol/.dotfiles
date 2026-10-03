@@ -2,7 +2,7 @@
 
 set -eu
 
-AEROSPACE="${AEROSPACE:-/opt/homebrew/bin/aerospace}"
+AEROSPACE="${AEROSPACE:-/run/current-system/sw/bin/aerospace}"
 SKETCHYBAR_SPACES="${SKETCHYBAR_SPACES:-${XDG_CONFIG_HOME:-$HOME/.config}/sketchybar/plugins/spaces.sh}"
 
 action="${1:-}"

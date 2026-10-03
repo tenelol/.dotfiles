@@ -2,7 +2,7 @@ config-version = 2
 
 after-startup-command = [
   'exec-and-forget /bin/sh -lc "$HOME/.config/aerospace/assign-windows"',
-  'exec-and-forget /opt/homebrew/bin/sketchybar --trigger workspace_change REFRESH=all',
+  'exec-and-forget /run/current-system/sw/bin/sketchybar --trigger workspace_change REFRESH=all',
 ]
 start-at-login = false
 
@@ -52,14 +52,14 @@ persistent-workspaces = [
 exec-on-workspace-change = [
   '/bin/bash',
   '-lc',
-  '/opt/homebrew/bin/sketchybar --trigger workspace_change FOCUSED="$AEROSPACE_FOCUSED_WORKSPACE" PREVIOUS="$AEROSPACE_PREV_WORKSPACE" >/dev/null 2>&1 &',
+  '/run/current-system/sw/bin/sketchybar --trigger workspace_change FOCUSED="$AEROSPACE_FOCUSED_WORKSPACE" PREVIOUS="$AEROSPACE_PREV_WORKSPACE" >/dev/null 2>&1 &',
 ]
 
 [exec]
 inherit-env-vars = true
 
 [exec.env-vars]
-PATH = '/opt/homebrew/bin:/opt/homebrew/sbin:/run/current-system/sw/bin:/usr/bin:/bin:/usr/sbin:/sbin'
+PATH = '/run/current-system/sw/bin:/run/current-system/sw/bin:/usr/bin:/bin:/usr/sbin:/sbin'
 
 [gaps]
 inner.horizontal = 6

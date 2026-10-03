@@ -9,13 +9,17 @@
 let
   brewCask = pkgs.callPackage ../../packages/brew-cask.nix { };
   apps = builtins.fromJSON (builtins.readFile ./files/apps.json);
-  selected = apps.base ++ pkgs.lib.optionals host.fullDesktopFeatured apps.fullDesktop;
+  selected =
+    apps.base ++ pkgs.lib.optionals host.fullDesktopFeatured apps.fullDesktop ++ apps.binaries;
   packages = pkgs.lib.listToAttrs (
     map (app: {
       name = app.name;
       value = brewCask (builtins.removeAttrs app [ "name" ] // { cask = pkgs.brewCasks.${app.name}; });
     }) selected
   );
+  fontPackages = map (
+    font: brewCask (builtins.removeAttrs font [ "name" ] // { cask = pkgs.brewCasks.${font.name}; })
+  ) apps.fonts;
 in
 delib.scopedModule {
   name = "brew-casks";
@@ -24,6 +28,7 @@ delib.scopedModule {
   options = delib.singleEnableOption hostTraits.darwinDesktop;
 
   darwin.always.nixpkgs.overlays = [ inputs.brew-nix.overlays.default ];
+  darwin.ifEnabled.fonts.packages = fontPackages;
 
   home.ifEnabled = {
     home.packages =

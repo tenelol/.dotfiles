@@ -1,0 +1,12 @@
+let
+  packages = import ./packages.nix-test;
+  manifest = builtins.fromJSON (builtins.readFile ../files/apps.json);
+  metadata = map (spec: {
+    name = spec.name;
+    drvPath = packages.${spec.name}.drvPath;
+    fonts = spec.fontFiles or [ ];
+  }) (manifest.fonts ++ manifest.binaries);
+in
+assert builtins.length manifest.fonts == 9;
+assert packages.codex.version == "0.160.0";
+metadata

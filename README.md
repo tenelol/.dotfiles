@@ -6,7 +6,7 @@
 - denix / nh / nixvim
 - sops-nix / Tailscale / systemd-resolved
 - nixbuild.net remote builders
-- brew-nix for supported macOS GUI apps; Homebrew for installers, fonts and CLI tools
+- brew-nix Cask metadata and Nix packages for macOS apps, fonts, installers and CLI tools
 - GitHub Actions / Determinate Nix / Magic Nix Cache
 - Neovim / Fish / Ghostty
 - Niri（Linux）/ Rift・AeroSpace（macOS）
@@ -51,22 +51,31 @@ Rices select `myconfig.desktop.darwin.windowManager` (`native`, `rift`, or
 the AeroSpace selection. Use these selectors when changing a rice with the usual
 `nh` workflow.
 
-## macOS app packages
+## macOS packages
 
-[`modules/brew-casks`](./modules/brew-casks) manages 18 GUI apps through
-brew-nix's `pkgs.brewCasks` overlay and integrated Home Manager. The
-[app manifest](./modules/brew-casks/files/apps.json) has 12 base apps and 6 apps
-selected by `fullDesktop`. It preserves app-provided CLI entry points, Ghostty's
-man pages/completions and Zed's shell completions, including PowerShell.
-Selected CLI commands are linked into `~/.local/bin` so they take precedence
-over remaining Homebrew copies. Their versions and
-Cask metadata are pinned by `brew-nix` and `brew-api` in `flake.lock`. They appear
-under `~/Applications/Home Manager Apps` after an authorized `nh darwin switch`.
-The initial migration leaves existing Homebrew copies installed; Homebrew
-cleanup is temporarily `none` so those copies do not abort activation. See the
-[migration notes](./docs/research/brew-nix.md) for verification and targeted cleanup.
-Fonts, installers, custom taps, remaining apps, CLI formulae and Mac App Store
-apps retain their existing Homebrew management.
+The `macbook` declarations use Nix for the packages previously managed by
+Homebrew. `brew-nix` and the pinned `brew-api` provide Cask source metadata;
+the Homebrew executable is not needed to build those packages. The evaluated
+Darwin target has `homebrew.enable = false`. Existing Homebrew installations
+remain on disk until their own targeted cleanup. As of 2026-10-04, this
+configuration has not been switched onto the host.
+
+| Scope | Repository owner | Contents |
+| --- | --- | --- |
+| 31 Casks | [`modules/brew-casks`](./modules/brew-casks) and its [manifest](./modules/brew-casks/files/apps.json) | 21 immutable GUI bundles (14 base, 7 `fullDesktop`), the Codex CLI, and 9 fonts |
+| CLI formulae | [`modules/darwin-cli`](./modules/darwin-cli) | 58 Nix packages covering 54 shared formulae and Rift, SketchyBar, Borders; includes the official `herdr-bin` input |
+| Native installers | [`modules/darwin-installers`](./modules/darwin-installers) | 9 signed PKG/app installations and checks for 8 Mac App Store apps |
+| Other GUI apps | [`modules/aerospace`](./modules/aerospace), [`modules/boringnotch`](./modules/boringnotch) | AeroSpace from nixpkgs and a pinned boringNotch package |
+
+Home Manager places the 21 GUI bundles under `~/Applications/Home Manager Apps`
+after an authorized `nh darwin switch`. App-provided CLI commands use
+`~/.local/bin`; Ghostty's man pages and completions and Zed's shell completions
+are included. The fonts use nix-darwin's `fonts.packages`. The installer module
+checks versions, signatures, receipts and running processes before changing
+system apps. Missing Mac App Store apps require a human to sign in and install
+already-owned copies; the module does not purchase or authenticate. The
+[migration notes](./docs/research/brew-nix.md) describe the current verification
+and activation limits.
 
 ## Codex skills
 
@@ -93,9 +102,9 @@ Ctrl+C interrupts work, and Ctrl+D exits when the editor is empty. Tool results 
 
 Pi's native subagent watchdog reviews the parent's repository changes at completion using `gpt-6-sol` / `xhigh`, with a two-minute deadline. Per-tool cadence and child watchdogs are disabled. The delegation reference requires task-specific `gate` or `acceptance.verify` commands for implementation work; the native runtime executes them and records acceptance separately from the child's success claims. Commands follow the target repository's validation permissions; there is no global guessed test command. `node modules/pi-coding-agent/tests/quality-gates.test.mjs` verifies the review trigger and passing/failing host checks.
 
-Herdr uses Homebrew on macOS. Linux uses the official `herdr-bin` input (`herdrdev/herdr-nix`), which downloads hash-verified release binaries without compiling Rust or Zig. The `herdr` source input supplies the official Pi state hook and skill; the Linux package declaration checks that its release version matches the binary. Update the source pin with the installed Herdr release when upgrading. Home Manager links the upstream files directly; do not also run `herdr integration install pi` against these managed links. The local `herdr-ui` hook forwards Pi's blocking question events to the official hook. [`modules/herdr/files/config.toml`](./modules/herdr/files/config.toml) exposes agent state in the sidebar and enables terminal notifications. After applying an update with `nh`, check `herdr status`: the running server may still be the previous version. Restarting that server can stop its pane processes and remains a separate operation.
+Herdr uses the official `herdr-bin` input (`herdrdev/herdr-nix`) on macOS and Linux, which downloads hash-verified release binaries without compiling Rust or Zig. The `herdr` source input supplies the official Pi state hook and skill; both package declarations check that its release version matches the binary. Update the source pin with the installed Herdr release when upgrading. Home Manager links the upstream files directly; do not also run `herdr integration install pi` against these managed links. The local `herdr-ui` hook forwards Pi's blocking question events to the official hook. [`modules/herdr/files/config.toml`](./modules/herdr/files/config.toml) exposes agent state in the sidebar and enables terminal notifications. After applying an update with `nh`, check `herdr status`: the running server may still be the previous version. Restarting that server can stop its pane processes and remains a separate operation.
 
-For macOS computer use, Homebrew declares the official `openclaw/tap/peekaboo` CLI; automatic Homebrew updates and upgrades remain disabled. Pi's `computer_use` tool wraps that CLI without an additional MCP server or Peekaboo AI-provider setup. It returns images inline, pins actions to a session's one-use observation, and distinguishes confirmed changes from unverified dispatch. Local execution (`--no-remote`) and snapshot argument handling are internal to the tool; the accompanying skill describes the observe/action/verify workflow. First use requires the appropriate Screen Recording/Accessibility permissions. The [source review](./modules/pi-coding-agent/research/computer-use-options.md) records runtime evidence and the opt-in GUI smoke test.
+For macOS computer use, [`packages/peekaboo.nix`](./packages/peekaboo.nix) pins the official signed Peekaboo CLI release. Pi's `computer_use` tool wraps that CLI without an additional MCP server or Peekaboo AI-provider setup. It returns images inline, pins actions to a session's one-use observation, and distinguishes confirmed changes from unverified dispatch. Local execution (`--no-remote`) and snapshot argument handling are internal to the tool; the accompanying skill describes the observe/action/verify workflow. First use from the Nix path may require Screen Recording/Accessibility permissions. The [source review](./modules/pi-coding-agent/research/computer-use-options.md) records runtime evidence and the opt-in GUI smoke test.
 
 Local AI tools live in `files/tools/`, and the dashboard hook, artwork, and theme live together in `files/hooks/dashboard/`. Combined third-party extensions stay under `files/extensions/`. Their standard `~/.pi/agent/extensions/<name>` entrypoints link to editable local sources through `mkOutOfStoreSymlink`; required `node_modules` remain local and Git-ignored. Prompt templates remain with their owning extension and are linked into `~/.pi/agent/prompts`; reference documents are loaded only when instructions request them. Credentials, trust decisions, sessions, missions, caches, and generated model catalogs remain local under `~/.pi/agent`.
 

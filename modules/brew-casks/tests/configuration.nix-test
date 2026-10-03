@@ -6,7 +6,7 @@ let
   expected = import ./packages.nix-test;
   manifest = builtins.fromJSON (builtins.readFile ../files/apps.json);
   selected = manifest.base ++ lib.optionals config.myconfig.host.fullDesktopFeatured manifest.fullDesktop;
-  names = map (app: app.name) selected;
+  names = map (app: app.name) (selected ++ manifest.binaries);
   home = config.home-manager.users.${config.system.primaryUser};
   actual = lib.listToAttrs (map (package: {
     name = package.pname;
@@ -18,15 +18,23 @@ let
       toString home.home.file.${".local/bin/${command}"}.source == "${expected.${app.name}}/bin/${command}"
     ) (builtins.attrNames (app.cli or { }))
   ) selected;
+  fontsMatch = builtins.all (font:
+    builtins.any (package: package.drvPath == expected.${font.name}.drvPath) config.fonts.packages
+  ) manifest.fonts;
+  binaryCompletions = builtins.filter (package:
+    builtins.match "codex-completions-.*" (package.name or "") != null
+  ) home.home.packages;
   completions = builtins.filter (package:
     builtins.match "zed-completions-.*" (package.name or "") != null
   ) home.home.packages;
 in
 assert builtins.length (builtins.attrNames actual) == builtins.length names;
-assert applicationsMatch && cliMatch;
-assert builtins.length completions == 1 && (builtins.head completions).drvPath == expected.zed-completions.drvPath;
+assert applicationsMatch && cliMatch && fontsMatch;
+assert builtins.length binaryCompletions == 1;
+  assert builtins.length completions == 1 && (builtins.head completions).drvPath == expected.zed-completions.drvPath;
 {
   applications = builtins.length names;
   cliSources = "matched";
   completions = "matched";
+  fonts = builtins.length manifest.fonts;
 }

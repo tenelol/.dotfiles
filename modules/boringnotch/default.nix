@@ -1,5 +1,6 @@
 {
   delib,
+  pkgs,
   host,
   lib,
   profile,
@@ -13,22 +14,14 @@ delib.module {
   );
 
   darwin.ifEnabled = {
-    homebrew = {
-      taps = [
-        {
-          name = "TheBoredTeam/boring-notch";
-          trusted = true;
-        }
-      ];
-      casks = [ "boring-notch" ];
-    };
+    environment.systemPackages = [ (pkgs.callPackage ../../packages/boringnotch.nix { }) ];
 
     launchd.user.agents.boringnotch = {
       serviceConfig = {
         Label = "theboringteam.boringnotch";
         ProgramArguments = [
           "/usr/bin/open"
-          "/Applications/boringNotch.app"
+          "/Applications/Nix Apps/boringNotch.app"
         ];
         RunAtLoad = true;
         KeepAlive = false;
@@ -38,12 +31,12 @@ delib.module {
       managedBy = "boringnotch";
     };
 
-    # Homebrew casks are installed after launchd setup, so kickstart once after
+    # Nix app links may be installed after launchd setup, so kickstart once after
     # activation to make a fresh install start without waiting for the next login.
     system.activationScripts.postActivation.text = lib.mkAfter ''
       uid="$(id -u ${profile.username})"
 
-      if [ -d /Applications/boringNotch.app ]; then
+      if [ -d /Applications/Nix Apps/boringNotch.app ]; then
         launchctl asuser "$uid" sudo --user=${profile.username} \
           /bin/launchctl kickstart -k "gui/$uid/theboringteam.boringnotch" \
           >/dev/null 2>&1 || true

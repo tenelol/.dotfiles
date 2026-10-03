@@ -70,6 +70,13 @@
         "zen": "Zen.app/Contents/MacOS/zen"
       },
       "wrapCli": true
+    },
+    {
+      "name": "google-chrome",
+      "sourceHash": "sha256-frZZHhawFIyFBBFkLtL54c+MXfdy2y4eA4+c46/I0W4="
+    },
+    {
+      "name": "qutebrowser"
     }
   ],
   "fullDesktop": [
@@ -97,6 +104,280 @@
         "code": "Visual Studio Code.app/Contents/Resources/app/bin/code",
         "code-tunnel": "Visual Studio Code.app/Contents/Resources/app/bin/code-tunnel"
       }
+    },
+    {
+      "name": "spotify",
+      "sourceHash": "sha256-V5R7WMMoIYY3nu+BOC3uoO/sxOPrds6BPqm0U3vBWaM="
+    }
+  ],
+  "fonts": [
+    {
+      "name": "font-caskaydia-cove-nerd-font",
+      "fontFiles": [
+        "CaskaydiaCoveNerdFontPropo-SemiLightItalic.ttf",
+        "CaskaydiaCoveNerdFont-BoldItalic.ttf",
+        "CaskaydiaCoveNerdFont-ExtraLight.ttf",
+        "CaskaydiaCoveNerdFont-ExtraLightItalic.ttf",
+        "CaskaydiaCoveNerdFont-Italic.ttf",
+        "CaskaydiaCoveNerdFont-Light.ttf",
+        "CaskaydiaCoveNerdFont-LightItalic.ttf",
+        "CaskaydiaCoveNerdFont-Regular.ttf",
+        "CaskaydiaCoveNerdFont-SemiBold.ttf",
+        "CaskaydiaCoveNerdFont-SemiBoldItalic.ttf",
+        "CaskaydiaCoveNerdFont-SemiLight.ttf",
+        "CaskaydiaCoveNerdFont-SemiLightItalic.ttf",
+        "CaskaydiaCoveNerdFontMono-Bold.ttf",
+        "CaskaydiaCoveNerdFontMono-BoldItalic.ttf",
+        "CaskaydiaCoveNerdFontMono-ExtraLight.ttf",
+        "CaskaydiaCoveNerdFontMono-ExtraLightItalic.ttf",
+        "CaskaydiaCoveNerdFontMono-Italic.ttf",
+        "CaskaydiaCoveNerdFontMono-Light.ttf",
+        "CaskaydiaCoveNerdFontMono-LightItalic.ttf",
+        "CaskaydiaCoveNerdFontMono-Regular.ttf",
+        "CaskaydiaCoveNerdFontMono-SemiBold.ttf",
+        "CaskaydiaCoveNerdFontMono-SemiBoldItalic.ttf",
+        "CaskaydiaCoveNerdFontMono-SemiLight.ttf",
+        "CaskaydiaCoveNerdFontMono-SemiLightItalic.ttf",
+        "CaskaydiaCoveNerdFontPropo-Bold.ttf",
+        "CaskaydiaCoveNerdFontPropo-BoldItalic.ttf",
+        "CaskaydiaCoveNerdFontPropo-ExtraLight.ttf",
+        "CaskaydiaCoveNerdFontPropo-ExtraLightItalic.ttf",
+        "CaskaydiaCoveNerdFontPropo-Italic.ttf",
+        "CaskaydiaCoveNerdFontPropo-Light.ttf",
+        "CaskaydiaCoveNerdFontPropo-LightItalic.ttf",
+        "CaskaydiaCoveNerdFontPropo-Regular.ttf",
+        "CaskaydiaCoveNerdFontPropo-SemiBold.ttf",
+        "CaskaydiaCoveNerdFontPropo-SemiBoldItalic.ttf",
+        "CaskaydiaCoveNerdFontPropo-SemiLight.ttf",
+        "CaskaydiaCoveNerdFont-Bold.ttf"
+      ]
+    },
+    {
+      "name": "font-fira-code",
+      "fontFiles": [
+        "ttf/FiraCode-Bold.ttf",
+        "ttf/FiraCode-Light.ttf",
+        "ttf/FiraCode-Medium.ttf",
+        "ttf/FiraCode-Regular.ttf",
+        "ttf/FiraCode-Retina.ttf",
+        "ttf/FiraCode-SemiBold.ttf",
+        "variable_ttf/FiraCode-VF.ttf"
+      ]
+    },
+    {
+      "name": "font-fira-code-nerd-font",
+      "fontFiles": [
+        "FiraCodeNerdFontPropo-SemiBold.ttf",
+        "FiraCodeNerdFont-Light.ttf",
+        "FiraCodeNerdFont-Medium.ttf",
+        "FiraCodeNerdFont-Regular.ttf",
+        "FiraCodeNerdFont-Retina.ttf",
+        "FiraCodeNerdFont-SemiBold.ttf",
+        "FiraCodeNerdFontMono-Bold.ttf",
+        "FiraCodeNerdFontMono-Light.ttf",
+        "FiraCodeNerdFontMono-Medium.ttf",
+        "FiraCodeNerdFontMono-Regular.ttf",
+        "FiraCodeNerdFontMono-Retina.ttf",
+        "FiraCodeNerdFontMono-SemiBold.ttf",
+        "FiraCodeNerdFontPropo-Bold.ttf",
+        "FiraCodeNerdFontPropo-Light.ttf",
+        "FiraCodeNerdFontPropo-Medium.ttf",
+        "FiraCodeNerdFontPropo-Regular.ttf",
+        "FiraCodeNerdFontPropo-Retina.ttf",
+        "FiraCodeNerdFont-Bold.ttf"
+      ]
+    },
+    {
+      "name": "font-hack",
+      "fontFiles": [
+        "ttf/Hack-Bold.ttf",
+        "ttf/Hack-BoldItalic.ttf",
+        "ttf/Hack-Italic.ttf",
+        "ttf/Hack-Regular.ttf"
+      ]
+    },
+    {
+      "name": "font-jetbrains-mono",
+      "fontFiles": [
+        "fonts/variable/JetBrainsMono[wght].ttf",
+        "fonts/ttf/JetBrainsMono-BoldItalic.ttf",
+        "fonts/ttf/JetBrainsMono-ExtraBold.ttf",
+        "fonts/ttf/JetBrainsMono-ExtraBoldItalic.ttf",
+        "fonts/ttf/JetBrainsMono-ExtraLight.ttf",
+        "fonts/ttf/JetBrainsMono-ExtraLightItalic.ttf",
+        "fonts/ttf/JetBrainsMono-Italic.ttf",
+        "fonts/ttf/JetBrainsMono-Light.ttf",
+        "fonts/ttf/JetBrainsMono-LightItalic.ttf",
+        "fonts/ttf/JetBrainsMono-Medium.ttf",
+        "fonts/ttf/JetBrainsMono-MediumItalic.ttf",
+        "fonts/ttf/JetBrainsMono-Regular.ttf",
+        "fonts/ttf/JetBrainsMono-SemiBold.ttf",
+        "fonts/ttf/JetBrainsMono-SemiBoldItalic.ttf",
+        "fonts/ttf/JetBrainsMono-Thin.ttf",
+        "fonts/ttf/JetBrainsMono-ThinItalic.ttf",
+        "fonts/ttf/JetBrainsMonoNL-Bold.ttf",
+        "fonts/ttf/JetBrainsMonoNL-BoldItalic.ttf",
+        "fonts/ttf/JetBrainsMonoNL-ExtraBold.ttf",
+        "fonts/ttf/JetBrainsMonoNL-ExtraBoldItalic.ttf",
+        "fonts/ttf/JetBrainsMonoNL-ExtraLight.ttf",
+        "fonts/ttf/JetBrainsMonoNL-ExtraLightItalic.ttf",
+        "fonts/ttf/JetBrainsMonoNL-Italic.ttf",
+        "fonts/ttf/JetBrainsMonoNL-Light.ttf",
+        "fonts/ttf/JetBrainsMonoNL-LightItalic.ttf",
+        "fonts/ttf/JetBrainsMonoNL-Medium.ttf",
+        "fonts/ttf/JetBrainsMonoNL-MediumItalic.ttf",
+        "fonts/ttf/JetBrainsMonoNL-Regular.ttf",
+        "fonts/ttf/JetBrainsMonoNL-SemiBold.ttf",
+        "fonts/ttf/JetBrainsMonoNL-SemiBoldItalic.ttf",
+        "fonts/ttf/JetBrainsMonoNL-Thin.ttf",
+        "fonts/ttf/JetBrainsMonoNL-ThinItalic.ttf",
+        "fonts/variable/JetBrainsMono-Italic[wght].ttf",
+        "fonts/ttf/JetBrainsMono-Bold.ttf"
+      ]
+    },
+    {
+      "name": "font-jetbrains-mono-nerd-font",
+      "fontFiles": [
+        "JetBrainsMonoNerdFontPropo-ThinItalic.ttf",
+        "JetBrainsMonoNLNerdFont-BoldItalic.ttf",
+        "JetBrainsMonoNLNerdFont-ExtraBold.ttf",
+        "JetBrainsMonoNLNerdFont-ExtraBoldItalic.ttf",
+        "JetBrainsMonoNLNerdFont-ExtraLight.ttf",
+        "JetBrainsMonoNLNerdFont-ExtraLightItalic.ttf",
+        "JetBrainsMonoNLNerdFont-Italic.ttf",
+        "JetBrainsMonoNLNerdFont-Light.ttf",
+        "JetBrainsMonoNLNerdFont-LightItalic.ttf",
+        "JetBrainsMonoNLNerdFont-Medium.ttf",
+        "JetBrainsMonoNLNerdFont-MediumItalic.ttf",
+        "JetBrainsMonoNLNerdFont-Regular.ttf",
+        "JetBrainsMonoNLNerdFont-SemiBold.ttf",
+        "JetBrainsMonoNLNerdFont-SemiBoldItalic.ttf",
+        "JetBrainsMonoNLNerdFont-Thin.ttf",
+        "JetBrainsMonoNLNerdFont-ThinItalic.ttf",
+        "JetBrainsMonoNLNerdFontMono-Bold.ttf",
+        "JetBrainsMonoNLNerdFontMono-BoldItalic.ttf",
+        "JetBrainsMonoNLNerdFontMono-ExtraBold.ttf",
+        "JetBrainsMonoNLNerdFontMono-ExtraBoldItalic.ttf",
+        "JetBrainsMonoNLNerdFontMono-ExtraLight.ttf",
+        "JetBrainsMonoNLNerdFontMono-ExtraLightItalic.ttf",
+        "JetBrainsMonoNLNerdFontMono-Italic.ttf",
+        "JetBrainsMonoNLNerdFontMono-Light.ttf",
+        "JetBrainsMonoNLNerdFontMono-LightItalic.ttf",
+        "JetBrainsMonoNLNerdFontMono-Medium.ttf",
+        "JetBrainsMonoNLNerdFontMono-MediumItalic.ttf",
+        "JetBrainsMonoNLNerdFontMono-Regular.ttf",
+        "JetBrainsMonoNLNerdFontMono-SemiBold.ttf",
+        "JetBrainsMonoNLNerdFontMono-SemiBoldItalic.ttf",
+        "JetBrainsMonoNLNerdFontMono-Thin.ttf",
+        "JetBrainsMonoNLNerdFontMono-ThinItalic.ttf",
+        "JetBrainsMonoNLNerdFontPropo-Bold.ttf",
+        "JetBrainsMonoNLNerdFontPropo-BoldItalic.ttf",
+        "JetBrainsMonoNLNerdFontPropo-ExtraBold.ttf",
+        "JetBrainsMonoNLNerdFontPropo-ExtraBoldItalic.ttf",
+        "JetBrainsMonoNLNerdFontPropo-ExtraLight.ttf",
+        "JetBrainsMonoNLNerdFontPropo-ExtraLightItalic.ttf",
+        "JetBrainsMonoNLNerdFontPropo-Italic.ttf",
+        "JetBrainsMonoNLNerdFontPropo-Light.ttf",
+        "JetBrainsMonoNLNerdFontPropo-LightItalic.ttf",
+        "JetBrainsMonoNLNerdFontPropo-Medium.ttf",
+        "JetBrainsMonoNLNerdFontPropo-MediumItalic.ttf",
+        "JetBrainsMonoNLNerdFontPropo-Regular.ttf",
+        "JetBrainsMonoNLNerdFontPropo-SemiBold.ttf",
+        "JetBrainsMonoNLNerdFontPropo-SemiBoldItalic.ttf",
+        "JetBrainsMonoNLNerdFontPropo-Thin.ttf",
+        "JetBrainsMonoNLNerdFontPropo-ThinItalic.ttf",
+        "JetBrainsMonoNerdFont-Bold.ttf",
+        "JetBrainsMonoNerdFont-BoldItalic.ttf",
+        "JetBrainsMonoNerdFont-ExtraBold.ttf",
+        "JetBrainsMonoNerdFont-ExtraBoldItalic.ttf",
+        "JetBrainsMonoNerdFont-ExtraLight.ttf",
+        "JetBrainsMonoNerdFont-ExtraLightItalic.ttf",
+        "JetBrainsMonoNerdFont-Italic.ttf",
+        "JetBrainsMonoNerdFont-Light.ttf",
+        "JetBrainsMonoNerdFont-LightItalic.ttf",
+        "JetBrainsMonoNerdFont-Medium.ttf",
+        "JetBrainsMonoNerdFont-MediumItalic.ttf",
+        "JetBrainsMonoNerdFont-Regular.ttf",
+        "JetBrainsMonoNerdFont-SemiBold.ttf",
+        "JetBrainsMonoNerdFont-SemiBoldItalic.ttf",
+        "JetBrainsMonoNerdFont-Thin.ttf",
+        "JetBrainsMonoNerdFont-ThinItalic.ttf",
+        "JetBrainsMonoNerdFontMono-Bold.ttf",
+        "JetBrainsMonoNerdFontMono-BoldItalic.ttf",
+        "JetBrainsMonoNerdFontMono-ExtraBold.ttf",
+        "JetBrainsMonoNerdFontMono-ExtraBoldItalic.ttf",
+        "JetBrainsMonoNerdFontMono-ExtraLight.ttf",
+        "JetBrainsMonoNerdFontMono-ExtraLightItalic.ttf",
+        "JetBrainsMonoNerdFontMono-Italic.ttf",
+        "JetBrainsMonoNerdFontMono-Light.ttf",
+        "JetBrainsMonoNerdFontMono-LightItalic.ttf",
+        "JetBrainsMonoNerdFontMono-Medium.ttf",
+        "JetBrainsMonoNerdFontMono-MediumItalic.ttf",
+        "JetBrainsMonoNerdFontMono-Regular.ttf",
+        "JetBrainsMonoNerdFontMono-SemiBold.ttf",
+        "JetBrainsMonoNerdFontMono-SemiBoldItalic.ttf",
+        "JetBrainsMonoNerdFontMono-Thin.ttf",
+        "JetBrainsMonoNerdFontMono-ThinItalic.ttf",
+        "JetBrainsMonoNerdFontPropo-Bold.ttf",
+        "JetBrainsMonoNerdFontPropo-BoldItalic.ttf",
+        "JetBrainsMonoNerdFontPropo-ExtraBold.ttf",
+        "JetBrainsMonoNerdFontPropo-ExtraBoldItalic.ttf",
+        "JetBrainsMonoNerdFontPropo-ExtraLight.ttf",
+        "JetBrainsMonoNerdFontPropo-ExtraLightItalic.ttf",
+        "JetBrainsMonoNerdFontPropo-Italic.ttf",
+        "JetBrainsMonoNerdFontPropo-Light.ttf",
+        "JetBrainsMonoNerdFontPropo-LightItalic.ttf",
+        "JetBrainsMonoNerdFontPropo-Medium.ttf",
+        "JetBrainsMonoNerdFontPropo-MediumItalic.ttf",
+        "JetBrainsMonoNerdFontPropo-Regular.ttf",
+        "JetBrainsMonoNerdFontPropo-SemiBold.ttf",
+        "JetBrainsMonoNerdFontPropo-SemiBoldItalic.ttf",
+        "JetBrainsMonoNerdFontPropo-Thin.ttf",
+        "JetBrainsMonoNLNerdFont-Bold.ttf"
+      ]
+    },
+    {
+      "name": "font-material-symbols",
+      "fontFiles": [
+        "variablefont/MaterialSymbolsOutlined[FILL,GRAD,opsz,wght].ttf",
+        "variablefont/MaterialSymbolsRounded[FILL,GRAD,opsz,wght].ttf",
+        "variablefont/MaterialSymbolsSharp[FILL,GRAD,opsz,wght].ttf"
+      ],
+      "sourceHash": "sha256-w9Eft9rvGPYwEfBYCcsq9dT/SCUk6V/YX0XBHLmc22I=",
+      "sourceUrl": "https://github.com/google/material-design-icons/archive/737e3324305806514d7909874fa1818ae1808232.tar.gz",
+      "archiveMembers": [
+        "material-design-icons-737e3324305806514d7909874fa1818ae1808232/variablefont/MaterialSymbolsOutlined[FILL,GRAD,opsz,wght].ttf",
+        "material-design-icons-737e3324305806514d7909874fa1818ae1808232/variablefont/MaterialSymbolsRounded[FILL,GRAD,opsz,wght].ttf",
+        "material-design-icons-737e3324305806514d7909874fa1818ae1808232/variablefont/MaterialSymbolsSharp[FILL,GRAD,opsz,wght].ttf"
+      ]
+    },
+    {
+      "name": "font-noto-color-emoji",
+      "fontFiles": [
+        "NotoColorEmoji-Regular.ttf"
+      ],
+      "sourceHash": "sha256-TYKhjY2V9guog84kK7rb+EpXbph3Rd17o41xxnz/LXM="
+    },
+    {
+      "name": "font-noto-sans-cjk",
+      "fontFiles": [
+        "NotoSansCJK.ttc"
+      ]
+    }
+  ],
+  "binaries": [
+    {
+      "name": "codex",
+      "completions": {
+        "codex": {
+          "bash": "share/bash-completion/completions/codex",
+          "zsh": "share/zsh/site-functions/_codex",
+          "fish": "share/fish/vendor_completions.d/codex.fish"
+        }
+      },
+      "completionArgs": [
+        "completion"
+      ]
     }
   ]
 }

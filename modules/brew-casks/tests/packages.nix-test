@@ -27,7 +27,7 @@ let
   packages = pkgs.lib.listToAttrs (map (app: {
   name = app.name;
   value = brewCask (builtins.removeAttrs app [ "name" ] // { cask = casks.${app.name}; });
-  }) (apps.base ++ apps.fullDesktop));
+  }) (apps.base ++ apps.fullDesktop ++ apps.binaries ++ apps.fonts));
 in packages // pkgs.lib.listToAttrs (pkgs.lib.concatMap (name:
   pkgs.lib.optional (packages.${name} ? completionPackage) {
     name = "${name}-completions";

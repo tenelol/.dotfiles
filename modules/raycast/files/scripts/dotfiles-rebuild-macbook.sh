@@ -146,7 +146,7 @@ ELEVATION
 
 /bin/ln -snf "\$log_file" "\$latest_log"
 
-export PATH="/run/current-system/sw/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+export PATH="/run/current-system/sw/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 export SUDO_ASKPASS="\$askpass_script"
 
 if is_rebuild_running; then

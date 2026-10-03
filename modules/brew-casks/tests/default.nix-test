@@ -18,6 +18,7 @@ let
   metadata = builtins.map (
     name:
     let
+      spec = builtins.head (builtins.filter (app: app.name == name) (apps.base ++ apps.fullDesktop));
       cask = builtins.head (builtins.filter (cask: cask.token == name) data);
       installArtifacts = builtins.filter (
         artifact: !(artifact ? zap || artifact ? uninstall)
@@ -25,7 +26,7 @@ let
       artifacts = builtins.filter (artifact: artifact ? app) cask.artifacts;
       package = packages.${name};
     in
-    assert builtins.match "[0-9a-f]{64}" cask.sha256 != null;
+    assert (spec ? sourceHash) || builtins.match "[0-9a-f]{64}" cask.sha256 != null;
     assert builtins.length artifacts == 1;
     assert builtins.all (artifact: !(artifact ? pkg || artifact ? installer || artifact ? font)) installArtifacts;
     assert package.sourceRoot == builtins.head (builtins.head artifacts).app;
