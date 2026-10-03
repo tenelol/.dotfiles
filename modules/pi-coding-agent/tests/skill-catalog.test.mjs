@@ -1,3 +1,4 @@
+import { extensionPath } from "./extension-path.mjs";
 // Run: node modules/pi-coding-agent/tests/skill-catalog.test.mjs
 import assert from "node:assert/strict";
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
@@ -27,7 +28,10 @@ try {
   for (const [name, relative] of Object.entries(catalog.extensions)) {
     const target = relative.startsWith("extensions/playwright-cli/")
       ? relative.replace("extensions/playwright-cli/", "tools/playwright-cli/") : relative;
-    symlinkSync(fileURLToPath(new URL(target, files)), join(agentDir, "skills", name));
+    const source = target.startsWith("extensions/")
+      ? extensionPath(target.slice("extensions/".length))
+      : fileURLToPath(new URL(target, files));
+    symlinkSync(source, join(agentDir, "skills", name));
   }
   if (process.env.HERDR_SOURCE) symlinkSync(join(process.env.HERDR_SOURCE, "skills/herdr"), join(agentDir, "skills/herdr"));
   const ports = new URL("skills/", files);

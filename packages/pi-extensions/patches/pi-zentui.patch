@@ -1,0 +1,29 @@
+--- a/extensions/zentui/ui.ts
++++ b/extensions/zentui/ui.ts
+@@ -70,6 +70,7 @@
+ 		getLines?: () => string[];
+ 		getCursor?: () => unknown;
+ 		getMode?: () => unknown;
++		showModeLabel?: boolean;
+ 		getPaddingX?: () => number;
+ 		getAutocompleteMaxVisible?: () => number;
+ 		addToHistory?: (text: string) => void;
+@@ -550,6 +551,7 @@
+ }
+ 
+ function readVimStatus(editor: WrappedEditor, uiTheme: Theme): string | undefined {
++	if (editor.showModeLabel === false) return undefined;
+ 	const mode = editor.getMode?.();
+ 	if (typeof mode !== "string") return undefined;
+ 	const normalized = mode.trim();
+--- a/package.json
++++ b/package.json
+@@ -44,7 +44,7 @@
+ 	},
+ 	"pi": {
+ 		"extensions": [
+-			"./extensions"
++			"./extensions/zentui/index.ts"
+ 		],
+ 		"image": "https://raw.githubusercontent.com/lmilojevicc/pi-zentui/main/assets/zentui.png"
+ 	},

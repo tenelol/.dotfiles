@@ -1,3 +1,4 @@
+import { extensionPath } from "./extension-path.mjs";
 // Run: node modules/pi-coding-agent/tests/subagent-defaults.test.mjs
 import assert from "node:assert/strict";
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, rmSync, symlinkSync } from "node:fs";
@@ -24,7 +25,7 @@ try {
   mkdirSync(join(process.env.PI_CODING_AGENT_DIR, "extensions"));
   symlinkSync(fileURLToPath(new URL("../files/tools/playwright-cli", import.meta.url)), join(process.env.PI_CODING_AGENT_DIR, "extensions/playwright-cli"));
   const jiti = createJiti(import.meta.url, { moduleCache: false });
-  const { discoverAgents } = await jiti.import(fileURLToPath(new URL("../files/extensions/pi-subagents/src/agents/agents.ts", import.meta.url)));
+  const { discoverAgents } = await jiti.import(extensionPath("pi-subagents/src/agents/agents.ts"));
   const { agents } = discoverAgents(project, "user", "openai-codex");
   for (const name of ["scout", "researcher", "worker", "reviewer", "oracle", "evidence-auditor", "delegate"]) {
     const agent = agents.find((entry) => entry.name === name);

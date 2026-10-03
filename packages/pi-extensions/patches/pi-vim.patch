@@ -1,0 +1,130 @@
+--- a/index.ts
++++ b/index.ts
+@@ -1,3 +1,4 @@
++import { InsertExitChord } from "./insert-exit-chord.js";
+ import {
+   CustomEditor,
+   type ExtensionAPI,
+@@ -262,6 +263,8 @@
+ 
+ export class ModalEditor extends CustomEditor {
+   private mode: Mode = "insert";
++  /** Use the footer status instead of an editor-border badge when false. */
++  showModeLabel = true;
+   private pendingMotion: PendingMotion = null;
+   private pendingTextObject: TextObjectKind | null = null;
+   private pendingOperator: PendingOperator = null;
+@@ -1283,12 +1286,20 @@
+     }
+   }
+ 
++  private readonly insertExitChord = new InsertExitChord(
++    (data) => {
++      try {
++        this.handleInputCore(data);
++      } finally {
++        this.refreshPendingDispatchRestore();
++        (this as unknown as { tui?: { requestRender?: () => void } }).tui?.requestRender?.();
++      }
++    },
++    () => this.mode === "insert" && this.pendingExCommand === null && !this.replayingRepeat,
++  );
++
+   handleInput(data: string): void {
+-    try {
+-      this.handleInputCore(data);
+-    } finally {
+-      this.refreshPendingDispatchRestore();
+-    }
++    this.insertExitChord.handle(data);
+   }
+ 
+   private handleInputCore(data: string): void {
+@@ -1487,9 +1498,8 @@
+       this.clearUnderlyingPasteStateIfActive();
+       this.setMode("normal");
+       if (this.getCursor().col > 0) this.moveCursorBy(-1);
+-    } else {
+-      super.handleInput("\x1b"); // pass escape to abort agent
+-    }
++    }
++    // In Normal mode Esc is a Vim no-op, not an agent interrupt.
+   }
+ 
+   private deleteLastPendingExCommandGrapheme(): void {
+@@ -4098,7 +4108,7 @@
+   render(width: number): string[] {
+     const lines = super.render(width);
+     this.syncCursorShapeForRender(lines);
+-    if (lines.length === 0) return lines;
++    if (lines.length === 0 || !this.showModeLabel) return lines;
+ 
+     const rawLabel = fitModeLabel(this.getModeLabel(), width);
+     const colorize = this.getModeLabelColorizer();
+@@ -4214,7 +4224,16 @@
+       editor.setClipboardMirrorPolicy(clipboardMirrorPolicy.policy);
+       editor.setQuitFn(() => ctx.shutdown());
+       editor.setNotifyFn((message) => ctx.ui.notify(message, "warning"));
+-      editor.setModeChangeFn(modeChangeHandler);
++      // Match pi-vim-flash's plain footer status; keep Vim editing unchanged.
++      editor.showModeLabel = false;
++      const updateModeStatus = (mode: Mode) => {
++        ctx.ui.setStatus("vim-mode", mode === "visual-line" ? "VISUAL LINE" : mode.toUpperCase());
++      };
++      updateModeStatus(editor.getMode());
++      editor.setModeChangeFn((mode, prevMode) => {
++        updateModeStatus(mode);
++        modeChangeHandler(mode, prevMode);
++      });
+       editor.setExCommandSettings(exCommand.settings);
+       // Resolved at submit time so commands registered or reloaded mid-session
+       // are dispatchable without restarting.
+@@ -4229,7 +4248,8 @@
+     });
+   });
+ 
+-  pi.on("session_shutdown", (event) => {
++  pi.on("session_shutdown", (event, ctx) => {
++    ctx.ui.setStatus("vim-mode", undefined);
+     try {
+       cursorShapeCleanup?.(event);
+     } finally {
+--- /dev/null
++++ b/insert-exit-chord.ts
+@@ -0,0 +1,36 @@
++/** Buffer a typed k briefly; kj becomes Escape. Never interpret bracketed paste. */
++export class InsertExitChord {
++  private timer: ReturnType<typeof setTimeout> | undefined;
++  private pasting = false;
++
++  constructor(
++    private readonly emit: (data: string) => void,
++    private readonly enabled: () => boolean,
++    private readonly timeoutMs = 200,
++  ) {}
++
++  handle(data: string): void {
++    if (this.timer !== undefined) {
++      clearTimeout(this.timer);
++      this.timer = undefined;
++      if (this.enabled() && !this.pasting && data === "j") {
++        this.emit("\x1b");
++        return;
++      }
++      this.emit("k");
++    }
++
++    const wasPasting = this.pasting;
++    for (const marker of data.matchAll(/\x1b\[(200|201)~/g)) {
++      this.pasting = marker[1] === "200";
++    }
++    if (this.enabled() && !wasPasting && !this.pasting && data === "k") {
++      this.timer = setTimeout(() => {
++        this.timer = undefined;
++        this.emit("k");
++      }, this.timeoutMs);
++      return;
++    }
++    this.emit(data);
++  }
++}

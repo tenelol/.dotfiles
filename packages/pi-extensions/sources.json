@@ -1,0 +1,134 @@
+{
+  "pi-codex-compact": {
+    "name": "@narumitw/pi-codex-compact",
+    "version": "0.54.0",
+    "url": "https://registry.npmjs.org/@narumitw/pi-codex-compact/-/pi-codex-compact-0.54.0.tgz",
+    "repository": {
+      "url": "git+https://github.com/narumiruna/pi-extensions.git",
+      "type": "git",
+      "directory": "packages/pi-codex-compact"
+    },
+    "hash": "sha256-MYSoiEuTXB96hz9TtPojIysX6QU8a31o7UT9MNtYENs=",
+    "patches": [],
+    "lock": "pi-codex-compact.json",
+    "npmDepsHash": "sha256-sf3ldY86CA8yfW9ZBqCdz4AWCTewU0iFDLAhastuY3Y="
+  },
+  "pi-plan-mode": {
+    "name": "@narumitw/pi-plan-mode",
+    "version": "0.58.0",
+    "url": "https://registry.npmjs.org/@narumitw/pi-plan-mode/-/pi-plan-mode-0.58.0.tgz",
+    "repository": {
+      "url": "git+https://github.com/narumiruna/pi-extensions.git",
+      "type": "git",
+      "directory": "packages/pi-plan-mode"
+    },
+    "hash": "sha256-K1wobYWW6tfQjx79Io4gTev4PPvYd8CVE0m88ZGoL2w=",
+    "patches": [],
+    "lock": "pi-plan-mode.json",
+    "npmDepsHash": "sha256-wbVZEmqejZzHQ4k+VLE4N7D9+v4DU0FcrzTXJKGPPBQ="
+  },
+  "pi-subagents": {
+    "name": "pi-subagents",
+    "version": "0.67.0",
+    "url": "https://registry.npmjs.org/pi-subagents/-/pi-subagents-0.67.0.tgz",
+    "repository": {
+      "url": "git+https://github.com/nicobailon/pi-subagents.git",
+      "type": "git"
+    },
+    "hash": "sha256-G017Bncon4S7erLYxFZRyg+DPmWBTDDyoiuMhrlarfw=",
+    "patches": [],
+    "lock": "pi-subagents.json",
+    "npmDepsHash": "sha256-F/HsrZAwtuTwd2gF0xxROYwKH/4789tPhCV9s2h/kWE="
+  },
+  "pi-tool-display": {
+    "name": "pi-tool-display",
+    "version": "0.5.0",
+    "url": "https://registry.npmjs.org/pi-tool-display/-/pi-tool-display-0.5.0.tgz",
+    "repository": {
+      "url": "git+https://github.com/MasuRii/pi-tool-display.git",
+      "type": "git"
+    },
+    "hash": "sha256-7BvZF+TpkSH+RTklzg83fQNdCcQa6tp5bSimN1sw1no=",
+    "patches": [
+      "pi-tool-display.patch"
+    ]
+  },
+  "pi-vim": {
+    "name": "pi-vim",
+    "version": "0.14.2",
+    "url": "https://registry.npmjs.org/pi-vim/-/pi-vim-0.14.2.tgz",
+    "repository": {
+      "url": "git+https://github.com/lajarre/pi-vim.git",
+      "type": "git"
+    },
+    "hash": "sha256-BJkHE2C/SIBYHyINCD971+ew+yDS+X0yU5xjkNks4rg=",
+    "patches": [
+      "pi-vim.patch"
+    ]
+  },
+  "pi-web-access": {
+    "name": "pi-web-access",
+    "version": "0.29.0",
+    "url": "https://registry.npmjs.org/pi-web-access/-/pi-web-access-0.29.0.tgz",
+    "repository": {
+      "url": "git+https://github.com/nicobailon/pi-web-access.git",
+      "type": "git"
+    },
+    "hash": "sha256-yooPtDglWlqp/x1URIajH+axAOMOAggc/KvaoqFjXQk=",
+    "patches": [],
+    "lock": "pi-web-access.json",
+    "npmDepsHash": "sha256-foe/eomeKCdNQziUbCI5VK1kXVjhBPhDKmNQVlnkRxg="
+  },
+  "pi-zentui": {
+    "name": "pi-zentui",
+    "version": "0.23.0",
+    "url": "https://registry.npmjs.org/pi-zentui/-/pi-zentui-0.23.0.tgz",
+    "repository": {
+      "url": "git+https://github.com/lmilojevicc/pi-zentui.git",
+      "type": "git"
+    },
+    "hash": "sha256-sdO2CGA4P54YtgeM2JfjunTJG5oOOU1wzeQrCo/ccXE=",
+    "patches": [
+      "pi-zentui.patch"
+    ]
+  },
+  "ponytail": {
+    "name": "@dietrichgebert/ponytail",
+    "version": "4.9.0",
+    "url": "https://registry.npmjs.org/@dietrichgebert/ponytail/-/ponytail-4.9.0.tgz",
+    "repository": {
+      "url": "git+https://github.com/DietrichGebert/ponytail.git",
+      "type": "git"
+    },
+    "hash": "sha256-o+LZpHnTwMDu6rm+bUoY9Ol1pMaen62d3HMj8vkcxto=",
+    "patches": []
+  },
+  "rpiv-ask-user-question": {
+    "name": "@juicesharp/rpiv-ask-user-question",
+    "version": "2.10.1",
+    "url": "https://registry.npmjs.org/@juicesharp/rpiv-ask-user-question/-/rpiv-ask-user-question-2.10.1.tgz",
+    "repository": {
+      "url": "git+https://github.com/juicesharp/rpiv-mono.git",
+      "type": "git",
+      "directory": "packages/rpiv-ask-user-question"
+    },
+    "hash": "sha256-mBG/H3kVJnPw/9rLDKuKTxQDsM9agMTMbijc3Hppyc0=",
+    "patches": [],
+    "lock": "rpiv-ask-user-question.json",
+    "npmDepsHash": "sha256-iM/B8iWvbA3ojCHBzhMWKpTnDCYTm5PuiCHXoGv+uvE="
+  },
+  "rpiv-todo": {
+    "name": "@juicesharp/rpiv-todo",
+    "version": "2.10.1",
+    "url": "https://registry.npmjs.org/@juicesharp/rpiv-todo/-/rpiv-todo-2.10.1.tgz",
+    "repository": {
+      "url": "git+https://github.com/juicesharp/rpiv-mono.git",
+      "type": "git",
+      "directory": "packages/rpiv-todo"
+    },
+    "hash": "sha256-a1tVGhYwgRZFab8V6Za7/oanrCeeyWJgEsL3P06Yn04=",
+    "patches": [],
+    "lock": "rpiv-todo.json",
+    "npmDepsHash": "sha256-WID4lfIvYZ51ACZh70FDB9UZmo2ciIWM6JtaadRqupY="
+  }
+}

@@ -1,0 +1,41 @@
+let
+  lock = builtins.fromJSON (builtins.readFile ../../../flake.lock);
+  locked = lock.nodes.nixpkgs.locked;
+  nixpkgs = builtins.fetchTree {
+    inherit (locked) type owner repo rev narHash;
+  };
+  pkgs = import nixpkgs.outPath { };
+  inherit (pkgs) lib;
+  extensions = import ../../../packages/pi-extensions.nix { inherit pkgs lib; };
+  module = import ../default.nix {
+    inherit pkgs lib;
+    delib = { scopedModule = value: value; singleEnableOption = value: value; };
+    hostTraits.macbook = true;
+    inputs.herdr = "/fixture/herdr";
+  };
+  home = (builtins.head module.home.ifEnabled.imports) {
+    config = {
+      home.homeDirectory = "/fixture/home";
+      lib.file.mkOutOfStoreSymlink = path: path;
+    };
+  };
+  files = home.home.file;
+  prompts = builtins.fromJSON (builtins.readFile ../files/prompt-catalog.json);
+  catalog = builtins.fromJSON (builtins.readFile ../files/skill-catalog.json);
+in
+assert builtins.length (builtins.attrNames extensions) == 10;
+assert builtins.all (name:
+  toString files.".pi/agent/extensions/${name}".source == toString extensions.${name}
+) (builtins.attrNames extensions);
+assert builtins.all (name:
+  files.".pi/agent/prompts/${name}".source == "${extensions.pi-subagents}/prompts/${name}"
+) prompts;
+assert builtins.all (name:
+  files ? ".pi/agent/skills/${name}"
+) (builtins.attrNames catalog.extensions);
+assert files.".pi/agent/pi-tool-display.json".source == "/fixture/home/.dotfiles/modules/pi-coding-agent/files/pi-tool-display.json";
+assert files.".pi/agent/extensions/computer-use".source == "/fixture/home/.dotfiles/modules/pi-coding-agent/files/tools/computer-use";
+{
+  extensions = builtins.attrNames extensions;
+  inherit prompts;
+}

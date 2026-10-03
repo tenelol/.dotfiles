@@ -1,3 +1,4 @@
+import { extensionPath } from "./extension-path.mjs";
 // Run: node modules/pi-coding-agent/tests/quality-gates.test.mjs
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -5,7 +6,6 @@ import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSy
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 const root = process.env.PI_PACKAGE_DIR || '/opt/homebrew/opt/pi-coding-agent/libexec/lib/node_modules/@earendil-works/pi-coding-agent';
 const { createJiti } = createRequire(join(root,'package.json'))('jiti');
 const temporary = mkdtempSync(join(tmpdir(),'pi-quality-gates-'));
@@ -23,7 +23,7 @@ try {
   git('add','fixture.txt');
   git('-c','user.name=Fixture','-c','user.email=fixture@example.invalid','-c','commit.gpgsign=false','commit','-qm','fixture');
   const jiti = createJiti(import.meta.url,{moduleCache:false});
-  const source = fileURLToPath(new URL('../files/extensions/pi-subagents/src/',import.meta.url));
+  const source = extensionPath('pi-subagents/src/');
   const { resolveWatchdogConfigStrict } = await jiti.import(join(source,'watchdog/settings.ts'));
   const config = resolveWatchdogConfigStrict(cwd);
   assert.equal(config.enabled,true);

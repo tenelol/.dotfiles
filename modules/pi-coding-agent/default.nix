@@ -3,6 +3,7 @@
   hostTraits,
   inputs,
   lib,
+  pkgs,
   ...
 }:
 delib.scopedModule {
@@ -22,22 +23,18 @@ delib.scopedModule {
             source = config.lib.file.mkOutOfStoreSymlink "${sourceRoot}/${relative}";
             force = true;
           };
-          extensions = lib.filterAttrs (_: type: type == "directory") (
-            builtins.readDir ./files/extensions
-          );
+          extensions = import ../../packages/pi-extensions.nix { inherit pkgs lib; };
           extensionFiles = lib.mapAttrs' (
-            name: _:
-            lib.nameValuePair ".pi/agent/extensions/${name}" (editableSource "extensions/${name}")
+            name: source:
+            lib.nameValuePair ".pi/agent/extensions/${name}" { inherit source; force = true; }
           ) extensions;
-          prompts = lib.filterAttrs (name: type: type == "regular" && lib.hasSuffix ".md" name) (
-            builtins.readDir ./files/extensions/pi-subagents/prompts
-          );
-          promptFiles = lib.mapAttrs' (
-            name: _:
-            lib.nameValuePair ".pi/agent/prompts/${name}" (
-              editableSource "extensions/pi-subagents/prompts/${name}"
-            )
-          ) prompts;
+          prompts = builtins.fromJSON (builtins.readFile ./files/prompt-catalog.json);
+          promptFiles = lib.listToAttrs (map (name:
+            lib.nameValuePair ".pi/agent/prompts/${name}" {
+              source = "${extensions.pi-subagents}/prompts/${name}";
+              force = true;
+            }
+          ) prompts);
           skillCatalog = builtins.fromJSON (builtins.readFile ./files/skill-catalog.json);
           sharedSkillFiles = lib.listToAttrs (
             map (name: lib.nameValuePair ".pi/agent/skills/${name}" {
@@ -62,6 +59,7 @@ delib.scopedModule {
               source = ./files/dotfiles-project-settings.json;
               force = true;
             };
+            ".pi/agent/pi-tool-display.json" = editableSource "pi-tool-display.json";
             ".pi/agent/settings.json" = {
               source = ./files/settings.json;
               force = true;

@@ -1,1 +1,1 @@
-modules/pi-coding-agent/files/extensions/** whitespace=-trailing-space,-blank-at-eof
+packages/pi-extensions/patches/*.patch whitespace=-trailing-space,-space-before-tab,-blank-at-eof
