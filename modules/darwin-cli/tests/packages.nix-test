@@ -44,7 +44,7 @@ in
 assert builtins.all (package: package.available) summary;
 assert hasPackage "gdrive" "3.9.1";
 assert hasPackage "mysql" "9.7.1";
-assert hasPackage "rift" "0.6.0";
+assert hasPackage "rift" "0.5.8.1";
 assert hasPackage "peekaboo" "4.5.0";
 assert hasPackage "zathura-with-plugins" "2026.05.20";
 summary

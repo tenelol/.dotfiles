@@ -17,9 +17,7 @@ let
     serviceConfig = {
       Label = "git.acsandmann.rift";
       ProgramArguments = [
-        "/bin/sh"
-        "-lc"
-        "/run/current-system/sw/bin/rift"
+        "${package}/bin/rift"
       ];
       RunAtLoad = true;
       KeepAlive = true;
@@ -27,7 +25,7 @@ let
       EnvironmentVariables = {
         USER = profile.username;
         HOME = homeDir;
-        PATH = "/run/current-system/sw/bin:/run/current-system/sw/bin:/usr/bin:/bin:/usr/sbin:/sbin";
+        PATH = "/run/current-system/sw/bin:/usr/bin:/bin:/usr/sbin:/sbin";
       };
     };
 

@@ -26,7 +26,7 @@ delib.module {
       launchd.user.agents.jankyborders = {
         serviceConfig = {
           ProgramArguments = [
-            "/run/current-system/sw/bin/borders"
+            "${pkgs.jankyborders}/bin/borders"
             "style=round"
             "width=8.0"
             "hidpi=on"

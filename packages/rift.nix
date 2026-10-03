@@ -5,11 +5,12 @@
 }:
 stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "rift";
-  version = "0.6.0";
+  # Preserve the working Homebrew release while migrating its runtime to Nix.
+  version = "0.5.8.1";
 
   src = fetchurl {
     url = "https://github.com/acsandmann/rift/releases/download/v${finalAttrs.version}/rift-universal-macos-${finalAttrs.version}.tar.gz";
-    hash = "sha256-zhLBnH4EFqV8q1ONRBs2d6ZCXrhFhkaI5xAxtEmQY54=";
+    hash = "sha256-cBzVzP4KaQQ5AnAkdmkbAPszAUBiOAW7h1BiYriLubY=";
   };
 
   dontUnpack = true;

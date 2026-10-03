@@ -18,9 +18,7 @@ delib.module {
     launchd.user.agents.sketchybar = {
       serviceConfig = {
         ProgramArguments = [
-          "/bin/sh"
-          "-lc"
-          "/run/current-system/sw/bin/sketchybar"
+          "${pkgs.sketchybar}/bin/sketchybar"
         ];
         KeepAlive = true;
         RunAtLoad = true;
