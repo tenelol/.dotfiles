@@ -1,5 +1,47 @@
 {
   "nodes": {
+    "brew-api": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1791012698,
+        "narHash": "sha256-pwAfqGK6Pugr7SqxAHZYzAnnPllceqWX0ANuFOcRgkQ=",
+        "owner": "BatteredBunny",
+        "repo": "brew-api",
+        "rev": "1276d8a7470cbe273056ee9cd070d6ff88d36b0d",
+        "type": "github"
+      },
+      "original": {
+        "owner": "BatteredBunny",
+        "repo": "brew-api",
+        "type": "github"
+      }
+    },
+    "brew-nix": {
+      "inputs": {
+        "brew-api": [
+          "brew-api"
+        ],
+        "nix-darwin": [
+          "nix-darwin"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1790843130,
+        "narHash": "sha256-HKjwROhiocAP44sc1JFNcXP1+H8bgTwYvCOwOQs/cXM=",
+        "owner": "BatteredBunny",
+        "repo": "brew-nix",
+        "rev": "d058f7ec3bdb325000a5c305f03020c621612bea",
+        "type": "github"
+      },
+      "original": {
+        "owner": "BatteredBunny",
+        "repo": "brew-nix",
+        "type": "github"
+      }
+    },
     "denix": {
       "inputs": {
         "home-manager": [
@@ -390,6 +432,8 @@
     },
     "root": {
       "inputs": {
+        "brew-api": "brew-api",
+        "brew-nix": "brew-nix",
         "denix": "denix",
         "gijiroku": "gijiroku",
         "herdr": "herdr",

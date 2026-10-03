@@ -3,8 +3,7 @@ delib.rice {
   name = "hyprland";
 
   myconfig = {
-    hyprland.enable = true;
-    niri.enable = false;
+    desktop.linux.windowManager = "hyprland";
     theme.wallpaper = "hyprland.png";
   };
 }

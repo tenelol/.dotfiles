@@ -1,13 +1,12 @@
 {
   delib,
-  host,
+  hostTraits,
   lib,
   pkgs,
   profile,
   ...
 }:
 let
-  isMacbook = host.name == "macbook" && builtins.match ".*-darwin" host.system != null;
   azooKeyBundleID = "dev.ensan.inputmethod.azooKeyMac";
   abcInputSource = {
     InputSourceKind = "Keyboard Layout";
@@ -176,7 +175,7 @@ in
 delib.module {
   name = "darwin.azookey";
 
-  options = delib.singleEnableOption isMacbook;
+  options = delib.singleEnableOption hostTraits.macbook;
 
   darwin.ifEnabled = {
     environment.systemPackages = [ toggleInputSource ];

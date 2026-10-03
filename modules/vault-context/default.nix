@@ -1,14 +1,13 @@
 {
   delib,
+  hostTraits,
   hm,
-  host,
   inputs,
   lib,
   pkgs,
   ...
 }:
 let
-  isMacbook = host.name == "macbook" && builtins.match ".*-darwin" host.system != null;
   vaultContextMcp = inputs.vault-context.packages.${pkgs.stdenv.hostPlatform.system}.default;
   vaultContextIntegrationCheck =
     pkgs.runCommand "vault-context-dotfiles-integration-check"
@@ -97,12 +96,13 @@ let
     '';
   };
 in
-delib.module {
+delib.scopedModule {
   name = "vault-context";
+  scope = hostTraits.macbook;
 
-  options = delib.singleEnableOption isMacbook;
+  options = delib.singleEnableOption hostTraits.macbook;
 
-  home.ifEnabled = lib.mkIf isMacbook {
+  home.ifEnabled = {
     home.file = {
       ".codex/AGENTS.md" = {
         source = ./files/codex/AGENTS.md;

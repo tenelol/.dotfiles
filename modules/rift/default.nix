@@ -1,14 +1,14 @@
 {
   delib,
+  desktopSelection,
+  hostTraits,
   hm,
-  host,
   lib,
   pkgs,
   profile,
   ...
 }:
 let
-  isDarwinDesktop = !host.isServer && builtins.match ".*-darwin" host.system != null;
   homeDir = "/Users/${profile.username}";
 
   homebrew = {
@@ -126,19 +126,24 @@ let
     };
   };
 in
-delib.module {
+delib.scopedModule {
   name = "rift";
+  scope = {
+    home = hostTraits.darwinDesktop;
+  };
 
-  options = delib.singleEnableOption isDarwinDesktop;
+  options = delib.moduleOptions {
+    enable = delib.readOnly (delib.boolOption desktopSelection.rift);
+  };
 
-  darwin.always = lib.mkIf isDarwinDesktop { inherit homebrew; };
+  darwin.always = lib.mkIf hostTraits.darwinDesktop { inherit homebrew; };
 
   darwin.ifEnabled = {
     launchd.user.agents.rift = agent;
     system.activationScripts.cleanupLegacyYabai.text = cleanupLegacyYabai;
   };
 
-  home.ifEnabled = lib.mkIf isDarwinDesktop {
+  home.ifEnabled = {
     home.activation.cleanupLegacyYabaiConfig = hm.dag.entryBefore [
       "checkLinkTargets"
     ] cleanupLegacyYabaiConfig;

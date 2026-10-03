@@ -1,14 +1,14 @@
 {
   delib,
+  desktopSelection,
+  hostTraits,
   host,
-  lib,
   pkgs,
   profile,
   ...
 }:
 let
   homeDir = "/Users/${profile.username}";
-  isDarwinDesktop = !host.isServer && builtins.match ".*-darwin" host.system != null;
   autoraisePackage =
     if host.name == "macbook" then
       pkgs.autoraise.overrideAttrs (_: {
@@ -33,12 +33,15 @@ let
     else
       pkgs.autoraise;
 in
-delib.module {
+delib.scopedModule {
   name = "autoraise";
+  scope = hostTraits.darwinDesktop;
 
-  options = delib.singleEnableOption false;
+  options = delib.moduleOptions {
+    enable = delib.readOnly (delib.boolOption desktopSelection.autoraise);
+  };
 
-  darwin.ifEnabled = lib.mkIf isDarwinDesktop {
+  darwin.ifEnabled = {
     launchd.user.agents.autoraise = {
       serviceConfig = {
         ProgramArguments = [
@@ -57,7 +60,7 @@ delib.module {
     };
   };
 
-  home.ifEnabled = lib.mkIf isDarwinDesktop {
+  home.ifEnabled = {
     home.packages = [ autoraisePackage ];
 
     xdg.configFile."AutoRaise/config".source = ./files/config;

@@ -1,11 +1,11 @@
 {
   delib,
+  desktopSelection,
+  hostTraits,
   host,
-  lib,
   ...
 }:
 let
-  isLinuxDesktop = !host.isServer && builtins.match ".*-linux" host.system != null;
   baseConfig = builtins.readFile ./files/hyprland.conf;
   displayConfig =
     if host.name == "nvidia-desktop" then
@@ -13,12 +13,15 @@ let
     else
       "monitor = ,preferred,auto,1\n";
 in
-delib.module {
+delib.scopedModule {
   name = "hyprland";
+  scope = hostTraits.linuxDesktop;
 
-  options = delib.singleEnableOption false;
+  options = delib.moduleOptions {
+    enable = delib.readOnly (delib.boolOption desktopSelection.hyprland);
+  };
 
-  nixos.ifEnabled = lib.mkIf isLinuxDesktop {
+  nixos.ifEnabled = {
     programs.hyprland = {
       enable = true;
       xwayland.enable = true;
@@ -30,7 +33,7 @@ delib.module {
     };
   };
 
-  home.ifEnabled = lib.mkIf isLinuxDesktop {
+  home.ifEnabled = {
     xdg.configFile."hypr/hyprland.conf".text = displayConfig + "\n" + baseConfig;
   };
 }

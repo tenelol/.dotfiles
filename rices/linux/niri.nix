@@ -3,7 +3,6 @@ delib.rice {
   name = "niri";
 
   myconfig = {
-    hyprland.enable = false;
-    niri.enable = true;
+    desktop.linux.windowManager = "niri";
   };
 }

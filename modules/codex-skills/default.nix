@@ -1,12 +1,11 @@
 {
   delib,
+  hostTraits,
   hm,
-  host,
   lib,
   ...
 }:
 let
-  isMacbook = host.name == "macbook" && builtins.match ".*-darwin" host.system != null;
   skillRoot = ../../.agents/skills;
   skills = lib.filterAttrs (_: type: type == "directory") (builtins.readDir skillRoot);
   repositorySkills = lib.mapAttrs' (
@@ -33,12 +32,13 @@ let
     ) extensionSkillTargets
   );
 in
-delib.module {
+delib.scopedModule {
   name = "codex-skills";
+  scope = hostTraits.macbook;
 
-  options = delib.singleEnableOption isMacbook;
+  options = delib.singleEnableOption hostTraits.macbook;
 
-  home.ifEnabled = lib.mkIf isMacbook {
+  home.ifEnabled = {
     home.file = repositorySkills;
 
     home.activation.linkPiExtensionSkills = hm.dag.entryAfter [ "linkGeneration" ] ''

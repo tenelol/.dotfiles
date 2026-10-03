@@ -1,15 +1,13 @@
 {
   delib,
-  host,
+  hostTraits,
   lib,
   pkgs,
   profile,
   ...
 }:
 let
-  isDarwinDesktop = !host.isServer && builtins.match ".*-darwin" host.system != null;
-  isLinuxDesktop = !host.isServer && builtins.match ".*-linux" host.system != null;
-  isDesktop = isDarwinDesktop || isLinuxDesktop;
+  isDesktop = hostTraits.darwinDesktop || hostTraits.linuxDesktop;
   linuxMacConfig = builtins.readFile ./files/linux-mac.kbd;
   # macOS Input Monitoring follows the executable's code identity. Keep using
   # Kanata's official cmd-allowed binary instead of rebuilding it from nixpkgs.
@@ -150,20 +148,24 @@ let
     fi
   '';
 in
-delib.module {
+delib.scopedModule {
   name = "kanata";
+  scope = {
+    nixos = hostTraits.linuxDesktop;
+    darwin = hostTraits.darwinDesktop;
+  };
 
   options = delib.singleEnableOption isDesktop;
 
-  darwin.ifDisabled = lib.mkIf isDarwinDesktop {
+  darwin.ifDisabled = {
     system.activationScripts.postActivation.text = lib.mkAfter disabledPostActivation;
   };
 
-  nixos.ifDisabled = lib.mkIf isLinuxDesktop {
+  nixos.ifDisabled = {
     services.kanata.enable = false;
   };
 
-  nixos.ifEnabled = lib.mkIf isLinuxDesktop {
+  nixos.ifEnabled = {
     services.keyd.enable = lib.mkForce false;
 
     services.kanata = {
@@ -175,7 +177,7 @@ delib.module {
     };
   };
 
-  darwin.ifEnabled = lib.mkIf isDarwinDesktop {
+  darwin.ifEnabled = {
     environment.systemPackages = [ darwinKanataPackage ];
 
     environment.etc."kanata/kanata.kbd".source = ./files/kanata.kbd;

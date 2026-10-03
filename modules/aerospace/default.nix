@@ -1,13 +1,12 @@
 {
   delib,
+  desktopSelection,
+  hostTraits,
   hm,
-  host,
-  lib,
   profile,
   ...
 }:
 let
-  isDarwinDesktop = !host.isServer && builtins.match ".*-darwin" host.system != null;
   homeDir = "/Users/${profile.username}";
   path = "/opt/homebrew/bin:/opt/homebrew/sbin:/run/current-system/sw/bin:/usr/bin:/bin:/usr/sbin:/sbin";
 
@@ -104,19 +103,22 @@ let
     };
   };
 in
-delib.module {
+delib.scopedModule {
   name = "aerospace";
+  scope = hostTraits.darwinDesktop;
 
-  options = delib.singleEnableOption false;
+  options = delib.moduleOptions {
+    enable = delib.readOnly (delib.boolOption desktopSelection.aerospace);
+  };
 
-  darwin.always = lib.mkIf isDarwinDesktop { inherit homebrew; };
+  darwin.always = { inherit homebrew; };
 
-  darwin.ifEnabled = lib.mkIf isDarwinDesktop {
+  darwin.ifEnabled = {
     launchd.user.agents.aerospace = agent;
     system.activationScripts.stopRiftForAerospace.text = stopRift;
   };
 
-  home.ifEnabled = lib.mkIf isDarwinDesktop {
+  home.ifEnabled = {
     xdg.configFile = configFiles;
 
     home.activation.prepareAerospaceApp = hm.dag.entryAfter [ "linkGeneration" ] prepareApp;

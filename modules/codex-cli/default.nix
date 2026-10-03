@@ -1,18 +1,15 @@
 {
   delib,
-  host,
-  lib,
+  hostTraits,
   ...
 }:
-let
-  isMacbook = host.name == "macbook" && builtins.match ".*-darwin" host.system != null;
-in
-delib.module {
+delib.scopedModule {
   name = "codex-cli";
+  scope = hostTraits.macbook;
 
-  options = delib.singleEnableOption isMacbook;
+  options = delib.singleEnableOption hostTraits.macbook;
 
-  home.ifEnabled = lib.mkIf isMacbook {
+  home.ifEnabled = {
     home.file.".codex/themes/tokyonight-muted.tmTheme" = {
       source = ./files/tokyonight-muted.tmTheme;
       force = true;

@@ -1,7 +1,7 @@
 {
   delib,
+  hostTraits,
   hm,
-  host,
   lib,
   pkgs,
   ...
@@ -76,8 +76,9 @@ let
     '';
   };
 in
-delib.module {
+delib.scopedModule {
   name = "theme";
+  scope = hostTraits.desktop;
 
   options =
     with delib;
@@ -111,33 +112,31 @@ delib.module {
 
   home.always =
     { myconfig, ... }:
-    lib.mkIf (!host.isServer) (
-      lib.mkMerge [
-        {
-          xdg.configFile."theme/sketchybar.env".text = sketchybarEnv myconfig.theme.sketchybar;
-        }
+    (lib.mkMerge [
+      {
+        xdg.configFile."theme/sketchybar.env".text = sketchybarEnv myconfig.theme.sketchybar;
+      }
 
-        (lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
-          xdg.configFile = {
-            "theme/wallpaper.png".source = ../../rices/wallpapers + "/${myconfig.theme.wallpaper}";
-            "wallpapers".source = ../../rices/wallpapers;
-          };
+      (lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
+        xdg.configFile = {
+          "theme/wallpaper.png".source = ../../rices/wallpapers + "/${myconfig.theme.wallpaper}";
+          "wallpapers".source = ../../rices/wallpapers;
+        };
 
-          home.pointerCursor = {
-            enable = true;
-            gtk.enable = true;
-            x11.enable = true;
-            package = pkgs.adwaita-icon-theme;
-            name = "Adwaita";
-            size = 24;
-          };
+        home.pointerCursor = {
+          enable = true;
+          gtk.enable = true;
+          x11.enable = true;
+          package = pkgs.adwaita-icon-theme;
+          name = "Adwaita";
+          size = 24;
+        };
 
-          home.file.".local/bin/apply-theme-wallpaper" = linuxApplyWallpaperBin;
+        home.file.".local/bin/apply-theme-wallpaper" = linuxApplyWallpaperBin;
 
-          home.activation.applyThemeWallpaper = hm.dag.entryAfter [ "linkGeneration" ] ''
-            $DRY_RUN_CMD "$HOME/.local/bin/apply-theme-wallpaper" || true
-          '';
-        })
-      ]
-    );
+        home.activation.applyThemeWallpaper = hm.dag.entryAfter [ "linkGeneration" ] ''
+          $DRY_RUN_CMD "$HOME/.local/bin/apply-theme-wallpaper" || true
+        '';
+      })
+    ]);
 }

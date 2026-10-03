@@ -29,11 +29,8 @@ let
       ];
 
   config =
-    { myconfig, ... }:
-    let
-      cfg = myconfig.nixbuild;
-    in
-    lib.mkIf cfg.enable {
+    { cfg, ... }:
+    {
       programs.ssh = {
         extraConfig = ''
           Host eu.nixbuild.net
@@ -70,6 +67,6 @@ delib.module {
       localMaxJobs = intOption 1;
     };
 
-  nixos.always = config;
-  darwin.always = config;
+  nixos.ifEnabled = config;
+  darwin.ifEnabled = config;
 }

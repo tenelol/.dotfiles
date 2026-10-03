@@ -1,5 +1,6 @@
 {
   delib,
+  desktopSelection,
   hm,
   host,
   lib,
@@ -14,9 +15,9 @@ in
 delib.module {
   name = "niri";
 
-  options = delib.singleEnableOption (
-    !host.isServer && builtins.match ".*-linux" host.system != null
-  );
+  options = delib.moduleOptions {
+    enable = delib.readOnly (delib.boolOption desktopSelection.niri);
+  };
 
   home.ifEnabled = {
     home.activation.cleanupLegacyNiriDir = hm.dag.entryBefore [ "checkLinkTargets" ] ''

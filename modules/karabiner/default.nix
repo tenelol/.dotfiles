@@ -1,19 +1,16 @@
 {
   delib,
+  hostTraits,
   hm,
-  host,
-  lib,
   ...
 }:
-let
-  isDarwinDesktop = !host.isServer && builtins.match ".*-darwin" host.system != null;
-in
-delib.module {
+delib.scopedModule {
   name = "karabiner";
+  scope = hostTraits.darwinDesktop;
 
   options = delib.singleEnableOption false;
 
-  home.ifEnabled = lib.mkIf isDarwinDesktop {
+  home.ifEnabled = {
     launchd.agents.karabiner-elements = {
       enable = true;
       config = {

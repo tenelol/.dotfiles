@@ -1,14 +1,15 @@
 {
   delib,
-  host,
+  hostTraits,
   lib,
   pkgs,
   ...
 }:
-delib.module {
+delib.scopedModule {
   name = "lazygit";
+  scope = hostTraits.desktop;
 
-  home.always = lib.mkIf (!host.isServer) (
+  home.always = (
     {
       home.packages = lib.optionals pkgs.stdenv.hostPlatform.isLinux [ pkgs.lazygit ];
     }

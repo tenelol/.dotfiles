@@ -3,9 +3,7 @@ delib.rice {
   name = "mac";
 
   myconfig = {
-    aerospace.enable = false;
-    autoraise.enable = false;
+    desktop.darwin.windowManager = "native";
     jankyborders.enable = false;
-    rift.enable = false;
   };
 }

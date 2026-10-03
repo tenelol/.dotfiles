@@ -1,13 +1,11 @@
 {
   delib,
-  host,
-  lib,
+  hostTraits,
   pkgs,
   profile,
   ...
 }:
 let
-  isDarwinDesktop = !host.isServer && builtins.match ".*-darwin" host.system != null;
   codexNotionToken = pkgs.writeShellApplication {
     name = "codex-notion-token";
     text = ''
@@ -105,12 +103,13 @@ let
     '';
   };
 in
-delib.module {
+delib.scopedModule {
   name = "codex-notion-token";
+  scope = hostTraits.darwinDesktop;
 
-  options = delib.singleEnableOption isDarwinDesktop;
+  options = delib.singleEnableOption hostTraits.darwinDesktop;
 
-  darwin.ifEnabled = lib.mkIf isDarwinDesktop {
+  darwin.ifEnabled = {
     launchd.user.agents.codex-notion-token = {
       serviceConfig = {
         ProgramArguments = [
@@ -126,7 +125,7 @@ delib.module {
     };
   };
 
-  home.ifEnabled = lib.mkIf isDarwinDesktop {
+  home.ifEnabled = {
     home.file.".local/bin/codex-notion-token" = {
       source = "${codexNotionToken}/bin/codex-notion-token";
       executable = true;

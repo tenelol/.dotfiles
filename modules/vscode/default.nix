@@ -1,6 +1,6 @@
 {
   delib,
-  host,
+  hostTraits,
   lib,
   pkgs,
   ...
@@ -104,10 +104,11 @@ let
     };
   };
 in
-delib.module {
+delib.scopedModule {
   name = "vscode";
+  scope = hostTraits.desktop;
 
-  home.always = lib.mkIf (!host.isServer) {
+  home.always = {
     programs.vscode =
       program // lib.optionalAttrs pkgs.stdenv.hostPlatform.isDarwin { package = null; };
   };

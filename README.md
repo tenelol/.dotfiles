@@ -6,6 +6,7 @@
 - denix / nh / nixvim
 - sops-nix / Tailscale / systemd-resolved
 - nixbuild.net remote builders
+- brew-nix for Insomnia / Notion; Homebrew for other macOS apps, fonts and CLI tools
 - GitHub Actions / Determinate Nix / Magic Nix Cache
 - Neovim / Fish / Ghostty
 - Niri（Linux）/ Rift・AeroSpace（macOS）
@@ -31,8 +32,36 @@
 | [`modules`](./modules) | denix-discovered system/Home Manager modules; feature directories contain their Nix definitions (normally `default.nix`), `files/`, and `tests/` |
 | [`rices`](./rices) | theme and desktop variants, including wallpapers |
 | [`packages`](./packages) | custom packages, runtime builders, package-owned sources, and their tests |
+| [`extensions`](./extensions) | repository-owned denix extensions, including configuration scoping |
 | [`.agents/skills`](./.agents/skills) | Provider-original Codex skills and local integrations, deployed by Home Manager |
 | [`secrets`](./secrets) | sops-nix encrypted secrets |
+
+## Module policy
+
+The `host-policy` module supplies shared `hostTraits`. Features use
+`delib.scopedModule` to declare a host condition once while retaining denix's
+`always`, `ifEnabled` and `ifDisabled` behavior. A scope can apply to the whole
+module or selected outputs; options remain declared on all hosts.
+Direct Nix fixtures under feature `tests/` use `.nix-test` so denix does not
+discover them as configuration modules.
+
+Rices select `myconfig.desktop.darwin.windowManager` (`native`, `rift`, or
+`aerospace`) and `myconfig.desktop.linux.windowManager` (`none`, `niri`, or
+`hyprland`). Provider enable options are derived and read-only; AutoRaise follows
+the AeroSpace selection. Use these selectors when changing a rice with the usual
+`nh` workflow.
+
+## macOS app packages
+
+[`modules/brew-casks`](./modules/brew-casks) manages Insomnia and Notion through
+brew-nix's `pkgs.brewCasks` overlay and integrated Home Manager. Their versions and
+Cask metadata are pinned by `brew-nix` and `brew-api` in `flake.lock`. They appear
+under `~/Applications/Home Manager Apps` after an authorized `nh darwin switch`.
+The initial migration leaves existing Homebrew copies installed; Homebrew
+cleanup is temporarily `none` so those copies do not abort activation. See the
+[migration notes](./docs/research/brew-nix.md) for verification and targeted cleanup.
+Fonts, installers, custom taps, remaining apps, CLI formulae and Mac App Store
+apps retain their existing Homebrew management.
 
 ## Codex skills
 

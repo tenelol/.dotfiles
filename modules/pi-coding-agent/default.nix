@@ -1,19 +1,17 @@
 {
   delib,
-  host,
+  hostTraits,
   inputs,
   lib,
   ...
 }:
-let
-  isMacbook = host.name == "macbook" && builtins.match ".*-darwin" host.system != null;
-in
-delib.module {
+delib.scopedModule {
   name = "pi-coding-agent";
+  scope = hostTraits.macbook;
 
-  options = delib.singleEnableOption isMacbook;
+  options = delib.singleEnableOption hostTraits.macbook;
 
-  home.ifEnabled = lib.mkIf isMacbook {
+  home.ifEnabled = {
     # Evaluate Home Manager's file helpers in its own module scope.
     imports = [
       (

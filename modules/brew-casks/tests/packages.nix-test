@@ -1,0 +1,27 @@
+let
+  lock = builtins.fromJSON (builtins.readFile ../../../flake.lock);
+  source =
+    name:
+    let
+      locked = lock.nodes.${name}.locked;
+    in
+    (builtins.fetchTree {
+      inherit (locked)
+        type
+        owner
+        repo
+        rev
+        narHash
+        ;
+    }).outPath;
+  pkgs = import (source "nixpkgs") {
+    system = "aarch64-darwin";
+    config.allowUnfree = true;
+  };
+  brewCask = pkgs.callPackage ../../../packages/brew-cask.nix { };
+  casks = import (source "brew-nix" + "/casks.nix") {
+    inherit pkgs;
+    brew-api = source "brew-api";
+  };
+in
+pkgs.lib.mapAttrs (_: brewCask) casks

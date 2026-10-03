@@ -1,0 +1,42 @@
+let
+  packages = import ./packages.nix-test;
+  lock = builtins.fromJSON (builtins.readFile ../../../flake.lock);
+  locked = lock.nodes.brew-api.locked;
+  api =
+    (builtins.fetchTree {
+      inherit (locked)
+        type
+        owner
+        repo
+        rev
+        narHash
+        ;
+    }).outPath;
+  data = builtins.fromJSON (builtins.readFile (api + "/cask.json"));
+  selected = [
+    "insomnia"
+    "notion"
+  ];
+  metadata = builtins.map (
+    name:
+    let
+      cask = builtins.head (builtins.filter (cask: cask.token == name) data);
+      installArtifacts = builtins.filter (
+        artifact: !(artifact ? zap || artifact ? uninstall)
+      ) cask.artifacts;
+      artifacts = builtins.filter (artifact: artifact ? app) cask.artifacts;
+      package = packages.${name};
+    in
+    assert builtins.match "[0-9a-f]{64}" cask.sha256 != null;
+    assert builtins.length installArtifacts == 1 && builtins.length artifacts == 1;
+    assert package.sourceRoot == builtins.head (builtins.head artifacts).app;
+    {
+      inherit name;
+      inherit (package) version drvPath sourceRoot;
+      sourceHash = package.src.outputHash;
+    }
+  ) selected;
+in
+assert lock.nodes.brew-nix.inputs.brew-api == [ "brew-api" ];
+assert lock.nodes.brew-nix.inputs.nixpkgs == [ "nixpkgs" ];
+metadata

@@ -3,9 +3,7 @@ delib.rice {
   name = "aerospace";
 
   myconfig = {
-    aerospace.enable = true;
-    autoraise.enable = true;
-    rift.enable = false;
+    desktop.darwin.windowManager = "aerospace";
     theme = {
       sketchybar = {
         glassBg = "0x2a07111f";

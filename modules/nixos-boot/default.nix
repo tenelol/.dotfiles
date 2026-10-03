@@ -1,6 +1,5 @@
 {
   delib,
-  host,
   lib,
   ...
 }:
@@ -14,8 +13,8 @@ delib.module {
     };
 
   nixos.always =
-    { myconfig, ... }:
-    lib.mkIf (builtins.match ".*-linux" host.system != null && myconfig.boot.efiLimine) {
+    { cfg, ... }:
+    lib.mkIf cfg.efiLimine {
       boot.loader = {
         limine = {
           enable = true;

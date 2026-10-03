@@ -4,6 +4,8 @@
 
 ## 結論
 
+実装追記（2026-10-03）: 調査後のユーザー合意に基づき、[scope extension](../../extensions/module-scope/default.nix)、[host-policy](../../modules/host-policy/default.nix)、[WM selector](../../modules/desktop/default.nix) を導入した。16個の既存moduleの外側条件を集約し、module内の `mkIf` 出現は32から6へ減った。`nixbuild` と boot の条件も整理した。scopeの28ケース、出力別scope・args注入、selectorの6ケース・serverの2ケース・不正値/独立enableの拒否、代表7moduleの前後70比較が通過した。後者は一時snapshotと最小pkgs/HM stubを使う直接比較で、全host評価の代わりではない。brew-nixの段階導入は[別の記録](./brew-nix.md)を参照。以下の候補表とコード案は調査時点の根拠を保持している。
+
 **取り入れる価値がある。特に、繰り返す適用条件の集約と、排他的な機能を一つの型付き選択値で表す設計が有力。** ローカルの `modules/`・`hosts/`・`rices/` の `.nix` を静的に走査すると、63個の feature module 中、`lib.mkIf` / `pkgs.lib.mkIf` は **32箇所・21ファイル**。うち26箇所は module の出力全体をホスト・OS条件で包む形で、抽象化対象としてまとまっている。ただし、denix 標準が自動で吸収する条件と、リポジトリ側で追加の interface が必要な条件は異なる。
 
 | 優先度 | 候補 | このリポジトリでの最小案 |

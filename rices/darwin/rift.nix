@@ -3,9 +3,7 @@ delib.rice {
   name = "rift";
 
   myconfig = {
-    aerospace.enable = false;
-    autoraise.enable = false;
-    rift.enable = true;
+    desktop.darwin.windowManager = "rift";
     theme = {
       ghostty = {
         foreground = "b3bbc7";

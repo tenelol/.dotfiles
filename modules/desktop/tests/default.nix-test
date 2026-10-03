@@ -1,0 +1,145 @@
+let
+  inherit (import ../../../extensions/module-scope/tests/harness.nix) lib base mkDelib;
+  providers = [
+    "rift"
+    "aerospace"
+    "autoraise"
+    "niri"
+    "hyprland"
+  ];
+  opaque = lib.mkOption {
+    type = lib.types.attrsOf lib.types.anything;
+    default = { };
+  };
+  schema.options =
+    lib.genAttrs [ "system" "launchd" "homebrew" "programs" "environment" ] (_: opaque)
+    // {
+      home-manager.users = lib.mkOption {
+        type = lib.types.attrsOf (
+          lib.types.submoduleWith {
+            modules = [ { options = lib.genAttrs [ "home" "xdg" "launchd" ] (_: opaque); } ];
+          }
+        );
+        default = { };
+      };
+    };
+  evaluate =
+    host: policy:
+    let
+      delib = mkDelib (if lib.hasSuffix "-darwin" host.system then "darwin" else "nixos");
+    in
+    lib.evalModules {
+      specialArgs = {
+        inherit delib host;
+        profile.username = "probe";
+        hm.dag = {
+          entryAfter = after: data: {
+            inherit after data;
+            before = [ ];
+          };
+          entryBefore = before: data: {
+            inherit before data;
+            after = [ ];
+          };
+        };
+        pkgs.coreutils = "/stub/coreutils";
+      };
+      modules = [
+        schema
+        ../../host-policy
+        ../default.nix
+        { myconfig = policy; }
+      ]
+      ++ map (provider: ../../. + "/${provider}/default.nix") providers
+      ++ base.extensions.args.modules;
+    };
+  hostFor = system: server: {
+    name = if lib.hasSuffix "-darwin" system then "macbook" else "surface";
+    inherit system;
+    isServer = server;
+  };
+  selection = result: lib.genAttrs providers (provider: result.config.myconfig.${provider}.enable);
+  darwinCases =
+    map
+      (
+        backend:
+        let
+          result = evaluate (hostFor "aarch64-darwin" false) {
+            desktop.darwin.windowManager = backend;
+          };
+          expected = {
+            rift = backend == "rift";
+            aerospace = backend == "aerospace";
+            autoraise = backend == "aerospace";
+            niri = false;
+            hyprland = false;
+          };
+        in
+        assert selection result == expected;
+        true
+      )
+      [
+        "native"
+        "rift"
+        "aerospace"
+      ];
+  linuxCases =
+    map
+      (
+        backend:
+        let
+          result = evaluate (hostFor "x86_64-linux" false) {
+            desktop.linux.windowManager = backend;
+          };
+          expected = {
+            rift = false;
+            aerospace = false;
+            autoraise = false;
+            niri = backend == "niri";
+            hyprland = backend == "hyprland";
+          };
+        in
+        assert selection result == expected;
+        true
+      )
+      [
+        "none"
+        "niri"
+        "hyprland"
+      ];
+  serverCases =
+    map
+      (
+        system:
+        let
+          result = evaluate (hostFor system true) {
+            desktop.darwin.windowManager = "aerospace";
+            desktop.linux.windowManager = "hyprland";
+          };
+        in
+        assert selection result == lib.genAttrs providers (_: false);
+        true
+      )
+      [
+        "x86_64-linux"
+        "aarch64-darwin"
+      ];
+  invalidSelector = builtins.tryEval (
+    (evaluate (hostFor "aarch64-darwin" false) {
+      desktop.darwin.windowManager = "invalid";
+    }).config.myconfig.desktop.darwin.windowManager
+  );
+  independentEnable = builtins.tryEval (
+    (evaluate (hostFor "aarch64-darwin" false) {
+      rift.enable = false;
+    }).config.myconfig.rift.enable
+  );
+in
+assert builtins.all (passed: passed) (darwinCases ++ linuxCases ++ serverCases);
+assert !invalidSelector.success && !independentEnable.success;
+{
+  backendCases = builtins.length (darwinCases ++ linuxCases);
+  serverCases = builtins.length serverCases;
+  invalidSelector = "rejected";
+  independentEnable = "rejected";
+}

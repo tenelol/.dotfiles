@@ -131,7 +131,9 @@ delib.module {
       onActivation = {
         autoUpdate = false;
         upgrade = false;
-        cleanup = "check";
+        # Keep migrated Casks installed until their Nix versions are verified.
+        # A cleanup check would abort activation while those copies remain.
+        cleanup = "none";
       };
 
       masApps = {
@@ -145,8 +147,8 @@ delib.module {
         RunCat = 1429033973;
       };
 
-      # Public macOS apps and fonts belong in Homebrew. Nix remains only for
-      # repo-built tools and the nix-darwin/Home Manager control plane.
+      # Simple .app bundles can move to brew-casks. Fonts, installers, custom
+      # taps and apps with Homebrew-specific integration stay here.
       casks = [
         "azookey"
         "blender"
@@ -165,10 +167,8 @@ delib.module {
         "font-noto-sans-cjk"
         "ghostty"
         "google-chrome"
-        "insomnia"
         "tenelol/input-compat/karabiner-elements"
         "markdown-preview"
-        "notion"
         {
           # Temporary: Homebrew marks this cask deprecated because it does not
           # pass the macOS Gatekeeper check.

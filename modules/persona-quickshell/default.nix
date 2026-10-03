@@ -1,13 +1,12 @@
 {
   delib,
+  hostTraits,
   hm,
-  host,
   lib,
   pkgs,
   ...
 }:
 let
-  isLinuxDesktop = !host.isServer && builtins.match ".*-linux" host.system != null;
 
   personaSource = pkgs.stdenvNoCC.mkDerivation {
     pname = "persona-quickshell-source";
@@ -258,12 +257,13 @@ let
     '';
   };
 in
-delib.module {
+delib.scopedModule {
   name = "persona-quickshell";
+  scope = hostTraits.linuxDesktop;
 
   options = delib.singleEnableOption false;
 
-  nixos.ifEnabled = lib.mkIf isLinuxDesktop {
+  nixos.ifEnabled = {
     fonts.packages = with pkgs; [
       libertinus
       material-symbols
@@ -272,7 +272,7 @@ delib.module {
     ];
   };
 
-  home.ifEnabled = lib.mkIf isLinuxDesktop {
+  home.ifEnabled = {
     home.packages = [
       personaQuickshell
       personaSession

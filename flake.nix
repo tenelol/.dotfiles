@@ -12,6 +12,13 @@
     nix-darwin.url = "github:nix-darwin/nix-darwin";
     nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
 
+    brew-nix.url = "github:BatteredBunny/brew-nix";
+    brew-nix.inputs.nixpkgs.follows = "nixpkgs";
+    brew-nix.inputs.nix-darwin.follows = "nix-darwin";
+    brew-nix.inputs.brew-api.follows = "brew-api";
+    brew-api.url = "github:BatteredBunny/brew-api";
+    brew-api.flake = false;
+
     nixos-wsl.url = "github:nix-community/NixOS-WSL";
     nixos-wsl.inputs.nixpkgs.follows = "nixpkgs";
 
@@ -94,6 +101,7 @@
 
           extensions = with denix.lib.extensions; [
             args
+            (denix.lib.callExtension ./extensions/module-scope)
             (base.withConfig {
               args.enable = true;
               hosts.features.features = [ "fullDesktop" ];
