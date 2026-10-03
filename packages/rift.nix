@@ -5,11 +5,11 @@
 }:
 stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "rift";
-  version = "0.6.0";
+  version = "0.6.4";
 
   src = fetchurl {
     url = "https://github.com/acsandmann/rift/releases/download/v${finalAttrs.version}/rift-universal-macos-${finalAttrs.version}.tar.gz";
-    hash = "sha256-zhLBnH4EFqV8q1ONRBs2d6ZCXrhFhkaI5xAxtEmQY54=";
+    hash = "sha256-wOJb7GcByJZ1GvZKeH3f79h0bKlXgLM8+GsIlPNCO5Q=";
   };
 
   dontUnpack = true;
