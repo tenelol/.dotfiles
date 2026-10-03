@@ -27,8 +27,8 @@ return {
           },
           animate = {
             style = "down",
-            easing = "outQuad",
-            duration = { step = 45, total = 500 },
+            easing = "linear",
+            duration = { step = 20, total = 300 },
           },
         },
       })

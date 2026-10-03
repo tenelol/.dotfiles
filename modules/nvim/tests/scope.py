@@ -55,6 +55,13 @@ try:
       assert(not Snacks.config.indent.indent.enabled)
       assert(Snacks.config.indent.scope.only_current)
       assert(not Snacks.config.indent.scope.treesitter.enabled)
+      local values, done = {}, false
+      Snacks.animate(0, 4, function(value, ctx)
+        values[#values + 1] = value
+        done = ctx.done
+      end, vim.tbl_extend('keep', { int = true }, Snacks.config.indent.animate))
+      assert(vim.wait(1000, function() return done end))
+      assert(vim.deep_equal(values, { 1, 2, 3, 4 }), 'Indent animation pauses on repeated rows: ' .. vim.inspect(values))
       vim.o.shiftwidth = 2
       vim.o.number = false
       vim.o.relativenumber = false
