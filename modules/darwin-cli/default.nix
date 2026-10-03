@@ -24,6 +24,9 @@ delib.scopedModule {
 
   options = delib.singleEnableOption hostTraits.darwinDesktop;
 
+  home.ifEnabled.home.file.".local/bin/llvm-config".source =
+    "${pkgs.llvmPackages_22.llvm.dev}/bin/llvm-config";
+
   home.ifEnabled.home.packages =
     assert herdrPackage.version == (lib.importTOML "${inputs.herdr}/Cargo.toml").package.version;
     with pkgs;
