@@ -10,6 +10,7 @@ root = Path(__file__).resolve().parents[3]
 argv = ["nvim", "--embed", "--headless", "-u", "NONE", "-i", "NONE"]
 nvim = pynvim.attach("child", argv=argv)
 cells = {}
+highlights = {}
 
 
 def settle():
@@ -25,7 +26,9 @@ def settle():
             if event == "flush":
                 frames.append(guides())
             for update in updates:
-                if event == "grid_clear":
+                if event == "hl_attr_define":
+                    highlights[update[0]] = update[1]
+                elif event == "grid_clear":
                     cells.clear()
                 elif event == "grid_line":
                     grid, row, col, chunks, *_ = update
@@ -40,6 +43,12 @@ def settle():
 
 def guides():
     return sorted((row, col) for (_, row, col), (text, _) in cells.items() if text == "┃")
+
+
+def dimmed_text():
+    color = nvim.exec_lua("return vim.api.nvim_get_hl(0, {name='SnacksDim', link=false}).fg")
+    return sorted((row, col) for (_, row, col), (text, highlight) in cells.items()
+                  if text.strip() and highlights.get(highlight, {}).get("foreground") == color)
 
 
 try:
@@ -104,7 +113,29 @@ try:
     nvim.command("redraw!")
     settle()
     assert not guides(), ("Background guides remain", guides())
-    print("Astro interfaces, CSS, parser-free scopes, and active-only UI rendering: OK")
+    nvim.current.buffer[:] = ["root", "  first", "  second", "outside", "  other", "  sibling", "end"]
+    nvim.current.window.cursor = (2, 2)
+    nvim.command("doautocmd CursorMoved")
+    nvim.command("redraw!")
+    settle()
+    assert (1, 2) not in dimmed_text() and (4, 2) in dimmed_text(), ("Dim missed active scope", dimmed_text())
+    nvim.current.window.cursor = (5, 2)
+    nvim.command("doautocmd CursorMoved")
+    nvim.command("redraw!")
+    settle()
+    assert (1, 2) in dimmed_text() and (4, 2) not in dimmed_text(), ("Dim did not follow the cursor", dimmed_text())
+    nvim.input("\\ud")
+    settle()
+    assert not dimmed_text(), ("Dim toggle left text faded", dimmed_text())
+    assert guides(), "Dim toggle disabled the active indent line"
+    nvim.input("\\ud")
+    settle()
+    assert dimmed_text(), "Dim toggle did not restore focus dimming"
+    nvim.current.buffer.options["filetype"] = "dashboard"
+    nvim.command("redraw!")
+    settle()
+    assert not dimmed_text(), ("Dashboard must not be dimmed", dimmed_text())
+    print("Astro/CSS scopes, active-only guides, focus dimming, and dim toggle UI rendering: OK")
 finally:
     try:
         nvim.command("qa!")
