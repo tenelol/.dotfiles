@@ -50,6 +50,7 @@
 ## Documentation expectations
 - README changes should describe the actual personal workflow used in this repo.
 - Mention `denix` and `nh` explicitly when explaining structure or operational commands.
+- Keep `docs/` for important context worth sharing through Git across machines, such as decisions and procedures that code and tests cannot explain.
 - Do not rewrite the repo as a generic public template unless the user asks for that.
 
 ## Codex skills
