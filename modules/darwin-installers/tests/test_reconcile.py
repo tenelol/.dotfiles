@@ -369,6 +369,23 @@ class ReconcileTests(unittest.TestCase):
         self.assertEqual(RECONCILE.preflight_entry(self.host, item, self.temp.name), "newer")
         self.assertEqual(self.host.installs, [])
 
+    def test_root_owned_classic_is_copied_for_user_updates(self):
+        import pwd
+        import os
+        item = entry(name="chatgpt-classic", version="1.2026.184", appVersion="1.2026.184",
+                     app="/Applications/ChatGPT Classic.app", bundleId="com.openai.chat",
+                     teamId="2DC432GLL2", receipts={}, packages=[], strictVersion=False,
+                     selfUpdating=True, owner=pwd.getpwuid(os.getuid()).pw_name)
+        self.host.apps[item["app"]] = {
+            "bundleId": item["bundleId"], "teamId": item["teamId"], "version": item["version"],
+            "ownerUid": 0, "ownerWritable": True, "resolvedPath": item["app"], "symlink": False,
+        }
+        self.assertEqual(RECONCILE.entry_status(self.host, item, self.temp.name)[0], "needs-copy")
+        wanted = RECONCILE.installation_entry(self.host, item, "needs-copy")
+        self.assertEqual(wanted["source"], item["app"])
+        self.host.apps[item["app"]]["ownerUid"] = os.getuid()
+        self.assertEqual(RECONCILE.entry_status(self.host, item, self.temp.name)[0], "installed")
+
     def test_newer_nix_link_is_copied_without_downgrading(self):
         item = entry(name="dia", version="1.51.0", appVersion="1.51.0",
                      receipts={}, packages=[], strictVersion=False, selfUpdating=True,

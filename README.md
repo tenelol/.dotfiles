@@ -66,7 +66,7 @@ with browser data backed up before cleanup.
 | --- | --- | --- |
 | 26 Casks | [`modules/brew-casks`](./modules/brew-casks) and its [manifest](./modules/brew-casks/files/apps.json) | 16 immutable GUI bundles (11 base, 5 `fullDesktop`), the Codex CLI, and 9 fonts |
 | CLI formulae | [`modules/darwin-cli`](./modules/darwin-cli) | 58 Nix packages covering 54 shared formulae and Rift, SketchyBar, Borders; includes the official `herdr-bin` input |
-| Native installers | [`modules/darwin-installers`](./modules/darwin-installers) | 9 signed PKG/app installations, 5 self-updating app copies and checks for 8 Mac App Store apps |
+| Native installers | [`modules/darwin-installers`](./modules/darwin-installers) | 9 signed PKG/app installations, 6 self-updating app copies and checks for 8 Mac App Store apps |
 | Other GUI apps | [`modules/aerospace`](./modules/aerospace), [`modules/boringnotch`](./modules/boringnotch) | AeroSpace from nixpkgs and a pinned boringNotch package |
 
 Home Manager places the 16 immutable GUI bundles under `~/Applications/Home Manager Apps`
@@ -79,7 +79,7 @@ already-owned copies; the module does not purchase or authenticate. The
 [migration notes](./docs/research/brew-nix.md) describe the current verification
 and activation limits.
 
-ChatGPT (including Codex), Dia, Claude, Discord and Slack are copied from signed
+ChatGPT (including Codex), ChatGPT Classic, Dia, Claude, Discord and Slack are copied from signed
 Nix packages into `/Applications`, with ownership and write permissions for the
 primary user. Their official updaters can update these copies. denix/nh activation
 checks identity and a minimum bootstrap version; it preserves newer installed

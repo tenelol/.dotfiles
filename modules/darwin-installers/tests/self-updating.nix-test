@@ -5,7 +5,7 @@ let
   manifest = builtins.fromJSON (builtins.unsafeDiscardStringContext (
     builtins.readFile config.environment.etc."dotfiles/installers.json".source
   ));
-  expected = [ "chatgpt" "thebrowsercompany-dia" "claude" "discord" "slack" ];
+  expected = [ "chatgpt" "chatgpt-classic" "thebrowsercompany-dia" "claude" "discord" "slack" ];
   selected = builtins.filter (entry: entry.selfUpdating or false) manifest.packages;
   home = config.home-manager.users.${config.system.primaryUser};
 in

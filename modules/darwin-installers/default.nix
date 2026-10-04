@@ -18,9 +18,19 @@ let
       hash = "sha256-9s9NLptpru+jOt2kvNGi0wY1f1JToaxgSXAIcMKN0Mc=";
     };
   };
+  classic = casks.chatgpt-classic.overrideAttrs {
+    src = pkgs.fetchurl {
+      name = "ChatGPT_Classic-1.2026.184.dmg";
+      url = "https://persistent.oaistatic.com/classic/public/ChatGPT_Classic.dmg";
+      hash = "sha256-qUEX+zRicim6r+Pot7RUZ8Wu54YbTNeVpb6NVHsf97Q=";
+    };
+  };
   selfUpdatingApp = name: app: bundleId: teamId:
     let
-      cask = if name == "chatgpt" then chatgpt else casks.${name};
+      cask =
+        if name == "chatgpt" then chatgpt
+        else if name == "chatgpt-classic" then classic
+        else casks.${name};
       package = brewCask { inherit cask; };
       version = lib.head (lib.splitString "," cask.version);
     in
@@ -91,6 +101,7 @@ let
       consoleUser = profile.username;
       packages = [
         (selfUpdatingApp "chatgpt" "ChatGPT" "com.openai.codex" "2DC432GLL2")
+        (selfUpdatingApp "chatgpt-classic" "ChatGPT Classic" "com.openai.chat" "2DC432GLL2")
         (selfUpdatingApp "thebrowsercompany-dia" "Dia" "company.thebrowser.dia" "S6N382Y83G")
         (selfUpdatingApp "claude" "Claude" "com.anthropic.claudefordesktop" "Q6L2SF6YDW")
         {

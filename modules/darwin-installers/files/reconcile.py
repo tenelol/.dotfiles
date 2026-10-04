@@ -46,12 +46,15 @@ class Host:
         self.run("/usr/bin/codesign", "--verify", path)
         signature = self.run("/usr/bin/codesign", "-dv", "--verbose=2", path)
         match = re.search(r"^TeamIdentifier=(.+)$", signature.stderr, re.MULTILINE)
+        metadata = Path(path).stat()
         return {
             "bundleId": plist.get("CFBundleIdentifier"),
             "version": plist.get("CFBundleShortVersionString") or plist.get("CFBundleVersion"),
             "teamId": match.group(1) if match else None,
             "symlink": Path(path).is_symlink(),
             "resolvedPath": str(Path(path).resolve()),
+            "ownerUid": metadata.st_uid,
+            "ownerWritable": bool(metadata.st_mode & 0o200),
         }
 
     def running(self, pattern):
@@ -253,7 +256,10 @@ def entry_status(host, entry, state_dir):
         raise RuntimeError(f"{name}: existing path is not a valid signed app: {entry['app']}")
     if actual is not None:
         verify_identity(actual, entry, entry["app"])
-        if entry.get("selfUpdating") and actual.get("symlink") and app_meets_minimum(actual, entry):
+        owner_mismatch = entry.get("owner") and actual.get("ownerUid") is not None and (
+            actual["ownerUid"] != pwd.getpwnam(entry["owner"]).pw_uid or not actual["ownerWritable"]
+        )
+        if entry.get("selfUpdating") and (actual.get("symlink") or owner_mismatch) and app_meets_minimum(actual, entry):
             return "needs-copy", None
     marker = host.marker(state_dir, name)
     if marker and newer(marker, entry["version"]):
@@ -309,7 +315,7 @@ def installation_entry(host, entry, status):
         return entry
     actual = host.app(entry["app"])
     verify_identity(actual, entry, entry["app"])
-    if not actual.get("symlink") or not app_meets_minimum(actual, entry):
+    if not app_meets_minimum(actual, entry):
         raise RuntimeError(f"app changed before copying: {entry['app']}")
     return entry | {
         "source": actual["resolvedPath"],
