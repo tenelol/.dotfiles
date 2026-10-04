@@ -36,7 +36,9 @@ Steamはユーザーが不要と指定したためinstaller宣言から外した
 - 58 CLI packageの一括direct artifact buildが成功。代表CLIのversionと、Zathuraのpdf-mupdf・ps・cbなどのplugin検出を確認した。
 - 21 GUI Caskのdirect artifact buildと署名検査が成功。Cask metadata、配置、CLI linkとcompletionは直接fixtureで検査した。
 - 署名付きinstallerのmetadataとreconcileのunit testを確認した。Darwinのbuild/switchとDocker・Officeのinstaller/app更新を確認した。Nix版Diaは既存プロフィールのDBを開き、保存login record数45件を維持した。ログイン操作とMAS新規導入は未実施。
-- 旧Homebrew formula 179件を削除し、formula一覧が空であることを確認した。旧GUI本体は通常のCask uninstallで削除し、Dock等の既存パスにはNix版へのlinkを残した。native installerの旧trackingだけを削除し、導入済みdriver/helperは保持した。最後に残るCaskはこの会話を表示するchat appで、終了後に旧本体・trackingだけを整理する手順を準備した。MySQL dataとapp data/cacheは保持する。
+- 旧Homebrew formula 179件を削除した。最後のChatGPTの旧trackingも除去し、CellarとCaskroomの両方が空であることを確認した。旧GUI本体は通常のCask uninstallで削除し、Dock等の既存パスにはNix版へのlinkを残した。native installerの旧trackingだけを削除し、導入済みdriver/helperは保持した。MySQL dataとapp data/cacheは保持する。
+- commit `644db30` の `macbook-rift` activationが成功し、6アプリが通常のユーザー所有コピーになったこと、署名、App Store自動更新ONを確認した。ChatGPTは26.930.41038、Classicは1.2026.184。Diaはその後、公式updaterから1.51.1へ更新・再起動でき、Nix側の判定が `newer` となることも実機確認した。保存login record数は移行前・移行後・公式更新後のいずれも45件だった。
+- profile/cache/暗号化済みKeychainのバックアップを保持した。Classicの `group.com.openai.chat` 共有コンテナはmacOSの保護でバックアップを拒否されたため、アクセス権を拡張せずコピー対象から外した。アプリ本体の配置・所有権だけを変更し、この共有コンテナ自体には変更を加えていない。
 - Ghosttyはユーザーが作業を保存して終了した後に旧本体を削除し、Nix版1.3.1を起動した。CLIはNix側から解決することを確認し、`llvm-config`にはbinary cache取得済みLLVM 22の開発outputへのlinkを追加した。
 
 直接検査はdenixの自動検出を避ける `.nix-test` を使う。例：

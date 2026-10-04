@@ -57,8 +57,8 @@ The `macbook` declarations use Nix for the packages previously managed by
 Homebrew. `brew-nix` and the pinned `brew-api` provide Cask source metadata;
 the Homebrew executable is not needed to build those packages. The evaluated
 Darwin target has `homebrew.enable = false`. The configuration was switched
-onto `macbook-rift` on 2026-10-04. All 179 installed formulae were removed;
-the final running chat app awaits a restart before its old Cask is removed.
+onto `macbook-rift` on 2026-10-04. All 179 installed formulae and the old Cask
+tracking entries were removed; Homebrew's Cellar and Caskroom are empty.
 App profiles, caches, Keychain data and the old MySQL data remain on disk,
 with browser data backed up before cleanup.
 
