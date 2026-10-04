@@ -36,7 +36,9 @@ CLIは `/Applications` の実体を参照する専用support packageへ分離し
 
 旧 `/Applications` のlinkはHome Manager AppsまたはNix Appsを指すため、管理先が整理される前にcopyする必要がある。preActivationで全件の稼働・署名を先に確認し、移行対象の旧linkを通常コピーへ移す。自己更新appの稼働判定は実行ファイルのパスを使い、app名を含む検査コマンドの引数を誤検出しない。postActivationで残りを処理する。新しい自己更新版も次のswitchで保持する。Karabiner 16.0.0とVirtualHIDDevice 6.14.0はKanata互換性のため固定を維持する。
 
-設定と直接artifact testの検証を行った。今回の実機activationの結果は完了後に追記する。GUI本体は既存のNix store成果物を再利用し、生成するのはCLI/support linkとmanifestのみ。MAUは公式署名済みPKGを取得する。
+commit `8e743f0` の `macbook-rift` switchが成功し、22件（collectとDockerを含む）の通常配置・ユーザー所有・書込bit・codesign検証、全installerのinstalled/newer判定、MAS 8件を確認した。Python 36テストと配置/CLI参照のNix artifact testを実行した。GUI本体は既存のNix store成果物を再利用し、ソースの再コンパイルはない。MAUは公式署名済みPKG 4.85.26091737を導入した。
+
+Zenの選択profile、通常配置のinstall hash、Zen/Chromeの保存login record数が移行前と一致した。ユーザーデータ15 directoryのclone backupを `~/Library/Application Support/dotfiles-migration-backups/20261005-self-updating` に保持する。DockerのAutomatically check for updatesをGUIでON・保存し、Always download updatesはOFFを維持した。旧稼働8コンテナのうち、停止後も存在するMySQL・PostgreSQLの2件は再開した。他6件は存在せず再作成していない。volume削除・pruneは行っていない。Ghostty・Raycast・boringNotch・Rift 0.6.4の稼働を確認した。
 
 ## Installer と Mac App Store
 
