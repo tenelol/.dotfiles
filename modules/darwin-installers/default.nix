@@ -33,6 +33,9 @@ let
       owner = profile.username;
       selfUpdating = true;
       running = [ "/${app}\\.app/" ];
+    }
+    // lib.optionalAttrs (name == "chatgpt") {
+      orphanHelpers = [ "browser_crashpad_handler" "bare-modifier-monitor" ];
     };
   versionPrefix = version: lib.concatStringsSep "." (lib.take 2 (lib.splitString "." version)) + ".";
   karabinerDmg = pkgs.fetchurl {

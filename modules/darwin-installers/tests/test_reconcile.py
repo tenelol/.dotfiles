@@ -390,6 +390,58 @@ class ReconcileTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "close the running"):
             RECONCILE.preflight_entry(self.host, item, self.temp.name)
 
+    def test_quit_chatgpt_orphan_helpers_are_cleaned_before_preflight(self):
+        item = entry(
+            name="chatgpt", app="/Applications/ChatGPT.app", version="26.930.41038",
+            appVersion="26.930.41038", bundleId="com.openai.codex", teamId="2DC432GLL2",
+            receipts={}, packages=[], strictVersion=False, selfUpdating=True,
+            source="/nix/store/chatgpt/Applications/ChatGPT.app",
+            running=["/ChatGPT\\.app/"],
+            orphanHelpers=["browser_crashpad_handler", "bare-modifier-monitor"],
+        )
+
+        class ProcessHost(FakeHost, RECONCILE.Host):
+            running = RECONCILE.Host.running
+
+            def __init__(self):
+                super().__init__()
+                self.rows = [
+                    (9255, 1, "/Applications/ChatGPT.app/Contents/Frameworks/Codex Framework.framework/Versions/151.0.7922.174/Helpers/browser_crashpad_handler"),
+                    (9309, 1, "/Applications/ChatGPT.app/Contents/Resources/native/bare-modifier-monitor"),
+                ]
+                self.terminated = []
+
+            def run(self, *args, check=True):
+                if args[0] == "/usr/bin/pgrep":
+                    return SimpleNamespace(returncode=0 if self.rows else 1, stdout="", stderr="")
+                if args[0] == "/bin/ps":
+                    return SimpleNamespace(returncode=0, stdout="\n".join(
+                        f"{pid} {parent} {command}" for pid, parent, command in self.rows
+                    ), stderr="")
+                if args[0] == "/bin/kill":
+                    pid = int(args[-1]);self.terminated.append(pid)
+                    self.rows = [row for row in self.rows if row[0] != pid]
+                    return SimpleNamespace(returncode=0, stdout="", stderr="")
+                raise AssertionError(args)
+
+        host = ProcessHost()
+        host.apps[item["app"]] = {
+            "bundleId": item["bundleId"], "teamId": item["teamId"], "version": "26.930.31730",
+        }
+        host.apps[item["source"]] = host.apps[item["app"]] | {"version": item["version"]}
+        self.assertEqual(RECONCILE.preflight_entry(host, item, self.temp.name), "needs-install")
+        self.assertEqual(host.terminated, [9255, 9309])
+        host.terminated.clear()
+        helper = (9255, 1, "/Applications/ChatGPT.app/Contents/Frameworks/Codex Framework.framework/Versions/151.0.7922.174/Helpers/browser_crashpad_handler")
+        for worker in [
+            (35492, 1, "/Applications/ChatGPT.app/Contents/MacOS/ChatGPT"),
+            (35531, 1, "/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex"),
+        ]:
+            host.rows = [helper, worker]
+            with self.assertRaisesRegex(RuntimeError, "close the running app/workers"):
+                RECONCILE.preflight_entry(host, item, self.temp.name)
+            self.assertEqual(host.terminated, [])
+
     def test_symlink_copy_is_writable_and_preserves_source_and_rollback(self):
         root = Path(self.temp.name)
         source = root / "source.app"

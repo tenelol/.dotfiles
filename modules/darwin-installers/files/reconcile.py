@@ -11,6 +11,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 
@@ -55,6 +56,35 @@ class Host:
 
     def running(self, pattern):
         return self.run("/usr/bin/pgrep", "-f", pattern, check=False).returncode == 0
+
+    def app_processes(self, app):
+        prefixes = {str(Path(app)) + "/", str(Path(app).resolve()) + "/"}
+        rows = self.run("/bin/ps", "-axww", "-o", "pid=,ppid=,comm=").stdout.splitlines()
+        result = []
+        for row in rows:
+            fields = row.strip().split(None, 2)
+            if len(fields) == 3 and any(fields[2].startswith(prefix) for prefix in prefixes):
+                result.append((int(fields[0]), int(fields[1]), fields[2]))
+        return result
+
+    def stop_orphan_helpers(self, entry):
+        allowed = set(entry["orphanHelpers"])
+        deadline = time.monotonic() + 2
+        while True:
+            rows = self.app_processes(entry["app"])
+            if any(parent != 1 or Path(command).name not in allowed for _, parent, command in rows):
+                return  # The app or a real worker still runs; retain the blocking guard.
+            if not rows:
+                return
+            for row in rows:
+                current = self.app_processes(entry["app"])
+                if any(parent != 1 or Path(command).name not in allowed for _, parent, command in current):
+                    return
+                if row in current:
+                    self.run("/bin/kill", "-TERM", str(row[0]), check=False)
+            if time.monotonic() >= deadline:
+                raise RuntimeError(f"{entry['name']}: orphan helpers did not exit; no app replacement attempted")
+            time.sleep(0.05)
 
     def verify_pkg(self, path, team_id):
         result = self.run("/usr/sbin/pkgutil", "--check-signature", path)
@@ -294,9 +324,18 @@ def preflight_entry(host, entry, state_dir):
     if status not in {"needs-install", "needs-copy"}:
         return status
 
-    for pattern in entry.get("running", []):
-        if host.running(pattern):
-            raise RuntimeError(f"{entry['name']}: close the running app/process matching {pattern!r} before updating")
+    if entry.get("orphanHelpers"):
+        host.stop_orphan_helpers(entry)
+        processes = host.app_processes(entry["app"])
+        if processes:
+            allowed = set(entry["orphanHelpers"])
+            blockers = [row for row in processes if row[1] != 1 or Path(row[2]).name not in allowed]
+            names = ", ".join(f"{Path(command).name} (PID {pid})" for pid, _, command in (blockers or processes)[:8])
+            raise RuntimeError(f"{entry['name']}: close the running app/workers before updating: {names}")
+    else:
+        for pattern in entry.get("running", []):
+            if host.running(pattern):
+                raise RuntimeError(f"{entry['name']}: close the running app/process matching {pattern!r} before updating")
 
     for package in entry.get("packages", []):
         host.verify_pkg(package, entry["teamId"])

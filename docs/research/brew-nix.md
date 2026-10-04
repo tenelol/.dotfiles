@@ -17,6 +17,8 @@ immutable GUI bundle 16件はHome Managerの `~/Applications/Home Manager Apps` 
 
 LINEのmacOS公式配布は[Mac App Store](https://guide.line.me/ja/signup/pc-line.html)で、brew-nixのCaskは存在しない。既存のMAS導入確認と通常のapp配置を維持し、既にONだったApp Store自動更新をNixでも宣言した。この自動更新設定はMac App Storeアプリ全体に作用する。5アプリのコピー配置はbrew-nixの自動更新オプションではなく、このrepositoryのinstaller処理による。
 
+ChatGPT終了後も旧版のCrashpad・shortcut monitorが親PID 1で残り、最初の実機activationは稼働判定で停止した。終了後のsnapshotを使う回帰テストで再現し、通常本体・CLI・workerがいない場合だけ、対象bundle内の既知の孤立helperへSIGTERMを送る処理を追加した。本体やworkerが動いている場合は置き換えを止め、実行ファイルとPIDを表示する。アプリを参照するだけのコマンド引数を実プロセスと混同しないため、ChatGPTは実行ファイルのパスで判定する。
+
 app内CLIは `~/.local/bin` に公開し、Ghosttyのman/completionとZedのbash・zsh・fish・PowerShell補完を維持する。fontは `fonts.packages` で宣言する。Codex CaskはGUIではなくCLIとして扱い、completionを別packageから生成する。AeroSpaceとboringNotchは `/Applications/Nix Apps` を使用する。
 
 CLI formulaの置換では名前だけでなくコマンドも合わせた。Homebrewの `gdrive` はglotlabs v3なので `pkgs.gdrive3`、`cloudflare-wrangler` は `pkgs.wrangler`、`dotnet` はSDK 10、`node` はNode 26を選んだ。`pkgconf` に `pkg-config` のaliasを足し、Rustは `rustc`・`cargo`・`rustfmt`・`clippy` を揃えた。`herdr-bin` はmacOS/Linuxとも公式の固定releaseを使用し、`herdr` source inputとの版一致を確認する。Zathura wrapperはpdf-mupdf、ps、cb、djvuを同梱するため、Homebrew prefixにpluginをリンクするactivationは不要。MySQLは既存の9.7.1に合わせた[Oracle署名済みbinary](../../packages/mysql97.nix)を固定し、`/opt/homebrew/var/mysql` には触れずserverも起動しない。
