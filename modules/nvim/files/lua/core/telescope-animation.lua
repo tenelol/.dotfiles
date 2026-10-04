@@ -142,17 +142,17 @@ function M.close(prompt_bufnr, action)
     end
     for _, state in ipairs(windows) do
       if not vim.api.nvim_win_is_valid(state.win) then
-        restore_blend()
         ctx.anim:stop()
         finish()
+        restore_blend()
         return
       end
       local config = vim.api.nvim_win_get_config(state.win)
       if config.relative ~= "editor" or config.row ~= state.current_row or config.col ~= state.col
         or config.width ~= state.width or config.height ~= state.height then
-        restore_blend()
         ctx.anim:stop()
         finish()
+        restore_blend()
         return
       end
     end
@@ -164,8 +164,8 @@ function M.close(prompt_bufnr, action)
       vim.wo[state.win].winblend = state.blend + math.floor((78 - state.blend) * (1 - progress) + 0.5)
     end
     if ctx.done then
-      restore_blend()
       finish()
+      restore_blend()
     end
   end, {
     id = "telescope_close_" .. prompt_bufnr,
@@ -195,7 +195,10 @@ function M.attach(prompt_bufnr, map)
   end
 
   map("i", "<C-c>", animated(actions.close))
+  map("n", "<C-c>", animated(actions.close))
+  map("i", "<C-p>", animated(actions.close))
   map("n", "<Esc>", animated(actions.close))
+  map("n", "<C-p>", animated(actions.close))
   for _, mode in ipairs({ "i", "n" }) do
     map(mode, "<CR>", animated(actions.select_default, true))
     map(mode, "<C-x>", animated(actions.select_horizontal, true))

@@ -99,6 +99,16 @@ try:
             preview_lines = nvim.exec_lua("return vim.api.nvim_buf_get_lines(..., 0, -1, false)", preview)
             assert any("preview is visible" in line for line in preview_lines), "Preview was not drawn"
 
+        nvim.exec_lua(
+            """
+              require('telescope.actions').select_default:enhance({
+                pre = function(bufnr)
+                  local current = require('telescope.actions.state').get_current_picker(bufnr)
+                  vim.g.picker_blend_at_select = vim.wo[current.prompt_win].winblend
+                end,
+              })
+            """
+        )
         nvim.input("\r")
         frames_for(35)
         nvim.input("zzz")  # Results can change while the chosen file is fading out.
@@ -115,6 +125,7 @@ try:
             closing_visible,
         )
         assert nvim.exec_lua("return #vim.api.nvim_list_wins()") == 1, "Selecting a file left picker windows open"
+        assert nvim.exec_lua("return vim.g.picker_blend_at_select") > 14, "Picker flashed opaque before closing"
         opened = nvim.exec_lua("return vim.api.nvim_buf_get_name(vim.api.nvim_get_current_buf())")
         assert Path(opened).resolve() == target.resolve(), "Selecting a file opened the wrong buffer"
         assert nvim.eval("mode()") == "n", "Selecting a file left terminal in picker input mode"
@@ -140,9 +151,9 @@ try:
         assert nvim.exec_lua("return vim.wo[...].winblend", compact) > 0, "Compact picker skipped fade"
         frames_for(250)
         assert nvim.exec_lua("return vim.wo[...].winblend", compact) == 0, "Compact picker stayed faded"
-        nvim.input("\x03")
+        nvim.input("\x10")  # Ctrl-P toggles the open picker.
         frames_for(65)
-        assert nvim.exec_lua("return vim.wo[...].winblend", compact) > 0, "Compact picker did not fade closed"
+        assert nvim.exec_lua("return vim.wo[...].winblend", compact) > 0, "Ctrl-P did not start closing animation"
         frames_for(160)
         assert nvim.exec_lua("return #vim.api.nvim_list_wins()") == 1, "Compact picker leaked windows"
 
@@ -166,7 +177,25 @@ try:
         nvim.ui_try_resize(105, 31)
         frames_for(190)
         assert nvim.exec_lua("return #vim.api.nvim_list_wins()") == 1, "Resized picker leaked windows"
-        print("Ctrl-P open/close, input, file selection, compact layout, resize, and interrupted opening: OK")
+
+        nvim.input("\x10")
+        frames_for(220)
+        nvim.input("\x1b")
+        frames_for(20)
+        assert nvim.eval("mode()") == "n", "Picker did not enter normal mode"
+        nvim.input("\x10")
+        frames_for(220)
+        assert nvim.exec_lua("return #vim.api.nvim_list_wins()") == 1, "Ctrl-P did not close in picker normal mode"
+
+        nvim.input("\x10")
+        frames_for(220)
+        nvim.input("\x1b")
+        frames_for(20)
+        assert nvim.eval("mode()") == "n", "Picker did not enter normal mode before Ctrl-C"
+        nvim.input("\x03")
+        frames_for(220)
+        assert nvim.exec_lua("return #vim.api.nvim_list_wins()") == 1, "Ctrl-C did not close in picker normal mode"
+        print("Ctrl-P open/close, Esc, input, file selection, compact layout, and resize: OK")
 finally:
     try:
         nvim.command("qa!")
