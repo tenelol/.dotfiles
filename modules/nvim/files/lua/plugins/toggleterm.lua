@@ -6,7 +6,7 @@ return {
     dependencies = { plugin.dep("edgy-nvim"), plugin.dep("snacks-nvim") },
     cmd = { "ClaudeCode", "Codex", "ToggleTerm", "TermExec", "TermNew", "TermSelect", "ToggleTermToggleAll" },
     keys = {
-      { "<C-\\>", desc = "Toggle terminal" },
+      { "<C-\\>", mode = { "n", "t" }, desc = "Toggle terminal" },
       { "<C-t>", desc = "Toggle floating terminal" },
       { "<leader>iC", desc = "Open Claude Code" },
       { "<leader>ix", desc = "Open Codex CLI" },
@@ -71,6 +71,13 @@ return {
 
       map("n", "<C-\\>", function()
         terminal.toggle(vim.v.count)
+      end, { silent = true, desc = "Toggle terminal" })
+
+      map("t", "<C-\\>", function()
+        local _, term = require("toggleterm.terminal").identify()
+        if term then
+          terminal.close(term)
+        end
       end, { silent = true, desc = "Toggle terminal" })
 
       vim.api.nvim_create_user_command("ClaudeCode", function()
