@@ -2,7 +2,7 @@ local plugin = require("nix-plugin")
 
 return {
     plugin.spec("telescope-nvim", {
-        dependencies = { plugin.dep("plenary-nvim") },
+        dependencies = { plugin.dep("plenary-nvim"), plugin.dep("snacks-nvim") },
         cmd = "Telescope",
         keys = {
             { "<C-p>", desc = "Quick open" },
@@ -20,10 +20,12 @@ return {
             local telescope = require("telescope")
             local builtin = require("telescope.builtin")
             local themes = require("telescope.themes")
+            local animation = require("core.telescope-animation")
 
             local function project_opts(opts)
                 return vim.tbl_extend("force", {
                     cwd = project.buffer_root(0),
+                    attach_mappings = animation.open,
                 }, opts or {})
             end
 
