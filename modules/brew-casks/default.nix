@@ -31,7 +31,16 @@ let
   runtimePackages = pkgs.lib.listToAttrs (
     map (app: {
       name = app.name;
-      value = if app ? selfUpdating then appSupport app else packages.${app.name};
+      value =
+        if app ? selfUpdating then
+          appSupport (
+            app
+            // {
+              sourcePackage = packages.${app.name};
+            }
+          )
+        else
+          packages.${app.name};
     }) selected
   );
   fontPackages = map (

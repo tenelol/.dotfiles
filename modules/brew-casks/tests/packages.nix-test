@@ -31,7 +31,9 @@ let
 in packages // {
   runtimePackages = pkgs.lib.listToAttrs (map (app: {
     name = app.name;
-    value = pkgs.callPackage ../../../packages/macos-app-support.nix { } app;
+      value = pkgs.callPackage ../../../packages/macos-app-support.nix { } (app // {
+        sourcePackage = packages.${app.name};
+      });
   }) (builtins.filter (app: app ? selfUpdating) (apps.base ++ apps.fullDesktop)));
   installerSources.microsoftAutoUpdate = casks.microsoft-auto-update.src;
 } // pkgs.lib.listToAttrs (pkgs.lib.concatMap (name:

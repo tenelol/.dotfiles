@@ -9,7 +9,9 @@ let
   selected = manifest.base ++ lib.optionals config.myconfig.host.fullDesktopFeatured manifest.fullDesktop;
   runtime = lib.listToAttrs (map (app: {
     name = app.name;
-    value = if app ? selfUpdating then appSupport app else expected.${app.name};
+    value = if app ? selfUpdating then appSupport (app // {
+      sourcePackage = expected.${app.name};
+    }) else expected.${app.name};
   }) (selected ++ manifest.binaries));
   names = map (app: if app ? selfUpdating then "${app.name}-app-support" else app.name)
     (selected ++ manifest.binaries);
