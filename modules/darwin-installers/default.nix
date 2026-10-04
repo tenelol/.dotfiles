@@ -44,6 +44,7 @@ let
       running = [ "/${app}\\.app/" ];
     };
   boringNotch = pkgs.callPackage ../../packages/boringnotch.nix { };
+  collect = import ../../packages/moocs-collect.nix { inherit pkgs lib; };
   chatgpt = casks.chatgpt.overrideAttrs {
     version = "26.930.41038";
     src = pkgs.fetchurl {
@@ -241,6 +242,22 @@ let
       ++ lib.optionals host.fullDesktopFeatured [
         (selfUpdatingApp "discord" "Discord" "com.hnc.Discord" "53Q6R32WPB")
         (selfUpdatingApp "slack" "Slack" "com.tinyspeck.slackmacgap" "BQR82RBBHL")
+        {
+          name = "moocs-collect";
+          kind = "app";
+          version = collect.version;
+          app = "/Applications/collect.app";
+          appVersion = collect.version;
+          bundleId = "me.yu7400ki.moocs-collect";
+          # Upstream ships an ad-hoc signed bundle and verifies update archives
+          # with the Tauri updater's pinned public key.
+          teamId = "not set";
+          source = "${collect}/Applications/collect.app";
+          owner = profile.username;
+          selfUpdating = true;
+          migrateBeforeNixApps = true;
+          running = [ "/collect\\.app/" ];
+        }
         {
           name = "docker-desktop";
           kind = "app";

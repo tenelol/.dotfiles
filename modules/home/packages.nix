@@ -24,6 +24,11 @@ let
   moocsCollectPackage = import ../../packages/moocs-collect.nix {
     inherit pkgs lib;
   };
+  moocsCollectSupport = pkgs.callPackage ../../packages/macos-app-support.nix { } {
+    name = "moocs-collect";
+    sourcePackage = moocsCollectPackage;
+    cli.collect = "collect.app/Contents/MacOS/app";
+  };
   imoocsPackage = import ../../packages/imoocs.nix {
     inherit pkgs lib;
   };
@@ -112,7 +117,7 @@ let
   ];
 
   darwinDesktopPackages = with pkgs; [
-    moocsCollectPackage
+    moocsCollectSupport
   ];
 
   darwinCliPackages = with pkgs; [

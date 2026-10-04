@@ -8,7 +8,7 @@ let
   casks = builtins.fromJSON (builtins.readFile ../../brew-casks/files/apps.json);
   expected = [ "chatgpt" "chatgpt-classic" "thebrowsercompany-dia" "claude" ]
     ++ map (app: app.name) (builtins.filter (app: app ? selfUpdating) (casks.base ++ casks.fullDesktop))
-    ++ [ "boringnotch" "discord" "slack" "docker-desktop" ];
+    ++ [ "boringnotch" "discord" "slack" "moocs-collect" "docker-desktop" ];
   selected = builtins.filter (entry: entry.selfUpdating or false) manifest.packages;
   home = config.home-manager.users.${config.system.primaryUser};
 in
@@ -35,6 +35,7 @@ assert builtins.elem "/Applications/boringNotch.app"
 assert config.system.defaults.CustomSystemPreferences."com.apple.commerce".AutoUpdate;
 assert home.programs.vscode.profiles.default.userSettings."update.mode" == "default";
 assert !(home.home.activation ? configureDockerDesktopUpdatePolicy);
+assert builtins.any (package: (package.pname or "") == "moocs-collect-app-support") home.home.packages;
 {
   apps = map (entry: { inherit (entry) name app version source bundleId teamId; }) selected;
   line = "Mac App Store automatic updates";

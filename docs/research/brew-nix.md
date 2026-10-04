@@ -8,7 +8,7 @@
 | --- | ---: | --- |
 | [brew-casks の manifest](../../modules/brew-casks/files/apps.json) と [module](../../modules/brew-casks/default.nix) | 26 Cask | immutable GUI 3件、自己更新GUI source 13件、Codex CLI 1、font 9 |
 | [darwin-cli](../../modules/darwin-cli/default.nix) | 58 Nix package | 旧formula 54件と Rift、SketchyBar、Borders。Zathura 5 formulaはプラグイン入りwrapper 1件に集約 |
-| [darwin-installers](../../modules/darwin-installers/default.nix) | 10 native installer、自己更新GUI 20件、MAS 8件 | azooKey、Karabiner、Tailscale、Wireshark、Docker、Office 4アプリ、通常配置の20 GUI、Microsoft AutoUpdate、Mac App Store アプリ |
+| [darwin-installers](../../modules/darwin-installers/default.nix) | 10 native installer、自己更新GUI 21件、MAS 8件 | azooKey、Karabiner、Tailscale、Wireshark、Docker、Office 4アプリ、通常配置の21 GUI、Microsoft AutoUpdate、Mac App Store アプリ |
 | [AeroSpace](../../modules/aerospace/default.nix)、[boringNotch](../../modules/boringnotch/default.nix) | GUI 2件 | nixpkgs の AeroSpace と固定した boringNotch package |
 
 `brew-nix` と `brew-api` は `flake.lock` に固定し、Cask source の再現に使う。実際のroot `nixpkgs` inputは `flake.lock` の `root.inputs.nixpkgs` が指す `nixpkgs_2`（`4975466d324710c576dc11ad614684e6bd8cad8e`）。旧検査は別node `nodes.nixpkgs` を直接読んでいたため修正済み。Caskの `no_check` sourceは固定hashを補い、Material Symbols は固定Git archiveと必要なfontファイルに絞った。
@@ -28,7 +28,7 @@ RiftとPeekabooは固定されたnixpkgsにはないため、[Rift package](../.
 
 ## アプリ内更新が可能なGUIへ広げる（2026-10-05）
 
-新しい宣言は既存6件に加え、Cursor・Ghostty・Insomnia・Markdown Preview・Notion・Raycast・Zed・Zen・Chrome・Obsidian・PalmierPro・VS Code・Spotify・boringNotchを通常コピーにする。Dockerのroot所有・書込不可コピーもユーザー所有へ変える。DisableUpdateをtrueへ戻す旧Home Manager hookは撤去し、Dockerの更新設定はアプリ自身で管理する。旧hookは保護されたGroup Containerの同期読み取りで停止したため、読み取りworkerを終了して新構成で再実行する。Docker本体の更新設定はGUIから有効にする。Tailscale・Wireshark・azooKey・Officeは公式PKGの通常配置を保持する。OfficeのMicrosoft AutoUpdateを除外するinstaller choiceを撤去し、署名済みMAU PKGを最低版として宣言する。MAUのapp短縮versionは4.85、receipt/buildは4.85.26091737で別々に照合する。
+新しい宣言は既存6件に加え、Cursor・Ghostty・Insomnia・Markdown Preview・Notion・Raycast・Zed・Zen・Chrome・Obsidian・PalmierPro・VS Code・Spotify・boringNotchを通常コピーにする。collectにも[更新・再起動の実装](https://github.com/yu7400ki/moocs-collect/blob/app-v1.0.1/apps/desktop/src/components/providers/updater.tsx)があるため、既存の通常コピーを最低版の判定へ統合し、CLIとHome Managerの参照を通常配置へ揃える。collectのbundleはupstream同様ad-hoc署名で、Nixの固定hashとTauri updaterの公開鍵による更新artifact検証を維持する。Dockerのroot所有・書込不可コピーもユーザー所有へ変える。DisableUpdateをtrueへ戻す旧Home Manager hookは撤去し、Dockerの更新設定はアプリ自身で管理する。旧hookは保護されたGroup Containerの同期読み取りで停止したため、読み取りworkerを終了して新構成で再実行する。Docker本体の更新設定はGUIから有効にする。Tailscale・Wireshark・azooKey・Officeは公式PKGの通常配置を保持する。OfficeのMicrosoft AutoUpdateを除外するinstaller choiceを撤去し、署名済みMAU PKGを最低版として宣言する。MAUのapp短縮versionは4.85、receipt/buildは4.85.26091737で別々に照合する。
 
 一次証拠は、[GhosttyのUpdate and Restart](https://ghostty.org/docs/install/release-notes/1-3-0)、[InsomniaのSoftware Updates](https://developer.konghq.com/insomnia/)、[NotionのCheck for Updates](https://www.notion.com/help/notion-for-desktop)、[Zedのauto_update](https://zed.dev/docs/reference/all-settings)、[SpotifyのUpdate Spotify now](https://support.spotify.com/us/article/updating-spotify/)、[OfficeのMicrosoft AutoUpdate](https://support.microsoft.com/en-us/office/lifecycle/officeinstall/update-office-for-mac-automatically)と導入済み署名bundleのupdater実装。Cursor・Insomnia・NotionのSquirrel、Ghostty・Markdown Preview・PalmierPro・boringNotchのSparkle/feed、ChromeのKSUpdateURLを確認した。Raycastの実機メニューにCheck for updatesがあることも確認した。[Chromeの公式手順](https://support.google.com/chrome/answer/95414?hl=en)はAboutから更新する。DarwinのVS Code設定に残っていたupdate.mode=noneもdefaultへ変更する。LinuxのNix管理版はnoneを維持する。
 

@@ -66,7 +66,7 @@ with browser data backed up before cleanup.
 | --- | --- | --- |
 | 26 Casks | [`modules/brew-casks`](./modules/brew-casks) and its [manifest](./modules/brew-casks/files/apps.json) | 3 immutable GUI bundles, 13 self-updating GUI sources with CLI integration, the Codex CLI, and 9 fonts |
 | CLI formulae | [`modules/darwin-cli`](./modules/darwin-cli) | 58 Nix packages covering 54 shared formulae and Rift, SketchyBar, Borders; includes the official `herdr-bin` input |
-| Native installers | [`modules/darwin-installers`](./modules/darwin-installers) | 10 signed PKG/native installations, 20 self-updating GUI copies and checks for 8 Mac App Store apps |
+| Native installers | [`modules/darwin-installers`](./modules/darwin-installers) | 10 signed PKG/native installations, 21 self-updating GUI copies and checks for 8 Mac App Store apps |
 | Other GUI apps | [`modules/aerospace`](./modules/aerospace), [`modules/boringnotch`](./modules/boringnotch) | AeroSpace from nixpkgs; boringNotch uses the native installer copy |
 
 Home Manager places Blender, qutebrowser and DB Browser for SQLite under `~/Applications/Home Manager Apps`
@@ -82,7 +82,7 @@ and activation limits.
 GUI apps with an in-app updater use signed Nix sources and normal, user-owned
 copies in `/Applications`: ChatGPT (including Codex), ChatGPT Classic, Dia, Claude,
 Discord, Slack, Cursor, Ghostty, Insomnia, Markdown Preview, Notion, Raycast, Zed,
-Zen, Chrome, Obsidian, PalmierPro, VS Code, Spotify and boringNotch. Docker also
+Zen, Chrome, Obsidian, PalmierPro, VS Code, Spotify, boringNotch and collect. Docker also
 uses a user-owned copy; native PKG apps retain their vendor installer layout.
 Office includes Microsoft AutoUpdate. Karabiner remains pinned to 16.0.0 for
 Kanata driver compatibility. denix/nh activation
