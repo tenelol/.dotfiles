@@ -34,6 +34,7 @@ assert builtins.elem "/Applications/boringNotch.app"
   config.launchd.user.agents.boringnotch.serviceConfig.ProgramArguments;
 assert config.system.defaults.CustomSystemPreferences."com.apple.commerce".AutoUpdate;
 assert home.programs.vscode.profiles.default.userSettings."update.mode" == "default";
+assert !(home.home.activation ? configureDockerDesktopUpdatePolicy);
 {
   apps = map (entry: { inherit (entry) name app version source bundleId teamId; }) selected;
   line = "Mac App Store automatic updates";
