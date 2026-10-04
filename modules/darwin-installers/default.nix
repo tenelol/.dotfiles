@@ -40,6 +40,7 @@ let
       source = "${package}/Applications/${app}.app";
       owner = profile.username;
       selfUpdating = true;
+      migrateBeforeNixApps = true;
       running = [ "/${app}\\.app/" ];
     };
   boringNotch = pkgs.callPackage ../../packages/boringnotch.nix { };
@@ -329,8 +330,8 @@ delib.scopedModule {
     system.defaults.CustomSystemPreferences."com.apple.commerce".AutoUpdate = true;
     environment.etc."dotfiles/installers.json".source = manifest;
     environment.systemPackages = [ reconcile ];
-    # Preserve copies that previously lived in Nix Apps before Darwin removes
-    # their old managed bundles. All pending apps are preflighted first.
+    # Copy old Home Manager/Nix Apps links before activation removes their
+    # managed targets. All pending apps are preflighted first.
     system.activationScripts.preActivation.text = lib.mkBefore ''
       ${reconcile}/bin/dotfiles-installers --before-nix-apps
     '';

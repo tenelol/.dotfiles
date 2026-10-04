@@ -43,6 +43,9 @@ class FakeHost:
     def running(self, pattern):
         return pattern in self.running_patterns
 
+    def app_processes(self, app):
+        return [(123, 10, app + "/Contents/MacOS/test")] if self.running_patterns else []
+
     def verify_pkg(self, path, team_id):
         self.verified.append((path, team_id))
 
@@ -463,6 +466,7 @@ class ReconcileTests(unittest.TestCase):
         )
 
         class ProcessHost(FakeHost, RECONCILE.Host):
+            app_processes = RECONCILE.Host.app_processes
             running = RECONCILE.Host.running
 
             def __init__(self):

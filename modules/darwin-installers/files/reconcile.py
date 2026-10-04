@@ -330,11 +330,12 @@ def preflight_entry(host, entry, state_dir):
     if status not in {"needs-install", "needs-copy"}:
         return status
 
-    if entry.get("orphanHelpers"):
-        host.stop_orphan_helpers(entry)
+    if entry.get("selfUpdating") or entry.get("orphanHelpers"):
+        if entry.get("orphanHelpers"):
+            host.stop_orphan_helpers(entry)
         processes = host.app_processes(entry["app"])
         if processes:
-            allowed = set(entry["orphanHelpers"])
+            allowed = set(entry.get("orphanHelpers", []))
             blockers = [row for row in processes if row[1] != 1 or Path(row[2]).name not in allowed]
             names = ", ".join(f"{Path(command).name} (PID {pid})" for pid, _, command in (blockers or processes)[:8])
             raise RuntimeError(f"{entry['name']}: close the running app/workers before updating: {names}")

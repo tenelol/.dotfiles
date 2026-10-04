@@ -34,7 +34,7 @@ RiftとPeekabooは固定されたnixpkgsにはないため、[Rift package](../.
 
 CLIとGhosttyのman/completionは `/Applications` の実体を参照する専用support packageへ分離し、更新後の旧Nix binaryを呼ばない。Zedの生成済み補完は既存のsource packageから再利用する。Home Managerには自己更新GUIのimmutable bundleを二重配置しない。Zenは旧symlinkをresolveしたinstall hashから、将来の通常配置をresolveせず計算したhashへ既存選択profileを引き継ぐ。profiles.ini/installs.iniをbackupし、profile内容・cache・Keychainを移動・削除しない。
 
-boringNotchは旧 `/Applications/Nix Apps` をDarwinが整理する前にcopyする必要がある。preActivationで全件の稼働・署名を先に確認し、この旧linkだけを通常コピーへ移す。postActivationで残りを処理する。新しい自己更新版も次のswitchで保持する。Karabiner 16.0.0とVirtualHIDDevice 6.14.0はKanata互換性のため固定を維持する。
+旧 `/Applications` のlinkはHome Manager AppsまたはNix Appsを指すため、管理先が整理される前にcopyする必要がある。preActivationで全件の稼働・署名を先に確認し、移行対象の旧linkを通常コピーへ移す。自己更新appの稼働判定は実行ファイルのパスを使い、app名を含む検査コマンドの引数を誤検出しない。postActivationで残りを処理する。新しい自己更新版も次のswitchで保持する。Karabiner 16.0.0とVirtualHIDDevice 6.14.0はKanata互換性のため固定を維持する。
 
 設定と直接artifact testの検証を行った。今回の実機activationの結果は完了後に追記する。GUI本体は既存のNix store成果物を再利用し、生成するのはCLI/support linkとmanifestのみ。MAUは公式署名済みPKGを取得する。
 
