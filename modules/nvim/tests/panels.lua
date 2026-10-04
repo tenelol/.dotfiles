@@ -66,6 +66,7 @@ local Terminal = require("toggleterm.terminal").Terminal
 local terminal = require("core.terminal")
 local terms = {}
 for _, direction in ipairs({ "horizontal", "vertical", "float" }) do
+  local target_size = direction == "vertical" and 40 or 10
   local term = Terminal:new({
     cmd = "cat",
     direction = direction,
@@ -74,12 +75,12 @@ for _, direction in ipairs({ "horizontal", "vertical", "float" }) do
   })
   terms[#terms + 1] = term
   for iteration = 1, 2 do
-    term:open(iteration == 1 and 10 or nil, direction)
+    term:open(iteration == 1 and target_size or nil, direction)
     local win, job = term.window, term.job_id
     assert(vim.w[win].dotfiles_panel_animation, "Terminal opening animation did not start: " .. direction)
     local size = direction == "vertical" and vim.api.nvim_win_get_width or vim.api.nvim_win_get_height
     if direction ~= "float" then
-      assert(size(win) < 10, "Terminal must start collapsed: " .. direction .. " " .. size(win))
+      assert(size(win) < target_size, "Terminal must start collapsed: " .. direction .. " " .. size(win))
     end
     vim.api.nvim_chan_send(job, "slide-test\n")
     assert(
@@ -109,7 +110,7 @@ for _, direction in ipairs({ "horizontal", "vertical", "float" }) do
         "Bottom terminal layout changed: height=" .. size(win) .. " managed=" .. tostring(edgy.get_win(win) ~= nil)
       )
     elseif direction == "vertical" then
-      assert(size(win) == 10 and not edgy.get_win(win), "Vertical terminal was moved to the bottom")
+      assert(size(win) == target_size and not edgy.get_win(win), "Vertical terminal was moved to the bottom")
     else
       assert(vim.api.nvim_win_get_config(win).row == 3, "Floating terminal did not return to its intended position")
     end
@@ -125,7 +126,7 @@ for _, direction in ipairs({ "horizontal", "vertical", "float" }) do
         if direction == "float" then
           closing = closing or vim.api.nvim_win_get_config(win).row > 3
         else
-          closing = closing or (size(win) > 1 and size(win) < 10)
+          closing = closing or (size(win) > 1 and size(win) < target_size)
         end
         return false
       end, 5),

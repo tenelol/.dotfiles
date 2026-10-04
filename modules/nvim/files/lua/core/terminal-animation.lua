@@ -68,7 +68,8 @@ local function animate(term, opening)
     id = "toggleterm_slide_" .. term.id,
     int = true,
     easing = "linear",
-    duration = { step = 15, total = 180 },
+    -- Keep narrow panes responsive and give wider panes enough frames to avoid skipping cells.
+    duration = { total = math.min(360, math.max(140, math.abs(target - from) * 9)) },
   })
 end
 

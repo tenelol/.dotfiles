@@ -32,7 +32,7 @@ local function close_tree(state)
     if ctx.done then
       require("neo-tree.ui.renderer").close(state)
     end
-  end, { id = "neo_tree_close_" .. win, int = true, easing = "linear", duration = { total = 180 } })
+  end, { id = "neo_tree_close_" .. win, int = true, easing = "linear", duration = { total = 280 } })
 end
 
 return {

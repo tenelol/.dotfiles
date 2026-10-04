@@ -75,7 +75,8 @@ return {
         },
         animate = {
           enabled = true,
-          fps = 60,
+          fps = 120,
+          cps = 120,
         },
         exit_when_last = true,
         close_when_all_hidden = true,
