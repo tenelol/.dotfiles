@@ -11,6 +11,7 @@ return {
     config = function()
       local animate = require("mini.animate")
       local timing = animate.gen_timing.quadratic({ duration = 160, unit = "total", easing = "out" })
+      local scroll_timing = animate.gen_timing.quadratic({ duration = 200, unit = "total", easing = "out" })
 
       animate.setup({
         cursor = {
@@ -23,7 +24,10 @@ return {
           }),
         },
         scroll = {
-          enable = false,
+          -- Keep small scrolls responsive when holding a movement key.
+          timing = function(step, steps)
+            return math.min(scroll_timing(step, steps), 10)
+          end,
         },
         resize = {
           timing = timing,

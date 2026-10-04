@@ -78,7 +78,6 @@ let
 
   nixManagedPlugins = {
     mini-animate = pkgs.vimPlugins.mini-animate;
-    neoscroll-nvim = pkgs.vimPlugins.neoscroll-nvim;
     snacks-nvim = pkgs.vimPlugins.snacks-nvim;
     emmet-vim = pkgs.vimPlugins.emmet-vim;
     which-key-nvim = pkgs.vimPlugins.which-key-nvim;
