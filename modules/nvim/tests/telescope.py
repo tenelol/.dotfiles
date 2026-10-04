@@ -100,7 +100,20 @@ try:
             assert any("preview is visible" in line for line in preview_lines), "Preview was not drawn"
 
         nvim.input("\r")
-        frames_for(50)
+        frames_for(35)
+        nvim.input("zzz")  # Results can change while the chosen file is fading out.
+        closing_frames = frames_for(65)
+        assert nvim.exec_lua("return #vim.api.nvim_list_wins()") > 1, "File selection skipped closing animation"
+        assert nvim.exec_lua("return vim.wo[...].winblend", picker["prompt"]) > 0, "Picker did not fade closed"
+        changed_prompt = nvim.exec_lua("return vim.api.nvim_buf_get_lines(..., 0, -1, false)", picker["bufnr"])
+        assert any("animzzz" in line for line in changed_prompt), "Results did not change during closing"
+        closing_frames.extend(frames_for(140))
+        closing_visible = [frame for frame in closing_frames if picker["prompt"] in frame]
+        assert len(closing_visible) > 2, "Closing animation did not render"
+        assert closing_visible[-1][picker["prompt"]][0] > closing_visible[0][picker["prompt"]][0], (
+            "Picker did not slide closed",
+            closing_visible,
+        )
         assert nvim.exec_lua("return #vim.api.nvim_list_wins()") == 1, "Selecting a file left picker windows open"
         opened = nvim.exec_lua("return vim.api.nvim_buf_get_name(vim.api.nvim_get_current_buf())")
         assert Path(opened).resolve() == target.resolve(), "Selecting a file opened the wrong buffer"
@@ -108,9 +121,10 @@ try:
 
         nvim.input("\x10")
         frames_for(30)
-        prompt = nvim.exec_lua("return vim.api.nvim_get_current_buf()")
-        nvim.exec_lua("require('telescope.actions').close(...)", prompt)
-        frames_for(220)
+        nvim.input("\x03")  # Ctrl-C during opening
+        frames_for(60)
+        assert nvim.exec_lua("return #vim.api.nvim_list_wins()") > 1, "Early close skipped animation"
+        frames_for(170)
         assert nvim.exec_lua("return #vim.api.nvim_list_wins()") == 1, "Interrupted animation left windows open"
         assert nvim.exec_lua("return vim.api.nvim_get_current_win()") == nvim.exec_lua(
             "return picker_test_main"
@@ -126,8 +140,10 @@ try:
         assert nvim.exec_lua("return vim.wo[...].winblend", compact) > 0, "Compact picker skipped fade"
         frames_for(250)
         assert nvim.exec_lua("return vim.wo[...].winblend", compact) == 0, "Compact picker stayed faded"
-        nvim.exec_lua("require('telescope.actions').close(vim.api.nvim_get_current_buf())")
-        frames_for(50)
+        nvim.input("\x03")
+        frames_for(65)
+        assert nvim.exec_lua("return vim.wo[...].winblend", compact) > 0, "Compact picker did not fade closed"
+        frames_for(160)
         assert nvim.exec_lua("return #vim.api.nvim_list_wins()") == 1, "Compact picker leaked windows"
 
         nvim.ui_try_resize(140, 50)
@@ -141,10 +157,16 @@ try:
         )
         assert nvim.exec_lua("return vim.api.nvim_win_is_valid(...)", resized), "Resize closed the picker"
         assert nvim.exec_lua("return vim.wo[...].winblend", resized) == 0, "Resize left the picker faded"
-        nvim.exec_lua("require('telescope.actions').close(vim.api.nvim_get_current_buf())")
-        frames_for(50)
+        nvim.input("\x1b")  # Leave insert mode as Telescope normally does.
+        frames_for(20)
+        assert nvim.eval("mode()") == "n", "Esc did not enter picker normal mode"
+        nvim.input("\x1b")
+        frames_for(35)
+        assert nvim.exec_lua("return #vim.api.nvim_list_wins()") > 1, "Esc skipped closing animation"
+        nvim.ui_try_resize(105, 31)
+        frames_for(190)
         assert nvim.exec_lua("return #vim.api.nvim_list_wins()") == 1, "Resized picker leaked windows"
-        print("Ctrl-P content, synchronized slide, input, file selection, compact layout, resize, and early close: OK")
+        print("Ctrl-P open/close, input, file selection, compact layout, resize, and interrupted opening: OK")
 finally:
     try:
         nvim.command("qa!")

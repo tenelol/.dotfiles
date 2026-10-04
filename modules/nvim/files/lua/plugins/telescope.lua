@@ -25,7 +25,7 @@ return {
             local function project_opts(opts)
                 return vim.tbl_extend("force", {
                     cwd = project.buffer_root(0),
-                    attach_mappings = animation.open,
+                    attach_mappings = animation.attach,
                 }, opts or {})
             end
 
