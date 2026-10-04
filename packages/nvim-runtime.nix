@@ -122,6 +122,7 @@ let
     nvim-lspconfig = pkgs.vimPlugins.nvim-lspconfig;
     lualine-nvim = pkgs.vimPlugins.lualine-nvim;
     markdown-preview-nvim = pkgs.vimPlugins.markdown-preview-nvim;
+    render-markdown-nvim = pkgs.vimPlugins.render-markdown-nvim;
     neo-tree-nvim = pkgs.vimPlugins.neo-tree-nvim;
     plenary-nvim = pkgs.vimPlugins.plenary-nvim;
     nui-nvim = pkgs.vimPlugins.nui-nvim;
