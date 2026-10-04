@@ -63,6 +63,7 @@ vim.fn.delete(directory, "rf")
 
 require("plugins.toggleterm")[1].config()
 local Terminal = require("toggleterm.terminal").Terminal
+local terminal = require("core.terminal")
 local terms = {}
 for _, direction in ipairs({ "horizontal", "vertical", "float" }) do
   local term = Terminal:new({
@@ -72,8 +73,8 @@ for _, direction in ipairs({ "horizontal", "vertical", "float" }) do
     float_opts = { row = 3, col = 10, width = 48, height = 12 },
   })
   terms[#terms + 1] = term
-  for _ = 1, 2 do
-    term:open(10, direction)
+  for iteration = 1, 2 do
+    term:open(iteration == 1 and 10 or nil, direction)
     local win, job = term.window, term.job_id
     assert(vim.w[win].dotfiles_panel_animation, "Terminal opening animation did not start: " .. direction)
     local size = direction == "vertical" and vim.api.nvim_win_get_width or vim.api.nvim_win_get_height
@@ -113,7 +114,25 @@ for _, direction in ipairs({ "horizontal", "vertical", "float" }) do
       assert(vim.api.nvim_win_get_config(win).row == 3, "Floating terminal did not return to its intended position")
     end
     assert(vim.g.minianimate_disable ~= true, "MiniAnimate stayed disabled after terminal animation")
-    term:close()
+    terminal.close(term)
+    assert(term:is_open() and vim.w[win].dotfiles_panel_animation, "Terminal closed before its animation: " .. direction)
+    local closing = false
+    assert(
+      vim.wait(1000, function()
+        if not vim.api.nvim_win_is_valid(win) then
+          return true
+        end
+        if direction == "float" then
+          closing = closing or vim.api.nvim_win_get_config(win).row > 3
+        else
+          closing = closing or (size(win) > 1 and size(win) < 10)
+        end
+        return false
+      end, 5),
+      "Terminal closing animation did not finish: " .. direction
+    )
+    assert(closing, "Terminal snapped closed without sliding: " .. direction)
+    assert(term.job_id == job and vim.fn.jobwait({ job }, 0)[1] == -1, "Closing animation stopped the terminal job")
     vim.api.nvim_set_current_win(main)
     vim.wait(200, function()
       return false
@@ -122,11 +141,55 @@ for _, direction in ipairs({ "horizontal", "vertical", "float" }) do
 end
 local interrupted = terms[1]
 interrupted:open(10, "horizontal")
+assert(vim.wait(500, function()
+  return vim.api.nvim_win_get_height(interrupted.window) > 2
+end, 5))
+terminal.close(interrupted)
+local reversing_window = interrupted.window
+terminal.show(interrupted)
+assert(interrupted.window == reversing_window, "Reopening during close replaced the terminal window")
+assert(vim.wait(1000, function()
+  return not vim.w[reversing_window].dotfiles_panel_animation
+end, 5))
+assert(interrupted:is_open() and vim.api.nvim_win_get_height(reversing_window) == 10, "Interrupted close did not restore size")
 interrupted:close()
+interrupted:open(10, "horizontal")
+local reopened_window = interrupted.window
 vim.wait(250, function()
   return false
 end)
+assert(interrupted:is_open() and interrupted.window == reopened_window, "Old animation closed the reopened terminal")
+assert(not vim.w[reopened_window].edgy_disable, "Interrupted animation left Edgy disabled")
 assert(vim.fn.jobwait({ interrupted.job_id }, 0)[1] == -1, "Closing during animation killed the terminal job")
+interrupted:close()
+
+for _, toggle in ipairs({ terminal.toggle_shell, terminal.toggle_float, require("core.test-terminal").toggle }) do
+  local term = toggle() or require("toggleterm.terminal").get(91, true)
+  local win, job = term.window, term.job_id
+  assert(vim.wait(1000, function()
+    return not vim.w[win].dotfiles_panel_animation
+  end, 5))
+  toggle()
+  assert(term:is_open() and vim.w[win].dotfiles_panel_animation, "Terminal toggle bypassed closing animation")
+  assert(vim.wait(1000, function()
+    return not term:is_open()
+  end, 5))
+  assert(vim.fn.jobwait({ job }, 0)[1] == -1, "Terminal toggle stopped its job")
+  terms[#terms + 1] = term
+end
+
+for _, term in ipairs({ terms[1], terms[3] }) do
+  term.hidden = false
+  term:open(10)
+end
+assert(vim.wait(1000, function()
+  return not vim.w[terms[1].window].dotfiles_panel_animation and not vim.w[terms[3].window].dotfiles_panel_animation
+end, 5))
+terminal.toggle_all()
+assert(terms[1]:is_open() and terms[3]:is_open(), "Toggle all closed terminals before animation")
+assert(vim.wait(1000, function()
+  return not terms[1]:is_open() and not terms[3]:is_open()
+end, 5))
 for _, term in ipairs(terms) do
   vim.fn.jobstop(term.job_id)
 end

@@ -50,8 +50,8 @@ function M.toggle()
     local term = get_terminal()
 
     term.dir = project.buffer_root(0)
-    if term:is_open() then
-        term:close()
+    if term:is_open() and not require("core.terminal-animation").is_closing(term) then
+        terminal.close(term)
         return
     end
 

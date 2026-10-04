@@ -1,51 +1,6 @@
 local plugin = require("nix-plugin")
 local theme = require("core.theme")
 
-local function animate_open(term)
-  local win = term.window
-  local config = vim.api.nvim_win_get_config(win)
-  local from, target, apply
-  if config.relative ~= "" then
-    target = config.row
-    from = math.max(target + 1, vim.o.lines - config.height - 3)
-    apply = function(row)
-      vim.api.nvim_win_set_config(win, { relative = config.relative, win = config.win, row = row, col = config.col })
-    end
-  else
-    local axis = term.direction == "vertical" and "width" or "height"
-    from, target = 1, vim.api["nvim_win_get_" .. axis](win)
-    apply = function(size)
-      vim.api["nvim_win_set_" .. axis](win, size)
-    end
-  end
-  local edgy_disabled = vim.w[win].edgy_disable
-  vim.w[win].edgy_disable = true
-  vim.w[win].dotfiles_panel_animation = true
-  apply(from)
-  require("snacks").animate(from, target, function(value, ctx)
-    if not vim.api.nvim_win_is_valid(win) then
-      ctx.anim:stop()
-      return
-    end
-    if vim.api.nvim_win_get_buf(win) ~= term.bufnr then
-      vim.w[win].edgy_disable = edgy_disabled
-      vim.w[win].dotfiles_panel_animation = nil
-      ctx.anim:stop()
-      return
-    end
-    apply(ctx.done and target or value)
-    if ctx.done then
-      vim.w[win].edgy_disable = edgy_disabled
-      vim.w[win].dotfiles_panel_animation = nil
-    end
-  end, {
-    id = "toggleterm_open_" .. term.id,
-    int = true,
-    easing = "linear",
-    duration = { step = 15, total = 180 },
-  })
-end
-
 return {
   plugin.spec("toggleterm-nvim", {
     dependencies = { plugin.dep("edgy-nvim"), plugin.dep("snacks-nvim") },
@@ -105,7 +60,7 @@ return {
         direction = "horizontal",
         persist_mode = true,
         start_in_insert = true,
-        on_open = animate_open,
+        on_open = require("core.terminal-animation").open,
         winbar = {
           enabled = true,
           name_formatter = terminal_label,

@@ -1,4 +1,5 @@
 local project = require("core.project")
+local animation = require("core.terminal-animation")
 
 local M = {}
 
@@ -96,6 +97,9 @@ function M.show(term, opts)
     close_other_terminals(term.id)
 
     if term:is_open() and term.direction == direction then
+        if animation.is_closing(term) then
+            animation.open(term)
+        end
         term:focus()
         return term
     end
@@ -136,6 +140,10 @@ function M.new(opts)
     return term
 end
 
+function M.close(term)
+    animation.close(term)
+end
+
 function M.toggle(id, opts)
     opts = opts or {}
 
@@ -159,8 +167,8 @@ function M.toggle(id, opts)
         term.dir = opts.dir or project_root()
     end
 
-    if term:is_open() then
-        term:close()
+    if term:is_open() and not animation.is_closing(term) then
+        M.close(term)
         return term
     end
 
@@ -194,8 +202,8 @@ function M.toggle_shell(opts)
         shell_term.dir = project_root()
     end
 
-    if shell_term:is_open() then
-        shell_term:close()
+    if shell_term:is_open() and not animation.is_closing(shell_term) then
+        M.close(shell_term)
         return shell_term
     end
 
@@ -219,7 +227,14 @@ function M.toggle_float()
         float_term.dir = project_root()
     end
 
-    float_term:toggle()
+    if float_term:is_open() and not animation.is_closing(float_term) then
+        M.close(float_term)
+    elseif float_term:is_open() then
+        animation.open(float_term)
+        float_term:focus()
+    else
+        float_term:open()
+    end
     return float_term
 end
 
@@ -294,7 +309,26 @@ function M.select()
 end
 
 function M.toggle_all()
-    vim.cmd("ToggleTermToggleAll")
+    local _, terms = sorted_terminals()
+    local closing = false
+    for _, term in ipairs(terms) do
+        closing = closing or (term:is_open() and not animation.is_closing(term))
+    end
+    if closing then
+        for _, term in ipairs(terms) do
+            if term:is_open() then
+                M.close(term)
+            end
+        end
+    else
+        for _, term in ipairs(terms) do
+            if term:is_open() then
+                animation.open(term)
+            else
+                term:open()
+            end
+        end
+    end
 end
 
 function M.cycle(step)
