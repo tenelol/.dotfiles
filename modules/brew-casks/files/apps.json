@@ -8,12 +8,6 @@
       "wrapCli": true
     },
     {
-      "name": "claude"
-    },
-    {
-      "name": "chatgpt"
-    },
-    {
       "name": "cursor",
       "cli": {
         "cursor": "Cursor.app/Contents/Resources/app/bin/code"
@@ -46,9 +40,6 @@
     },
     {
       "name": "raycast"
-    },
-    {
-      "name": "thebrowsercompany-dia"
     },
     {
       "name": "zed",
@@ -84,9 +75,6 @@
       "name": "db-browser-for-sqlite"
     },
     {
-      "name": "discord"
-    },
-    {
       "name": "obsidian",
       "cli": {
         "obsidian": "Obsidian.app/Contents/MacOS/obsidian-cli"
@@ -94,9 +82,6 @@
     },
     {
       "name": "palmier-pro"
-    },
-    {
-      "name": "slack"
     },
     {
       "name": "visual-studio-code",

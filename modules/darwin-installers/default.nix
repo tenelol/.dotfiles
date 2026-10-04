@@ -10,6 +10,30 @@
 let
   extract = pkgs.callPackage ../../packages/macos-installer-source.nix { };
   casks = pkgs.brewCasks;
+  brewCask = pkgs.callPackage ../../packages/brew-cask.nix { };
+  chatgpt = casks.chatgpt.overrideAttrs {
+    version = "26.930.41038";
+    src = pkgs.fetchurl {
+      url = "https://persistent.oaistatic.com/codex-app-prod/ChatGPT-darwin-arm64-26.930.41038.zip";
+      hash = "sha256-9s9NLptpru+jOt2kvNGi0wY1f1JToaxgSXAIcMKN0Mc=";
+    };
+  };
+  selfUpdatingApp = name: app: bundleId: teamId:
+    let
+      cask = if name == "chatgpt" then chatgpt else casks.${name};
+      package = brewCask { inherit cask; };
+      version = lib.head (lib.splitString "," cask.version);
+    in
+    {
+      inherit name version bundleId teamId;
+      kind = "app";
+      app = "/Applications/${app}.app";
+      appVersion = version;
+      source = "${package}/Applications/${app}.app";
+      owner = profile.username;
+      selfUpdating = true;
+      running = [ "/${app}\\.app/" ];
+    };
   versionPrefix = version: lib.concatStringsSep "." (lib.take 2 (lib.splitString "." version)) + ".";
   karabinerDmg = pkgs.fetchurl {
     url = "https://github.com/pqrs-org/Karabiner-Elements/releases/download/v16.0.0/Karabiner-Elements-16.0.0.dmg";
@@ -63,6 +87,9 @@ let
       stateDir = "/var/db/dotfiles-installers";
       consoleUser = profile.username;
       packages = [
+        (selfUpdatingApp "chatgpt" "ChatGPT" "com.openai.codex" "2DC432GLL2")
+        (selfUpdatingApp "thebrowsercompany-dia" "Dia" "company.thebrowser.dia" "S6N382Y83G")
+        (selfUpdatingApp "claude" "Claude" "com.anthropic.claudefordesktop" "Q6L2SF6YDW")
         {
           name = "azookey";
           kind = "pkg";
@@ -141,6 +168,8 @@ let
         }
       ]
       ++ lib.optionals host.fullDesktopFeatured [
+        (selfUpdatingApp "discord" "Discord" "com.hnc.Discord" "53Q6R32WPB")
+        (selfUpdatingApp "slack" "Slack" "com.tinyspeck.slackmacgap" "BQR82RBBHL")
         {
           name = "docker-desktop";
           kind = "app";
@@ -210,6 +239,9 @@ delib.scopedModule {
   options = delib.singleEnableOption hostTraits.darwinDesktop;
 
   darwin.ifEnabled = {
+    # LINE for macOS is distributed through the Mac App Store. Preserve the
+    # machine's enabled App Store automatic updates rather than copying it.
+    system.defaults.CustomSystemPreferences."com.apple.commerce".AutoUpdate = true;
     environment.etc."dotfiles/installers.json".source = manifest;
     environment.systemPackages = [ reconcile ];
     system.activationScripts.postActivation.text = lib.mkBefore ''

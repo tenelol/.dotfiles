@@ -57,7 +57,7 @@ class FakeHost:
         return self.mas_ids
 
     def stage_app(self, source, destination, _entry):
-        self.apps[destination] = self.apps[source]
+        self.apps[destination] = self.apps[source] | {"symlink": False, "resolvedPath": destination}
         return Path("/tmp/fake-stage"), Path("/tmp/fake-backup")
 
     def rollback_app(self, *_args):
@@ -361,6 +361,75 @@ class ReconcileTests(unittest.TestCase):
         host.rollback_app(str(destination), stage, backup)
         self.assertEqual((destination / "version").read_text(), "old")
         self.assertFalse(stage.exists())
+
+    def test_self_updating_app_keeps_a_newer_regular_copy(self):
+        item = entry(name="dia", version="1.51.0", appVersion="1.51.0",
+                     receipts={}, packages=[], strictVersion=False, selfUpdating=True)
+        self.host.apps[item["app"]]["version"] = "1.51.1"
+        self.assertEqual(RECONCILE.preflight_entry(self.host, item, self.temp.name), "newer")
+        self.assertEqual(self.host.installs, [])
+
+    def test_newer_nix_link_is_copied_without_downgrading(self):
+        item = entry(name="dia", version="1.51.0", appVersion="1.51.0",
+                     receipts={}, packages=[], strictVersion=False, selfUpdating=True,
+                     source="/nix/store/old/Dia.app")
+        source = "/nix/store/new/Dia.app"
+        self.host.apps[item["app"]].update(version="1.51.1", symlink=True, resolvedPath=source)
+        self.host.apps[source] = self.host.apps[item["app"]] | {"symlink": False}
+        status = RECONCILE.preflight_entry(self.host, item, self.temp.name)
+        self.assertEqual(status, "needs-copy")
+        RECONCILE.reconcile_entry(self.host, item, self.temp.name, status)
+        self.assertEqual(self.host.apps[item["app"]]["version"], "1.51.1")
+        self.assertFalse(self.host.apps[item["app"]]["symlink"])
+        self.assertEqual(RECONCILE.preflight_entry(self.host, item, self.temp.name), "newer")
+
+    def test_running_nix_link_blocks_replacement(self):
+        item = entry(selfUpdating=True, source="/nix/store/app.app")
+        self.host.apps[item["app"]].update(symlink=True, resolvedPath=item["source"])
+        self.host.running_patterns.add("karabiner_grabber")
+        with self.assertRaisesRegex(RuntimeError, "close the running"):
+            RECONCILE.preflight_entry(self.host, item, self.temp.name)
+
+    def test_symlink_copy_is_writable_and_preserves_source_and_rollback(self):
+        root = Path(self.temp.name)
+        source = root / "source.app"
+        source.mkdir()
+        (source / "version").write_text("1.51.1")
+        (source / "version").chmod(0o444)
+        outside = root / "user-data"
+        outside.write_text("unchanged")
+        outside.chmod(0o444)
+        (source / "link").symlink_to(outside)
+        destination = root / "Dia.app"
+        destination.symlink_to(source)
+
+        class DiskHost(RECONCILE.Host):
+            def run(self, *args, check=True):
+                shutil.copytree(args[1], args[2], symlinks=True)
+
+            def app(self, path):
+                p = Path(path)
+                if not p.is_dir():
+                    return None
+                return {"bundleId": "company.thebrowser.dia", "teamId": "S6N382Y83G",
+                        "version": (p / "version").read_text(), "symlink": p.is_symlink(),
+                        "resolvedPath": str(p.resolve())}
+
+        import pwd
+        import os
+        expected = {"bundleId": "company.thebrowser.dia", "teamId": "S6N382Y83G",
+                    "appVersion": "1.51.1", "selfUpdating": True,
+                    "owner": pwd.getpwuid(os.getuid()).pw_name}
+        host = DiskHost()
+        stage, backup = host.stage_app(str(source), str(destination), expected)
+        self.assertFalse(destination.is_symlink())
+        self.assertTrue((destination / "version").stat().st_mode & 0o200)
+        self.assertFalse((source / "version").stat().st_mode & 0o200)
+        self.assertFalse(outside.stat().st_mode & 0o200)
+        self.assertEqual(outside.read_text(), "unchanged")
+        host.rollback_app(str(destination), stage, backup)
+        self.assertTrue(destination.is_symlink())
+        self.assertEqual(destination.resolve(), source.resolve())
 
     def test_marker_written_and_read_atomically(self):
         host = RECONCILE.Host()

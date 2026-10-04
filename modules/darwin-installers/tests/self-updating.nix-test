@@ -1,0 +1,27 @@
+let
+  repository = toString ../../../.;
+  configuration = (builtins.getFlake "git+file://${repository}").darwinConfigurations.macbook-rift;
+  config = configuration.config;
+  manifest = builtins.fromJSON (builtins.unsafeDiscardStringContext (
+    builtins.readFile config.environment.etc."dotfiles/installers.json".source
+  ));
+  expected = [ "chatgpt" "thebrowsercompany-dia" "claude" "discord" "slack" ];
+  selected = builtins.filter (entry: entry.selfUpdating or false) manifest.packages;
+  home = config.home-manager.users.${config.system.primaryUser};
+in
+assert map (entry: entry.name) selected == expected;
+assert builtins.all (entry:
+  entry.owner == config.system.primaryUser
+  && entry.kind == "app"
+  && builtins.substring 0 14 entry.app == "/Applications/"
+  && entry.appVersion == entry.version
+  && builtins.substring 0 11 entry.source == "/nix/store/"
+) selected;
+assert builtins.all (package: !(builtins.elem (package.pname or "") expected)) home.home.packages;
+assert manifest.masApps.LINE == 539883307;
+assert config.system.defaults.CustomSystemPreferences."com.apple.commerce".AutoUpdate;
+{
+  apps = map (entry: { inherit (entry) name app version source bundleId teamId; }) selected;
+  line = "Mac App Store automatic updates";
+  immutableHomeManagerCopies = "excluded";
+}

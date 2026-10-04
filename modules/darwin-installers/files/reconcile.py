@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import plistlib
+import pwd
 import re
 import shutil
 import subprocess
@@ -48,6 +49,8 @@ class Host:
             "bundleId": plist.get("CFBundleIdentifier"),
             "version": plist.get("CFBundleShortVersionString") or plist.get("CFBundleVersion"),
             "teamId": match.group(1) if match else None,
+            "symlink": Path(path).is_symlink(),
+            "resolvedPath": str(Path(path).resolve()),
         }
 
     def running(self, pattern):
@@ -76,8 +79,10 @@ class Host:
 
     def stage_app(self, source, destination, expected):
         destination = Path(destination)
-        if destination.is_symlink():
+        if destination.is_symlink() and not expected.get("selfUpdating"):
             raise RuntimeError(f"refusing to replace symlink: {destination}")
+        original = self.app(str(destination))
+        original_inode = destination.lstat() if os.path.lexists(destination) else None
         stage = Path(tempfile.mkdtemp(prefix=".dotfiles-installer-", dir=destination.parent))
         incoming = stage / "incoming.app"
         backup = stage / "previous.app"
@@ -86,9 +91,24 @@ class Host:
             verify_identity(self.app(str(incoming)), expected, str(incoming))
             verify_version(self.app(str(incoming)), expected, str(incoming))
             if expected.get("owner"):
-                self.run("/usr/sbin/chown", "-R", expected["owner"], str(incoming))
-                self.run("/bin/chmod", "-R", "u+w", str(incoming))
+                account = pwd.getpwnam(expected["owner"])
+                for directory, dirs, files in os.walk(incoming, followlinks=False):
+                    for path in [Path(directory)] + [Path(directory) / name for name in dirs + files]:
+                        os.chown(path, account.pw_uid, account.pw_gid, follow_symlinks=False)
+                        if not path.is_symlink():
+                            path.chmod(path.stat().st_mode | 0o200)
                 verify_identity(self.app(str(incoming)), expected, str(incoming))
+            current_inode = destination.lstat() if os.path.lexists(destination) else None
+            if (
+                (original_inode is None) != (current_inode is None)
+                or (
+                    original_inode
+                    and (original_inode.st_dev, original_inode.st_ino)
+                    != (current_inode.st_dev, current_inode.st_ino)
+                )
+                or self.app(str(destination)) != original
+            ):
+                raise RuntimeError(f"app changed while preparing replacement: {destination}")
             if destination.exists():
                 os.rename(destination, backup)
             os.rename(incoming, destination)
@@ -203,6 +223,8 @@ def entry_status(host, entry, state_dir):
         raise RuntimeError(f"{name}: existing path is not a valid signed app: {entry['app']}")
     if actual is not None:
         verify_identity(actual, entry, entry["app"])
+        if entry.get("selfUpdating") and actual.get("symlink") and app_meets_minimum(actual, entry):
+            return "needs-copy", None
     marker = host.marker(state_dir, name)
     if marker and newer(marker, entry["version"]):
         if entry.get("strictVersion"):
@@ -252,9 +274,24 @@ def entry_status(host, entry, state_dir):
     return "needs-install", None
 
 
+def installation_entry(host, entry, status):
+    if status != "needs-copy":
+        return entry
+    actual = host.app(entry["app"])
+    verify_identity(actual, entry, entry["app"])
+    if not actual.get("symlink") or not app_meets_minimum(actual, entry):
+        raise RuntimeError(f"app changed before copying: {entry['app']}")
+    return entry | {
+        "source": actual["resolvedPath"],
+        "version": actual["version"],
+        "appVersion": actual["version"],
+        "appVersionPrefix": None,
+    }
+
+
 def preflight_entry(host, entry, state_dir):
     status, _ = entry_status(host, entry, state_dir)
-    if status != "needs-install":
+    if status not in {"needs-install", "needs-copy"}:
         return status
 
     for pattern in entry.get("running", []):
@@ -263,11 +300,12 @@ def preflight_entry(host, entry, state_dir):
 
     for package in entry.get("packages", []):
         host.verify_pkg(package, entry["teamId"])
-    source = entry.get("source") or entry.get("appSource")
+    wanted = installation_entry(host, entry, status)
+    source = wanted.get("source") or wanted.get("appSource")
     if source:
         source_app = host.app(source)
         verify_identity(source_app, entry, source)
-        verify_version(source_app, entry, source)
+        verify_version(source_app, wanted, source)
     return status
 
 
@@ -287,22 +325,25 @@ def reconcile_entry(host, entry, state_dir, status):
 
     staged = None
     try:
-        source = entry.get("source") or entry.get("appSource")
+        wanted = installation_entry(host, entry, status)
+        source = wanted.get("source") or wanted.get("appSource")
         if source:
             current = host.app(entry["app"])
             try:
-                verify_version(current, entry, entry["app"])
+                if status == "needs-copy":
+                    raise RuntimeError("copy required")
+                verify_version(current, wanted, entry["app"])
             except RuntimeError:
-                staged = host.stage_app(source, entry["app"], entry)
+                staged = host.stage_app(source, entry["app"], wanted)
         actual = host.app(entry["app"])
         verify_identity(actual, entry, entry["app"])
-        verify_version(actual, entry, entry["app"])
+        verify_version(actual, wanted, entry["app"])
         if not receipts_match(host, entry):
             raise RuntimeError(f"{name}: installer did not register expected receipts")
         if not all(Path(path).exists() for path in entry.get("requiredPaths", [])):
             raise RuntimeError(f"{name}: installer did not create expected system files")
-        host.write_marker(state_dir, name, entry["version"])
-        print(f"{name}: installed {entry['version']}")
+        host.write_marker(state_dir, name, wanted["version"])
+        print(f"{name}: installed {wanted['version']}")
     except Exception:
         if staged:
             host.rollback_app(entry["app"], *staged)

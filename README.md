@@ -64,12 +64,12 @@ with browser data backed up before cleanup.
 
 | Scope | Repository owner | Contents |
 | --- | --- | --- |
-| 31 Casks | [`modules/brew-casks`](./modules/brew-casks) and its [manifest](./modules/brew-casks/files/apps.json) | 21 immutable GUI bundles (14 base, 7 `fullDesktop`), the Codex CLI, and 9 fonts |
+| 26 Casks | [`modules/brew-casks`](./modules/brew-casks) and its [manifest](./modules/brew-casks/files/apps.json) | 16 immutable GUI bundles (11 base, 5 `fullDesktop`), the Codex CLI, and 9 fonts |
 | CLI formulae | [`modules/darwin-cli`](./modules/darwin-cli) | 58 Nix packages covering 54 shared formulae and Rift, SketchyBar, Borders; includes the official `herdr-bin` input |
-| Native installers | [`modules/darwin-installers`](./modules/darwin-installers) | 9 signed PKG/app installations and checks for 8 Mac App Store apps |
+| Native installers | [`modules/darwin-installers`](./modules/darwin-installers) | 9 signed PKG/app installations, 5 self-updating app copies and checks for 8 Mac App Store apps |
 | Other GUI apps | [`modules/aerospace`](./modules/aerospace), [`modules/boringnotch`](./modules/boringnotch) | AeroSpace from nixpkgs and a pinned boringNotch package |
 
-Home Manager places the 21 GUI bundles under `~/Applications/Home Manager Apps`
+Home Manager places the 16 immutable GUI bundles under `~/Applications/Home Manager Apps`
 after an authorized `nh darwin switch`. App-provided CLI commands use
 `~/.local/bin`; Ghostty's man pages and completions and Zed's shell completions
 are included. The fonts use nix-darwin's `fonts.packages`. The installer module
@@ -78,6 +78,15 @@ system apps. Missing Mac App Store apps require a human to sign in and install
 already-owned copies; the module does not purchase or authenticate. The
 [migration notes](./docs/research/brew-nix.md) describe the current verification
 and activation limits.
+
+ChatGPT (including Codex), Dia, Claude, Discord and Slack are copied from signed
+Nix packages into `/Applications`, with ownership and write permissions for the
+primary user. Their official updaters can update these copies. denix/nh activation
+checks identity and a minimum bootstrap version; it preserves newer installed
+versions instead of restoring the pinned version. A running app must be closed
+before its initial copy or bootstrap upgrade. Profiles, caches and Keychain data
+stay in their existing locations. LINE uses its official Mac App Store distribution;
+the already-enabled App Store automatic update setting is also declared in Nix.
 
 ## Codex skills
 

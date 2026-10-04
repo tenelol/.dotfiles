@@ -6,14 +6,18 @@
 
 | 管理元 | 宣言 | 対象 |
 | --- | ---: | --- |
-| [brew-casks の manifest](../../modules/brew-casks/files/apps.json) と [module](../../modules/brew-casks/default.nix) | 31 Cask | 21 GUI app（base 14、`fullDesktop` 7）、Codex CLI 1、font 9 |
+| [brew-casks の manifest](../../modules/brew-casks/files/apps.json) と [module](../../modules/brew-casks/default.nix) | 26 Cask | immutable GUI 16件（base 11、`fullDesktop` 5）、Codex CLI 1、font 9 |
 | [darwin-cli](../../modules/darwin-cli/default.nix) | 58 Nix package | 旧formula 54件と Rift、SketchyBar、Borders。Zathura 5 formulaはプラグイン入りwrapper 1件に集約 |
-| [darwin-installers](../../modules/darwin-installers/default.nix) | 9 installer/app copy、MAS 8件 | azooKey、Karabiner、Tailscale、Wireshark、Docker、Microsoft Office 4アプリと Mac App Store アプリ |
+| [darwin-installers](../../modules/darwin-installers/default.nix) | 9 installer/app copy、自己更新app 5件、MAS 8件 | azooKey、Karabiner、Tailscale、Wireshark、Docker、Office 4アプリ、通常配置の5アプリ、Mac App Store アプリ |
 | [AeroSpace](../../modules/aerospace/default.nix)、[boringNotch](../../modules/boringnotch/default.nix) | GUI 2件 | nixpkgs の AeroSpace と固定した boringNotch package |
 
 `brew-nix` と `brew-api` は `flake.lock` に固定し、Cask source の再現に使う。実際のroot `nixpkgs` inputは `flake.lock` の `root.inputs.nixpkgs` が指す `nixpkgs_2`（`4975466d324710c576dc11ad614684e6bd8cad8e`）。旧検査は別node `nodes.nixpkgs` を直接読んでいたため修正済み。Caskの `no_check` sourceは固定hashを補い、Material Symbols は固定Git archiveと必要なfontファイルに絞った。
 
-GUI bundleはHome Managerの `~/Applications/Home Manager Apps` に配置する設定。app内CLIは `~/.local/bin` に公開し、Ghosttyのman/completionとZedのbash・zsh・fish・PowerShell補完を維持する。fontは `fonts.packages` で宣言する。Codex CaskはGUIではなくCLIとして扱い、completionを別packageから生成する。AeroSpaceとboringNotchは `/Applications/Nix Apps` を使用する。
+immutable GUI bundle 16件はHome Managerの `~/Applications/Home Manager Apps` に配置する。ChatGPT（Codexを含む）・Dia・Claude・Discord・Slackは署名を保持したNix packageから通常の `/Applications` へコピーし、primary userの所有・書込権限で公式updaterを利用する。Nix側のversionは導入時の最低版とし、自己更新された新しい版をswitchで戻さない。Nixへの既存linkは同じ本体のコピーへ置き換え、新しいlink先のversionも保持する。app data/cache/Keychainのパスは変更しない。ChatGPTの導入元は公開版26.930.41038の公式ZIPとSHA256を固定した。
+
+LINEのmacOS公式配布は[Mac App Store](https://guide.line.me/ja/signup/pc-line.html)で、brew-nixのCaskは存在しない。既存のMAS導入確認と通常のapp配置を維持し、既にONだったApp Store自動更新をNixでも宣言した。この自動更新設定はMac App Storeアプリ全体に作用する。5アプリのコピー配置はbrew-nixの自動更新オプションではなく、このrepositoryのinstaller処理による。
+
+app内CLIは `~/.local/bin` に公開し、Ghosttyのman/completionとZedのbash・zsh・fish・PowerShell補完を維持する。fontは `fonts.packages` で宣言する。Codex CaskはGUIではなくCLIとして扱い、completionを別packageから生成する。AeroSpaceとboringNotchは `/Applications/Nix Apps` を使用する。
 
 CLI formulaの置換では名前だけでなくコマンドも合わせた。Homebrewの `gdrive` はglotlabs v3なので `pkgs.gdrive3`、`cloudflare-wrangler` は `pkgs.wrangler`、`dotnet` はSDK 10、`node` はNode 26を選んだ。`pkgconf` に `pkg-config` のaliasを足し、Rustは `rustc`・`cargo`・`rustfmt`・`clippy` を揃えた。`herdr-bin` はmacOS/Linuxとも公式の固定releaseを使用し、`herdr` source inputとの版一致を確認する。Zathura wrapperはpdf-mupdf、ps、cb、djvuを同梱するため、Homebrew prefixにpluginをリンクするactivationは不要。MySQLは既存の9.7.1に合わせた[Oracle署名済みbinary](../../packages/mysql97.nix)を固定し、`/opt/homebrew/var/mysql` には触れずserverも起動しない。
 
