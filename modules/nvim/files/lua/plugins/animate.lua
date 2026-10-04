@@ -10,11 +10,15 @@ return {
     event = "VeryLazy",
     config = function()
       local animate = require("mini.animate")
+      local ghostty_cursor = vim.fn.has("macunix") == 1
+        and (vim.env.TERM_PROGRAM == "ghostty" or vim.env.TERM == "xterm-ghostty")
       local timing = animate.gen_timing.quadratic({ duration = 160, unit = "total", easing = "out" })
       local scroll_timing = animate.gen_timing.quadratic({ duration = 200, unit = "total", easing = "out" })
 
       animate.setup({
         cursor = {
+          -- The macOS Ghostty profile already animates the cursor with shaders.
+          enable = not ghostty_cursor,
           timing = animate.gen_timing.quadratic({ duration = 120, unit = "total", easing = "out" }),
           path = animate.gen_path.line({
             max_output_steps = 30,

@@ -9,7 +9,7 @@ assert(_G.MiniAnimate == nil, "Animations should wait for VeryLazy")
 vim.api.nvim_exec_autocmds("User", { pattern = "VeryLazy" })
 
 local animate = require("mini.animate")
-for _, action in ipairs({ "cursor", "scroll", "resize", "open", "close" }) do
+for _, action in ipairs({ "scroll", "resize", "open", "close" }) do
   assert(animate.config[action].enable, action .. " animation is disabled")
 end
 assert(animate.config.cursor.timing(1, 30) < animate.config.cursor.timing(30, 30), "Cursor should ease out")
