@@ -56,6 +56,33 @@ class ProfileMigrationTest(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             module.atomic_write(self.profiles, "replacement", "outdated contents")
 
+    def test_mutable_destination_hash_does_not_follow_old_nix_link(self):
+        old = self.home / "nix-store/Zen.app"
+        (old / "Contents/MacOS").mkdir(parents=True)
+        link = self.home / "Applications/Zen.app"
+        link.parent.mkdir()
+        link.symlink_to(old)
+        self.assertEqual(module.install_directory(link), str((old / "Contents/MacOS").resolve()))
+        self.assertEqual(module.install_directory(link, literal=True), str(link / "Contents/MacOS"))
+
+    def test_normal_copy_keeps_current_nix_install_profile(self):
+        state = self.home / ".local/state/dotfiles/zen-install.json"
+        state.parent.mkdir(parents=True)
+        state.write_text('{"hash":"OLD"}')
+        self.assertEqual(module.preserve(self.home, "NORMAL", "OTHER"), "Profiles/old")
+        self.assertEqual(module.preserve(self.home, "NORMAL", "NORMAL"), "Profiles/old")
+
+    def test_normal_copy_replaces_stale_homebrew_mapping_with_current_selection(self):
+        state = self.home / ".local/state/dotfiles/zen-install.json"
+        state.parent.mkdir(parents=True)
+        state.write_text('{"hash":"OLD"}')
+        self.profiles.write_text(self.profiles.read_text() + "[InstallNORMAL]\nDefault=Profiles/other\nLocked=1\n")
+        self.assertEqual(module.preserve(self.home, "NORMAL", "OLD", prefer_previous=True), "Profiles/old")
+        self.assertEqual(module.parser(self.profiles.read_text())["InstallNORMAL"]["Default"], "Profiles/old")
+        # Later switches preserve a new profile the user selects in the normal app.
+        self.profiles.write_text(self.profiles.read_text().replace("[InstallNORMAL]\nDefault=Profiles/old", "[InstallNORMAL]\nDefault=Profiles/other"))
+        self.assertEqual(module.preserve(self.home, "NORMAL", "NORMAL", prefer_previous=True), "Profiles/other")
+
 
 if __name__ == "__main__":
     unittest.main()

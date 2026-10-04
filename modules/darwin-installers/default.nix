@@ -5,12 +5,44 @@
   lib,
   pkgs,
   profile,
+  config,
   ...
 }:
 let
   extract = pkgs.callPackage ../../packages/macos-installer-source.nix { };
   casks = pkgs.brewCasks;
   brewCask = pkgs.callPackage ../../packages/brew-cask.nix { };
+  apps = builtins.fromJSON (builtins.readFile ../brew-casks/files/apps.json);
+  selectedApps = apps.base ++ lib.optionals host.fullDesktopFeatured apps.fullDesktop;
+  selfUpdatingCask =
+    spec:
+    let
+      cask = casks.${spec.name};
+      package = brewCask (
+        builtins.removeAttrs spec [
+          "name"
+          "selfUpdating"
+        ]
+        // {
+          inherit cask;
+        }
+      );
+      version = lib.head (lib.splitString "," cask.version);
+      app = spec.selfUpdating.app;
+    in
+    {
+      inherit (spec) name;
+      inherit (spec.selfUpdating) bundleId teamId;
+      inherit version;
+      kind = "app";
+      app = "/Applications/${app}.app";
+      appVersion = version;
+      source = "${package}/Applications/${app}.app";
+      owner = profile.username;
+      selfUpdating = true;
+      running = [ "/${app}\\.app/" ];
+    };
+  boringNotch = pkgs.callPackage ../../packages/boringnotch.nix { };
   chatgpt = casks.chatgpt.overrideAttrs {
     version = "26.930.41038";
     src = pkgs.fetchurl {
@@ -25,17 +57,26 @@ let
       hash = "sha256-qUEX+zRicim6r+Pot7RUZ8Wu54YbTNeVpb6NVHsf97Q=";
     };
   };
-  selfUpdatingApp = name: app: bundleId: teamId:
+  selfUpdatingApp =
+    name: app: bundleId: teamId:
     let
       cask =
-        if name == "chatgpt" then chatgpt
-        else if name == "chatgpt-classic" then classic
-        else casks.${name};
+        if name == "chatgpt" then
+          chatgpt
+        else if name == "chatgpt-classic" then
+          classic
+        else
+          casks.${name};
       package = brewCask { inherit cask; };
       version = lib.head (lib.splitString "," cask.version);
     in
     {
-      inherit name version bundleId teamId;
+      inherit
+        name
+        version
+        bundleId
+        teamId
+        ;
       kind = "app";
       app = "/Applications/${app}.app";
       appVersion = version;
@@ -45,7 +86,10 @@ let
       running = [ "/${app}\\.app/" ];
     }
     // lib.optionalAttrs (name == "chatgpt") {
-      orphanHelpers = [ "browser_crashpad_handler" "bare-modifier-monitor" ];
+      orphanHelpers = [
+        "browser_crashpad_handler"
+        "bare-modifier-monitor"
+      ];
     };
   versionPrefix = version: lib.concatStringsSep "." (lib.take 2 (lib.splitString "." version)) + ".";
   karabinerDmg = pkgs.fetchurl {
@@ -89,11 +133,6 @@ let
     };
     packages = [ "${casks.${name}.src}" ];
     running = [ "Microsoft ${app}" ];
-  };
-  officeChoice = {
-    choiceIdentifier = "com.microsoft.autoupdate";
-    choiceAttribute = "selected";
-    attributeSetting = 0;
   };
   manifest = pkgs.writeText "darwin-installers.json" (
     builtins.toJSON {
@@ -181,6 +220,23 @@ let
           running = [ "Wireshark.app" ];
         }
       ]
+      ++ map selfUpdatingCask (builtins.filter (app: app ? selfUpdating) selectedApps)
+      ++ lib.optionals config.myconfig.boringnotch.enable [
+        {
+          name = "boringnotch";
+          kind = "app";
+          version = boringNotch.version;
+          app = "/Applications/boringNotch.app";
+          appVersion = boringNotch.version;
+          bundleId = "theboringteam.boringnotch";
+          teamId = "JPWMG84CH8";
+          source = "${boringNotch}/Applications/boringNotch.app";
+          owner = profile.username;
+          selfUpdating = true;
+          migrateBeforeNixApps = true;
+          running = [ "/boringNotch\\.app/" ];
+        }
+      ]
       ++ lib.optionals host.fullDesktopFeatured [
         (selfUpdatingApp "discord" "Discord" "com.hnc.Discord" "53Q6R32WPB")
         (selfUpdatingApp "slack" "Slack" "com.tinyspeck.slackmacgap" "BQR82RBBHL")
@@ -193,17 +249,34 @@ let
           bundleId = "com.docker.docker";
           teamId = "9BNSXJN65R";
           source = "${docker}/Docker.app";
+          owner = profile.username;
+          selfUpdating = true;
           running = [
             "Docker.app"
             "com.docker.backend"
             "com.docker.virtualization"
           ];
         }
+        {
+          name = "microsoft-auto-update";
+          kind = "pkg";
+          version = casks.microsoft-auto-update.version;
+          app = "/Library/Application Support/Microsoft/MAU2.0/Microsoft AutoUpdate.app";
+          appVersion = lib.concatStringsSep "." (
+            lib.take 2 (lib.splitString "." casks.microsoft-auto-update.version)
+          );
+          bundleId = "com.microsoft.autoupdate2";
+          teamId = "UBF8T346G9";
+          receipts = {
+            "com.microsoft.package.Microsoft_AutoUpdate.app" = casks.microsoft-auto-update.version;
+          };
+          packages = [ "${casks.microsoft-auto-update.src}" ];
+          running = [ "/Microsoft AutoUpdate\\.app/" ];
+        }
         (
           officeEntry "microsoft-excel" "Excel" "Excel"
           // {
             app = "/Applications/Microsoft Excel.app";
-            choices = [ officeChoice ];
             requiredReceipts = [ "com.microsoft.pkg.licensing" ];
           }
         )
@@ -217,7 +290,6 @@ let
           officeEntry "microsoft-powerpoint" "PowerPoint" "Powerpoint"
           // {
             app = "/Applications/Microsoft PowerPoint.app";
-            choices = [ officeChoice ];
             requiredReceipts = [ "com.microsoft.pkg.licensing" ];
           }
         )
@@ -225,7 +297,6 @@ let
           officeEntry "microsoft-word" "Word" "Word"
           // {
             app = "/Applications/Microsoft Word.app";
-            choices = [ officeChoice ];
             requiredReceipts = [ "com.microsoft.pkg.licensing" ];
           }
         )
@@ -258,6 +329,11 @@ delib.scopedModule {
     system.defaults.CustomSystemPreferences."com.apple.commerce".AutoUpdate = true;
     environment.etc."dotfiles/installers.json".source = manifest;
     environment.systemPackages = [ reconcile ];
+    # Preserve copies that previously lived in Nix Apps before Darwin removes
+    # their old managed bundles. All pending apps are preflighted first.
+    system.activationScripts.preActivation.text = lib.mkBefore ''
+      ${reconcile}/bin/dotfiles-installers --before-nix-apps
+    '';
     system.activationScripts.postActivation.text = lib.mkBefore ''
       ${reconcile}/bin/dotfiles-installers
     '';

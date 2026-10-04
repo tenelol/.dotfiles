@@ -73,7 +73,7 @@ let
     profiles.default = {
       userSettings = {
         "files.autoSave" = "afterDelay";
-        "update.mode" = "none";
+        "update.mode" = if pkgs.stdenv.hostPlatform.isDarwin then "default" else "none";
       };
 
       extensions =

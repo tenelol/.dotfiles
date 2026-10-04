@@ -6,24 +6,37 @@
 
 | 管理元 | 宣言 | 対象 |
 | --- | ---: | --- |
-| [brew-casks の manifest](../../modules/brew-casks/files/apps.json) と [module](../../modules/brew-casks/default.nix) | 26 Cask | immutable GUI 16件（base 11、`fullDesktop` 5）、Codex CLI 1、font 9 |
+| [brew-casks の manifest](../../modules/brew-casks/files/apps.json) と [module](../../modules/brew-casks/default.nix) | 26 Cask | immutable GUI 3件、自己更新GUI source 13件、Codex CLI 1、font 9 |
 | [darwin-cli](../../modules/darwin-cli/default.nix) | 58 Nix package | 旧formula 54件と Rift、SketchyBar、Borders。Zathura 5 formulaはプラグイン入りwrapper 1件に集約 |
-| [darwin-installers](../../modules/darwin-installers/default.nix) | 9 installer/app copy、自己更新app 6件、MAS 8件 | azooKey、Karabiner、Tailscale、Wireshark、Docker、Office 4アプリ、通常配置の6アプリ、Mac App Store アプリ |
+| [darwin-installers](../../modules/darwin-installers/default.nix) | 10 native installer、自己更新GUI 20件、MAS 8件 | azooKey、Karabiner、Tailscale、Wireshark、Docker、Office 4アプリ、通常配置の20 GUI、Microsoft AutoUpdate、Mac App Store アプリ |
 | [AeroSpace](../../modules/aerospace/default.nix)、[boringNotch](../../modules/boringnotch/default.nix) | GUI 2件 | nixpkgs の AeroSpace と固定した boringNotch package |
 
 `brew-nix` と `brew-api` は `flake.lock` に固定し、Cask source の再現に使う。実際のroot `nixpkgs` inputは `flake.lock` の `root.inputs.nixpkgs` が指す `nixpkgs_2`（`4975466d324710c576dc11ad614684e6bd8cad8e`）。旧検査は別node `nodes.nixpkgs` を直接読んでいたため修正済み。Caskの `no_check` sourceは固定hashを補い、Material Symbols は固定Git archiveと必要なfontファイルに絞った。
 
-immutable GUI bundle 16件はHome Managerの `~/Applications/Home Manager Apps` に配置する。ChatGPT（Codexを含む）・ChatGPT Classic・Dia・Claude・Discord・Slackは署名を保持したNix packageから通常の `/Applications` へコピーし、primary userの所有・書込権限で公式updaterを利用する。Nix側のversionは導入時の最低版とし、自己更新された新しい版をswitchで戻さない。Nixへの既存linkやroot所有の通常配置は、現在のversionを保持したユーザー所有のコピーへ置き換える。app data/cache/Keychainのパスは変更しない。ChatGPTの導入元は公開版26.930.41038の公式ZIPとSHA256を固定した。Classicは公式Caskの1.2026.184を使い、`no_check`だった公式DMGに取得済みのSHA256を固定した。
+Blender・qutebrowser・DB Browser for SQLiteの3件はHome Managerの `~/Applications/Home Manager Apps` に配置する。ChatGPT（Codexを含む）・ChatGPT Classic・Dia・Claude・Discord・Slackは署名を保持したNix packageから通常の `/Applications` へコピーし、primary userの所有・書込権限で公式updaterを利用する。Nix側のversionは導入時の最低版とし、自己更新された新しい版をswitchで戻さない。Nixへの既存linkやroot所有の通常配置は、現在のversionを保持したユーザー所有のコピーへ置き換える。app data/cache/Keychainのパスは変更しない。ChatGPTの導入元は公開版26.930.41038の公式ZIPとSHA256を固定した。Classicは公式Caskの1.2026.184を使い、`no_check`だった公式DMGに取得済みのSHA256を固定した。
 
-LINEのmacOS公式配布は[Mac App Store](https://guide.line.me/ja/signup/pc-line.html)で、brew-nixのCaskは存在しない。既存のMAS導入確認と通常のapp配置を維持し、既にONだったApp Store自動更新をNixでも宣言した。この自動更新設定はMac App Storeアプリ全体に作用する。6アプリのコピー配置はbrew-nixの自動更新オプションではなく、このrepositoryのinstaller処理による。
+LINEのmacOS公式配布は[Mac App Store](https://guide.line.me/ja/signup/pc-line.html)で、brew-nixのCaskは存在しない。既存のMAS導入確認と通常のapp配置を維持し、既にONだったApp Store自動更新をNixでも宣言した。この自動更新設定はMac App Storeアプリ全体に作用する。通常コピー配置はbrew-nixの自動更新オプションではなく、このrepositoryのinstaller処理による。
 
 ChatGPT終了後も旧版のCrashpad・shortcut monitorが親PID 1で残り、最初の実機activationは稼働判定で停止した。終了後のsnapshotを使う回帰テストで再現し、通常本体・CLI・workerがいない場合だけ、対象bundle内の既知の孤立helperへSIGTERMを送る処理を追加した。本体やworkerが動いている場合は置き換えを止め、実行ファイルとPIDを表示する。アプリを参照するだけのコマンド引数を実プロセスと混同しないため、ChatGPTは実行ファイルのパスで判定する。
 
-app内CLIは `~/.local/bin` に公開し、Ghosttyのman/completionとZedのbash・zsh・fish・PowerShell補完を維持する。fontは `fonts.packages` で宣言する。Codex CaskはGUIではなくCLIとして扱い、completionを別packageから生成する。AeroSpaceとboringNotchは `/Applications/Nix Apps` を使用する。
+app内CLIは `~/.local/bin` に公開し、Ghosttyのman/completionとZedのbash・zsh・fish・PowerShell補完を維持する。fontは `fonts.packages` で宣言する。Codex CaskはGUIではなくCLIとして扱い、completionを別packageから生成する。AeroSpaceは `/Applications/Nix Apps` を使用する。boringNotchは `/Applications/boringNotch.app` へ移す。
 
 CLI formulaの置換では名前だけでなくコマンドも合わせた。Homebrewの `gdrive` はglotlabs v3なので `pkgs.gdrive3`、`cloudflare-wrangler` は `pkgs.wrangler`、`dotnet` はSDK 10、`node` はNode 26を選んだ。`pkgconf` に `pkg-config` のaliasを足し、Rustは `rustc`・`cargo`・`rustfmt`・`clippy` を揃えた。`herdr-bin` はmacOS/Linuxとも公式の固定releaseを使用し、`herdr` source inputとの版一致を確認する。Zathura wrapperはpdf-mupdf、ps、cb、djvuを同梱するため、Homebrew prefixにpluginをリンクするactivationは不要。MySQLは既存の9.7.1に合わせた[Oracle署名済みbinary](../../packages/mysql97.nix)を固定し、`/opt/homebrew/var/mysql` には触れずserverも起動しない。
 
 RiftとPeekabooは固定されたnixpkgsにはないため、[Rift package](../../packages/rift.nix)と[Peekaboo package](../../packages/peekaboo.nix)を公式releaseのURL・SHA256で定義した。Riftは公式0.6.4の配布済みバイナリを使い、公式tap同様にad-hoc再署名し、PeekabooはOpenClawのDeveloper ID署名と同梱Swift libraryを保持する。launchdとworkspace helperの実行パスはNix profile側へ変更した。macOSのAccessibility・Screen Recording権限は新しい実行パスで確認が必要。
+
+
+## アプリ内更新が可能なGUIへ広げる（2026-10-05）
+
+新しい宣言は既存6件に加え、Cursor・Ghostty・Insomnia・Markdown Preview・Notion・Raycast・Zed・Zen・Chrome・Obsidian・PalmierPro・VS Code・Spotify・boringNotchを通常コピーにする。Dockerのroot所有・書込不可コピーもユーザー所有へ変える。Tailscale・Wireshark・azooKey・Officeは公式PKGの通常配置を保持する。OfficeのMicrosoft AutoUpdateを除外するinstaller choiceを撤去し、署名済みMAU PKGを最低版として宣言する。MAUのapp短縮versionは4.85、receipt/buildは4.85.26091737で別々に照合する。
+
+一次証拠は、[GhosttyのUpdate and Restart](https://ghostty.org/docs/install/release-notes/1-3-0)、[InsomniaのSoftware Updates](https://developer.konghq.com/insomnia/)、[NotionのCheck for Updates](https://www.notion.com/help/notion-for-desktop)、[Zedのauto_update](https://zed.dev/docs/reference/all-settings)、[SpotifyのUpdate Spotify now](https://support.spotify.com/us/article/updating-spotify/)、[OfficeのMicrosoft AutoUpdate](https://support.microsoft.com/en-us/office/lifecycle/officeinstall/update-office-for-mac-automatically)と導入済み署名bundleのupdater実装。Cursor・Insomnia・NotionのSquirrel、Ghostty・Markdown Preview・PalmierPro・boringNotchのSparkle/feed、ChromeのKSUpdateURLを確認した。Raycastの実機メニューにCheck for updatesがあることも確認した。[Chromeの公式手順](https://support.google.com/chrome/answer/95414?hl=en)はAboutから更新する。DarwinのVS Code設定に残っていたupdate.mode=noneもdefaultへ変更する。LinuxのNix管理版はnoneを維持する。
+
+CLIとGhosttyのman/completionは `/Applications` の実体を参照する専用support packageへ分離し、更新後の旧Nix binaryを呼ばない。Zedの生成済み補完は既存のsource packageから再利用する。Home Managerには自己更新GUIのimmutable bundleを二重配置しない。Zenは旧symlinkをresolveしたinstall hashから、将来の通常配置をresolveせず計算したhashへ既存選択profileを引き継ぐ。profiles.ini/installs.iniをbackupし、profile内容・cache・Keychainを移動・削除しない。
+
+boringNotchは旧 `/Applications/Nix Apps` をDarwinが整理する前にcopyする必要がある。preActivationで全件の稼働・署名を先に確認し、この旧linkだけを通常コピーへ移す。postActivationで残りを処理する。新しい自己更新版も次のswitchで保持する。Karabiner 16.0.0とVirtualHIDDevice 6.14.0はKanata互換性のため固定を維持する。
+
+設定と直接artifact testの検証を行った。今回の実機activationの結果は完了後に追記する。GUI本体は既存のNix store成果物を再利用し、生成するのはCLI/support linkとmanifestのみ。MAUは公式署名済みPKGを取得する。
 
 ## Installer と Mac App Store
 

@@ -438,10 +438,11 @@ def plan_reconciliation(host, manifest, mas):
 def main():
     arguments = sys.argv[1:]
     plan_only = bool(arguments and arguments[0] == "--plan")
-    if plan_only:
+    before_nix_apps = bool(arguments and arguments[0] == "--before-nix-apps")
+    if plan_only or before_nix_apps:
         arguments = arguments[1:]
     if len(arguments) != 2:
-        raise SystemExit("usage: reconcile.py [--plan] MANIFEST MAS_BINARY")
+        raise SystemExit("usage: reconcile.py [--plan|--before-nix-apps] MANIFEST MAS_BINARY")
     manifest = json.loads(Path(arguments[0]).read_text())
     host = Host()
     if plan_only:
@@ -449,11 +450,17 @@ def main():
         return
     if os.geteuid() != 0:
         raise RuntimeError("darwin installers activation requires root")
+    early_entries = [entry for entry in manifest["packages"]
+                     if entry.get("migrateBeforeNixApps") and Path(entry["app"]).is_symlink()]
+    if before_nix_apps and not early_entries:
+        return
     state_dir = manifest["stateDir"]
     Path(state_dir).mkdir(mode=0o755, parents=True, exist_ok=True)
     reconcile_mas(host, manifest, arguments[1])
     statuses = [preflight_entry(host, entry, state_dir) for entry in manifest["packages"]]
     for entry, status in zip(manifest["packages"], statuses):
+        if before_nix_apps and entry not in early_entries:
+            continue
         reconcile_entry(host, entry, state_dir, status)
 
 

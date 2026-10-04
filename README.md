@@ -64,12 +64,12 @@ with browser data backed up before cleanup.
 
 | Scope | Repository owner | Contents |
 | --- | --- | --- |
-| 26 Casks | [`modules/brew-casks`](./modules/brew-casks) and its [manifest](./modules/brew-casks/files/apps.json) | 16 immutable GUI bundles (11 base, 5 `fullDesktop`), the Codex CLI, and 9 fonts |
+| 26 Casks | [`modules/brew-casks`](./modules/brew-casks) and its [manifest](./modules/brew-casks/files/apps.json) | 3 immutable GUI bundles, 13 self-updating GUI sources with CLI integration, the Codex CLI, and 9 fonts |
 | CLI formulae | [`modules/darwin-cli`](./modules/darwin-cli) | 58 Nix packages covering 54 shared formulae and Rift, SketchyBar, Borders; includes the official `herdr-bin` input |
-| Native installers | [`modules/darwin-installers`](./modules/darwin-installers) | 9 signed PKG/app installations, 6 self-updating app copies and checks for 8 Mac App Store apps |
-| Other GUI apps | [`modules/aerospace`](./modules/aerospace), [`modules/boringnotch`](./modules/boringnotch) | AeroSpace from nixpkgs and a pinned boringNotch package |
+| Native installers | [`modules/darwin-installers`](./modules/darwin-installers) | 10 signed PKG/native installations, 20 self-updating GUI copies and checks for 8 Mac App Store apps |
+| Other GUI apps | [`modules/aerospace`](./modules/aerospace), [`modules/boringnotch`](./modules/boringnotch) | AeroSpace from nixpkgs; boringNotch uses the native installer copy |
 
-Home Manager places the 16 immutable GUI bundles under `~/Applications/Home Manager Apps`
+Home Manager places Blender, qutebrowser and DB Browser for SQLite under `~/Applications/Home Manager Apps`
 after an authorized `nh darwin switch`. App-provided CLI commands use
 `~/.local/bin`; Ghostty's man pages and completions and Zed's shell completions
 are included. The fonts use nix-darwin's `fonts.packages`. The installer module
@@ -79,13 +79,19 @@ already-owned copies; the module does not purchase or authenticate. The
 [migration notes](./docs/research/brew-nix.md) describe the current verification
 and activation limits.
 
-ChatGPT (including Codex), ChatGPT Classic, Dia, Claude, Discord and Slack are copied from signed
-Nix packages into `/Applications`, with ownership and write permissions for the
-primary user. Their official updaters can update these copies. denix/nh activation
+GUI apps with an in-app updater use signed Nix sources and normal, user-owned
+copies in `/Applications`: ChatGPT (including Codex), ChatGPT Classic, Dia, Claude,
+Discord, Slack, Cursor, Ghostty, Insomnia, Markdown Preview, Notion, Raycast, Zed,
+Zen, Chrome, Obsidian, PalmierPro, VS Code, Spotify and boringNotch. Docker also
+uses a user-owned copy; native PKG apps retain their vendor installer layout.
+Office includes Microsoft AutoUpdate. Karabiner remains pinned to 16.0.0 for
+Kanata driver compatibility. denix/nh activation
 checks identity and a minimum bootstrap version; it preserves newer installed
 versions instead of restoring the pinned version. A running app must be closed
 before its initial copy or bootstrap upgrade. Profiles, caches and Keychain data
-stay in their existing locations. LINE uses its official Mac App Store distribution;
+stay in their existing locations. Zen's existing profile is mapped to the stable
+app path before first launch, and CLI links follow the app after self-updates.
+LINE uses its official Mac App Store distribution;
 the already-enabled App Store automatic update setting is also declared in Nix.
 
 ## Codex skills

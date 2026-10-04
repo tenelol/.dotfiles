@@ -4,18 +4,26 @@ let
   config = configuration.config;
   lib = configuration.pkgs.lib;
   expected = import ./packages.nix-test;
+  appSupport = configuration.pkgs.callPackage ../../../packages/macos-app-support.nix { };
   manifest = builtins.fromJSON (builtins.readFile ../files/apps.json);
   selected = manifest.base ++ lib.optionals config.myconfig.host.fullDesktopFeatured manifest.fullDesktop;
-  names = map (app: app.name) (selected ++ manifest.binaries);
+  runtime = lib.listToAttrs (map (app: {
+    name = app.name;
+    value = if app ? selfUpdating then appSupport app else expected.${app.name};
+  }) (selected ++ manifest.binaries));
+  names = map (app: if app ? selfUpdating then "${app.name}-app-support" else app.name)
+    (selected ++ manifest.binaries);
   home = config.home-manager.users.${config.system.primaryUser};
   actual = lib.listToAttrs (map (package: {
     name = package.pname;
     value = package;
   }) (builtins.filter (package: builtins.elem (package.pname or "") names) home.home.packages));
-  applicationsMatch = builtins.all (name: actual.${name}.drvPath == expected.${name}.drvPath) names;
+  applicationsMatch = builtins.all (app:
+    actual.${if app ? selfUpdating then "${app.name}-app-support" else app.name}.drvPath == runtime.${app.name}.drvPath
+  ) (selected ++ manifest.binaries);
   cliMatch = builtins.all (app:
     builtins.all (command:
-      toString home.home.file.${".local/bin/${command}"}.source == "${expected.${app.name}}/bin/${command}"
+      toString home.home.file.${".local/bin/${command}"}.source == "${runtime.${app.name}}/bin/${command}"
     ) (builtins.attrNames (app.cli or { }))
   ) selected;
   fontsMatch = builtins.all (font:

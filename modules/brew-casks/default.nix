@@ -10,13 +10,28 @@
 }:
 let
   brewCask = pkgs.callPackage ../../packages/brew-cask.nix { };
+  appSupport = pkgs.callPackage ../../packages/macos-app-support.nix { };
   apps = builtins.fromJSON (builtins.readFile ./files/apps.json);
   selected =
     apps.base ++ pkgs.lib.optionals host.fullDesktopFeatured apps.fullDesktop ++ apps.binaries;
   packages = pkgs.lib.listToAttrs (
     map (app: {
       name = app.name;
-      value = brewCask (builtins.removeAttrs app [ "name" ] // { cask = pkgs.brewCasks.${app.name}; });
+      value = brewCask (
+        builtins.removeAttrs app [
+          "name"
+          "selfUpdating"
+        ]
+        // {
+          cask = pkgs.brewCasks.${app.name};
+        }
+      );
+    }) selected
+  );
+  runtimePackages = pkgs.lib.listToAttrs (
+    map (app: {
+      name = app.name;
+      value = if app ? selfUpdating then appSupport app else packages.${app.name};
     }) selected
   );
   fontPackages = map (
@@ -37,10 +52,10 @@ delib.scopedModule {
     home.activation.preserveZenProfile = hm.dag.entryAfter [ "writeBoundary" ] ''
       $DRY_RUN_CMD ${pkgs.python3}/bin/python3 ${./files/preserve-zen-profile.py} \
         ${pkgs.lib.escapeShellArg "/Users/${profile.username}"} \
-        ${packages.zen}/Applications/Zen.app ${installHash}/bin/firefox-install-hash
+        /Applications/Zen.app ${installHash}/bin/firefox-install-hash --literal-install-path
     '';
     home.packages =
-      pkgs.lib.attrValues packages
+      pkgs.lib.attrValues runtimePackages
       ++ pkgs.lib.concatMap (
         package: pkgs.lib.optional (package ? completionPackage) package.completionPackage
       ) (pkgs.lib.attrValues packages);
@@ -50,7 +65,7 @@ delib.scopedModule {
         app:
         map (command: {
           name = ".local/bin/${command}";
-          value.source = "${packages.${app.name}}/bin/${command}";
+          value.source = "${runtimePackages.${app.name}}/bin/${command}";
         }) (pkgs.lib.attrNames (app.cli or { }))
       ) selected
     );

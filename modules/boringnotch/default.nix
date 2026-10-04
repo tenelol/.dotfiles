@@ -14,14 +14,12 @@ delib.module {
   );
 
   darwin.ifEnabled = {
-    environment.systemPackages = [ (pkgs.callPackage ../../packages/boringnotch.nix { }) ];
-
     launchd.user.agents.boringnotch = {
       serviceConfig = {
         Label = "theboringteam.boringnotch";
         ProgramArguments = [
           "/usr/bin/open"
-          "/Applications/Nix Apps/boringNotch.app"
+          "/Applications/boringNotch.app"
         ];
         RunAtLoad = true;
         KeepAlive = false;
@@ -31,12 +29,11 @@ delib.module {
       managedBy = "boringnotch";
     };
 
-    # Nix app links may be installed after launchd setup, so kickstart once after
-    # activation to make a fresh install start without waiting for the next login.
+    # Start after the installer has placed the user-owned app copy.
     system.activationScripts.postActivation.text = lib.mkAfter ''
       uid="$(id -u ${profile.username})"
 
-      if [ -d "/Applications/Nix Apps/boringNotch.app" ]; then
+      if [ -d "/Applications/boringNotch.app" ]; then
         launchctl asuser "$uid" sudo --user=${profile.username} \
           /bin/launchctl kickstart -k "gui/$uid/theboringteam.boringnotch" \
           >/dev/null 2>&1 || true

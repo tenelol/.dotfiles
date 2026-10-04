@@ -369,6 +369,16 @@ class ReconcileTests(unittest.TestCase):
         self.assertEqual(RECONCILE.preflight_entry(self.host, item, self.temp.name), "newer")
         self.assertEqual(self.host.installs, [])
 
+    def test_mau_short_app_version_preserves_newer_installer_build(self):
+        item = entry(name="microsoft-auto-update", version="4.85.26091737", appVersion="4.85",
+                     receipts={"com.microsoft.package.Microsoft_AutoUpdate.app": "4.85.26091737"},
+                     strictVersion=False)
+        self.host.apps[item["app"]]["version"] = "4.85"
+        self.host.receipts.update(item["receipts"])
+        self.assertEqual(RECONCILE.entry_status(self.host, item, self.temp.name)[0], "installed")
+        self.host.receipts["com.microsoft.package.Microsoft_AutoUpdate.app"] = "4.85.26099999"
+        self.assertEqual(RECONCILE.entry_status(self.host, item, self.temp.name)[0], "newer")
+
     def test_root_owned_classic_is_copied_for_user_updates(self):
         import pwd
         import os
@@ -406,6 +416,41 @@ class ReconcileTests(unittest.TestCase):
         self.host.running_patterns.add("karabiner_grabber")
         with self.assertRaisesRegex(RuntimeError, "close the running"):
             RECONCILE.preflight_entry(self.host, item, self.temp.name)
+
+    def test_early_nix_apps_migration_preflights_all_and_only_copies_legacy_links(self):
+        app = Path(self.temp.name) / "boringNotch.app"
+        app.symlink_to("/Applications/Nix Apps/boringNotch.app")
+        early = {"name": "boringnotch", "app": str(app), "migrateBeforeNixApps": True}
+        later = {"name": "cursor", "app": "/Applications/Cursor.app"}
+        manifest = {"packages": [early, later], "stateDir": self.temp.name}
+        path = Path(self.temp.name) / "manifest.json"
+        path.write_text(json.dumps(manifest))
+        with patch.object(RECONCILE.sys, "argv", ["reconcile.py", "--before-nix-apps", str(path), "mas"]), \
+             patch.object(RECONCILE.os, "geteuid", return_value=0), \
+             patch.object(RECONCILE, "reconcile_mas"), \
+             patch.object(RECONCILE, "preflight_entry", side_effect=["needs-copy", "needs-copy"]) as preflight, \
+             patch.object(RECONCILE, "reconcile_entry") as install:
+            RECONCILE.main()
+            self.assertEqual(preflight.call_count, 2)
+            self.assertEqual(install.call_count, 1)
+            self.assertEqual(install.call_args.args[1], early)
+
+    def test_blocked_later_app_prevents_early_nix_apps_copy(self):
+        app = Path(self.temp.name) / "boringNotch.app"
+        app.symlink_to("/Applications/Nix Apps/boringNotch.app")
+        path = Path(self.temp.name) / "manifest.json"
+        path.write_text(json.dumps({"packages": [
+            {"name": "boringnotch", "app": str(app), "migrateBeforeNixApps": True},
+            {"name": "cursor", "app": "/Applications/Cursor.app"},
+        ], "stateDir": self.temp.name}))
+        with patch.object(RECONCILE.sys, "argv", ["reconcile.py", "--before-nix-apps", str(path), "mas"]), \
+             patch.object(RECONCILE.os, "geteuid", return_value=0), \
+             patch.object(RECONCILE, "reconcile_mas"), \
+             patch.object(RECONCILE, "preflight_entry", side_effect=["needs-copy", RuntimeError("close Cursor")]), \
+             patch.object(RECONCILE, "reconcile_entry") as install:
+            with self.assertRaisesRegex(RuntimeError, "close Cursor"):
+                RECONCILE.main()
+            install.assert_not_called()
 
     def test_quit_chatgpt_orphan_helpers_are_cleaned_before_preflight(self):
         item = entry(

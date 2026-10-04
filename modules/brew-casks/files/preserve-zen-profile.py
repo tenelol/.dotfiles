@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Keep Zen's selected profile when its immutable Nix installation path changes."""
+"""Keep Zen's selected profile when its installation path changes."""
 
+import argparse
 import configparser
 import io
 import json
@@ -29,7 +30,7 @@ def atomic_write(path, data, expected=None):
     os.replace(temporary, path)
 
 
-def preserve(home, new_hash, legacy_hash):
+def preserve(home, new_hash, legacy_hash, prefer_previous=False):
     base = home / "Library/Application Support/zen"
     profiles = base / "profiles.ini"
     if not profiles.is_file():
@@ -39,7 +40,8 @@ def preserve(home, new_hash, legacy_hash):
     state = home / ".local/state/dotfiles/zen-install.json"
     previous = json.loads(state.read_text()).get("hash") if state.is_file() else None
     target = "Install" + new_hash
-    if database.has_option(target, "Default"):
+    migrating = prefer_previous and previous and previous != new_hash
+    if database.has_option(target, "Default") and not migrating:
         selected = database[target]["Default"]
     else:
         selected = next((
@@ -53,7 +55,7 @@ def preserve(home, new_hash, legacy_hash):
     if not resolved.is_relative_to((base / "Profiles").resolve()) or not resolved.is_dir():
         raise RuntimeError("Zen's selected profile is missing or outside its profile directory")
 
-    if not database.has_option(target, "Default"):
+    if not database.has_option(target, "Default") or database[target]["Default"] != selected:
         installs = base / "installs.ini"
         old_installs = installs.read_text() if installs.is_file() else ""
         install_database = parser(old_installs)
@@ -77,20 +79,37 @@ def preserve(home, new_hash, legacy_hash):
     return selected
 
 
-def main():
-    home, app, executable = sys.argv[1:]
+def install_directory(app, literal=False):
+    directory = Path(app) / "Contents/MacOS"
+    return str(directory if literal else directory.resolve())
 
-    def install_hash(path):
-        directory = str((Path(path) / "Contents/MacOS").resolve())
+
+def main():
+    args = argparse.ArgumentParser()
+    args.add_argument("home")
+    args.add_argument("app")
+    args.add_argument("executable")
+    args.add_argument("--literal-install-path", action="store_true")
+    options = args.parse_args()
+    home, app, executable = options.home, options.app, options.executable
+
+    def install_hash(path, literal=False):
+        directory = install_directory(path, literal)
         return subprocess.check_output([executable], input=directory.encode("utf-16le")).decode().strip()
 
-    new_hash = install_hash(app)
+    # Before activation the destination may still link to the old Nix bundle.
+    # Hash the future normal path, while retaining the old resolved hash as a fallback.
+    new_hash = install_hash(app, options.literal_install_path)
     profiles = Path(home) / "Library/Application Support/zen/profiles.ini"
-    if profiles.is_file() and not parser(profiles.read_text()).has_option("Install" + new_hash, "Default"):
+    state = Path(home) / ".local/state/dotfiles/zen-install.json"
+    previous = json.loads(state.read_text()).get("hash") if state.is_file() else None
+    migrating = options.literal_install_path and previous and previous != new_hash
+    if profiles.is_file() and (migrating or not parser(profiles.read_text()).has_option("Install" + new_hash, "Default")):
         running = subprocess.run(["/usr/bin/pgrep", "-u", str(os.getuid()), "-f", "/Zen.app/Contents/MacOS/zen"], capture_output=True)
         if running.returncode == 0:
             raise RuntimeError("Close Zen before changing its installation profile mapping")
-    preserve(Path(home), new_hash, install_hash("/Applications/Zen.app"))
+    preserve(Path(home), new_hash, install_hash("/Applications/Zen.app"),
+             prefer_previous=options.literal_install_path)
     print("Zen: existing profile selection preserved")
 
 

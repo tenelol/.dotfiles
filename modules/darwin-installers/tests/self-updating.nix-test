@@ -5,7 +5,10 @@ let
   manifest = builtins.fromJSON (builtins.unsafeDiscardStringContext (
     builtins.readFile config.environment.etc."dotfiles/installers.json".source
   ));
-  expected = [ "chatgpt" "chatgpt-classic" "thebrowsercompany-dia" "claude" "discord" "slack" ];
+  casks = builtins.fromJSON (builtins.readFile ../../brew-casks/files/apps.json);
+  expected = [ "chatgpt" "chatgpt-classic" "thebrowsercompany-dia" "claude" ]
+    ++ map (app: app.name) (builtins.filter (app: app ? selfUpdating) (casks.base ++ casks.fullDesktop))
+    ++ [ "boringnotch" "discord" "slack" "docker-desktop" ];
   selected = builtins.filter (entry: entry.selfUpdating or false) manifest.packages;
   home = config.home-manager.users.${config.system.primaryUser};
 in
@@ -19,7 +22,15 @@ assert builtins.all (entry:
 ) selected;
 assert builtins.all (package: !(builtins.elem (package.pname or "") expected)) home.home.packages;
 assert manifest.masApps.LINE == 539883307;
+assert builtins.any (entry: entry.name == "microsoft-auto-update") manifest.packages;
+assert builtins.all (entry: !(entry ? choices)) (builtins.filter (entry:
+  builtins.elem entry.name [ "microsoft-excel" "microsoft-powerpoint" "microsoft-word" ]
+) manifest.packages);
+assert builtins.all (package: (package.pname or "") != "boringnotch") config.environment.systemPackages;
+assert builtins.elem "/Applications/boringNotch.app"
+  config.launchd.user.agents.boringnotch.serviceConfig.ProgramArguments;
 assert config.system.defaults.CustomSystemPreferences."com.apple.commerce".AutoUpdate;
+assert home.programs.vscode.profiles.default.userSettings."update.mode" == "default";
 {
   apps = map (entry: { inherit (entry) name app version source bundleId teamId; }) selected;
   line = "Mac App Store automatic updates";
