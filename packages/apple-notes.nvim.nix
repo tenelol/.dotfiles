@@ -5,6 +5,8 @@ pkgs.vimUtils.buildVimPlugin {
 
   dependencies = with pkgs.vimPlugins; [
     neo-tree-nvim
+    nui-nvim
+    plenary-nvim
     telescope-nvim
   ];
 
