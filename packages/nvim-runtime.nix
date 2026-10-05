@@ -163,6 +163,9 @@ let
     codecompanion-nvim = pkgs.vimPlugins.codecompanion-nvim;
     yazi-nvim = pkgs.vimPlugins.yazi-nvim;
     inherit winresizer;
+  }
+  // lib.optionalAttrs pkgs.stdenv.hostPlatform.isDarwin {
+    apple-notes-nvim = import ./apple-notes.nvim.nix { inherit pkgs; };
   };
 
   nixManagedPluginPaths = builtins.mapAttrs (_: plugin: toString plugin) nixManagedPlugins;

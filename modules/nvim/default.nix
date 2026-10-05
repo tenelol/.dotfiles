@@ -395,6 +395,7 @@ delib.module {
           gotools
           deno
         ]
+        ++ lib.optionals stdenv.hostPlatform.isDarwin [ pandoc ]
         ++ lib.optionals (!stdenv.hostPlatform.isDarwin) [
           clang-tools
           fd

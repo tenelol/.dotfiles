@@ -94,6 +94,21 @@ return {
       end
 
       require("neo-tree").setup({
+        sources = vim.fn.has("macunix") == 1 and { "filesystem", "buffers", "git_status", "apple-notes" }
+          or { "filesystem", "buffers", "git_status" },
+        ["apple-notes"] = {
+          window = {
+            mappings = {
+              ["o"] = "open",
+              ["a"] = "add",
+              ["A"] = "add_directory",
+              ["d"] = "delete",
+              ["r"] = "rename",
+              ["m"] = "move",
+              ["R"] = "refresh",
+            },
+          },
+        },
         close_if_last_window = true,
         popup_border_style = "rounded",
         enable_git_status = true,
