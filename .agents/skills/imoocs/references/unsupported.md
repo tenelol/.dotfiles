@@ -6,7 +6,7 @@
 
 Some surfaces may still be unsupported by the local CLI backend. Commands for course, lesson, attendance, direct URL routing, assignment submit/upload, or assignment push may return JSON envelopes with an unsupported reason such as `unsupported_by_imoocs`.
 
-Use those envelopes as authoritative. Do not replace them with browser inspection or Playwright unless the user explicitly authorizes that fallback.
+Use those envelopes as authoritative. Do not replace unsupported CLI operations with browser inspection or Playwright unless the user explicitly authorizes that fallback. Perform the separate read-only [post-submission screenshot workflow](assignments.md#submission-screenshots) when submission evidence is requested.
 
 ## Final Report
 
@@ -22,5 +22,7 @@ For assignment work, also state whether post-write `imoocs assignment show '<les
 For normal slide/material work, report downloaded paths or counts and state that no assignment submission was performed. If PDFs were only read from a temporary directory, state that the temporary PDFs were deleted instead of reporting them as saved materials.
 
 For every completed MOOCs task, include a clickable Markdown link to the exact target course, lesson, or assignment URL in the final report so the user can verify the result immediately. Prefer the URL supplied by the user; otherwise use the URL resolved by `imoocs open`.
+
+For every submission or resubmission, also embed the genuine screenshots captured after checking the reflected answers/files, following [Submission Screenshots](assignments.md#submission-screenshots). Report a missing screenshot as incomplete evidence even when CLI push succeeded.
 
 Always treat submitted content, submission judgment, submission operation, and compliance with related rules as the user's responsibility.

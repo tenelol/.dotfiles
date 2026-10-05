@@ -14,6 +14,14 @@ Resolve the controlling condition first, then answer only the branch selected by
 
 Some INIAD MOOCs forms expose select/dropdown or radio-like answers only in `currentAnswers` / `currentAnswerDetails`, while omitting those pids from `fields[]`. Treat placeholder values such as `---`, empty strings, or option-looking current answers for pids not listed in `fields[]` as in-scope visible fields when the page text shows a selector or choice in the active branch. Infer the pid from the `currentAnswers` key, solve it from the assignment instructions, submit it in the same JSON payload, and verify it after submission. Preserve empty values for pids that belong to an explicitly inactive branch.
 
+### Evidence Before Submission
+
+Submit only answers grounded in the specified primary materials, actual data, or a reproducible calculation from verified inputs. For each intended answer, establish the source and calculation before any server-side autosave, upload, or push. A previous AI answer or an AI-written Notebook's source label is not proof of the instructor's method or dataset provenance.
+
+For data-backed questions, identify the correct course/class folder and file from the instructor's links, check the actual contents, and run the analysis on that file. Use file IDs or hashes when needed to distinguish duplicate names or verify a local copy. Slides establish the questions and prescribed methods; packet counts, statistical values, and other observations must come from the actual capture/data. Mathematical derivations are valid when their stated inputs and assumptions are verified against the question.
+
+When the required file, preprocessing method, question meaning, or personal fact remains unknown, leave that problem unsent and report the exact missing evidence. Do not fill attendance, seats, measurements, experiences, or unknown values by guessing. Continue independent problems whose evidence is complete.
+
 ### Inspect Before Writing
 
 Start from the URL router or an explicit `courseId` / `problemId`, then inspect the assignment with whatever detail command the local CLI supports:
@@ -95,3 +103,13 @@ imoocs assignment show '<lesson-url>'
 ```
 
 Match every in-scope `assignments[]` entry by `problemId`. For each entry, check that all intended text fields, including optional/challenge fields, have `currentValue`; all dropdown/select pids discovered from `currentAnswers` / `currentAnswerDetails` have the expected data value instead of `---`; and all intended file fields have `uploadedFile.filename`. Confirm that the post-write array still contains every originally discovered `problemId`; do not verify only the first compatibility alias. For current MOOCs pages, `status: open` can remain after the green submit-button confirmation, so rely on reflected answer/file values plus that problem's successful `push` rather than requiring a submitted status. If `assignment show` is unsupported, say verification was not possible and do not claim the reflected server state was confirmed. Local file generation or confirm-mode staging alone is not submission completion.
+
+### Submission Screenshots
+
+After successful push and CLI readback, open the exact submitted lesson/assignment URL in an authenticated browser for read-only visual confirmation. The requested submission evidence includes this visual check; CLI submission remains the preferred write path. Do not retype answers or press Submit again to obtain a screenshot.
+
+Inspect the actual visible answers, selected options, and uploaded filenames for each submitted problem. Capture enough screenshots to cover the submitted fields, with the assignment identity and URL visible or clearly associated with the capture. Save the genuine browser screenshots as local image files in the task's evidence directory (or the user's designated course context). Exclude unrelated personal information and credentials. A terminal image, recreated form, generated mockup, or screenshot of a local answer document is not evidence of server reflection.
+
+In the final report, include the clickable exact MOOCs URL and embed the inspected screenshots using Markdown image syntax with absolute local paths, for example `![提出後の回答確認](/absolute/path/submission-confirmation.png)`. A screenshot displayed only in a tool result, a bare file path, or a text claim that it was checked does not satisfy screenshot delivery. Apply this to resubmissions too. When reporting through a requested notification destination, attach the actual images through its supported upload mechanism; if that mechanism is unavailable, present the images in Codex and state the delivery limitation.
+
+If authentication, browser access, or capture fails, preserve the confirmed CLI submission result and report screenshot verification/delivery as incomplete with the exact blocker. Do not fabricate evidence or report the full submission-and-evidence workflow as complete.

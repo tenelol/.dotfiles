@@ -18,7 +18,7 @@ Lecture-material collection is implemented in the local `imoocs` CLI. It discove
 6. Assignment submit/upload/push operations require explicit user instruction. Never infer permission from a request to inspect a course or assignment.
 7. For assignments, enumerate every `assignments[]` entry returned for the target page, then verify each entry's `courseId`, `problemId`, `fields[].pid`, `currentAnswers` / `currentAnswerDetails` keys, current values, files, status, and deadline before any write operation. Treat `data.problem` and `route.problemId` only as backward-compatible aliases for the first entry.
 8. Before solving or submitting a lesson assignment, read the lesson's embedded slides, linked slide deck, handouts, PDFs, notebooks, and data files needed to understand the actual questions. Do not rely only on the assignment form body; MOOCs forms often contain only answer fields. If the slide/material content cannot be obtained through supported local/CLI/Keychain-backed paths, stop and report exactly which material is blocked instead of guessing.
-9. Do not use BrowserUse, Playwright, or a manual browser fallback unless the user explicitly authorizes that fallback after the CLI reports the operation is unsupported.
+9. Browser fallback for CLI operations requires the user's explicit authorization after the unsupported result. The read-only post-submission visual check and screenshots required by [assignment evidence](assignments.md#submission-screenshots) are part of the requested evidence workflow; perform them after CLI push/readback without repeating submission through the browser.
 
 ## username: s1F102501798
 
