@@ -16,7 +16,7 @@ let
     name = "memo-sync";
     runtimeInputs = [ python ];
     text = ''
-      exec python3 ${./files/memo_sync.py} --bridge-path ${./files/notes.js} "$@"
+      exec python3 ${./files}/memo_sync.py --bridge-path ${./files/notes.js} "$@"
     '';
   };
   serviceWorkflow = pkgs.writeText "memo-sync-register.wflow" (

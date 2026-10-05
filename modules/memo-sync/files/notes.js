@@ -98,6 +98,18 @@ function run() {
   var request = JSON.parse(input);
   var notes = Application("Notes");
   try {
+    if (request.operation === "ui_state") {
+      ObjC.import("AppKit");
+      var selection = notes.selection();
+      var target = notes.notes.byId(request.id);
+      return JSON.stringify({ ui: {
+        selected: selection.length === 1 ? selection[0].id() : null,
+        foreground: ObjC.unwrap($.NSWorkspace.sharedWorkspace.frontmostApplication.bundleIdentifier),
+        attachments: target.attachments().map(function(a) {
+          return { id: a.id(), cid: a.contentIdentifier(), name: a.name() };
+        })
+      } });
+    }
     if (request.operation === "selected") {
       var selection = notes.selection();
       if (selection.length !== 1) {

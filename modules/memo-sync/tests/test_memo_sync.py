@@ -17,6 +17,7 @@ from unittest.mock import patch
 
 MODULE = Path(__file__).resolve().parents[1]
 SCRIPT = MODULE / "files/memo_sync.py"
+sys.path.insert(0, str(SCRIPT.parent))
 spec = importlib.util.spec_from_file_location("memo_sync", SCRIPT)
 memo = importlib.util.module_from_spec(spec)
 sys.modules[spec.name] = memo
@@ -24,6 +25,29 @@ spec.loader.exec_module(memo)
 
 
 class MemoSyncTests(unittest.TestCase):
+    def test_image_text_sync_uses_partial_editor_and_retries_only_before_writing(self):
+        note = replace(self.note, title="Image note", text="Image note\nBEFORE\n\ufffc\n",
+                       html='<div>Image note</div><div>BEFORE</div><div><img src="data:image/png;base64,AA=="></div>',
+                       attachments=1)
+        self.remote(note)
+        path = self.workspace.register(note.id, sync=True)
+        self.assertTrue(self.workspace.state()["notes"][note.id]["image_text"])
+        path.write_text("Image note\nAFTER\n\n")
+        self.source.replace_images = lambda *args: (_ for _ in ()).throw(memo.DeferredSync("busy"))
+        with self.assertRaises(memo.DeferredSync):
+            self.workspace.inspect(path.name, sync=True)
+        self.assertNotIn("pending", self.workspace.state()["notes"][note.id])
+        self.assertEqual(self.source.read(note.id), note)
+        def partial(expected, text):
+            updated = replace(expected, text="Image note\nAFTER\n\ufffc\n",
+                              html=expected.html.replace("BEFORE", "AFTER"), modified="later")
+            self.remote(updated)
+            return updated
+        self.source.replace_images = partial
+        self.assertEqual(self.workspace.inspect(path.name, sync=True)[0]["status"], "in_sync")
+        self.assertEqual(self.source.read(note.id).attachments, 1)
+        self.assertNotIn(path.name, self.workspace.local_work()[0])
+
     def test_removed_folder_trashes_notes_before_deleting_empty_folder(self):
         self.workspace.discover_local()
         (self.root / "parent" / "child").mkdir(parents=True)

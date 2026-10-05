@@ -12,6 +12,7 @@ import uuid
 
 
 SCRIPT = Path(__file__).resolve().parents[1] / "files/memo_sync.py"
+sys.path.insert(0, str(SCRIPT.parent))
 spec = importlib.util.spec_from_file_location("memo_sync_live", SCRIPT)
 memo = importlib.util.module_from_spec(spec)
 sys.modules[spec.name] = memo

@@ -21,6 +21,7 @@ import sys
 import time
 import uuid
 import unicodedata
+from notes_text import DeferredSync
 
 
 MAX_BYTES = 16 * 1024 * 1024
@@ -37,6 +38,20 @@ def file_text(value):
 
 def content_key(text):
     return re.sub(r"\s+", "", text)
+
+
+def image_plain(text):
+    return file_text(text.replace("\ufffc", ""))
+
+
+def validate_images(note):
+    from bs4 import BeautifulSoup
+    soup = BeautifulSoup(note.html, "html.parser")
+    images = soup.find_all("img")
+    if (note.shared or not note.attachments or len(images) != note.attachments or
+        soup.find(["table", "object", "audio", "video"]) or
+        any(not re.match(r"^data:image/(png|jpeg|gif);base64,", image.get("src", "")) for image in images)):
+        raise ValueError("この添付形式は画像を保持した本文編集に対応していません。")
 
 
 def markdown_html(text):
@@ -206,6 +221,33 @@ class Notes:
             "html": rendered, "text": file_text(text), "content_key": key,
         })
 
+    def replace_images(self, expected, text):
+        from notes_text import NotesText
+        validate_images(expected)
+        target = image_plain(text)
+        if not target.strip() or any(ord(c) < 32 and c not in "\n\t" for c in target):
+            raise ValueError("空の本文・制御文字は書き戻せません。")
+        ui = lambda: self.request({"operation": "ui_state", "id": expected.id})
+        before = ui()
+        if before["foreground"] == "com.apple.Notes":
+            raise DeferredSync("標準メモを操作中のため、画像付きメモの書き戻しを待機しています。")
+        editor = NotesText()
+        def selected():
+            value = ui()
+            return value["selected"] == expected.id and value["foreground"] != "com.apple.Notes"
+        try:
+            editor.select(expected.title, selected)
+            if self.read(expected.id) != expected or ui()["attachments"] != before["attachments"]:
+                raise DeferredSync("書込直前にメモが変わったため再確認します。")
+            editor.replace(expected.text, target, selected)
+            updated = self.read(expected.id)
+            if (not updated or image_plain(updated.text) != target or
+                ui()["attachments"] != before["attachments"]):
+                raise RuntimeError("本文または添付の保持を確認できません。同期を停止しました。")
+            return updated
+        finally:
+            editor.close()
+
     def list_ids(self):
         return self.request({"operation": "list"})
 
@@ -244,10 +286,15 @@ class Notes:
         if len(result.stdout.encode()) > MAX_BYTES:
             raise ValueError("メモが初期版の容量上限を超えています。")
         value = json.loads(result.stdout)
-        if not isinstance(value, dict) or not any(key in value for key in ("note", "ids", "index", "folders", "folder", "deleted", "error")):
+        if not isinstance(value, dict) or not any(key in value for key in ("note", "ids", "index", "folders", "folder", "deleted", "ui", "error")):
             raise ValueError("標準メモからの応答形式が不正です。")
         if value.get("error"):
             raise RuntimeError(value["error"])
+        if request["operation"] == "ui_state":
+            result = value.get("ui")
+            if not isinstance(result, dict) or set(result) != {"selected", "foreground", "attachments"}:
+                raise ValueError("画面状態の応答が不正です。")
+            return result
         if request["operation"] in ("trash", "delete_folder"):
             if value.get("deleted") is not True:
                 raise ValueError("削除結果を確認できません。")
@@ -517,23 +564,25 @@ def atomic_json(path, value):
         temporary.unlink(missing_ok=True)
 
 
-def classify(base, local, remote, base_local=None, markdown=False):
+def classify(base, local, remote, base_local=None, markdown=False, image_text=False):
     if remote is None:
         return "remote_missing"
     if remote.id != base.id:
         raise ValueError("異なるメモの比較はできません。")
     if local is None:
         return "local_missing"
-    local = file_text(local)
-    remote_text = markdown_text(remote) if markdown else file_text(remote.text)
+    local = image_plain(local) if image_text else file_text(local)
+    remote_text = image_plain(remote.text) if image_text else markdown_text(remote) if markdown else file_text(remote.text)
     base_text = file_text(base_local) if base_local is not None else (
         markdown_text(base) if markdown else file_text(base.text))
+    if image_text:
+        base_text = image_plain(base_text)
     if local == remote_text:
         if remote.fingerprint == base.fingerprint:
             return "in_sync"
         return "format_changed" if remote_text == base_text else "converged"
     local_changed = local != base_text
-    remote_changed = remote.fingerprint != base.fingerprint
+    remote_changed = remote_text != base_text if image_text else remote.fingerprint != base.fingerprint
     if local_changed and remote_changed:
         return "conflict"
     if local_changed:
@@ -591,7 +640,7 @@ class Workspace:
                 type(record.get("sync_enabled", False)) is not bool or
                 type(record.get("pull_enabled", False)) is not bool):
                 raise ValueError("登録の管理状態が不正です。")
-            if any(type(record.get(key, False)) is not bool for key in ("markdown", "deleted", "delete_armed")):
+            if any(type(record.get(key, False)) is not bool for key in ("markdown", "image_text", "deleted", "delete_armed")):
                 raise ValueError("メモの同期設定が不正です。")
             deletion = record.get("pending_delete")
             if deletion is not None and (
@@ -984,6 +1033,9 @@ class Workspace:
                 base_text = self.local_base(record)
                 if base_text is None:
                     base_text = file_text(self.base(record).text)
+                if record.get("image_text"):
+                    base_text = image_plain(base_text)
+                    text = image_plain(text)
                 if (record.get("sync_enabled") and not record.get("pending") and
                     file_text(text) != file_text(base_text)):
                     work[record["file"]] = digest(text)
@@ -1165,15 +1217,20 @@ class Workspace:
     def enroll(self, state, note, path):
         record = state["notes"][note.id]
         use_markdown = record.get("markdown", False)
-        projected = markdown_text(note) if use_markdown else file_text(note.text)
-        if not use_markdown:
+        image_text = bool(note.attachments)
+        if image_text:
+            validate_images(note)
+            if use_markdown:
+                raise ValueError("Markdown同期中に画像が追加されたため、形式の確認が必要です。")
+        projected = image_plain(note.text) if image_text else markdown_text(note) if use_markdown else file_text(note.text)
+        if not use_markdown and not image_text:
             text_style(note)
         remote_directory = self.folder_name({"path": list(note.folder), "account": note.account,
                                              "default_account": note.default_account})
         if record.get("remote_directory", ".") != (remote_directory or "."):
             raise ValueError("フォルダの移動を検知しました。同期の再開には確認が必要です。")
         local = read_text(path)
-        status = classify(self.base(record), local, note, self.local_base(record), use_markdown)
+        status = classify(self.base(record), local, note, self.local_base(record), use_markdown, image_text)
         if status == "conflict" or (record.get("pending") and file_text(local) != projected):
             raise ValueError("両側の変更を確認し、本文を一致させてから有効化してください。")
         if file_text(local) == projected:
@@ -1183,6 +1240,7 @@ class Workspace:
                 record["base_local"] = self.save_local(local)
         record["sync_enabled"] = True
         record["pull_enabled"] = True
+        record["image_text"] = image_text
         record.pop("write_blocked", None)
         atomic_json(self.meta / "state.json", state)
 
@@ -1204,12 +1262,15 @@ class Workspace:
             raise ValueError("このファイルは登録されていません。")
 
     def sync_note(self, state, record, path, local, remote, status):
-        use_markdown = record.get("markdown", False) or (
-            state.get("markdown_enabled", False) and status == "push_pending")
-        target = file_text(local) if status == "push_pending" else (
-            markdown_text(remote) if use_markdown else file_text(remote.text))
+        image_text = record.get("image_text", False)
+        use_markdown = not image_text and (record.get("markdown", False) or (
+            state.get("markdown_enabled", False) and status == "push_pending"))
+        target = (image_plain(local) if image_text else file_text(local)) if status == "push_pending" else (
+            image_plain(remote.text) if image_text else markdown_text(remote) if use_markdown else file_text(remote.text))
         if status == "push_pending":
-            if use_markdown:
+            if image_text:
+                validate_images(remote)
+            elif use_markdown:
                 markdown_text(remote)
                 markdown_html(local)
             else:
@@ -1225,6 +1286,7 @@ class Workspace:
             "operation": operation, "direction": status, "target": digest(target),
             "local": digest(local),
             "markdown": use_markdown,
+            "image_text": image_text,
         }
         atomic_json(self.meta / "operations" / (operation + ".json"), {
             **record["pending"], "file": record["file"], "note_id": remote.id,
@@ -1236,9 +1298,17 @@ class Workspace:
         if read_text(path) != local:
             raise RuntimeError("同期直前にファイルが更新されました。履歴を確認してください。")
         if status == "push_pending":
-            updated = self.source.replace(remote, local, markdown=True) if use_markdown else self.source.replace(remote, local)
-            matches = updated and (content_key(updated.text) == markdown_html(local)[1] if use_markdown
-                                   else file_text(updated.text) == target)
+            try:
+                updated = (self.source.replace_images(remote, local) if image_text else
+                           self.source.replace(remote, local, markdown=True) if use_markdown else self.source.replace(remote, local))
+            except DeferredSync:
+                # DeferredSync is allowed only before any content mutation.
+                record.pop("pending")
+                atomic_json(self.meta / "state.json", state)
+                raise
+            matches = updated and (image_plain(updated.text) == target if image_text else
+                                   content_key(updated.text) == markdown_html(local)[1] if use_markdown else
+                                   file_text(updated.text) == target)
             if updated is None or updated.id != remote.id or not matches:
                 raise RuntimeError("書き戻した本文が一致しません。原本を保全して同期を停止しました。")
             if use_markdown:
@@ -1310,7 +1380,7 @@ class Workspace:
                     self.snapshot(remote)
                 try:
                     status = "unavailable" if read_error else classify(
-                        base, local, remote, self.local_base(record), record.get("markdown", False))
+                        base, local, remote, self.local_base(record), record.get("markdown", False), record.get("image_text", False))
                 except ValueError as exc:
                     status = "unsupported"
                     read_error = str(exc)
@@ -1339,7 +1409,7 @@ class Workspace:
                     if pending["direction"] == "pull_pending":
                         displaced = self.meta / "local-history" / (pending["operation"] + "-displaced.txt")
                         displaced_ok = displaced.exists() and digest(read_text(displaced)) == pending["local"]
-                    if (sync and not pending.get("error") and displaced_ok and remote and local is not None and
+                    if (sync and not pending.get("error") and not pending.get("image_text") and displaced_ok and remote and local is not None and
                         digest(file_text(local)) == pending["target"] and
                         (content_key(remote.text) == markdown_html(local)[1] if pending.get("markdown")
                          else file_text(local) == file_text(remote.text))):
@@ -1362,6 +1432,8 @@ class Workspace:
                             record["base"] = self.snapshot(remote)
                             atomic_json(self.meta / "state.json", state)
                             status = "in_sync"
+                    except DeferredSync:
+                        raise
                     except (OSError, ValueError, RuntimeError, subprocess.TimeoutExpired) as exc:
                         error = str(exc)
                         if record.get("pending"):
@@ -1410,6 +1482,7 @@ class Workspace:
 
 def watch_workspace(workspace, interval):
     observed, handled, seen, queue, reported = {}, {}, {}, {}, {}
+    retry_after = {}
     next_index = next_folders = next_audit = 0
     previous_error = None
     while True:
@@ -1424,7 +1497,7 @@ def watch_workspace(workspace, interval):
                     observed[name] = (signature, now)
             ready = [name for name, signature in work.items()
                      if now - observed[name][1] >= (5 if name.startswith(("delete:", "delete-folder:")) else 1)
-                     and handled.get(name) != signature]
+                     and handled.get(name) != signature and now >= retry_after.get(name, 0)]
             results = []
             if ready:
                 name = ready[0]
@@ -1484,6 +1557,12 @@ def watch_workspace(workspace, interval):
                 if result.get("note_id") and result.get("modified"):
                     seen[result["note_id"]] = result["modified"]
             previous_error = None
+        except DeferredSync as error:
+            if selected:
+                retry_after[selected[0]] = time.monotonic() + 10
+            if str(error) != previous_error:
+                print("memo-sync: " + str(error), file=sys.stderr, flush=True)
+                previous_error = str(error)
         except (OSError, ValueError, RuntimeError, subprocess.TimeoutExpired) as error:
             if selected:
                 handled[selected[0]] = selected[1]
