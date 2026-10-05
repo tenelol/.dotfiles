@@ -20,6 +20,7 @@ import subprocess
 import sys
 import time
 import uuid
+import unicodedata
 
 
 MAX_BYTES = 16 * 1024 * 1024
@@ -43,20 +44,28 @@ class Note:
     modified: str
     attachments: int = 0
     shared: bool = False
+    folder_id: str = ""
+    folder: tuple = ()
+    account: str = ""
+    default_account: bool = True
 
     @classmethod
     def parse(cls, value):
         if not isinstance(value, dict):
             raise ValueError("メモのスナップショットが不正です。")
+        if not isinstance(value.get("folder", ()), (list, tuple)):
+            raise ValueError("メモのフォルダ属性が不正です。")
         try:
-            note = cls(**value)
+            note = cls(**{**value, "folder": tuple(value.get("folder", ()))})
         except TypeError as error:
             raise ValueError("メモのスナップショットが不正です。") from error
         if not all(isinstance(getattr(note, key), str) for key in
-                   ("id", "title", "html", "text", "modified")) or not note.id:
+                   ("id", "title", "html", "text", "modified", "folder_id", "account")) or not note.id:
             raise ValueError("メモのスナップショットが不正です。")
         if type(note.attachments) is not int or note.attachments < 0 or type(note.shared) is not bool:
             raise ValueError("メモの属性が不正です。")
+        if type(note.default_account) is not bool or not all(isinstance(part, str) for part in note.folder):
+            raise ValueError("メモのフォルダ属性が不正です。")
         if len(json.dumps(value, ensure_ascii=False).encode()) > MAX_BYTES:
             raise ValueError("メモが初期版の容量上限を超えています。")
         return note
@@ -65,6 +74,8 @@ class Note:
     def fingerprint(self):
         content = asdict(self)
         content.pop("modified")  # Timestamp-only housekeeping is not a content edit.
+        for key in ("folder_id", "folder", "account", "default_account"):
+            content.pop(key)  # Preserve the hashes of existing immutable snapshots.
         return digest(json.dumps(content, ensure_ascii=False, sort_keys=True))
 
 
@@ -85,6 +96,17 @@ class Notes:
     def list_ids(self):
         return self.request({"operation": "list"})
 
+    def folders(self):
+        return self.request({"operation": "folders"})
+
+    def ensure_folder(self, parts):
+        return self.request({"operation": "ensure_folder", "folder": list(parts)})
+
+    def create(self, folder, text):
+        return self.request({"operation": "create", "folder": list(folder["path"]),
+                             "folder_id": folder["id"], "account": folder["account"],
+                             "html": text_html(text), "text": file_text(text)})
+
     def request(self, request):
         if sys.platform != "darwin":
             raise RuntimeError("標準メモへの接続はmacOSでのみ利用できます。")
@@ -98,10 +120,16 @@ class Notes:
         if len(result.stdout.encode()) > MAX_BYTES:
             raise ValueError("メモが初期版の容量上限を超えています。")
         value = json.loads(result.stdout)
-        if not isinstance(value, dict) or not any(key in value for key in ("note", "ids", "error")):
+        if not isinstance(value, dict) or not any(key in value for key in ("note", "ids", "folders", "folder", "error")):
             raise ValueError("標準メモからの応答形式が不正です。")
         if value.get("error"):
             raise RuntimeError(value["error"])
+        if request["operation"] in ("folders", "ensure_folder"):
+            result = value.get("folders") if request["operation"] == "folders" else [value.get("folder")]
+            if not isinstance(result, list):
+                raise ValueError("フォルダ一覧の形式が不正です。")
+            result = [parse_folder(item) for item in result]
+            return result if request["operation"] == "folders" else result[0]
         if request["operation"] == "list":
             ids = value.get("ids")
             if not isinstance(ids, list) or not all(isinstance(item, str) and item for item in ids):
@@ -135,20 +163,55 @@ class FixtureNotes:
             raise RuntimeError("書込直前にメモが更新されました。")
         rendered = render_text(expected, text)
         note = Note(expected.id, text.splitlines()[0], rendered, file_text(text),
-                    str(time.time_ns()))
+                    str(time.time_ns()), folder_id=expected.folder_id, folder=expected.folder,
+                    account=expected.account, default_account=expected.default_account)
         atomic_json(self.directory / (digest(note.id) + ".json"), asdict(note))
         return note
 
     def list_ids(self):
         ids = []
         for path in sorted(self.directory.glob("*.json")):
-            if path.name == "selected.json":
+            if path.name in ("selected.json", "folders.json"):
                 continue
             note = Note.parse(json.loads(read_text(path)))
             if path.name != digest(note.id) + ".json":
                 raise ValueError("fixtureのメモIDが一致しません。")
             ids.append(note.id)
         return ids
+
+    def folders(self):
+        path = self.directory / "folders.json"
+        if path.exists():
+            return [parse_folder(item) for item in json.loads(read_text(path))]
+        return [{"id": "fixture-root", "path": [], "account": "fixture-account", "default_account": True}]
+
+    def ensure_folder(self, parts):
+        folders = self.folders()
+        for index in range(len(parts) + 1):
+            path = list(parts[:index])
+            if not any(f["path"] == path for f in folders):
+                folders.append({"id": "folder-" + uuid.uuid4().hex, "path": path,
+                                "account": "fixture-account", "default_account": True})
+        atomic_json(self.directory / "folders.json", folders)
+        return next(f for f in folders if f["path"] == list(parts))
+
+    def create(self, folder, text):
+        note = Note("created-" + uuid.uuid4().hex, text.splitlines()[0], text_html(text),
+                    file_text(text), str(time.time_ns()), folder_id=folder["id"],
+                    folder=tuple(folder["path"]), account=folder["account"])
+        atomic_json(self.directory / (digest(note.id) + ".json"), asdict(note))
+        return note
+
+
+def parse_folder(value):
+    if (not isinstance(value, dict) or set(value) != {"id", "path", "account", "default_account"} or
+        not isinstance(value["id"], str) or not value["id"] or
+        not isinstance(value["account"], str) or not value["account"] or
+        not isinstance(value["path"], list) or
+        not all(isinstance(part, str) and part for part in value["path"]) or
+        type(value["default_account"]) is not bool):
+        raise ValueError("フォルダ情報が不正です。")
+    return value
 
 
 class TextHTML(HTMLParser):
@@ -215,7 +278,10 @@ def text_style(note):
 
 
 def render_text(note, text):
-    style = text_style(note)
+    return text_html(text, text_style(note))
+
+
+def text_html(text, style=""):
     text = file_text(text)
     if not text.strip() or any(ord(c) < 32 and c not in "\n\t" for c in text):
         raise ValueError("空の本文・制御文字は書き戻せません。")
@@ -346,6 +412,8 @@ class Workspace:
         if (not isinstance(state, dict) or state.get("version") != 1 or
             not isinstance(state.get("notes"), dict) or type(state.get("discover", False)) is not bool):
             raise ValueError("管理状態の形式が不正です。")
+        if any(key in state and not isinstance(state[key], dict) for key in ("folders", "creates")):
+            raise ValueError("ディレクトリの管理状態が不正です。")
         for note_id, record in state["notes"].items():
             if (not isinstance(note_id, str) or not note_id or not isinstance(record, dict) or
                 not isinstance(record.get("base"), str) or
@@ -362,12 +430,64 @@ class Workspace:
                                          ("target", r"[0-9a-f]{64}"), ("local", r"[0-9a-f]{64}")))
             ):
                 raise ValueError("同期処理の記録が不正です。")
+        for name, folder in state.get("folders", {}).items():
+            if self.folder_name(parse_folder(folder)) != name:
+                raise ValueError("フォルダの管理状態が不正です。")
+        for name, marker in state.get("creates", {}).items():
+            self.note_path(name)
+            if (not isinstance(marker, dict) or
+                not isinstance(marker.get("error"), str) or
+                not re.fullmatch(r"[0-9a-f]{32}", marker.get("operation", "")) or
+                not re.fullmatch(r"[0-9a-f]{64}", marker.get("local", ""))):
+                raise ValueError("作成処理の管理状態が不正です。")
+            parse_folder(marker["folder"])
         return state
 
     def note_path(self, name):
-        if not isinstance(name, str) or Path(name).name != name or name in ("", ".", ".."):
+        if (not isinstance(name, str) or name in ("", ".", "..") or Path(name).is_absolute() or
+            Path(name).as_posix() != name or "\\" in name or
+            any(part in (".", "..") or part.startswith(".") or any(ord(c) < 32 for c in part)
+                for part in Path(name).parts)):
             raise ValueError("登録ファイル名が不正です。")
-        return self.root / name
+        path = self.root
+        for index, part in enumerate(Path(name).parts):
+            path = path / part
+            if path.is_symlink():
+                raise OSError("メモのパスへのシンボリックリンクは使用できません。")
+            if index < len(Path(name).parts) - 1 and path.exists() and not path.is_dir():
+                raise ValueError("メモの親パスがディレクトリではありません。")
+        return path
+
+    def filename(self, value):
+        path = Path(value)
+        if path.is_absolute():
+            path = path.relative_to(self.root)
+        self.note_path(path.as_posix())
+        return path.as_posix()
+
+    def folder_name(self, folder):
+        parts = folder["path"]
+        if not folder["default_account"]:
+            parts = ["_accounts", digest(folder["account"])[:8], *parts]
+        if parts:
+            self.note_path("/".join(parts) + "/__guard__")
+        return unicodedata.normalize("NFC", "/".join(parts))
+
+    def remember_folder(self, state, folder):
+        name = self.folder_name(folder)
+        known = state.setdefault("folders", {})
+        if any(old["id"] == folder["id"] and key != name for key, old in known.items()):
+            raise ValueError("フォルダの移動・改名を検知しました。自動作成を停止しています。")
+        path = self.root if not name else self.note_path(name + "/__guard__").parent
+        if name in known and (known[name]["id"] != folder["id"] or not path.is_dir()):
+            raise ValueError("登録済みフォルダの削除・入れ替えを検知しました。")
+        path.mkdir(parents=True, exist_ok=True, mode=0o700)
+        for other in known:
+            other_path = self.root if not other else self.note_path(other + "/__guard__").parent
+            if other != name and other_path.exists() and os.path.samefile(path, other_path):
+                raise ValueError("同じローカルディレクトリに別のフォルダが対応しています。")
+        known[name] = folder
+        return path
 
     def snapshot(self, note):
         directory = self.meta / "history" / digest(note.id)
@@ -416,12 +536,17 @@ class Workspace:
             return self.note_path(state["notes"][note.id]["file"])
         # Preserve the complete source before producing any editable file.
         base = self.snapshot(note)
+        folder = {"id": note.folder_id, "path": list(note.folder),
+                  "account": note.account, "default_account": note.default_account}
+        directory = self.remember_folder(state, folder) if note.folder_id else self.root
         title = re.sub(r'[\x00-\x1f/\\:*?"<>|]', "_", note.title).strip(" .")
         title = title.encode("utf-8")[:200].decode("utf-8", errors="ignore") or "Untitled"
         for index in range(100):
             suffix = "" if index == 0 else "--" + digest(note.id)[:8] + ("" if index == 1 else f"-{index}")
-            path = self.note_path(title + suffix + ".md")
-            if any(record["file"] == path.name for record in state["notes"].values()):
+            path = directory / (title + suffix + ".md")
+            filename = path.relative_to(self.root).as_posix()
+            self.note_path(filename)
+            if any(record["file"] == filename for record in state["notes"].values()):
                 continue  # A missing file still belongs to its original note.
             try:
                 write_new(path, file_text(note.text))
@@ -430,7 +555,8 @@ class Workspace:
                 continue
         else:
             raise ValueError("既存ファイルと衝突しない名前を選べませんでした。")
-        state["notes"][note.id] = {"file": path.name, "base": base}
+        state["notes"][note.id] = {"file": filename, "base": base, "folder_id": note.folder_id,
+                                  "remote_directory": directory.relative_to(self.root).as_posix()}
         atomic_json(self.meta / "state.json", state)
         return path
 
@@ -471,6 +597,109 @@ class Workspace:
                                      for r in state["notes"].values()),
                     "errors": errors}
 
+    def discover_local(self, stable=False):
+        """Add folders and nonempty files; never infer a move or retry an ambiguous create."""
+        with self.lock():
+            state = self.state()
+            errors = {}
+            catalog = self.source.folders()
+            folders = {}
+            for folder in catalog:
+                name = None
+                try:
+                    name = self.folder_name(folder)
+                    folders[name] = folder
+                    self.remember_folder(state, folder)
+                except (OSError, ValueError) as error:
+                    errors[name if name is not None else folder["id"]] = str(error)
+            known = state.setdefault("folders", {})
+            if "" in known and "" in folders and known[""]["id"] != folders[""]["id"]:
+                errors[""] = "既定アカウントまたはフォルダが変わっています。"
+            files = []
+            for parent, directories, names in os.walk(self.root, followlinks=False):
+                directories[:] = [name for name in directories if not name.startswith(".") and
+                                   name != "_accounts" and not (Path(parent) / name).is_symlink()]
+                name = Path(parent).relative_to(self.root).as_posix()
+                name = "" if name == "." else name
+                name = unicodedata.normalize("NFC", name)
+                if name not in known and name not in errors and "" not in errors:
+                    try:
+                        # Existing folder names are reused; duplicate/shared destinations are rejected.
+                        folder = self.source.ensure_folder(Path(name).parts if name else ())
+                        self.remember_folder(state, folder)
+                        folders[name] = folder
+                    except (OSError, ValueError, RuntimeError, subprocess.TimeoutExpired) as error:
+                        errors[name] = str(error)
+                if name in errors or name not in folders:
+                    continue
+                files.extend(Path(parent) / name for name in names if name.endswith(".md"))
+            atomic_json(self.meta / "state.json", state)
+            mapped = {record["file"] for record in state["notes"].values()}
+            missing = [record for record in state["notes"].values()
+                       if not self.note_path(record["file"]).exists()]
+            pending = state.setdefault("creates", {})
+            for path in files:
+                filename = path.relative_to(self.root).as_posix()
+                if filename in mapped or filename in pending:
+                    continue
+                try:
+                    self.note_path(filename)
+                    if any(self.note_path(name).exists() and os.path.samefile(path, self.note_path(name))
+                           for name in mapped):
+                        continue  # Case-only aliases and hard links are not a new note.
+                    text = read_text(path)
+                    if not text.strip():
+                        continue  # A touched file waits for its first real save.
+                    signature = digest(text)
+                    key = "create:" + filename
+                    settled = self.observed.get(key) == signature
+                    self.observed[key] = signature
+                    if stable and not settled:
+                        continue
+                    if any(Path(record["file"]).name == path.name or
+                           file_text(self.base(record).text) == file_text(text) for record in missing):
+                        raise ValueError("既存メモの移動候補です。新規メモとして複製しません。")
+                    text_html(text)  # Validate before recording or touching Notes.
+                    backup = self.meta / "local-history" / (signature + ".txt")
+                    if not backup.exists():
+                        write_new(backup, text)
+                    elif read_text(backup) != text:
+                        raise ValueError("作成前のファイル履歴が一致しません。")
+                    folder = folders[unicodedata.normalize("NFC", path.parent.relative_to(self.root).as_posix())
+                                     if path.parent != self.root else ""]
+                    operation = uuid.uuid4().hex
+                    marker = {"operation": operation, "local": signature, "folder": folder,
+                              "error": "作成途中です。再作成せず標準メモを確認してください。"}
+                    atomic_json(self.meta / "operations" / (operation + ".json"),
+                                {"type": "create", "file": filename, **marker,
+                                 "local_backup": str(backup.relative_to(self.meta))})
+                    pending[filename] = marker
+                    atomic_json(self.meta / "state.json", state)
+                    if read_text(path) != text:
+                        pending.pop(filename)
+                        atomic_json(self.meta / "state.json", state)
+                        continue
+                    note = self.source.create(folder, text)
+                    if (not note or file_text(note.text) != file_text(text) or
+                        note.folder_id != folder["id"] or note.account != folder["account"]):
+                        raise RuntimeError("作成結果の本文またはフォルダが一致しません。再作成を停止しました。")
+                    if note.id in state["notes"]:
+                        raise RuntimeError("作成結果が既存メモを指しています。")
+                    state["notes"][note.id] = {"file": filename, "base": self.snapshot(note),
+                                              "folder_id": note.folder_id,
+                                              "remote_directory": self.folder_name(folder) or ".",
+                                              "sync_enabled": True, "pull_enabled": True}
+                    pending.pop(filename)
+                    mapped.add(filename)
+                    atomic_json(self.meta / "state.json", state)
+                except (OSError, ValueError, RuntimeError, subprocess.TimeoutExpired) as error:
+                    errors[filename] = str(error)
+                    if filename in pending:
+                        pending[filename]["error"] = str(error)
+                        atomic_json(self.meta / "state.json", state)
+            atomic_json(self.meta / "directory-errors.json", errors)
+            return errors
+
     def try_enroll(self, state, note, path):
         try:
             self.enroll(state, note, path)
@@ -480,6 +709,10 @@ class Workspace:
     def enroll(self, state, note, path):
         text_style(note)
         record = state["notes"][note.id]
+        remote_directory = self.folder_name({"path": list(note.folder), "account": note.account,
+                                             "default_account": note.default_account})
+        if record.get("remote_directory", ".") != (remote_directory or "."):
+            raise ValueError("フォルダの移動を検知しました。同期の再開には確認が必要です。")
         local = read_text(path)
         status = classify(self.base(record), local, note)
         if status == "conflict" or (record.get("pending") and file_text(local) != file_text(note.text)):
@@ -496,7 +729,7 @@ class Workspace:
         with self.lock():
             state = self.state()
             for note_id, record in state["notes"].items():
-                if record["file"] == Path(filename).name:
+                if record["file"] == self.filename(filename):
                     if not enabled:
                         record["sync_enabled"] = False
                         record["pull_enabled"] = False
@@ -525,7 +758,7 @@ class Workspace:
             "local": digest(local),
         }
         atomic_json(self.meta / "operations" / (operation + ".json"), {
-            **record["pending"], "file": path.name, "note_id": remote.id,
+            **record["pending"], "file": record["file"], "note_id": remote.id,
             "local_backup": str(local_backup.relative_to(self.meta)),
             "remote_backup": self.snapshot(remote),
         })
@@ -564,7 +797,7 @@ class Workspace:
         with self.lock():
             state = self.state()
             for note_id, record in state["notes"].items():
-                if filename and record["file"] != Path(filename).name:
+                if filename and record["file"] != self.filename(filename):
                     continue
                 baseline = record["base"]
                 base = self.base(record)
@@ -589,6 +822,18 @@ class Workspace:
                 if remote:
                     self.snapshot(remote)
                 status = "unavailable" if read_error else classify(base, local, remote)
+                if remote and "folder_id" not in record:
+                    record["folder_id"] = remote.folder_id
+                    record["remote_directory"] = self.folder_name({
+                        "path": list(remote.folder), "account": remote.account,
+                        "default_account": remote.default_account}) or "."
+                    atomic_json(self.meta / "state.json", state)
+                if remote and record.get("folder_id") and remote.folder_id != record["folder_id"]:
+                    status = "folder_changed"
+                if remote and record.get("remote_directory", ".") != (self.folder_name({
+                    "path": list(remote.folder), "account": remote.account,
+                    "default_account": remote.default_account}) or "."):
+                    status = "folder_changed"
                 error = read_error
                 enabled = record.get("sync_enabled", False)
                 pull_enabled = record.get("pull_enabled", False)
@@ -633,7 +878,7 @@ class Workspace:
                     local = read_text(path)
                 current = remote or base
                 result = {
-                    "file": path.name, "status": status,
+                    "file": record["file"], "status": status,
                     "note_id": note_id, "writes_enabled": enabled, "error": error,
                     "pull_enabled": pull_enabled, "write_blocked": record.get("write_blocked"),
                     "attachments": current.attachments, "shared": current.shared,
@@ -646,6 +891,11 @@ class Workspace:
                 }
                 atomic_json(self.meta / "reports" / (digest(note_id) + ".json"), result)
                 results.append(result)
+            for name, pending in state.get("creates", {}).items():
+                if not filename or name == self.filename(filename):
+                    results.append({"file": name, "status": "create_interrupted", "note_id": None,
+                                    "writes_enabled": False, "pull_enabled": False,
+                                    "error": pending["error"], "local_diff": [], "remote_diff": []})
         if filename and not results:
             raise ValueError("このファイルは登録されていません。")
         return results
@@ -686,6 +936,8 @@ def main(argv=None):
         elif args.command in ("enable", "disable"):
             workspace.enable(args.file, args.command == "enable")
         elif args.command in ("status", "diff", "sync"):
+            if args.command == "sync" and not args.file:
+                workspace.discover_local()
             results = workspace.inspect(args.file if args.command in ("diff", "sync") else None,
                                         sync=args.command == "sync")
             if args.command != "diff" and args.json:
@@ -698,7 +950,8 @@ def main(argv=None):
             if not results and args.command != "diff" and not args.json:
                 print("登録されたメモはありません。")
             if args.command == "sync" and any(r["status"] in ("conflict", "interrupted", "unsupported",
-                                                            "local_missing", "remote_missing", "unavailable") for r in results):
+                                                            "local_missing", "remote_missing", "unavailable",
+                                                            "folder_changed", "create_interrupted") for r in results):
                 return 1
             if any(r["status"] == "unavailable" for r in results):
                 return 1
@@ -713,6 +966,7 @@ def main(argv=None):
                     if time.monotonic() >= next_discovery:
                         workspace.import_all()
                         next_discovery = time.monotonic() + 30
+                    workspace.discover_local(stable=True)
                     results = workspace.inspect(sync=True, stable=True)
                 except (OSError, ValueError, RuntimeError, subprocess.TimeoutExpired) as error:
                     # ponytail: one watcher per workspace; a busy foreground command waits one poll.

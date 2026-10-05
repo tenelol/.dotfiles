@@ -75,7 +75,7 @@ activation failure.
 
 ## Apple Notesのローカル編集
 
-[memo-syncの手順](./docs/memo-sync.md)を参照。denix/Home ManagerでMac用CLI・登録用サービス・自動同期のlaunchd agentを配置する。全件取り込みと新規メモの自動追加に対応。テキストメモは双方向、書式付きメモは本文をファイルへ同期し、原本と更新前のファイルを保存する。競合時は更新を停止。反映は通常のnhワークフローで行う。
+[memo-syncの手順](./docs/memo-sync.md)を参照。denix/Home ManagerでMac用CLI・登録用サービス・自動同期のlaunchd agentを配置する。全件取り込み、新規メモの自動追加、サブディレクトリからのフォルダ・メモ作成に対応。テキストメモは双方向、書式付きメモは本文をファイルへ同期し、原本と更新前のファイルを保存する。競合時は更新を停止。反映は通常のnhワークフローで行う。
 
 ## Codex skills
 

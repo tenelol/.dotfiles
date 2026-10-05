@@ -460,5 +460,100 @@ class BidirectionalTests(unittest.TestCase):
         self.assertEqual(self.source.read(extra.id).text, "Other notes still sync\n")
 
 
+class FolderSyncTests(unittest.TestCase):
+    remote = MemoSyncTests.remote
+    cli = MemoSyncTests.cli
+
+    def setUp(self):
+        MemoSyncTests.setUp(self)
+        self.note = replace(self.note, html="<div>Title</div><div>KEEP_1</div>", text="Title\nKEEP_1\n")
+        self.remote(self.note)
+        self.path = self.workspace.register()
+
+    def test_mkdir_and_file_save_create_nested_notes_and_then_sync(self):
+        directory = self.root / "a/日本語"
+        directory.mkdir(parents=True)
+        path = directory / "名前.md"
+        path.write_text("名前\n  <tag> & 日本語 🌱\t\n\nKEEP_7\n")
+        self.assertEqual(self.workspace.discover_local(stable=True), {})
+        self.assertEqual(len(self.source.list_ids()), 1)
+        self.assertEqual(self.workspace.discover_local(stable=True), {})
+        state = self.workspace.state()
+        created_id = next(key for key in state["notes"] if key != self.note.id)
+        self.assertEqual(state["notes"][created_id]["file"], "a/日本語/名前.md")
+        created = self.source.read(created_id)
+        self.assertEqual(created.folder, ("a", "日本語"))
+        self.assertEqual(created.text, path.read_text())
+        self.assertEqual(self.workspace.discover_local(), {})
+        self.assertEqual(len(self.source.list_ids()), 2)
+        path.write_text(path.read_text() + "LOCAL_EDIT\n")
+        self.cli("sync", "a/日本語/名前.md")
+        self.assertEqual(self.source.read(created_id).text, path.read_text())
+        self.remote(replace(self.source.read(created_id), text=path.read_text() + "REMOTE_EDIT\n"))
+        self.workspace.inspect("a/日本語/名前.md", sync=True)
+        self.assertTrue(path.read_text().endswith("REMOTE_EDIT\n"))
+        self.cli("disable", "a/日本語/名前.md")
+
+    def test_remote_empty_folders_and_notes_are_imported_at_the_right_path(self):
+        folder = self.source.ensure_folder(("remote", "child"))
+        self.workspace.discover_local()
+        self.assertTrue((self.root / "remote/child").is_dir())
+        remote = replace(self.note, id="remote-child", title="Remote",
+                         folder_id=folder["id"], folder=tuple(folder["path"]),
+                         account=folder["account"])
+        self.remote(remote)
+        path = self.workspace.register(remote.id, sync=True)
+        self.assertEqual(path.relative_to(self.workspace.root).as_posix(), "remote/child/Remote.md")
+        self.assertEqual(path.read_text(), remote.text)
+
+    def test_failed_creation_keeps_local_backup_and_never_retries(self):
+        path = self.root / "new.md"
+        path.write_text("New note\nOriginal local text\n")
+        with patch.object(self.source, "create", side_effect=RuntimeError("Timeout")) as create:
+            self.assertIn("new.md", self.workspace.discover_local())
+            self.workspace.discover_local()
+            self.assertEqual(create.call_count, 1)
+        self.assertEqual(path.read_text(), "New note\nOriginal local text\n")
+        self.assertEqual((self.workspace.meta / "local-history" /
+                          (memo.digest(path.read_text()) + ".txt")).read_text(), path.read_text())
+        self.assertEqual(self.workspace.inspect()[-1]["status"], "create_interrupted")
+
+    def test_moves_are_not_duplicated_or_recreated(self):
+        moved = self.root / "a" / self.path.name
+        moved.parent.mkdir()
+        self.path.rename(moved)
+        self.assertIn(moved.relative_to(self.root).as_posix(), self.workspace.discover_local())
+        self.assertEqual(len(self.source.list_ids()), 1)
+        self.assertFalse(self.path.exists())
+        # Renaming/deleting a known Notes folder must not recreate its old name.
+        folder = self.source.ensure_folder(("old",))
+        self.workspace.discover_local()
+        catalog = self.source.folders()
+        next(f for f in catalog if f["id"] == folder["id"])["path"] = ["renamed"]
+        memo.atomic_json(self.fixtures / "folders.json", catalog)
+        self.assertIn("renamed", self.workspace.discover_local())
+        self.assertFalse((self.root / "renamed").exists())
+
+    def test_metadata_keeps_existing_snapshot_hashes_and_blocks_path_escape(self):
+        old = asdict(self.note)
+        for key in ("folder", "folder_id", "account", "default_account"):
+            old.pop(key)
+        old.pop("modified")
+        expected = memo.digest(json.dumps(old, ensure_ascii=False, sort_keys=True))
+        self.assertEqual(self.note.fingerprint, expected)
+        moved = replace(self.note, folder=("a",), folder_id="new-folder", account="account")
+        self.assertEqual(moved.fingerprint, expected)
+        for name in ("../outside.md", ".memo-sync/private.md", "a/../outside.md", "."):
+            with self.assertRaises(ValueError):
+                self.workspace.note_path(name)
+        outside = self.directory / "outside"
+        outside.mkdir()
+        (self.root / "linked").symlink_to(outside)
+        with self.assertRaises(OSError):
+            self.workspace.note_path("linked/private.md")
+        self.workspace.discover_local()
+        self.assertEqual(list(outside.iterdir()), [])
+
+
 if __name__ == "__main__":
     unittest.main()
