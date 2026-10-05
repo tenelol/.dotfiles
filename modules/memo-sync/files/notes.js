@@ -8,6 +8,7 @@ function inTrash(note) {
 
 function folderInfo(folder) {
   var app = Application("Notes");
+  var accountIds = app.accounts.id();
   var id = folder.id();
   var parts = [];
   while (true) {
@@ -17,9 +18,9 @@ function folderInfo(folder) {
     }
     parts.unshift(name);
     var parent = folder.container();
-    var accounts = app.accounts().filter(function(account) { return account.id() === parent.id(); });
-    if (accounts.length === 1) {
-      var account = accounts[0];
+    var parentId = parent.id();
+    if (accountIds.indexOf(parentId) !== -1) {
+      var account = app.accounts.byId(parentId);
       if (id === account.defaultFolder().id()) parts = [];
       return { id: id, path: parts, account: account.id(),
         default_account: account.id() === app.defaultAccount().id() };
@@ -67,26 +68,28 @@ function snapshot(note, locations) {
   if (note.passwordProtected()) {
     throw new Error("ロックされたメモは登録できません。");
   }
-  var container = note.container();
+  var before = note.modificationDate().toISOString();
+  var properties = note.properties();
+  var container = properties.container;
   var folderId = container.id();
   var folder = locations && locations[folderId];
   // Read-only polling reuses one folder inventory per scan. Writes always use fresh metadata.
   if (!folder || folder.id !== folderId) folder = folderInfo(container);
-  var before = note.modificationDate().toISOString();
   var value = {
-    id: note.id(),
-    title: note.name(),
-    html: note.body(),
-    text: note.plaintext(),
+    id: properties.id,
+    title: properties.name,
+    html: properties.body,
+    text: properties.plaintext,
     modified: before,
     attachments: note.attachments().length,
-    shared: note.shared(),
+    shared: properties.shared,
   };
   value.folder_id = folder.id;
   value.folder = folder.path;
   value.account = folder.account;
   value.default_account = folder.default_account;
-  if (note.modificationDate().toISOString() !== before) {
+  if (properties.passwordProtected || properties.modificationDate.toISOString() !== before ||
+      note.modificationDate().toISOString() !== before) {
     throw new Error("読取中にメモが更新されました。もう一度実行してください。");
   }
   return value;
@@ -119,7 +122,7 @@ function run() {
     }
     if (request.operation === "read") {
       var target = notes.notes.byId(request.id);
-      return JSON.stringify({ note: inTrash(target) ? null : snapshot(target, request.locations) });
+      return JSON.stringify({ note: snapshot(target, request.locations) });
     }
     if (request.operation === "list") {
       // Notes' all-notes collection includes trash. The scripting dictionary has no trash flag.
@@ -135,7 +138,7 @@ function run() {
         throw new Error("一覧取得中にメモが変化しました。");
       }
       var trash = {};
-      notes.folders().forEach(function(folder) {
+      notes.folders.whose({ _or: [{ name: "Recently Deleted" }, { name: "最近削除した項目" }] })().forEach(function(folder) {
         if (!folder.exists()) return;
         if (folder.name() === "Recently Deleted" || folder.name() === "最近削除した項目") {
           folder.notes.id().forEach(function(id) { trash[id] = true; });
@@ -147,17 +150,25 @@ function run() {
     }
     if (request.operation === "folders") {
       var folders = [];
-      function walk(parent, depth) {
+      var account = notes.defaultAccount();
+      var accountId = account.id();
+      var defaultFolderId = account.defaultFolder().id();
+      function walk(parent, depth, parentPath) {
         if (depth > 32) throw new Error("フォルダ階層が深すぎます。");
+        var parentId = parent.id();
         parent.folders().forEach(function(folder) {
           if (!folder.exists()) return;
-          if (folder.container().id() !== parent.id() ||
-              folder.name() === "Recently Deleted" || folder.name() === "最近削除した項目") return;
-          folders.push(folderInfo(folder));
-          walk(folder, depth + 1);
+          var name = folder.name().normalize("NFC");
+          if (folder.container().id() !== parentId ||
+              name === "Recently Deleted" || name === "最近削除した項目") return;
+          var id = folder.id();
+          var path = parentPath.concat([name]);
+          folders.push({ id: id, path: id === defaultFolderId ? [] : path,
+            account: accountId, default_account: true });
+          walk(folder, depth + 1, path);
         });
       }
-      walk(notes.defaultAccount(), 0);
+      walk(account, 0, []);
       return JSON.stringify({ folders: folders });
     }
     if (request.operation === "ensure_folder") {
@@ -224,7 +235,6 @@ function run() {
         throw new Error("削除要求が不正です。");
       }
       var target = notes.notes.byId(request.id);
-      if (inTrash(target)) return JSON.stringify({ deleted: true });
       var current = snapshot(target);
       if (current.shared || !notes.accounts.byId(current.account).upgraded() ||
           JSON.stringify(current) !== JSON.stringify(request.expected)) {

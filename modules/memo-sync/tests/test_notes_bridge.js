@@ -59,6 +59,8 @@ function execute(request, options = {}) {
   account.folders.push(trashFolder);
   account.defaultFolder = () => root;
   note.container = () => options.trash ? trashFolder : root;
+  note.properties = () => ({ ...Object.fromEntries(Object.keys(fixture).map(key => [key, note[key]() ])),
+    container: note.container(), modificationDate: note.modificationDate() });
   const trash = { id: () => "trash-id", container: () => trashFolder };
   const application = {
     accounts: () => [account],
@@ -81,7 +83,9 @@ function execute(request, options = {}) {
     }),
   };
   application.accounts.byId = () => account;
+  application.accounts.id = () => [account.id()];
   application.folders = Object.assign(() => [root, trashFolder], {
+    whose: () => () => [trashFolder],
     byId: id => {
       if (id !== root.id()) throw new Error("Can't get folder (-1728)");
       return root;

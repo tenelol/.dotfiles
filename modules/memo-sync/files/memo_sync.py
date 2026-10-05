@@ -25,6 +25,8 @@ from notes_text import DeferredSync
 
 
 MAX_BYTES = 16 * 1024 * 1024
+SAVE_SETTLE_SECONDS = 0.35
+DELETE_SETTLE_SECONDS = 2
 
 
 def digest(value):
@@ -259,7 +261,9 @@ class Notes:
         return folders
 
     def ensure_folder(self, parts):
-        return self.request({"operation": "ensure_folder", "folder": list(parts)})
+        folder = self.request({"operation": "ensure_folder", "folder": list(parts)})
+        self.locations[folder["id"]] = folder
+        return folder
 
     def create(self, folder, text, markdown=False):
         rendered, key = markdown_html(text) if markdown else (text_html(text), None)
@@ -592,12 +596,19 @@ def classify(base, local, remote, base_local=None, markdown=False, image_text=Fa
     return "in_sync"
 
 
+def folder_ready(state, name):
+    return not (any(not r.get("deleted") and Path(r["file"]).is_relative_to(name)
+                    for r in state["notes"].values()) or
+                any(n != name and Path(n).is_relative_to(name) for n in state.get("folders", {})))
+
+
 class Workspace:
     def __init__(self, root, source):
         self.root = Path(root).expanduser().resolve()
         self.meta = self.root / ".memo-sync"
         self.source = source
         self.observed = {}
+        self.base_cache = {}
 
     def prepare(self):
         self.root.mkdir(parents=True, exist_ok=True)
@@ -724,6 +735,9 @@ class Workspace:
             if other != name and other_path.exists() and os.path.samefile(path, other_path):
                 raise ValueError("同じローカルディレクトリに別のフォルダが対応しています。")
         known[name] = folder
+        if name and folder["default_account"] and state.get("delete_enabled"):
+            info = path.stat()
+            state.setdefault("folder_identity", {})[name] = [info.st_dev, info.st_ino]
         return path
 
     def snapshot(self, note):
@@ -750,11 +764,17 @@ class Workspace:
         ):
             raise ValueError("原本への参照が不正です。")
         path = self.meta / relative
-        if path.parent.is_symlink():
+        if path.parent.is_symlink() or path.is_symlink():
             raise ValueError("原本保存先へのシンボリックリンクは使用できません。")
+        info = path.stat()
+        signature = (record["base"], info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+        cached = self.base_cache.get(relative.parts[1])
+        if cached and cached[0] == signature:
+            return cached[1]
         note = Note.parse(json.loads(read_text(path)))
         if relative.parts[1] != digest(note.id) or path.stem != note.fingerprint:
             raise ValueError("原本への参照とメモが一致しません。")
+        self.base_cache[relative.parts[1]] = (signature, note)
         return note
 
     def local_base(self, record):
@@ -950,6 +970,9 @@ class Workspace:
                         pending.pop(filename)
                         atomic_json(self.meta / "state.json", state)
                         continue
+                    identity = path.stat(follow_symlinks=False)
+                    if not stat.S_ISREG(identity.st_mode):
+                        raise ValueError("作成元のファイルが入れ替わったため停止しました。")
                     note = self.source.create(folder, text, markdown=True) if use_markdown else self.source.create(folder, text)
                     matches = note and (content_key(note.text) == markdown_html(text)[1] if use_markdown
                                         else file_text(note.text) == file_text(text))
@@ -961,7 +984,10 @@ class Workspace:
                     state["notes"][note.id] = {"file": filename, "base": self.snapshot(note),
                                               "folder_id": note.folder_id,
                                               "remote_directory": self.folder_name(folder) or ".",
-                                              "sync_enabled": True, "pull_enabled": True}
+                                              "sync_enabled": True, "pull_enabled": True,
+                                              "delete_armed": state.get("delete_enabled", False),
+                                              "file_identity": [identity.st_dev, identity.st_ino],
+                                              "last_local": signature}
                     if use_markdown:
                         verify_markdown(note, text)
                         state["notes"][note.id].update(markdown=True, base_local=self.save_local(text))
@@ -1068,10 +1094,6 @@ class Workspace:
             if state.get("delete_enabled"):
                 for name in sorted(missing_folders, key=lambda n: len(Path(n).parts), reverse=True):
                     if name not in state.get("folders", {}) or name in state.get("folder_pending", {}):
-                        continue
-                    if (any(not r.get("deleted") and Path(r["file"]).is_relative_to(name)
-                            for r in state["notes"].values()) or
-                        any(n != name and Path(n).is_relative_to(name) for n in state["folders"])):
                         continue
                     work["delete-folder:" + name] = state["folders"][name]["id"]
             return work, state
@@ -1189,8 +1211,7 @@ class Workspace:
                 not self.folder_missing(state, name) or
                 name in state.get("folder_pending", {})):
                 return
-            if any(not r.get("deleted") and Path(r["file"]).is_relative_to(name)
-                   for r in state["notes"].values()):
+            if not folder_ready(state, name):
                 raise RuntimeError("中のメモの削除が完了していません。")
             operation = uuid.uuid4().hex
             atomic_json(self.meta / "operations" / (operation + ".json"),
@@ -1498,8 +1519,9 @@ def watch_workspace(workspace, interval):
                 if name not in observed or observed[name][0] != signature:
                     observed[name] = (signature, now)
             ready = [name for name, signature in work.items()
-                     if now - observed[name][1] >= (5 if name.startswith(("delete:", "delete-folder:")) else 1)
-                     and handled.get(name) != signature and now >= retry_after.get(name, 0)]
+                     if now - observed[name][1] >= (DELETE_SETTLE_SECONDS if name.startswith(("delete:", "delete-folder:")) else SAVE_SETTLE_SECONDS)
+                     and handled.get(name) != signature and now >= retry_after.get(name, 0)
+                     and (not name.startswith("delete-folder:") or folder_ready(state, name[len("delete-folder:"):]))]
             results = []
             if ready:
                 name = ready[0]
@@ -1530,10 +1552,11 @@ def watch_workspace(workspace, interval):
                     for note_id in index:
                         if note_id not in state["notes"]:
                             queue.setdefault(note_id, ((index[note_id], None), now))
-                next_index = now + interval
+                # Always leave room to consume results even when an index call takes longer than its interval.
+                next_index = time.monotonic() + interval
             elif now >= next_folders:
                 workspace.discover_local(refresh=True, filenames=set())
-                next_folders = time.monotonic() + 30
+                next_folders = time.monotonic() + 2
             else:
                 if now >= next_audit:
                     # ponytail: timestamp granularity needs a fallback scan; one note per turn keeps saves responsive.
@@ -1541,15 +1564,17 @@ def watch_workspace(workspace, interval):
                         queue.setdefault(note_id, ((seen.get(note_id), record["file"]), now - 1))
                     next_audit = now + 300
                 candidates = [note_id for note_id, ((_, filename), changed) in queue.items()
-                              if now - changed >= 1 and filename not in work]
+                              if now - changed >= SAVE_SETTLE_SECONDS and filename not in work]
+                # Changed timestamps and new notes precede unchanged fallback audit entries.
+                candidates.sort(key=lambda note_id: queue[note_id][0][0] == seen.get(note_id))
                 if candidates:
                     note_id = candidates[0]
-                    (_, filename), _ = queue.pop(note_id)
+                    (modified, filename), _ = queue.pop(note_id)
                     if filename is None:
                         workspace.import_all(note_ids=[note_id])
                     else:
                         results = workspace.inspect(filename, sync=True, pull_only=True)
-                    seen[note_id] = workspace.source.index().get(note_id) if filename is None else (
+                    seen[note_id] = modified if filename is None else (
                         results[0].get("modified") if results else seen.get(note_id))
             for result in results:
                 signature = json.dumps(result, ensure_ascii=False, sort_keys=True)
@@ -1561,7 +1586,7 @@ def watch_workspace(workspace, interval):
             previous_error = None
         except DeferredSync as error:
             if selected:
-                retry_after[selected[0]] = time.monotonic() + 10
+                retry_after[selected[0]] = time.monotonic() + 2
             if str(error) != previous_error:
                 print("memo-sync: " + str(error), file=sys.stderr, flush=True)
                 previous_error = str(error)
@@ -1571,7 +1596,8 @@ def watch_workspace(workspace, interval):
             if str(error) != previous_error:
                 print("memo-sync: " + str(error), file=sys.stderr, flush=True)
             previous_error = str(error)
-        time.sleep(0.2)
+        if selected is None:
+            time.sleep(0.2)
 
 
 def main(argv=None):
@@ -1599,7 +1625,7 @@ def main(argv=None):
     sync.add_argument("file", nargs="?")
     sync.add_argument("--json", action="store_true")
     watch = commands.add_parser("watch", help="有効化したメモの双方向同期を継続")
-    watch.add_argument("--interval", type=float, default=2, help="メモ側の更新日時を確認する間隔（秒）")
+    watch.add_argument("--interval", type=float, default=1, help="メモ側の更新日時を確認する間隔（秒）")
     args = parser.parse_args(argv)
     source = FixtureNotes(args.fixture_dir) if args.fixture_dir else Notes(args.bridge_path)
     workspace = Workspace(args.root, source)

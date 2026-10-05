@@ -12,6 +12,7 @@ import tempfile
 import threading
 import time
 import unittest
+from types import SimpleNamespace
 from unittest.mock import patch
 
 
@@ -25,6 +26,36 @@ spec.loader.exec_module(memo)
 
 
 class MemoSyncTests(unittest.TestCase):
+    def test_new_folder_and_file_are_armed_at_publication(self):
+        self.workspace.deletions(True)
+        self.source.ensure_folder(("remote",))
+        self.workspace.discover_local()
+        (self.root / "remote").rmdir()
+        self.assertIn("delete-folder:remote", self.workspace.local_work()[0])
+        self.workspace.delete_folder("remote")
+        path = self.root / "quick.md"
+        path.write_text("Quick\n")
+        create = self.source.create
+        def remove_during_create(folder, text):
+            note = create(folder, text)
+            path.unlink()
+            return note
+        self.source.create = remove_during_create
+        self.workspace.discover_local()
+        self.assertIn("delete:quick.md", self.workspace.local_work()[0])
+
+    def test_cached_baseline_rechecks_changed_history(self):
+        self.workspace.register()
+        record = self.workspace.state()["notes"][self.note.id]
+        self.assertEqual(self.workspace.base(record), self.note)
+        self.assertEqual(self.workspace.base(record), self.note)
+        path = self.workspace.meta / record["base"]
+        value = json.loads(path.read_text())
+        value["text"] += "tampered"
+        path.write_text(json.dumps(value))
+        with self.assertRaises(ValueError):
+            self.workspace.base(record)
+
     def test_image_text_sync_uses_partial_editor_and_retries_only_before_writing(self):
         note = replace(self.note, title="Image note", text="Image note\nBEFORE\n\ufffc\n",
                        html='<div>Image note</div><div>BEFORE</div><div><img src="data:image/png;base64,AA=="></div>',
@@ -62,7 +93,8 @@ class MemoSyncTests(unittest.TestCase):
         path.parent.parent.rmdir()
         work, state = self.workspace.local_work()
         self.assertIn("delete:parent/child/test.md", work)
-        self.assertNotIn("delete-folder:parent/child", work)
+        self.assertIn("delete-folder:parent/child", work)
+        self.assertFalse(memo.folder_ready(state, "parent/child"))
         self.workspace.delete_note("parent/child/test.md")
         self.assertIn("delete-folder:parent/child", self.workspace.local_work()[0])
         self.workspace.delete_folder("parent/child")
@@ -623,6 +655,66 @@ class FolderSyncTests(unittest.TestCase):
 
 class WatchLatencyTests(unittest.TestCase):
     remote = MemoSyncTests.remote
+
+    def test_remote_changes_are_not_starved_by_index_polling_or_audits(self):
+        class Done(Exception):
+            pass
+        for slow_index in (True, False):
+            with self.subTest(slow_index=slow_index):
+                clock = [0.0]
+                handled = []
+                calls = [0]
+                notes = {} if slow_index else {str(i): {"file": f"{i}.md"} for i in range(30)}
+                state = {"notes": notes, "discover": True}
+                def local_work():
+                    clock[0] += .1 if slow_index else 0
+                    return {}, state
+                def index():
+                    clock[0] += .8 if slow_index else .01
+                    calls[0] += 1
+                    return {"new": "updated"} if slow_index else {
+                        key: "updated" if key == "29" and calls[0] > 1 else "old" for key in notes}
+                def inspect(filename, **kwargs):
+                    if filename == "29.md":
+                        handled.append(clock[0]);raise Done
+                    return []
+                def imported(**kwargs):
+                    handled.append(clock[0]);raise Done
+                def tick(seconds):
+                    clock[0] += seconds
+                    if clock[0] > 5:raise Done
+                workspace = SimpleNamespace(local_work=local_work, source=SimpleNamespace(index=index),
+                    discover_local=lambda **kwargs: None, import_all=imported, inspect=inspect,
+                    base=lambda record: SimpleNamespace(modified="old"))
+                with patch.object(memo.time, "monotonic", side_effect=lambda: clock[0]), \
+                     patch.object(memo.time, "sleep", side_effect=tick), self.assertRaises(Done):
+                    memo.watch_workspace(workspace, 1)
+                self.assertTrue(handled, "A real remote change waited behind polling or unchanged audit entries")
+                self.assertLess(handled[0], 3)
+
+    def test_nested_folder_deletion_shares_one_absence_grace_period(self):
+        MemoSyncTests.setUp(self)
+        self.workspace.discover_local()
+        path = self.root / "parent" / "child" / "test.md"
+        path.parent.mkdir(parents=True)
+        path.write_text("Test\nBody\n")
+        self.workspace.discover_local();self.workspace.deletions(True);self.workspace.local_work()
+        path.unlink();path.parent.rmdir();path.parent.parent.rmdir()
+        clock, removed = [0.0], []
+        trash, delete_folder = self.source.trash, self.source.delete_folder
+        def note_removed(note):
+            result=trash(note);removed.append(clock[0]);return result
+        def folder_removed(folder):
+            result=delete_folder(folder);removed.append(clock[0]);return result
+        def tick(seconds):
+            clock[0] += seconds
+            if len(removed)==3 or clock[0]>20:raise KeyboardInterrupt
+        self.source.trash=note_removed;self.source.delete_folder=folder_removed
+        with patch.object(memo.time,"monotonic",side_effect=lambda:clock[0]), \
+             patch.object(memo.time,"sleep",side_effect=tick), self.assertRaises(KeyboardInterrupt):
+            memo.watch_workspace(self.workspace, 2)
+        self.assertEqual(len(removed),3)
+        self.assertLess(removed[-1]-removed[0],1,"The parent waited a new grace period at every directory level")
 
     def test_a_save_does_not_wait_for_a_slow_whole_notebook_scan(self):
         MemoSyncTests.setUp(self)
