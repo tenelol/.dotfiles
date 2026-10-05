@@ -301,7 +301,7 @@ class Workspace:
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="標準メモの登録・原本保全・双方向差分検知。上書き同期は無効です。")
+    parser = argparse.ArgumentParser(prog="memo-sync", description="標準メモの登録・原本保全・双方向差分検知。上書き同期は無効です。")
     parser.add_argument("--root", type=Path, default=Path.home() / "Documents/memo")
     parser.add_argument("--bridge-path", type=Path, default=Path(__file__).with_name("notes.js"), help=argparse.SUPPRESS)
     parser.add_argument("--fixture-dir", type=Path, help="テスト用スナップショットを使用。標準メモへ接続しません。")
