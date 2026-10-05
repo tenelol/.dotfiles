@@ -21,14 +21,6 @@ let
   ccpocketBridgePackage = import ../../packages/ccpocket-bridge.nix {
     inherit pkgs lib;
   };
-  moocsCollectPackage = import ../../packages/moocs-collect.nix {
-    inherit pkgs lib;
-  };
-  moocsCollectSupport = pkgs.callPackage ../../packages/macos-app-support.nix { } {
-    name = "moocs-collect";
-    sourcePackage = moocsCollectPackage;
-    cli.collect = "collect.app/Contents/MacOS/app";
-  };
   imoocsPackage = import ../../packages/imoocs.nix {
     inherit pkgs lib;
   };
@@ -116,10 +108,6 @@ let
     libreoffice-fresh
   ];
 
-  darwinDesktopPackages = with pkgs; [
-    moocsCollectSupport
-  ];
-
   darwinCliPackages = with pkgs; [
     ccpocketBridgePackage
     nil
@@ -144,6 +132,5 @@ delib.module {
     ++ lib.optionals (!isServer && isLinux) linuxDesktopPackages
     ++ lib.optionals (!isServer && isLinux && fullDesktop) linuxFullDesktopPackages
     ++ lib.optionals (!isServer && isDarwin) darwinCliPackages
-    ++ lib.optionals (!isServer && isDarwin && fullDesktop) darwinDesktopPackages
     ++ lib.optionals (isServer && isLinux) linuxServerPackages;
 }

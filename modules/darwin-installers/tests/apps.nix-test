@@ -1,0 +1,56 @@
+let
+  repository = toString ../../../.;
+  configuration = (builtins.getFlake "git+file://${repository}").darwinConfigurations.macbook-rift;
+  inherit (configuration) pkgs;
+  lib = pkgs.lib;
+  render = pkgs.callPackage ../../../packages/macos-apps.nix { };
+  catalog = builtins.fromJSON (builtins.readFile ../files/apps.json);
+  full = render {
+    owner = "fixture-owner";
+    fullDesktop = true;
+    boringNotchEnabled = true;
+  };
+  base = render {
+    owner = "fixture-owner";
+    fullDesktop = false;
+    boringNotchEnabled = false;
+  };
+  withNotch = render {
+    owner = "fixture-owner";
+    fullDesktop = false;
+    boringNotchEnabled = true;
+  };
+  withoutNotch = render {
+    owner = "fixture-owner";
+    fullDesktop = true;
+    boringNotchEnabled = false;
+  };
+  names = result: map (entry: entry.name) result.installers;
+  expectedCommands = lib.concatMap (app: builtins.attrNames (app.cli or { })) catalog;
+  home = configuration.config.home-manager.users.${configuration.config.system.primaryUser};
+  sourcesMatch = builtins.all (
+    name: toString home.home.file.${name}.source == toString full.cliFiles.${name}.source
+  ) (builtins.attrNames full.cliFiles);
+  packagesMatch = builtins.all (
+    package: builtins.any (actual: actual.drvPath == package.drvPath) home.home.packages
+  ) full.packages;
+in
+assert lib.length full.installers == 22;
+assert lib.length base.installers == 13;
+assert lib.length withNotch.installers == 14;
+assert lib.length withoutNotch.installers == 21;
+assert !(builtins.elem "docker-desktop" (names base));
+assert !(builtins.elem "moocs-collect" (names base));
+assert builtins.elem "boringnotch" (names withNotch);
+assert lib.all (entry: entry.owner == "fixture-owner") full.installers;
+assert
+  builtins.attrNames full.cliFiles
+  == builtins.sort builtins.lessThan (map (name: ".local/bin/${name}") expectedCommands);
+assert packagesMatch && sourcesMatch;
+assert builtins.all (package: !(package ? sourceRoot)) full.packages;
+{
+  configurations = 4;
+  apps = lib.length full.installers;
+  commands = expectedCommands;
+  packages = map (package: { inherit (package) name drvPath; }) full.packages;
+}

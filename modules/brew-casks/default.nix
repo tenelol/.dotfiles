@@ -4,13 +4,10 @@
   host,
   inputs,
   pkgs,
-  hm,
-  profile,
   ...
 }:
 let
   brewCask = pkgs.callPackage ../../packages/brew-cask.nix { };
-  appSupport = pkgs.callPackage ../../packages/macos-app-support.nix { };
   apps = builtins.fromJSON (builtins.readFile ./files/apps.json);
   selected =
     apps.base ++ pkgs.lib.optionals host.fullDesktopFeatured apps.fullDesktop ++ apps.binaries;
@@ -18,35 +15,16 @@ let
     map (app: {
       name = app.name;
       value = brewCask (
-        builtins.removeAttrs app [
-          "name"
-          "selfUpdating"
-        ]
+        builtins.removeAttrs app [ "name" ]
         // {
           cask = pkgs.brewCasks.${app.name};
         }
       );
     }) selected
   );
-  runtimePackages = pkgs.lib.listToAttrs (
-    map (app: {
-      name = app.name;
-      value =
-        if app ? selfUpdating then
-          appSupport (
-            app
-            // {
-              sourcePackage = packages.${app.name};
-            }
-          )
-        else
-          packages.${app.name};
-    }) selected
-  );
   fontPackages = map (
     font: brewCask (builtins.removeAttrs font [ "name" ] // { cask = pkgs.brewCasks.${font.name}; })
   ) apps.fonts;
-  installHash = pkgs.callPackage ../../packages/firefox-install-hash.nix { };
 in
 delib.scopedModule {
   name = "brew-casks";
@@ -58,13 +36,8 @@ delib.scopedModule {
   darwin.ifEnabled.fonts.packages = fontPackages;
 
   home.ifEnabled = {
-    home.activation.preserveZenProfile = hm.dag.entryAfter [ "writeBoundary" ] ''
-      $DRY_RUN_CMD ${pkgs.python3}/bin/python3 ${./files/preserve-zen-profile.py} \
-        ${pkgs.lib.escapeShellArg "/Users/${profile.username}"} \
-        /Applications/Zen.app ${installHash}/bin/firefox-install-hash --literal-install-path
-    '';
     home.packages =
-      pkgs.lib.attrValues runtimePackages
+      pkgs.lib.attrValues packages
       ++ pkgs.lib.concatMap (
         package: pkgs.lib.optional (package ? completionPackage) package.completionPackage
       ) (pkgs.lib.attrValues packages);
@@ -74,7 +47,7 @@ delib.scopedModule {
         app:
         map (command: {
           name = ".local/bin/${command}";
-          value.source = "${runtimePackages.${app.name}}/bin/${command}";
+          value.source = "${packages.${app.name}}/bin/${command}";
         }) (pkgs.lib.attrNames (app.cli or { }))
       ) selected
     );
