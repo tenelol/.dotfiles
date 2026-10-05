@@ -3,6 +3,11 @@ pkgs.vimUtils.buildVimPlugin {
   pname = "apple-notes.nvim";
   version = "unstable-2026-03-24";
 
+  dependencies = with pkgs.vimPlugins; [
+    neo-tree-nvim
+    telescope-nvim
+  ];
+
   src = pkgs.fetchFromGitHub {
     owner = "rdrkr";
     repo = "apple-notes.nvim";
