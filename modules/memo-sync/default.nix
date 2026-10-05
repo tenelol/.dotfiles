@@ -1,6 +1,7 @@
 {
   delib,
   hostTraits,
+  hm,
   pkgs,
   ...
 }:
@@ -12,6 +13,11 @@ let
       exec python3 ${./files/memo_sync.py} --bridge-path ${./files/notes.js} "$@"
     '';
   };
+  serviceWorkflow = pkgs.writeText "memo-sync-register.wflow" (
+    builtins.replaceStrings [ "@MEMO_SYNC@" ] [ "${memoSync}/bin/memo-sync" ] (
+      builtins.readFile ./files/register.workflow.plist
+    )
+  );
 in
 delib.scopedModule {
   name = "memo-sync";
@@ -21,12 +27,12 @@ delib.scopedModule {
 
   home.ifEnabled = {
     home.packages = [ memoSync ];
-    home.file = {
-      "Library/Services/MemoSyncRegister.workflow/Contents/Info.plist".source =
-        ./files/service-info.plist;
-      "Library/Services/MemoSyncRegister.workflow/Contents/document.wflow".text =
-        builtins.replaceStrings [ "@MEMO_SYNC@" ] [ "${memoSync}/bin/memo-sync" ]
-          (builtins.readFile ./files/register.workflow.plist);
-    };
+    # Automator requires regular files, not Home Manager's file symlinks.
+    home.activation.installMemoSyncService = hm.dag.entryAfter [ "linkGeneration" ] ''
+      $DRY_RUN_CMD ${pkgs.python3}/bin/python3 ${./files/install_service.py} \
+        --destination "$HOME/Library/Services/MemoSyncRegister.workflow" \
+        --info ${./files/service-info.plist} \
+        --workflow ${serviceWorkflow}
+    '';
   };
 }
