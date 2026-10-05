@@ -2,7 +2,11 @@
 
 2026-10-05 調査。Apple標準メモをNeovimから編集してiCloud同期を保つ方法を、作者のREADME・実装・本人投稿で確認した。ツールの導入と実際のメモの読取・変更は行っていない。
 
-## 結論
+## 採用中止
+
+導入後に保存で本文の大部分が失われたというユーザー報告があり、利用を中止した。合成HTMLでも、7ブロック中4ブロックが読み込み時の変換で欠落する不具合を再現した。以下は当初の調査記録であり、apple-notes.nvimを導入・再導入する推奨として扱わない。
+
+## 当初の調査結論
 
 **希望に最も近い実装は [`rdrkr/apple-notes.nvim`](https://github.com/rdrkr/apple-notes.nvim)。** メモをMarkdownの仮想bufferとして開き、通常の`:w`で標準メモへ書き戻す。READMEだけでなく、`BufWriteCmd`→保存queue→PandocでHTML変換→AppleScriptの`set body`という処理を確認した。[bufferの保存処理](https://github.com/rdrkr/apple-notes.nvim/blob/e78bf81358be75dd353b7e96125f3d39d42e7fee/lua/apple-notes/buffer.lua#L230-L281)、[保存queue](https://github.com/rdrkr/apple-notes.nvim/blob/e78bf81358be75dd353b7e96125f3d39d42e7fee/lua/apple-notes/sync.lua#L101-L187)、[AppleScript書込](https://github.com/rdrkr/apple-notes.nvim/blob/e78bf81358be75dd353b7e96125f3d39d42e7fee/lua/apple-notes/applescript.lua#L53-L84)。
 
@@ -38,11 +42,3 @@ GitHub APIで2026-03-23作成、03-24最終push、2 commitを確認した。コ�
 - `icloud-md`作者は、Apple Notesで共同作業しながらPCではMarkdownエディタで書きたいという動機と、`vim`で編集してpushする例を[本人投稿](https://www.reddit.com/r/Markdown/comments/1vtmlnw/your_apple_notes_now_editable_as_plain_markdown/)に記している。
 
 未確認事項は、各ツールの現行macOSへの適合、テキスト以外の内容の保持、保存直後の終了操作、実際の他端末同期と競合時の挙動。今回の調査結果は導入候補の選定までとし、インストールや本番メモの変更は行っていない。
-
-## このリポジトリでの導入設定
-
-denixの`nvim`モジュールでmacOSにだけプラグインとPandocを追加する。上記revisionと取得したソースのNAR hashを固定し、既存のTelescopeとNeo-treeに接続する。Home Managerはシステム構成に統合されているため、通常の反映は現在のriceに対応する`nh darwin switch`で行う。2026-10-05の`dotfiles doctor --no-eval`では対象が`macbook-rift`だった。switchにはrepositoryの`AGENTS.md`に従い明示許可が必要。
-
-反映後は`:AppleNotes`または`Space a n f`で選択、`:AppleNotesNew`または`Space a n n`で新規作成、`Space a n t`でメモのツリーを開く。保存は`:w`し、`Note saved`表示を待ってから閉じる。`:checkhealth apple-notes`で依存関係と権限を確認できる。
-
-macOSの「システム設定 → プライバシーとセキュリティ → フルディスクアクセス」で使用するターミナル（Ghosttyなど）を許可し、再起動する。NotesへのAutomation許可も、初回の要求時に許可する。導入設定の確認時にはCodex経由のメモDBアクセスが`authorization denied`になった。実メモを使わず、プラグインのコマンド・キー割当・Neo-tree source登録・Linuxでの無効化をheadless Neovimで確認済み。
