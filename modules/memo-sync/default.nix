@@ -7,9 +7,14 @@
   ...
 }:
 let
+  python = pkgs.python3.withPackages (ps: [
+    ps.mistune
+    ps.beautifulsoup4
+    ps.markdownify
+  ]);
   memoSync = pkgs.writeShellApplication {
     name = "memo-sync";
-    runtimeInputs = [ pkgs.python3 ];
+    runtimeInputs = [ python ];
     text = ''
       exec python3 ${./files/memo_sync.py} --bridge-path ${./files/notes.js} "$@"
     '';

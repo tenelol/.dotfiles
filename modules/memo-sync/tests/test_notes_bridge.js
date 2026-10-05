@@ -43,6 +43,7 @@ function execute(request, options = {}) {
     }});
   }
   const account = { id: () => "account-id" };
+  account.upgraded = () => !options.legacyAccount;
   account.folders = children(account);
   let folderNumber = 0;
   function folder(name) {
@@ -78,6 +79,21 @@ function execute(request, options = {}) {
         return note;
       },
     }),
+  };
+  application.accounts.byId = () => account;
+  application.folders = Object.assign(() => [root, trashFolder], {
+    byId: id => {
+      if (id !== root.id()) throw new Error("Can't get folder (-1728)");
+      return root;
+    },
+  });
+  application.notes.id = () => ["fixture-id", "trash-id"];
+  application.notes.modificationDate = () => [new Date("2026-10-05T00:00:00Z"), new Date("2026-10-05T00:00:00Z")];
+  trashFolder.notes.id = () => ["trash-id"];
+  application.delete = target => {
+    assert.equal(target, note);
+    writes++;
+    note.container = () => trashFolder;
   };
   const context = vm.createContext({
     ObjC: { import: () => {}, unwrap: (value) => value },
@@ -133,11 +149,11 @@ assert.deepEqual(execute({ operation: "folders" }).result.folders.map(f => f.pat
 for (const path of [[".."], [".memo-sync"], ["a/b"], ["Notes"], ["Recently Deleted"]]) {
   assert.ok(execute({ operation: "ensure_folder", folder: path }).result.error);
 }
-const create = { operation: "create", folder: ["a"], folder_id: "folder-2",
+const create = { operation: "create", folder: [], folder_id: "folder-0",
   account: "account-id", html: "<div>Created</div>", text: "Created\n" };
 result = execute(create);
 assert.equal(result.creations, 1);
-assert.deepEqual(result.result.note.folder, ["a"]);
+assert.deepEqual(result.result.note.folder, []);
 assert.equal(result.result.note.text, "Created\n");
 for (const request of [{ ...create, folder_id: "stale" }, { ...create, account: "stale" }]) {
   result = execute(request);
@@ -154,3 +170,12 @@ assert.deepEqual(cached.folder, ["stale"]);
 result = execute({ ...replacement, expected: cached });
 assert.ok(result.result.error);
 assert.equal(result.writes, 0, "A cached location must never bypass the fresh write precondition");
+assert.deepEqual(execute({ operation: "index" }).result.index, { "fixture-id": "2026-10-05T00:00:00.000Z" });
+result = execute({ operation: "trash", id: "fixture-id", expected });
+assert.equal(result.result.deleted, true);
+assert.equal(result.writes, 1);
+for (const options of [{ shared: true }, { legacyAccount: true }]) {
+  result = execute({ operation: "trash", id: "fixture-id", expected }, options);
+  assert.ok(result.result.error);
+  assert.equal(result.writes, 0);
+}

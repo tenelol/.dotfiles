@@ -60,7 +60,9 @@ function ensureFolder(app, parts) {
 
 function snapshot(note, locations) {
   if (inTrash(note)) {
-    throw new Error("削除済みのメモは同期できません。");
+    var missing = new Error("削除済みのメモは同期できません。");
+    missing.errorNumber = -1728;
+    throw missing;
   }
   if (note.passwordProtected()) {
     throw new Error("ロックされたメモは登録できません。");
@@ -114,6 +116,22 @@ function run() {
       });
       return JSON.stringify({ ids: active.map(function(note) { return note.id(); }) });
     }
+    if (request.operation === "index") {
+      var ids = notes.notes.id();
+      var dates = notes.notes.modificationDate();
+      if (ids.length !== dates.length || JSON.stringify(ids) !== JSON.stringify(notes.notes.id())) {
+        throw new Error("一覧取得中にメモが変化しました。");
+      }
+      var trash = {};
+      notes.folders().forEach(function(folder) {
+        if (folder.name() === "Recently Deleted" || folder.name() === "最近削除した項目") {
+          folder.notes.id().forEach(function(id) { trash[id] = true; });
+        }
+      });
+      var index = {};
+      ids.forEach(function(id, i) { if (!trash[id]) index[id] = dates[i].toISOString(); });
+      return JSON.stringify({ index: index });
+    }
     if (request.operation === "folders") {
       var folders = [];
       function walk(parent, depth) {
@@ -138,15 +156,17 @@ function run() {
       if (notes.defaultAccount().id() !== request.account) {
         throw new Error("作成先アカウントが変わったため停止しました。");
       }
-      var destination = ensureFolder(notes, request.folder);
+      var destination = notes.folders.byId(request.folder_id);
       var info = folderInfo(destination);
-      if (info.id !== request.folder_id || info.account !== request.account || destination.shared()) {
+      if (info.id !== request.folder_id || info.account !== request.account ||
+          JSON.stringify(info.path) !== JSON.stringify(request.folder) || destination.shared()) {
         throw new Error("作成先フォルダが変わったため停止しました。");
       }
       var created = notes.Note({ body: request.html });
       destination.notes.push(created);
       var result = snapshot(created);
-      if (result.text.replace(/\r\n?/g, "\n") !== request.text) {
+      if (request.content_key ? result.text.replace(/\s+/g, "") !== request.content_key :
+          result.text.replace(/\r\n?/g, "\n") !== request.text) {
         return JSON.stringify({ error: "作成した本文が一致しません。再作成せず確認してください。", note: result });
       }
       return JSON.stringify({ note: result });
@@ -165,16 +185,32 @@ function run() {
       }
       note.body = request.html;
       var updated = snapshot(note);
-      if (updated.text.replace(/\r\n?/g, "\n") !== request.text) {
+      if (request.content_key ? updated.text.replace(/\s+/g, "") !== request.content_key :
+          updated.text.replace(/\r\n?/g, "\n") !== request.text) {
         return JSON.stringify({ error: "書き戻した本文が一致しません。同期を停止してください。", note: updated });
       }
       return JSON.stringify({ note: updated });
     }
+    if (request.operation === "trash") {
+      if (typeof request.id !== "string" || !request.expected || request.expected.id !== request.id) {
+        throw new Error("削除要求が不正です。");
+      }
+      var target = notes.notes.byId(request.id);
+      if (inTrash(target)) return JSON.stringify({ deleted: true });
+      var current = snapshot(target);
+      if (current.shared || !notes.accounts.byId(current.account).upgraded() ||
+          JSON.stringify(current) !== JSON.stringify(request.expected)) {
+        throw new Error("削除直前に変更されたか、最近削除への移動に対応しないメモです。");
+      }
+      notes.delete(target);
+      if (!inTrash(target)) throw new Error("最近削除への移動を確認できません。");
+      return JSON.stringify({ deleted: true });
+    }
     throw new Error("未対応の操作です。");
   } catch (error) {
-    if (request.operation === "read" &&
+    if ((request.operation === "read" || request.operation === "trash") &&
         (error.errorNumber === -1728 || /\(-1728\)/.test(String(error)))) {
-      return JSON.stringify({ note: null });
+      return JSON.stringify(request.operation === "trash" ? { deleted: true } : { note: null });
     }
     return JSON.stringify({ error: String(error) });
   }

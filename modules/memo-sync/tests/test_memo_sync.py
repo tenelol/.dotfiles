@@ -9,6 +9,8 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import threading
+import time
 import unittest
 from unittest.mock import patch
 
@@ -553,6 +555,137 @@ class FolderSyncTests(unittest.TestCase):
             self.workspace.note_path("linked/private.md")
         self.workspace.discover_local()
         self.assertEqual(list(outside.iterdir()), [])
+
+
+class WatchLatencyTests(unittest.TestCase):
+    remote = MemoSyncTests.remote
+
+    def test_a_save_does_not_wait_for_a_slow_whole_notebook_scan(self):
+        MemoSyncTests.setUp(self)
+        self.note = replace(self.note, html="<div>Title</div><div>KEEP_1</div>", text="Title\nKEEP_1\n")
+        self.remote(self.note)
+        path = self.workspace.register(sync=True)
+        for index in range(11):
+            note = replace(self.note, id=f"other-{index}", title=f"Other {index}")
+            self.remote(note)
+            self.workspace.register(note.id, sync=True)
+        original = self.source.read
+        started, stop = threading.Event(), threading.Event()
+
+        def slow_read(note_id=None):
+            started.set()
+            if stop.wait(0.2):
+                raise KeyboardInterrupt
+            return original(note_id)
+
+        self.source.read = slow_read
+        result = []
+        with patch.object(memo, "FixtureNotes", return_value=self.source), \
+             patch.object(memo, "print_result"), \
+             patch.object(memo.time, "sleep", side_effect=lambda seconds: stop.wait(seconds)):
+            worker = threading.Thread(target=lambda: result.append(memo.main([
+                "--root", str(self.root), "--fixture-dir", str(self.fixtures),
+                "watch", "--interval", "1"])), daemon=True)
+            worker.start()
+            try:
+                self.assertTrue(started.wait(2), "Watcher did not start reading")
+                text = "Title\nSAVED_WHILE_READING_OTHER_NOTES\n"
+                start = time.monotonic()
+                path.write_text(text)
+                until = start + 2.5
+                while time.monotonic() < until:
+                    if original(self.note.id).text == text:
+                        break
+                    stop.wait(0.02)
+                self.assertEqual(original(self.note.id).text, text,
+                                 "Saving one file waited for the full notebook scan")
+            finally:
+                stop.set()
+                worker.join(3)
+        self.assertFalse(worker.is_alive())
+        self.assertEqual(result, [0])
+
+
+class DeletionAndMarkdownTests(unittest.TestCase):
+    remote = MemoSyncTests.remote
+
+    def setUp(self):
+        MemoSyncTests.setUp(self)
+        self.note = replace(self.note, html="<div>Title</div><div>KEEP_1</div>", text="Title\nKEEP_1\n")
+        self.remote(self.note)
+        self.path = self.workspace.register(sync=True)
+
+    def test_file_deletion_preserves_versions_and_tombstone_prevents_reimport(self):
+        self.workspace.deletions(True)
+        self.workspace.local_work()
+        original = self.path.read_text()
+        self.path.unlink()
+        self.assertIn("delete:" + self.path.name, self.workspace.local_work()[0])
+        self.workspace.delete_note(self.path.name)
+        self.assertIsNone(self.source.read(self.note.id))
+        self.assertEqual(self.workspace.inspect()[0]["status"], "deleted")
+        self.assertEqual((self.workspace.meta/"local-history"/(memo.digest(original)+".txt")).read_text(), original)
+        self.remote(self.note)
+        self.workspace.import_all(enable=True)
+        self.assertFalse(self.path.exists())
+
+    def test_missing_before_enable_moves_and_editor_replacement_are_not_deletes(self):
+        self.path.unlink()
+        self.workspace.deletions(True)
+        self.assertNotIn("delete:" + self.path.name, self.workspace.local_work()[0])
+        self.path.write_text(self.note.text)
+        self.workspace.local_work()
+        renamed = self.root / "renamed.md"
+        self.path.rename(renamed)
+        self.assertNotIn("delete:" + self.path.name, self.workspace.local_work()[0])
+        renamed.rename(self.path)
+        self.workspace.local_work()
+        self.path.unlink()
+        self.path.write_text(self.note.text)
+        self.workspace.delete_note(self.path.name)
+        self.assertIsNotNone(self.source.read(self.note.id))
+
+    def test_remote_change_and_ambiguous_failure_stop_deletion(self):
+        self.workspace.deletions(True)
+        self.workspace.local_work()
+        self.path.unlink()
+        self.remote(replace(self.note, text="New remote content\n", html="<div>New remote content</div>"))
+        with self.assertRaises(RuntimeError):
+            self.workspace.delete_note(self.path.name)
+        self.remote(self.note)
+        with patch.object(self.source, "trash", side_effect=RuntimeError("Timeout")) as trash:
+            with self.assertRaises(RuntimeError):
+                self.workspace.delete_note(self.path.name)
+            self.workspace.delete_note(self.path.name)
+            self.assertEqual(trash.call_count, 1)
+        self.assertEqual(self.workspace.inspect()[0]["status"], "delete_interrupted")
+
+    def test_markdown_roundtrip_preserves_content_and_original_file_syntax(self):
+        self.workspace.markdown(True)
+        fence = chr(96) * 3
+        text = "# Title\n\n## Heading\n\n**bold** and *italic*\n\n- KEEP_1\n- KEEP_2\n\n" + fence + "\n  code\tKEEP\n" + fence + "\n"
+        self.path.write_text(text)
+        result = self.workspace.inspect(sync=True)[0]
+        self.assertEqual(result["status"], "in_sync", result.get("error"))
+        remote = self.source.read(self.note.id)
+        self.assertIn("<h1", remote.html)
+        self.assertIn("<strong>", remote.html)
+        self.assertIn("<ul>", remote.html)
+        self.assertEqual(self.path.read_text(), text)
+        self.assertEqual(self.workspace.inspect(sync=True)[0]["status"], "in_sync")
+        self.remote(replace(remote, html=remote.html.replace("KEEP_2", "REMOTE_2"),
+                            text=remote.text.replace("KEEP_2", "REMOTE_2")))
+        self.assertEqual(self.workspace.inspect(sync=True)[0]["status"], "in_sync")
+        self.assertIn("REMOTE_2", memo.markdown_html(self.path.read_text())[1])
+        for body in ("1. ordered\n", "[link](https://example.com)\n", "![image](x.png)\n"):
+            with self.assertRaises(ValueError):
+                memo.markdown_html(body)
+        for tag in ("p", "div"):
+            note = replace(self.note, html="".join(f"<{tag}>KEEP_{i}</{tag}>" for i in range(7)),
+                           text="".join(f"KEEP_{i}\n" for i in range(7)))
+            converted = memo.markdown_text(note)
+            for i in range(7):
+                self.assertIn(f"KEEP_{i}", memo.markdown_html(converted)[1])
 
 
 if __name__ == "__main__":
