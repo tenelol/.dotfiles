@@ -395,6 +395,70 @@ class BidirectionalTests(unittest.TestCase):
         self.assertEqual(self.workspace.inspect(sync=True)[0]["status"], "in_sync")
         self.assertEqual(self.path.read_text(), "No final newline")
 
+    def test_import_all_enables_plain_notes_and_preserves_rich_notes(self):
+        duplicate = replace(self.note, id="synthetic-note-2")
+        rich = replace(self.note, id="synthetic-rich", title="Rich",
+                       html="<div>Synthetic 日本語メモ</div><div><b>KEEP_1</b></div>")
+        self.remote(duplicate)
+        self.remote(rich)
+        result = self.workspace.import_all(enable=True)
+        self.assertEqual((result["found"], result["registered"], result["added"]), (3, 3, 2))
+        self.assertEqual((result["bidirectional"], result["pull_only"]), (2, 1))
+        self.assertEqual(result["errors"], {})
+        state = self.workspace.state()
+        self.assertTrue(state["discover"])
+        self.assertNotEqual(state["notes"][duplicate.id]["file"], self.path.name)
+        record = state["notes"][rich.id]
+        path = self.root / record["file"]
+        remote = replace(rich, text="Remote rich note\n", html="<div><b>Remote rich note</b></div>")
+        self.remote(remote)
+        self.workspace.inspect(sync=True)
+        self.assertEqual(path.read_text(), remote.text)
+        path.write_text("Unsynced local edits\n")
+        self.workspace.inspect(sync=True)
+        self.assertEqual(self.source.read(rich.id), remote)
+        self.assertEqual(path.read_text(), "Unsynced local edits\n")
+
+    def test_discovery_adds_new_notes_but_respects_disabled_existing_notes(self):
+        self.assertEqual(self.workspace.import_all(), {})
+        self.workspace.import_all(enable=True)
+        self.workspace.enable(self.path.name, False)
+        new = replace(self.note, id="new-note", title="New note")
+        self.remote(new)
+        result = self.workspace.import_all()
+        self.assertEqual(result["added"], 1)
+        self.assertFalse(self.workspace.state()["notes"][self.note.id]["sync_enabled"])
+        self.assertTrue(self.workspace.state()["notes"][new.id]["sync_enabled"])
+        self.assertEqual(self.workspace.import_all()["added"], 0)
+        self.path.unlink()
+        duplicate = replace(self.note, id="new-note-same-title")
+        self.remote(duplicate)
+        self.workspace.import_all()
+        self.assertNotEqual(self.workspace.state()["notes"][duplicate.id]["file"], self.path.name)
+        self.assertFalse(self.path.exists())
+
+    def test_import_failure_does_not_prevent_other_notes_from_being_preserved(self):
+        extra = replace(self.note, id="new-note", title="New note")
+        self.remote(extra)
+        original = self.source.read
+
+        def unavailable(note_id=None):
+            if note_id == self.note.id:
+                raise RuntimeError("Locked")
+            return original(note_id)
+
+        self.source.read = unavailable
+        result = self.workspace.import_all(enable=True)
+        self.assertIn(self.note.id, result["errors"])
+        self.assertEqual(result["added"], 1)
+        self.assertEqual(self.root.joinpath("New note.md").read_text(), extra.text)
+        self.assertEqual(json.loads((self.root / ".memo-sync/import-errors.json").read_text()),
+                         result["errors"])
+        self.root.joinpath("New note.md").write_text("Other notes still sync\n")
+        results = self.workspace.inspect(sync=True)
+        self.assertEqual(results[0]["status"], "unavailable")
+        self.assertEqual(self.source.read(extra.id).text, "Other notes still sync\n")
+
 
 if __name__ == "__main__":
     unittest.main()

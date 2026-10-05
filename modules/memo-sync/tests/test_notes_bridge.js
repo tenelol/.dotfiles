@@ -34,15 +34,17 @@ function execute(request, options = {}) {
     "2026-10-05T00:00:0" + (options.changing && dates++ > 0 ? "1" : "0") + "Z"
   );
   note.attachments = () => options.attachments ? [{}] : [];
+  note.container = () => ({ name: () => options.trash ? "Recently Deleted" : "Notes" });
+  const trash = { id: () => "trash-id", container: () => ({ name: () => "Recently Deleted" }) };
   const application = {
     selection: () => options.multiple ? [note, note] : [note],
-    notes: {
+    notes: Object.assign(() => [note, trash], {
       byId: (id) => {
         assert.equal(id, "fixture-id");
         if (options.missing) throw new Error("Can't get note (-1728)");
         return note;
       },
-    },
+    }),
   };
   const context = vm.createContext({
     ObjC: { import: () => {}, unwrap: (value) => value },
@@ -63,6 +65,9 @@ function execute(request, options = {}) {
 assert.equal(execute({ operation: "selected" }).result.note.text, "All text\n日本語");
 assert.equal(execute({ operation: "read", id: "fixture-id" }).result.note.id, "fixture-id");
 assert.equal(execute({ operation: "read", id: "fixture-id" }, { missing: true }).result.note, null);
+assert.deepEqual(execute({ operation: "list" }).result.ids, ["fixture-id"]);
+assert.equal(execute({ operation: "read", id: "fixture-id" }, { trash: true }).result.note, null);
+assert.ok(execute({ operation: "selected" }, { trash: true }).result.error);
 assert.ok(execute({ operation: "selected" }, { locked: true }).result.error);
 assert.ok(execute({ operation: "selected" }, { multiple: true }).result.error);
 assert.ok(execute({ operation: "selected" }, { changing: true }).result.error);
@@ -77,7 +82,7 @@ const replacement = { operation: "replace", id: "fixture-id", expected,
 let result = execute(replacement);
 assert.equal(result.writes, 1);
 assert.equal(result.result.note.text, replacement.text);
-for (const options of [{ shared: true }, { attachments: true }, { changing: true }]) {
+for (const options of [{ shared: true }, { attachments: true }, { changing: true }, { trash: true }]) {
   result = execute(replacement, options);
   assert.ok(result.result.error);
   assert.equal(result.writes, 0);
@@ -89,4 +94,4 @@ result = execute(replacement, { badReadback: true });
 assert.ok(result.result.error);
 assert.equal(result.writes, 1);
 assert.equal(result.result.note.text, "Truncated\n");
-console.log("Notes bridge: read, guarded write, stale read, unsupported metadata, and fidelity: 16 checks passed");
+console.log("Notes bridge: listing, trash, read, guarded write, stale read, metadata, and fidelity: 20 checks passed");

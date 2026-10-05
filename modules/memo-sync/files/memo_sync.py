@@ -82,6 +82,9 @@ class Notes:
             "html": render_text(expected, text), "text": file_text(text),
         })
 
+    def list_ids(self):
+        return self.request({"operation": "list"})
+
     def request(self, request):
         if sys.platform != "darwin":
             raise RuntimeError("標準メモへの接続はmacOSでのみ利用できます。")
@@ -95,10 +98,15 @@ class Notes:
         if len(result.stdout.encode()) > MAX_BYTES:
             raise ValueError("メモが初期版の容量上限を超えています。")
         value = json.loads(result.stdout)
-        if not isinstance(value, dict) or ("note" not in value and "error" not in value):
+        if not isinstance(value, dict) or not any(key in value for key in ("note", "ids", "error")):
             raise ValueError("標準メモからの応答形式が不正です。")
         if value.get("error"):
             raise RuntimeError(value["error"])
+        if request["operation"] == "list":
+            ids = value.get("ids")
+            if not isinstance(ids, list) or not all(isinstance(item, str) and item for item in ids):
+                raise ValueError("メモ一覧の形式が不正です。")
+            return list(dict.fromkeys(ids))
         note = Note.parse(value["note"]) if value.get("note") is not None else None
         if request.get("id") and note and note.id != request["id"]:
             raise ValueError("登録したメモIDと読取結果が一致しません。")
@@ -130,6 +138,17 @@ class FixtureNotes:
                     str(time.time_ns()))
         atomic_json(self.directory / (digest(note.id) + ".json"), asdict(note))
         return note
+
+    def list_ids(self):
+        ids = []
+        for path in sorted(self.directory.glob("*.json")):
+            if path.name == "selected.json":
+                continue
+            note = Note.parse(json.loads(read_text(path)))
+            if path.name != digest(note.id) + ".json":
+                raise ValueError("fixtureのメモIDが一致しません。")
+            ids.append(note.id)
+        return ids
 
 
 class TextHTML(HTMLParser):
@@ -324,12 +343,14 @@ class Workspace:
         if not path.exists():
             return {"version": 1, "notes": {}}
         state = json.loads(read_text(path))
-        if not isinstance(state, dict) or state.get("version") != 1 or not isinstance(state.get("notes"), dict):
+        if (not isinstance(state, dict) or state.get("version") != 1 or
+            not isinstance(state.get("notes"), dict) or type(state.get("discover", False)) is not bool):
             raise ValueError("管理状態の形式が不正です。")
         for note_id, record in state["notes"].items():
             if (not isinstance(note_id, str) or not note_id or not isinstance(record, dict) or
                 not isinstance(record.get("base"), str) or
-                type(record.get("sync_enabled", False)) is not bool):
+                type(record.get("sync_enabled", False)) is not bool or
+                type(record.get("pull_enabled", False)) is not bool):
                 raise ValueError("登録の管理状態が不正です。")
             self.note_path(record.get("file"))
             pending = record.get("pending")
@@ -385,30 +406,70 @@ class Workspace:
             if note is None:
                 raise ValueError("対象のメモが見つかりません。")
             state = self.state()
-            if note.id in state["notes"]:
-                path = self.note_path(state["notes"][note.id]["file"])
-                if sync:
-                    self.try_enroll(state, note, path)
-                return path
-            # Preserve the complete source before producing any editable file.
-            base = self.snapshot(note)
-            title = re.sub(r'[\x00-\x1f/\\:*?"<>|]', "_", note.title).strip(" .")
-            title = title.encode("utf-8")[:200].decode("utf-8", errors="ignore") or "Untitled"
-            for index in range(100):
-                suffix = "" if index == 0 else "--" + digest(note.id)[:8] + ("" if index == 1 else f"-{index}")
-                path = self.note_path(title + suffix + ".md")
-                try:
-                    write_new(path, file_text(note.text))
-                    break
-                except FileExistsError:
-                    continue
-            else:
-                raise ValueError("既存ファイルと衝突しない名前を選べませんでした。")
-            state["notes"][note.id] = {"file": path.name, "base": base}
-            atomic_json(self.meta / "state.json", state)
+            path = self.add(state, note)
             if sync:
                 self.try_enroll(state, note, path)
             return path
+
+    def add(self, state, note):
+        if note.id in state["notes"]:
+            return self.note_path(state["notes"][note.id]["file"])
+        # Preserve the complete source before producing any editable file.
+        base = self.snapshot(note)
+        title = re.sub(r'[\x00-\x1f/\\:*?"<>|]', "_", note.title).strip(" .")
+        title = title.encode("utf-8")[:200].decode("utf-8", errors="ignore") or "Untitled"
+        for index in range(100):
+            suffix = "" if index == 0 else "--" + digest(note.id)[:8] + ("" if index == 1 else f"-{index}")
+            path = self.note_path(title + suffix + ".md")
+            if any(record["file"] == path.name for record in state["notes"].values()):
+                continue  # A missing file still belongs to its original note.
+            try:
+                write_new(path, file_text(note.text))
+                break
+            except FileExistsError:
+                continue
+        else:
+            raise ValueError("既存ファイルと衝突しない名前を選べませんでした。")
+        state["notes"][note.id] = {"file": path.name, "base": base}
+        atomic_json(self.meta / "state.json", state)
+        return path
+
+    def import_all(self, enable=False):
+        with self.lock():
+            state = self.state()
+            if not enable and not state.get("discover"):
+                return {}
+            ids = self.source.list_ids()
+            errors = {}
+            added = 0
+            for note_id in ids:
+                if note_id in state["notes"] and not enable:
+                    continue  # Respect an explicit disable of an existing registration.
+                try:
+                    note = self.source.read(note_id)
+                    if note is None:
+                        continue
+                    new = note_id not in state["notes"]
+                    path = self.add(state, note)
+                    record = state["notes"][note_id]
+                    try:
+                        self.enroll(state, note, path)
+                    except ValueError as error:
+                        record["sync_enabled"] = False
+                        record["pull_enabled"] = True
+                        record["write_blocked"] = str(error)
+                    added += int(new)
+                    atomic_json(self.meta / "state.json", state)
+                except (OSError, ValueError, RuntimeError, subprocess.TimeoutExpired) as error:
+                    errors[note_id] = str(error)
+            state["discover"] = True
+            atomic_json(self.meta / "state.json", state)
+            atomic_json(self.meta / "import-errors.json", errors)
+            return {"found": len(ids), "registered": len(state["notes"]), "added": added,
+                    "bidirectional": sum(bool(r.get("sync_enabled")) for r in state["notes"].values()),
+                    "pull_only": sum(not r.get("sync_enabled", False) and bool(r.get("pull_enabled"))
+                                     for r in state["notes"].values()),
+                    "errors": errors}
 
     def try_enroll(self, state, note, path):
         try:
@@ -427,6 +488,8 @@ class Workspace:
             record["base"] = self.snapshot(note)
             record.pop("pending", None)
         record["sync_enabled"] = True
+        record["pull_enabled"] = True
+        record.pop("write_blocked", None)
         atomic_json(self.meta / "state.json", state)
 
     def enable(self, filename, enabled=True):
@@ -436,6 +499,7 @@ class Workspace:
                 if record["file"] == Path(filename).name:
                     if not enabled:
                         record["sync_enabled"] = False
+                        record["pull_enabled"] = False
                         atomic_json(self.meta / "state.json", state)
                         return
                     note = self.source.read(note_id)
@@ -511,7 +575,12 @@ class Workspace:
                     local = read_text(path)
                 except FileNotFoundError:
                     local = None
-                remote = self.source.read(note_id)
+                read_error = None
+                try:
+                    remote = self.source.read(note_id)
+                except (OSError, ValueError, RuntimeError, subprocess.TimeoutExpired) as exc:
+                    remote = None
+                    read_error = str(exc)
                 # A slow Notes read must not hide an intervening editor save.
                 try:
                     local = read_text(path)
@@ -519,9 +588,10 @@ class Workspace:
                     local = None
                 if remote:
                     self.snapshot(remote)
-                status = classify(base, local, remote)
-                error = None
+                status = "unavailable" if read_error else classify(base, local, remote)
+                error = read_error
                 enabled = record.get("sync_enabled", False)
+                pull_enabled = record.get("pull_enabled", False)
                 signature = (local, remote.fingerprint if remote else None)
                 settled = self.observed.get(note_id) == signature
                 self.observed[note_id] = signature
@@ -542,9 +612,10 @@ class Workspace:
                     else:
                         status = "interrupted"
                         error = pending.get("error", "中断された同期があります。原本・ファイル履歴を確認してください。")
-                elif sync and enabled and remote and local is not None and (not stable or settled):
+                elif (sync and (enabled or pull_enabled) and remote and local is not None and
+                      (not stable or settled)):
                     try:
-                        if status in ("push_pending", "pull_pending"):
+                        if status == "pull_pending" or (status == "push_pending" and enabled):
                             remote = self.sync_note(state, record, path, local, remote, status)
                             status = "in_sync"
                         elif status in ("converged", "format_changed"):
@@ -564,6 +635,7 @@ class Workspace:
                 result = {
                     "file": path.name, "status": status,
                     "note_id": note_id, "writes_enabled": enabled, "error": error,
+                    "pull_enabled": pull_enabled, "write_blocked": record.get("write_blocked"),
                     "attachments": current.attachments, "shared": current.shared,
                     "local_diff": list(difflib.unified_diff(
                         file_text(base.text).splitlines(keepends=True),
@@ -588,6 +660,7 @@ def main(argv=None):
     register = commands.add_parser("register", help="標準メモで選択した1件を登録")
     register.add_argument("--note-id")
     register.add_argument("--sync", action="store_true", help="対応するテキストメモの自動同期も有効化")
+    commands.add_parser("import-all", help="全メモを登録し、新規メモの自動取込も有効化")
     for command in ("enable", "disable"):
         enrollment = commands.add_parser(command, help="登録ファイルの自動同期を" + ("有効化" if command == "enable" else "停止"))
         enrollment.add_argument("file")
@@ -606,6 +679,10 @@ def main(argv=None):
     try:
         if args.command == "register":
             print(workspace.register(args.note_id, args.sync))
+        elif args.command == "import-all":
+            result = workspace.import_all(enable=True)
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+            return int(bool(result["errors"]))
         elif args.command in ("enable", "disable"):
             workspace.enable(args.file, args.command == "enable")
         elif args.command in ("status", "diff", "sync"):
@@ -621,15 +698,21 @@ def main(argv=None):
             if not results and args.command != "diff" and not args.json:
                 print("登録されたメモはありません。")
             if args.command == "sync" and any(r["status"] in ("conflict", "interrupted", "unsupported",
-                                                            "local_missing", "remote_missing") for r in results):
+                                                            "local_missing", "remote_missing", "unavailable") for r in results):
+                return 1
+            if any(r["status"] == "unavailable" for r in results):
                 return 1
         else:
             if not math.isfinite(args.interval) or args.interval < 1:
                 raise ValueError("確認間隔は1秒以上にしてください。")
             previous = None
             previous_error = None
+            next_discovery = 0
             while True:
                 try:
+                    if time.monotonic() >= next_discovery:
+                        workspace.import_all()
+                        next_discovery = time.monotonic() + 30
                     results = workspace.inspect(sync=True, stable=True)
                 except (OSError, ValueError, RuntimeError, subprocess.TimeoutExpired) as error:
                     # ponytail: one watcher per workspace; a busy foreground command waits one poll.
@@ -654,7 +737,7 @@ def main(argv=None):
 
 
 def print_result(result):
-    label = "同期有効" if result["writes_enabled"] else "同期無効"
+    label = "双方向同期" if result["writes_enabled"] else "メモ→ファイル" if result["pull_enabled"] else "同期無効"
     print(result["file"] + ": " + result["status"] + " (" + label + ")", flush=True)
     if result["error"]:
         print("memo-sync: " + result["error"], file=sys.stderr, flush=True)

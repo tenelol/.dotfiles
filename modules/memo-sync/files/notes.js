@@ -1,7 +1,15 @@
 // Notes adapter. JSON on stdin; snapshots on stdout. No UI scripting.
 ObjC.import("Foundation");
 
+function inTrash(note) {
+  var folder = note.container().name();
+  return folder === "Recently Deleted" || folder === "最近削除した項目";
+}
+
 function snapshot(note) {
+  if (inTrash(note)) {
+    throw new Error("削除済みのメモは同期できません。");
+  }
   if (note.passwordProtected()) {
     throw new Error("ロックされたメモは登録できません。");
   }
@@ -35,7 +43,15 @@ function run() {
       return JSON.stringify({ note: snapshot(selection[0]) });
     }
     if (request.operation === "read") {
-      return JSON.stringify({ note: snapshot(notes.notes.byId(request.id)) });
+      var target = notes.notes.byId(request.id);
+      return JSON.stringify({ note: inTrash(target) ? null : snapshot(target) });
+    }
+    if (request.operation === "list") {
+      // Notes' all-notes collection includes trash. The scripting dictionary has no trash flag.
+      var active = notes.notes().filter(function(note) {
+        return !inTrash(note);
+      });
+      return JSON.stringify({ ids: active.map(function(note) { return note.id(); }) });
     }
     if (request.operation === "replace") {
       if (typeof request.id !== "string" || !request.expected ||
