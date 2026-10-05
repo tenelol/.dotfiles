@@ -73,6 +73,10 @@ Karabiner/Kanata driver compatibility before changing their versions. Use the
 installer's read-only plan with `dotfiles-installers --plan` when diagnosing an
 activation failure.
 
+## Apple Notesのローカル編集
+
+[memo-syncの手順](./docs/memo-sync.md)を参照。denix/Home ManagerでMac用CLIと登録用サービスを配置する。現在は原本の保存と両側の差分検知までで、自動上書き同期は無効。反映は通常のnhワークフローで行う。
+
 ## Codex skills
 
 Keep provider files unchanged when refreshing a skill. Local integrations are limited to `imoocs`, `proxmox-pve`, `line-delivery`, `project-context-init`, and the personal `subagent-model-router` policy. The existing denix module and Home Manager deployment remain unchanged.
