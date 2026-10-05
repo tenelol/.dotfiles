@@ -228,6 +228,9 @@ class Notes:
     def trash(self, expected):
         return self.request({"operation": "trash", "id": expected.id, "expected": asdict(expected)})
 
+    def delete_folder(self, expected):
+        return self.request({"operation": "delete_folder", "expected": expected})
+
     def request(self, request):
         if sys.platform != "darwin":
             raise RuntimeError("標準メモへの接続はmacOSでのみ利用できます。")
@@ -245,7 +248,7 @@ class Notes:
             raise ValueError("標準メモからの応答形式が不正です。")
         if value.get("error"):
             raise RuntimeError(value["error"])
-        if request["operation"] == "trash":
+        if request["operation"] in ("trash", "delete_folder"):
             if value.get("deleted") is not True:
                 raise ValueError("削除結果を確認できません。")
             return True
@@ -353,6 +356,15 @@ class FixtureNotes:
         if self.read(expected.id) != expected or expected.shared or not expected.default_account:
             raise RuntimeError("削除直前にメモが変更されたか、対応外のアカウントです。")
         (self.directory / (digest(expected.id) + ".json")).unlink()
+        return True
+
+    def delete_folder(self, expected):
+        folders = self.folders()
+        if (not expected["path"] or not expected["default_account"] or expected not in folders or
+            any(f["path"][:len(expected["path"])] == expected["path"] and f != expected for f in folders) or
+            any(self.read(key).folder_id == expected["id"] for key in self.list_ids())):
+            raise RuntimeError("空で変更されていないフォルダだけ削除できます。")
+        atomic_json(self.directory / "folders.json", [f for f in folders if f != expected])
         return True
 
 
@@ -570,7 +582,8 @@ class Workspace:
             raise ValueError("管理状態の形式が不正です。")
         if any(type(state.get(key, False)) is not bool for key in ("delete_enabled", "markdown_enabled")):
             raise ValueError("同期設定の形式が不正です。")
-        if any(key in state and not isinstance(state[key], dict) for key in ("folders", "creates")):
+        if any(key in state and not isinstance(state[key], dict) for key in
+               ("folders", "creates", "folder_identity", "folder_pending")):
             raise ValueError("ディレクトリの管理状態が不正です。")
         for note_id, record in state["notes"].items():
             if (not isinstance(note_id, str) or not note_id or not isinstance(record, dict) or
@@ -600,6 +613,14 @@ class Workspace:
         for name, folder in state.get("folders", {}).items():
             if self.folder_name(parse_folder(folder)) != name:
                 raise ValueError("フォルダの管理状態が不正です。")
+        for name, identity in state.get("folder_identity", {}).items():
+            self.note_path(name)
+            if not isinstance(identity, list) or len(identity) != 2 or any(type(n) is not int for n in identity):
+                raise ValueError("フォルダ識別子が不正です。")
+        for name, operation in state.get("folder_pending", {}).items():
+            self.note_path(name)
+            if not isinstance(operation, str) or not re.fullmatch(r"[0-9a-f]{32}", operation):
+                raise ValueError("フォルダ削除の記録が不正です。")
         for name, marker in state.get("creates", {}).items():
             self.note_path(name)
             if (not isinstance(marker, dict) or
@@ -913,15 +934,28 @@ class Workspace:
             work = {}
             mapped = {record["file"] for record in state["notes"].values()}
             visible = {}
+            directories_seen = {}
             for parent, directories, names in os.walk(self.root, followlinks=False):
                 directories[:] = [name for name in directories if not name.startswith(".") and
                                    not (Path(parent) / name).is_symlink()]
+                info = Path(parent).stat()
+                directories_seen[Path(parent).relative_to(self.root).as_posix()] = [info.st_dev, info.st_ino]
                 for name in names:
                     if name.endswith(".md"):
                         path = self.note_path((Path(parent) / name).relative_to(self.root).as_posix())
                         info = path.stat()
                         visible[path.relative_to(self.root).as_posix()] = (info.st_dev, info.st_ino)
             changed = False
+            identities = state.setdefault("folder_identity", {})
+            if state.get("delete_enabled"):
+                for name, folder in state.get("folders", {}).items():
+                    if name and folder["default_account"] and name in directories_seen:
+                        if identities.get(name) != directories_seen[name]:
+                            identities[name] = directories_seen[name]
+                            changed = True
+            missing_folders = {name for name in identities if name not in directories_seen and
+                               identities[name] not in directories_seen.values() and
+                               not self.note_path(name).exists()}
             for record in state["notes"].values():
                 if record.get("deleted") or not (record.get("sync_enabled") or record.get("pull_enabled")):
                     continue
@@ -930,7 +964,8 @@ class Workspace:
                 except FileNotFoundError:
                     path = self.note_path(record["file"])
                     if (state.get("delete_enabled") and record.get("delete_armed") and
-                        not record.get("pending_delete") and path.parent.is_dir() and
+                        not record.get("pending_delete") and (path.parent.is_dir() or
+                            path.parent.relative_to(self.root).as_posix() in missing_folders) and
                         not any(list(identity) == record.get("file_identity")
                                 for name, identity in visible.items() if name != record["file"])):
                         work["delete:" + record["file"]] = record["base"]
@@ -978,12 +1013,23 @@ class Workspace:
                                 work.pop(key)
             if changed:
                 atomic_json(self.meta / "state.json", state)
+            if state.get("delete_enabled"):
+                for name in sorted(missing_folders, key=lambda n: len(Path(n).parts), reverse=True):
+                    if name not in state.get("folders", {}) or name in state.get("folder_pending", {}):
+                        continue
+                    if (any(not r.get("deleted") and Path(r["file"]).is_relative_to(name)
+                            for r in state["notes"].values()) or
+                        any(n != name and Path(n).is_relative_to(name) for n in state["folders"])):
+                        continue
+                    work["delete-folder:" + name] = state["folders"][name]["id"]
             return work, state
 
     def deletions(self, enabled):
         with self.lock():
             state = self.state()
             state["delete_enabled"] = enabled
+            if not enabled:
+                state.pop("folder_identity", None)
             for record in state["notes"].values():
                 path = self.note_path(record["file"])
                 record["delete_armed"] = enabled and path.is_file() and not record.get("deleted", False)
@@ -1032,9 +1078,13 @@ class Workspace:
             path = self.note_path(filename)
             if (not state.get("delete_enabled") or not record.get("delete_armed") or
                 not (record.get("sync_enabled") or record.get("pull_enabled")) or
-                path.exists() or not path.parent.is_dir() or record.get("deleted")):
+                path.exists() or (not path.parent.is_dir() and
+                    path.parent.relative_to(self.root).as_posix() not in state.get("folder_identity", {})) or
+                record.get("deleted")):
                 return
             if record.get("pending_delete"):
+                return
+            if not path.parent.is_dir() and not self.folder_missing(state, path.parent.relative_to(self.root).as_posix()):
                 return
             base = self.base(record)
             remote = self.source.read(note_id)
@@ -1065,6 +1115,46 @@ class Workspace:
                 record["pending_delete"]["error"] = str(error)
                 atomic_json(self.meta / "state.json", state)
                 raise
+
+    def folder_missing(self, state, name):
+        identity = state.get("folder_identity", {}).get(name)
+        if not identity or self.note_path(name).exists():
+            return False
+        for parent, directories, _ in os.walk(self.root, followlinks=False):
+            directories[:] = [n for n in directories if not n.startswith(".") and
+                               not (Path(parent) / n).is_symlink()]
+            info = Path(parent).stat()
+            if [info.st_dev, info.st_ino] == identity:
+                return False
+        return True
+
+    def delete_folder(self, name):
+        with self.lock():
+            state = self.state()
+            path = self.note_path(name)
+            expected = state.get("folders", {}).get(name)
+            if (not state.get("delete_enabled") or not expected or not expected["path"] or
+                not self.folder_missing(state, name) or
+                name in state.get("folder_pending", {})):
+                return
+            if any(not r.get("deleted") and Path(r["file"]).is_relative_to(name)
+                   for r in state["notes"].values()):
+                raise RuntimeError("中のメモの削除が完了していません。")
+            operation = uuid.uuid4().hex
+            atomic_json(self.meta / "operations" / (operation + ".json"),
+                        {"type": "delete_folder", "folder": expected})
+            state.setdefault("folder_pending", {})[name] = operation
+            atomic_json(self.meta / "state.json", state)
+            # Native deletion refuses nonempty, shared, moved, and default folders.
+            if not self.folder_missing(state, name):
+                state["folder_pending"].pop(name)
+                atomic_json(self.meta / "state.json", state)
+                return
+            self.source.delete_folder(expected)
+            state["folder_pending"].pop(name)
+            state["folders"].pop(name)
+            state["folder_identity"].pop(name)
+            atomic_json(self.meta / "state.json", state)
 
     def try_enroll(self, state, note, path):
         try:
@@ -1333,7 +1423,7 @@ def watch_workspace(workspace, interval):
                 if name not in observed or observed[name][0] != signature:
                     observed[name] = (signature, now)
             ready = [name for name, signature in work.items()
-                     if now - observed[name][1] >= (5 if name.startswith("delete:") else 1)
+                     if now - observed[name][1] >= (5 if name.startswith(("delete:", "delete-folder:")) else 1)
                      and handled.get(name) != signature]
             results = []
             if ready:
@@ -1341,6 +1431,8 @@ def watch_workspace(workspace, interval):
                 selected = (name, work[name])
                 if name.startswith("delete:"):
                     workspace.delete_note(name[len("delete:"):])
+                elif name.startswith("delete-folder:"):
+                    workspace.delete_folder(name[len("delete-folder:"):])
                 elif name.startswith(("create:", "directory:")):
                     filenames = {name[len("create:"):]} if name.startswith("create:") else set()
                     workspace.discover_local(refresh=False, filenames=filenames)

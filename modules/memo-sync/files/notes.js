@@ -124,6 +124,7 @@ function run() {
       }
       var trash = {};
       notes.folders().forEach(function(folder) {
+        if (!folder.exists()) return;
         if (folder.name() === "Recently Deleted" || folder.name() === "最近削除した項目") {
           folder.notes.id().forEach(function(id) { trash[id] = true; });
         }
@@ -137,6 +138,7 @@ function run() {
       function walk(parent, depth) {
         if (depth > 32) throw new Error("フォルダ階層が深すぎます。");
         parent.folders().forEach(function(folder) {
+          if (!folder.exists()) return;
           if (folder.container().id() !== parent.id() ||
               folder.name() === "Recently Deleted" || folder.name() === "最近削除した項目") return;
           folders.push(folderInfo(folder));
@@ -148,6 +150,20 @@ function run() {
     }
     if (request.operation === "ensure_folder") {
       return JSON.stringify({ folder: folderInfo(ensureFolder(notes, request.folder)) });
+    }
+    if (request.operation === "delete_folder") {
+      var expected = request.expected;
+      if (!expected || !expected.default_account || !Array.isArray(expected.path) || !expected.path.length) {
+        throw new Error("既定フォルダは削除できません。");
+      }
+      var folder = notes.folders.byId(expected.id);
+      if (JSON.stringify(folderInfo(folder)) !== JSON.stringify(expected) || folder.shared() ||
+          folder.notes().some(function(n) { return n.exists() && !inTrash(n); }) ||
+          folder.folders().some(function(f) { return f.exists(); })) {
+        throw new Error("フォルダが変更されたか、メモ・子フォルダが残っています。");
+      }
+      notes.delete(folder);
+      return JSON.stringify({ deleted: true });
     }
     if (request.operation === "create") {
       if (typeof request.html !== "string" || typeof request.text !== "string" || !request.text.trim()) {

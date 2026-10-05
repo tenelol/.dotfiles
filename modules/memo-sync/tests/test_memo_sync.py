@@ -24,6 +24,45 @@ spec.loader.exec_module(memo)
 
 
 class MemoSyncTests(unittest.TestCase):
+    def test_removed_folder_trashes_notes_before_deleting_empty_folder(self):
+        self.workspace.discover_local()
+        (self.root / "parent" / "child").mkdir(parents=True)
+        path = self.root / "parent" / "child" / "test.md"
+        path.write_text("Test\nBody\n")
+        self.workspace.discover_local()
+        self.workspace.deletions(True)
+        self.workspace.local_work()
+        path.unlink()
+        path.parent.rmdir()
+        path.parent.parent.rmdir()
+        work, state = self.workspace.local_work()
+        self.assertIn("delete:parent/child/test.md", work)
+        self.assertNotIn("delete-folder:parent/child", work)
+        self.workspace.delete_note("parent/child/test.md")
+        self.assertIn("delete-folder:parent/child", self.workspace.local_work()[0])
+        self.workspace.delete_folder("parent/child")
+        self.assertIn("delete-folder:parent", self.workspace.local_work()[0])
+        self.workspace.delete_folder("parent")
+        self.assertEqual([f["path"] for f in self.source.folders()], [[]])
+
+    def test_moved_folder_is_not_a_deletion_and_unknown_remote_content_is_preserved(self):
+        self.workspace.discover_local()
+        (self.root / "old").mkdir()
+        self.workspace.discover_local()
+        self.workspace.deletions(True)
+        self.workspace.local_work()
+        (self.root / "old").rename(self.root / "new")
+        self.assertNotIn("delete-folder:old", self.workspace.local_work()[0])
+        self.workspace.delete_folder("old")
+        self.assertTrue(any(f["path"] == ["old"] for f in self.source.folders()))
+        (self.root / "new").rename(self.root / "old")
+        folder = next(f for f in self.source.folders() if f["path"] == ["old"])
+        self.source.create(folder, "Unknown remote note\n")
+        (self.root / "old").rmdir()
+        with self.assertRaises(RuntimeError):
+            self.workspace.delete_folder("old")
+        self.assertIn(folder, self.source.folders())
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="memo-sync-test-")
         self.addCleanup(self.temp.cleanup)

@@ -48,7 +48,7 @@ function execute(request, options = {}) {
   let folderNumber = 0;
   function folder(name) {
     const id = "folder-" + folderNumber++;
-    const result = { id: () => id, name: () => name, shared: () => !!options.folderShared };
+    const result = { id: () => id, name: () => name, shared: () => !!options.folderShared, exists: () => true };
     result.folders = children(result);
     result.notes = children(result);
     return result;
