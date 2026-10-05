@@ -3,11 +3,26 @@
 import ctypes as C
 from contextlib import contextmanager
 import difflib
+import re
 import subprocess
 
 
 class DeferredSync(RuntimeError):
     """No content was written; retry after the UI or permission becomes available."""
+
+
+def image_layout_key(text):
+    # Notes enforces paragraph boundaries around attachments while inserting text.
+    return re.sub(r"\n*\ufffc\n*", "\ufffc", text)
+
+
+def mapped_offset(before, after, offset):
+    if offset == len(before):
+        return len(after)
+    for tag, start, end, left, right in difflib.SequenceMatcher(None, before, after, autojunk=False).get_opcodes():
+        if start <= offset < end:
+            return left + offset - start if tag == "equal" else left
+    raise RuntimeError("編集位置を対応付けられません。")
 
 
 def text_edits(original, target):
@@ -56,6 +71,7 @@ class NotesText:
             (self.ax, "AXUIElementCopyAttributeValue", C.c_int, [pointer, pointer, C.POINTER(pointer)]),
             (self.ax, "AXUIElementSetAttributeValue", C.c_int, [pointer, pointer, pointer]),
             (self.ax, "AXValueCreate", pointer, [C.c_int, pointer]),
+            (self.ax, "AXValueGetValue", C.c_bool, [pointer, C.c_int, pointer]),
         ]
         for library, name, result, args in signatures:
             function = getattr(library, name)
@@ -147,19 +163,34 @@ class NotesText:
         if current.rstrip("\n") != original.rstrip("\n"):
             raise DeferredSync("メモ画面と本文が一致しないため、書き込みを保留しています。")
         for start, end, replacement in text_edits(current, target):
-            if not selected() or self.text(self.body, "AXValue") != current:
+            actual_text = self.text(self.body, "AXValue")
+            if not selected() or image_layout_key(actual_text) != image_layout_key(current):
                 raise RuntimeError("部分編集中にメモが切り替わったか、本文が変更されました。")
-            span = Range(len(current[:start].encode("utf-16-le")) // 2,
-                         len(current[start:end].encode("utf-16-le")) // 2)
+            following = current[:start] + replacement + current[end:]
+            if image_layout_key(following) == image_layout_key(current):
+                current = following
+                continue
+            left, right = mapped_offset(current, actual_text, start), mapped_offset(current, actual_text, end)
+            if "\ufffc" in actual_text[left:right]:
+                raise RuntimeError("編集範囲に画像が含まれるため停止しました。")
+            span = Range(len(actual_text[:left].encode("utf-16-le")) // 2,
+                         len(actual_text[left:right].encode("utf-16-le")) // 2)
             value = self.ax.AXValueCreate(4, C.byref(span))  # kAXValueCFRangeType
             try:
                 self.set(self.body, "AXSelectedTextRange", value)
             finally:
                 self.cf.CFRelease(value)
-            if self.text(self.body, "AXSelectedText") != current[start:end]:
+            actual = Range()
+            with self.attribute(self.body, "AXSelectedTextRange") as value:
+                if not value or not self.ax.AXValueGetValue(value, 4, C.byref(actual)) or (
+                    actual.location != span.location or actual.length != span.length
+                ):
+                    raise RuntimeError("編集位置を設定できません。本文は変更しません。")
+            if self.text(self.body, "AXSelectedText") != actual_text[left:right]:
                 raise RuntimeError("編集する文字範囲が一致しません。")
             with self.string(replacement) as value:
                 self.set(self.body, "AXSelectedText", value)
-            current = current[:start] + replacement + current[end:]
-        if self.text(self.body, "AXValue") != current or current.replace("\ufffc", "") != target:
+            current = following
+        if image_layout_key(self.text(self.body, "AXValue")) != image_layout_key(current) or current.replace("\ufffc", "") != target:
             raise RuntimeError("部分編集後の全文が一致しません。")
+        return current

@@ -39,12 +39,13 @@ class MemoSyncTests(unittest.TestCase):
         self.assertNotIn("pending", self.workspace.state()["notes"][note.id])
         self.assertEqual(self.source.read(note.id), note)
         def partial(expected, text):
-            updated = replace(expected, text="Image note\nAFTER\n\ufffc\n",
+            updated = replace(expected, text="Image note\nAFTER\n\n\ufffc\n",
                               html=expected.html.replace("BEFORE", "AFTER"), modified="later")
             self.remote(updated)
             return updated
         self.source.replace_images = partial
         self.assertEqual(self.workspace.inspect(path.name, sync=True)[0]["status"], "in_sync")
+        self.assertEqual(self.workspace.inspect(path.name)[0]["status"], "in_sync")
         self.assertEqual(self.source.read(note.id).attachments, 1)
         self.assertNotIn(path.name, self.workspace.local_work()[0])
 

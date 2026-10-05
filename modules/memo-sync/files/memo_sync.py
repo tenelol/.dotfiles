@@ -222,7 +222,7 @@ class Notes:
         })
 
     def replace_images(self, expected, text):
-        from notes_text import NotesText
+        from notes_text import NotesText, image_layout_key
         validate_images(expected)
         target = image_plain(text)
         if not target.strip() or any(ord(c) < 32 and c not in "\n\t" for c in target):
@@ -239,9 +239,9 @@ class Notes:
             editor.select(expected.title, selected)
             if self.read(expected.id) != expected or ui()["attachments"] != before["attachments"]:
                 raise DeferredSync("書込直前にメモが変わったため再確認します。")
-            editor.replace(expected.text, target, selected)
+            expected_text = editor.replace(expected.text, target, selected)
             updated = self.read(expected.id)
-            if (not updated or image_plain(updated.text) != target or
+            if (not updated or image_layout_key(updated.text) != image_layout_key(expected_text) or
                 ui()["attachments"] != before["attachments"]):
                 raise RuntimeError("本文または添付の保持を確認できません。同期を停止しました。")
             return updated
@@ -582,7 +582,7 @@ def classify(base, local, remote, base_local=None, markdown=False, image_text=Fa
             return "in_sync"
         return "format_changed" if remote_text == base_text else "converged"
     local_changed = local != base_text
-    remote_changed = remote_text != base_text if image_text else remote.fingerprint != base.fingerprint
+    remote_changed = remote_text != image_plain(base.text) if image_text else remote.fingerprint != base.fingerprint
     if local_changed and remote_changed:
         return "conflict"
     if local_changed:
@@ -1306,7 +1306,8 @@ class Workspace:
                 record.pop("pending")
                 atomic_json(self.meta / "state.json", state)
                 raise
-            matches = updated and (image_plain(updated.text) == target if image_text else
+            # The image adapter additionally checks exact text except native image-boundary line breaks.
+            matches = updated and (content_key(image_plain(updated.text)) == content_key(target) if image_text else
                                    content_key(updated.text) == markdown_html(local)[1] if use_markdown else
                                    file_text(updated.text) == target)
             if updated is None or updated.id != remote.id or not matches:
@@ -1336,8 +1337,9 @@ class Workspace:
             if read_text(path) != target:
                 raise RuntimeError("ファイル更新後に編集されました。同期を停止しました。")
         record["base"] = self.snapshot(updated)
-        if use_markdown:
-            record["markdown"] = True
+        if use_markdown or image_text:
+            if use_markdown:
+                record["markdown"] = True
             record["base_local"] = self.save_local(local if status == "push_pending" else target)
         record.pop("pending")
         atomic_json(self.meta / "state.json", state)
