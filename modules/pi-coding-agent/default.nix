@@ -61,7 +61,10 @@ delib.scopedModule {
             };
             ".pi/agent/pi-tool-display.json" = editableSource "pi-tool-display.json";
             ".pi/agent/settings.json" = {
-              source = ./files/settings.json;
+              text = builtins.toJSON (
+                (builtins.fromJSON (builtins.readFile ./files/settings.json))
+                // { lastChangelogVersion = pkgs.pi-coding-agent.version; }
+              );
               force = true;
             };
             ".pi/agent/keybindings.json".source = ./files/keybindings.json;

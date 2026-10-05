@@ -92,7 +92,7 @@ Keep provider files unchanged when refreshing a skill. Local integrations are li
 
 ## Pi
 
-[`modules/pi-coding-agent`](./modules/pi-coding-agent) uses denix and Home Manager's `home.file` declarations for Pi configuration and resource links. `settings.json`, `models.json`, `keybindings.json`, and `zentui.json` are maintained in dotfiles and applied with the normal `nh` workflow; Pi's own settings saves are not persisted. The settings include the installed Pi changelog version so a fresh session does not try to write this marker to its read-only configuration; review it when upgrading Pi.
+[`modules/pi-coding-agent`](./modules/pi-coding-agent) uses denix and Home Manager's `home.file` declarations for Pi configuration and resource links. `settings.json`, `models.json`, `keybindings.json`, and `zentui.json` are maintained in dotfiles and applied with the normal `nh` workflow; Pi's own settings saves are not persisted. Home Manager derives the acknowledged changelog version from the Pi package, preventing repeated release notes and writes to its read-only settings after upgrades.
 
 Pi uses `@narumitw/pi-codex-compact` 0.54.0 for Codex context compaction. On the default `openai-codex` provider, automatic compaction and `/compact` use Remote Compaction V2, falling back to Pi-native summarization on failure. `/codex-compact` shows the route and settings; its writable settings live at `~/.pi/agent/pi-codex-compact.json`. Existing sessions need `/reload` after installing or updating the extension.
 

@@ -1,17 +1,18 @@
 // Run: node modules/pi-coding-agent/tests/settings-startup.test.mjs
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-import { pathToFileURL } from "node:url";
+import { execFileSync } from "node:child_process";
+import { realpathSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
-const root = process.env.PI_PACKAGE_DIR || "/opt/homebrew/opt/pi-coding-agent/libexec/lib/node_modules/@earendil-works/pi-coding-agent";
+const root = process.env.PI_PACKAGE_DIR || join(dirname(dirname(realpathSync(execFileSync("which", ["pi"], { encoding: "utf8" }).trim()))), "lib/node_modules/pi-monorepo");
 const { InteractiveMode } = await import(pathToFileURL(join(root, "dist/modes/interactive/interactive-mode.js")));
-const settings = JSON.parse(readFileSync(new URL("../files/settings.json", import.meta.url), "utf8"));
+const { settings } = JSON.parse(execFileSync("nix-instantiate", ["--eval", "--strict", "--json", fileURLToPath(new URL("extensions.nix-test", import.meta.url))], { encoding: "utf8" }));
 const changelog = InteractiveMode.prototype.getChangelogForDisplay.call({
   session: { state: { messages: [] } },
   settingsManager: {
     getLastChangelogVersion: () => settings.lastChangelogVersion,
-    setLastChangelogVersion: () => assert.fail("Update the declared changelog version before using read-only settings with this Pi version"),
+    setLastChangelogVersion: () => assert.fail("Generated settings must acknowledge the packaged Pi version without a startup write"),
   },
   reportInstallTelemetry: () => assert.fail("No install telemetry during this check"),
 });

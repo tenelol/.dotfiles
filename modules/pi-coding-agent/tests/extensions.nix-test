@@ -1,6 +1,6 @@
 let
   lock = builtins.fromJSON (builtins.readFile ../../../flake.lock);
-  locked = lock.nodes.nixpkgs.locked;
+  locked = lock.nodes.${lock.nodes.root.inputs.nixpkgs}.locked;
   nixpkgs = builtins.fetchTree {
     inherit (locked) type owner repo rev narHash;
   };
@@ -38,4 +38,5 @@ assert files.".pi/agent/extensions/computer-use".source == "/fixture/home/.dotfi
 {
   extensions = builtins.attrNames extensions;
   inherit prompts;
+  settings = builtins.fromJSON files.".pi/agent/settings.json".text;
 }
