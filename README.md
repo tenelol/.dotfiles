@@ -75,7 +75,7 @@ activation failure.
 
 ## Apple Notesのローカル編集
 
-[memo-syncの手順](./docs/memo-sync.md)を参照。denix/Home ManagerでMac用CLIと登録用サービスを配置する。現在は原本の保存と両側の差分検知までで、自動上書き同期は無効。反映は通常のnhワークフローで行う。
+[memo-syncの手順](./docs/memo-sync.md)を参照。denix/Home ManagerでMac用CLI・登録用サービス・自動同期のlaunchd agentを配置する。有効化したテキストメモとローカルファイルを双方向同期し、原本と更新前のファイルを保存する。競合時は更新を停止。反映は通常のnhワークフローで行う。
 
 ## Codex skills
 

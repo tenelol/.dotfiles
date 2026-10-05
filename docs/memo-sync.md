@@ -1,52 +1,74 @@
-# 標準メモとローカルファイルの接続
+# 標準メモとローカルファイルの双方向同期
 
-memo-syncは、Macの標準メモで選択したメモを ~/Documents/memo/ へ登録し、ファイル側とメモ側の差分を確認するための自作ツール。Neovimは通常のファイルを編集するだけでよい。
-
-**現在は登録・原本保存・差分検知まで。ファイルと標準メモを自動で上書きする処理は実装していない。** watchも変更を通知して記録するだけで、同期を実行するものではない。原本保全と競合処理を先に検証する段階としている。
+memo-syncは、Macの標準メモで選択したメモを ~/Documents/memo/ に登録する自作ツール。Neovimで通常のファイルとして編集すると標準メモへ反映し、標準メモでの変更もファイルへ反映する。対象は明示的に有効化したメモだけ。
 
 ## 反映と登録
 
-denixの[memo-syncモジュール](../modules/memo-sync/default.nix)がHome Manager経由でCLIとMacのクイックアクションを配置する。Home Managerはシステム構成に統合されているため、反映には現在のriceを確認した上で通常のnh darwin switchを使う。作成だけの依頼ではswitchしない。
+denixの[memo-syncモジュール](../modules/memo-sync/default.nix)がHome Manager経由でCLI・Macのサービス・launchd agentを配置する。反映は現在のriceを確認した上でnh darwin switchを使う。agentはログイン時から5秒間隔で監視し、2回続けて変化がなかった内容を同期する。
 
-反映後、標準メモで対象を1件選び、「メモ → サービス → メモをローカル編集に追加」を実行する。サービスの表示と読取・登録は実機でも検証する。Automatorがシンボリックリンクを読めないため、workflowはHome Managerのactivationで通常ファイルとして配置する。管理用の印とハッシュが一致するものだけを更新し、手動編集されたサービスは上書きしない。初回にAutomatorやターミナルからNotesへのAutomation許可を求められたら、対象を確認して許可する。メモDBへの直接アクセスとフルディスクアクセスは使わない。
+標準メモで1件選び、「メモ → サービス → メモをローカル編集に追加」を実行する。対応するテキストメモは登録と同時に自動同期が有効になる。対応外のメモもファイルと原本は保存し、書き戻しは有効にしない。ターミナルからも実行できる。
 
-ターミナルからも、標準メモで1件選択して以下を実行できる。
+    memo-sync register --sync
 
-    memo-sync register
+既存ファイルと同名なら別名を選ぶ。同じメモの再登録ではローカルの編集内容を上書きしない。既存の登録は勝手に有効化されない。
 
-既存ファイルと同名なら別名を選び、上書きしない。同じメモの再登録も、ローカルで編集済みの本文を上書きしない。
+    memo-sync enable "メモ名.md"
+    memo-sync disable "メモ名.md"
 
-共有メニューを入口にする場合は、Macのショートカットに「シェルスクリプトを実行」を追加し、memo-sync registerを呼ぶ。入力は処理せず、標準メモで選択されているメモを登録する。現在同梱している入口はサービスメニューであり、共有メニュー用ショートカットのインストールは行わない。
+registerを--syncなしで呼ぶと登録と原本保存のみ。初回のNotesへのAutomation許可は、対象を確認して許可する。DBの直接編集・フルディスクアクセス・apple-notes.nvimは使用しない。Automatorがシンボリックリンクを読めないため、workflowは通常ファイルとして管理する。
 
-## ファイルと差分
+## 対応する内容
 
-本文はAppleのplaintextで取得し、UTF-8の.mdファイルに保存する。見出しや箇条書きなどの書式をMarkdown記法へ変換する処理はまだ入れていない。元のHTML・本文・メモID・属性は .memo-sync/history/ に保存する。添付ファイルのバイナリ本体は保存しないため、添付を含むメモ全体のバックアップとしては扱わない。
+ファイルはAppleのplaintextを取得したUTF-8の.md。Markdown書式への変換は行わないため、記号として書いたMarkdownはそのまま本文に入る。通常の段落・空行・標準の先頭タイトルに対応し、日本語・絵文字・HTML記号・連続スペース・タブを保持する。先頭行を変えると標準メモのタイトルも変わるが、登録ファイル名は維持する。
+
+添付・共有・表・チェックリスト・箇条書き・本文の装飾などを含むメモの書き戻しは停止する。HTMLから取得した全文がAppleのplaintextと一致することも書込前に確認する。同期中にメモ側へ対応外の書式が加わった場合、テキストの取込はできるが、次の書き戻しは停止する。空の本文も書き戻さない。
+
+iCloudへの同期は標準メモが担当する。このツールで検証しているのはMac上の標準メモとの往復で、別端末とのiCloud往復は未検証。
+
+## 確認と競合
 
     memo-sync status
-    memo-sync diff "ネットワーク.md"
-    memo-sync watch
+    memo-sync diff "メモ名.md"
+    memo-sync sync
 
-watchを終了するにはCtrl+Cを使う。未反映でもrepositoryから実行できる。
+statusとdiffは本文を更新しない。syncは有効化したメモを一度同期する。手動監視にはmemo-sync watchを使い、終了はCtrl+C。launchd agentと同じ保存先で同時に動かす必要はない。自動監視の確認・再起動には以下を使う。
 
-    python3 modules/memo-sync/files/memo_sync.py register
-    python3 modules/memo-sync/files/memo_sync.py status
+    launchctl print gui/(id -u)/org.nix-community.home.memo-sync
+    launchctl kickstart -k gui/(id -u)/org.nix-community.home.memo-sync
 
-これらはFishからそのまま実行できる。保存先を変更する場合は、サブコマンドより前に --root /path/to/memo を指定する。
+監視ログは ~/Library/Logs/memo-sync.log。
+
+上のlaunchctlコマンドはFish用。Bash/Zshでは(id -u)を$(id -u)にする。
 
 | 状態 | 意味 |
 | --- | --- |
-| in_sync | 登録時から両側の内容が一致 |
-| push_pending | ファイル側だけが変更された |
-| pull_pending | メモ側だけが変更された |
-| conflict | 両側が別々に変更された |
-| converged | 両側が同じ本文へ変更された |
-| format_changed | 本文は同じでメモの書式・属性が変化 |
-| local_missing / remote_missing | 片側が見つからない。もう一方は削除しない |
+| in_sync | 最後の同期版と両側の本文が一致 |
+| push_pending / pull_pending | 片側の変更。無効な登録では保留、有効な登録では次の同期対象 |
+| conflict | 両側が別々に変更。どちらも更新しない |
+| converged / format_changed | 同じ本文への変更・メモ側の書式変更。同期時に基準版を更新 |
+| unsupported | 内容の保持を確認できず、書き戻しを停止 |
+| interrupted | 同期途中の失敗。自動再試行による書き込みを停止 |
+| local_missing / remote_missing | 片側が見つからない。もう一方を削除しない |
 
-原本は最初の登録時に確保し、後から読み取ったメモの各版も保存する。差分は登録時の版と比較する。検知結果は .memo-sync/reports/ にも保存される。管理フォルダは所有者だけがアクセスでき、原本・本文・管理ファイルは所有者だけが読み書きできる権限で作成する。
+競合時はmemo-sync disableでそのメモを止め、diffと履歴を確認する。必要な両側の内容を別ファイルへ保全してから、採用する本文を両側で一致させ、memo-sync enableで再開する。本文が一致しない途中失敗はenableで解除できない。force上書きコマンドは設けない。
 
-## 検証範囲
+## 履歴と更新の保護
 
-[artifact tests](../modules/memo-sync/tests/)は合成データのみを使用し、実メモを操作しない。CLIでの本文保持、原本保存、衝突、削除、ID不一致、同時実行、シンボリックリンクの拒否と、Notes読取スクリプトの契約を検証する。
+.memo-sync/history/に各版のHTML・本文・ID・属性、local-history/に更新前のファイル、operations/に更新記録、reports/に状態と差分を保存する。最初の原本も保持し、差分の基準は成功した同期ごとに進める。添付ファイルのバイナリ本体は保存しない。
 
-既存メモへの書き戻し、Markdown書式の完全な往復保持、共有メニュー用ショートカット、iCloudとの往復同期は未検証。これらを実装・有効化する前に、使い捨てのテストメモで原本の復元と内容保持を確認する。
+メモへの書込直前にID・本文・HTML・日時・属性を再照合し、書込後に本文が一致することを確認する。ファイル更新にはOSの原子的な交換を使い、置き換えたファイル自体も履歴に残す。交換時に編集が入っていたら-displaced.txtへ保全し、そのメモの同期を停止する。途中処理の記録を先に保存し、クラッシュ後は一致を確認できた完了分だけ基準版を進める。
+
+AppleのスクリプトAPIには比較と書込を一体にしたトランザクションがないため、直前の照合と書込の間の同時編集までは排他できない。両側で同じメモを同時に編集する運用は避ける。履歴は自動削除しないので容量管理は手動。管理フォルダは700、本文・原本・記録は600で作成する。
+
+## 検証
+
+[artifact tests](../modules/memo-sync/tests/)は合成データを使い、往復・原本保存・競合・同時保存・削除・中断・本文不一致時の停止を検証する。
+
+    python3 -m unittest discover -s modules/memo-sync/tests -p 'test_*.py'
+    node modules/memo-sync/tests/test_notes_bridge.js
+
+実機試験は明示実行のみ。以下は専用の使い捨てメモを1件作り、往復と自動監視、本文保持、古い版の書込拒否、競合時の双方保全を確認する。既存の個人メモは対象にしない。テストメモと一時workspaceは確認用に残す。
+
+    python3 modules/memo-sync/tests/test_notes_live.py --create
+
+未反映でもpython3 modules/memo-sync/files/memo_sync.pyから同じCLIを使える。保存先を変える場合はサブコマンドの前に--root /path/to/memoを付ける。

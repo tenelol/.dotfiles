@@ -14,7 +14,7 @@
         <key>ActionName</key><string>Run Shell Script</string>
         <key>ActionParameters</key>
         <dict>
-          <key>COMMAND_STRING</key><string>memo_file=$(@MEMO_SYNC@ register) &amp;&amp; /usr/bin/open -R "$memo_file"</string>
+          <key>COMMAND_STRING</key><string>memo_file=$(@MEMO_SYNC@ register --sync) &amp;&amp; /usr/bin/open -R "$memo_file"</string>
           <key>inputMethod</key><integer>0</integer>
           <key>shell</key><string>/bin/bash</string>
         </dict>

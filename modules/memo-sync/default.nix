@@ -3,6 +3,7 @@
   hostTraits,
   hm,
   pkgs,
+  profile,
   ...
 }:
 let
@@ -27,6 +28,22 @@ delib.scopedModule {
 
   home.ifEnabled = {
     home.packages = [ memoSync ];
+    launchd.agents.memo-sync = {
+      enable = true;
+      config = {
+        ProgramArguments = [
+          "${memoSync}/bin/memo-sync"
+          "watch"
+        ];
+        RunAtLoad = true;
+        KeepAlive = true;
+        ProcessType = "Background";
+        ThrottleInterval = 10;
+        Umask = 63;
+        StandardOutPath = "/Users/${profile.username}/Library/Logs/memo-sync.log";
+        StandardErrorPath = "/Users/${profile.username}/Library/Logs/memo-sync.log";
+      };
+    };
     # Automator requires regular files, not Home Manager's file symlinks.
     home.activation.installMemoSyncService = hm.dag.entryAfter [ "linkGeneration" ] ''
       $DRY_RUN_CMD ${pkgs.python3}/bin/python3 ${./files/install_service.py} \

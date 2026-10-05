@@ -10,14 +10,14 @@ FILES = Path(__file__).resolve().parents[1] / "files"
 
 
 class ServiceTests(unittest.TestCase):
-    def test_service_uses_the_same_read_only_registration_command(self):
+    def test_service_enrolls_supported_notes_for_sync(self):
         command_path = "/nix/store/test-memo-sync/bin/memo-sync"
         workflow = (FILES / "register.workflow.plist").read_text().replace("@MEMO_SYNC@", command_path)
         data = plistlib.loads(workflow.encode())
         action = data["actions"][0]["action"]
         self.assertEqual(action["BundleIdentifier"], "com.apple.RunShellScript")
         command = action["ActionParameters"]["COMMAND_STRING"]
-        self.assertIn(command_path + " register", command)
+        self.assertIn(command_path + " register --sync", command)
         self.assertIn('/usr/bin/open -R "$memo_file"', command)
         self.assertEqual(subprocess.run(["/bin/bash", "-n"], input=command, text=True).returncode, 0)
         self.assertEqual(data["workflowMetaData"]["serviceApplicationBundleID"], "com.apple.Notes")

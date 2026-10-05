@@ -10,6 +10,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 
 MODULE = Path(__file__).resolve().parents[1]
@@ -212,6 +213,187 @@ class MemoSyncTests(unittest.TestCase):
         self.assertEqual(result["attachments"], 2)
         self.assertTrue(result["shared"])
         self.assertFalse(result["writes_enabled"])
+
+
+class BidirectionalTests(unittest.TestCase):
+    # Reuse the existing offline workspace; every operation crosses the production interface.
+    remote = MemoSyncTests.remote
+    cli = MemoSyncTests.cli
+
+    def setUp(self):
+        MemoSyncTests.setUp(self)
+        self.note = replace(self.note, html="<div>Synthetic 日本語メモ</div><div>KEEP_1</div>",
+                            text="Synthetic 日本語メモ\nKEEP_1\n")
+        self.remote(self.note)
+        self.path = self.workspace.register(sync=True)
+
+    def test_full_roundtrip_and_baseline_advances(self):
+        text = "Synthetic 日本語メモ\n  <tag> & 日本語 🌱   \t\n\nKEEP_7\n\n"
+        self.path.write_text(text)
+        self.assertEqual(self.workspace.inspect(sync=True)[0]["status"], "in_sync")
+        self.assertEqual(self.source.read(self.note.id).text, text)
+        self.assertEqual(self.path.read_text(), text)
+        first = self.source.read(self.note.id)
+        remote = replace(first, text=text + "REMOTE_EDIT\n", html=memo.render_text(first, text + "REMOTE_EDIT\n"))
+        self.remote(remote)
+        self.assertEqual(self.workspace.inspect(sync=True)[0]["status"], "in_sync")
+        self.assertEqual(self.path.read_text(), remote.text)
+        self.assertEqual(self.workspace.inspect()[0]["status"], "in_sync")
+        backups = (self.root / ".memo-sync/local-history")
+        self.assertEqual((backups / (memo.digest(text) + ".txt")).read_text(), text)
+        self.assertEqual(self.workspace.base(self.workspace.state()["notes"][self.note.id]).text, remote.text)
+        self.path.write_text(remote.text + "SECOND_LOCAL_EDIT\n")
+        self.assertEqual(self.workspace.inspect(sync=True)[0]["status"], "in_sync")
+        self.assertEqual(self.source.read(self.note.id).text, remote.text + "SECOND_LOCAL_EDIT\n")
+
+    def test_sync_stops_for_conflict_deletion_and_unsupported_format(self):
+        self.path.write_text("Local edits\n")
+        remote = replace(self.note, text="Remote edits\n", html="<div>Remote edits</div>")
+        self.remote(remote)
+        self.assertEqual(self.workspace.inspect(sync=True)[0]["status"], "conflict")
+        self.assertEqual(self.path.read_text(), "Local edits\n")
+        self.assertEqual(self.source.read(self.note.id), remote)
+        self.path.unlink()
+        self.assertEqual(self.workspace.inspect(sync=True)[0]["status"], "local_missing")
+        self.assertEqual(self.source.read(self.note.id), remote)
+        self.remote(self.note)
+        self.path.write_text(self.note.text)
+        decorated = replace(self.note, html="<div>Synthetic 日本語メモ</div><div><b>KEEP_1</b></div>")
+        self.remote(decorated)
+        self.workspace.inspect(sync=True)
+        self.path.write_text("Local edits\n")
+        self.assertEqual(self.workspace.inspect(sync=True)[0]["status"], "unsupported")
+        self.assertEqual(self.source.read(self.note.id), decorated)
+        for kwargs in ({"attachments": 1}, {"shared": True}):
+            self.remote(replace(self.note, **kwargs))
+            self.path.write_text(self.note.text)
+            self.workspace.inspect(sync=True)
+            self.path.write_text("Local edits\n")
+            self.assertEqual(self.workspace.inspect(sync=True)[0]["status"], "unsupported")
+
+    def test_readonly_registration_and_disable_never_sync(self):
+        self.workspace.enable(self.path.name, False)
+        self.path.write_text("Disabled edit\n")
+        self.assertEqual(self.workspace.inspect(sync=True)[0]["status"], "push_pending")
+        self.assertEqual(self.source.read(self.note.id), self.note)
+        self.cli("enable", self.path.name)
+        self.cli("sync", self.path.name)
+        self.assertEqual(self.source.read(self.note.id).text, "Disabled edit\n")
+        self.cli("disable", self.path.name)
+        self.assertFalse(self.workspace.inspect()[0]["writes_enabled"])
+
+    def test_watch_requires_two_stable_observations(self):
+        self.path.write_text("Stable edit\n")
+        self.assertEqual(self.workspace.inspect(sync=True, stable=True)[0]["status"], "push_pending")
+        self.path.write_text("Newer edit\n")
+        self.assertEqual(self.workspace.inspect(sync=True, stable=True)[0]["status"], "push_pending")
+        self.assertEqual(self.source.read(self.note.id), self.note)
+        self.assertEqual(self.workspace.inspect(sync=True, stable=True)[0]["status"], "in_sync")
+        self.assertEqual(self.source.read(self.note.id).text, "Newer edit\n")
+
+    def test_remote_cas_rejects_late_changes_and_stays_stopped(self):
+        self.path.write_text("Local edits\n")
+        original = self.source.replace
+
+        def change_before_write(expected, text):
+            self.remote(replace(self.note, text="Late remote edit\n", html="<div>Late remote edit</div>"))
+            return original(expected, text)
+
+        self.source.replace = change_before_write
+        self.assertEqual(self.workspace.inspect(sync=True)[0]["status"], "interrupted")
+        self.assertEqual(self.source.read(self.note.id).text, "Late remote edit\n")
+        self.assertEqual(self.workspace.inspect(sync=True)[0]["status"], "interrupted")
+        self.assertEqual(self.path.read_text(), "Local edits\n")
+        self.assertTrue(self.workspace.state()["notes"][self.note.id]["pending"]["error"])
+
+    def test_late_editor_save_is_retained_at_atomic_swap(self):
+        remote = replace(self.note, text="Remote edit\n", html="<div>Remote edit</div>")
+        self.remote(remote)
+        original = memo.swap_file
+
+        def save_during_swap(path, staging):
+            # Neovim commonly saves by replacing the path with a new inode.
+            replacement = path.with_suffix(".new")
+            replacement.write_text("LATE_EDITOR_SAVE\n")
+            os.replace(replacement, path)
+            original(path, staging)
+
+        with patch.object(memo, "swap_file", save_during_swap):
+            self.assertEqual(self.workspace.inspect(sync=True)[0]["status"], "interrupted")
+        displaced = list((self.root / ".memo-sync/local-history").glob("*-displaced.txt"))
+        self.assertEqual(displaced[0].read_text(), "LATE_EDITOR_SAVE\n")
+        self.assertEqual(self.workspace.inspect(sync=True)[0]["status"], "interrupted")
+        self.assertEqual(self.source.read(self.note.id), remote)
+
+    def test_incorrect_readback_and_backup_failure_prevent_further_writes(self):
+        self.path.write_text("Local edits\n")
+        writes = []
+
+        def truncated(expected, text):
+            writes.append(text)
+            note = replace(expected, text="Truncated\n", html="<div>Truncated</div>")
+            self.remote(note)
+            return note
+
+        self.source.replace = truncated
+        self.assertEqual(self.workspace.inspect(sync=True)[0]["status"], "interrupted")
+        self.assertEqual(self.workspace.inspect(sync=True)[0]["status"], "interrupted")
+        self.assertEqual(len(writes), 1)
+        self.assertEqual(self.path.read_text(), "Local edits\n")
+        self.assertEqual((self.root / ".memo-sync/local-history" / (memo.digest("Local edits\n") + ".txt")).read_text(), "Local edits\n")
+        self.path.write_text("Truncated\n")
+        self.workspace.enable(self.path.name)
+        self.assertEqual(self.workspace.inspect()[0]["status"], "in_sync")
+        self.path.write_text("Another edit\n")
+        original = memo.write_new
+
+        def fail_backup(path, text):
+            if path.parent.name == "local-history":
+                raise OSError("Backup failed")
+            return original(path, text)
+
+        with patch.object(memo, "write_new", fail_backup):
+            self.assertEqual(self.workspace.inspect(sync=True)[0]["status"], "unsupported")
+        self.assertEqual(len(writes), 1)
+
+    def test_completed_write_after_crash_can_be_verified_without_repeating_write(self):
+        text = "Verified edit\n"
+        self.path.write_text(text)
+        state = self.workspace.state()
+        record = state["notes"][self.note.id]
+        record["pending"] = {"operation": "a" * 32, "direction": "push_pending",
+                             "target": memo.digest(text), "local": memo.digest(text)}
+        memo.atomic_json(self.root / ".memo-sync/state.json", state)
+        self.remote(replace(self.note, text=text, html="<div>Verified edit</div>"))
+        with patch.object(self.source, "replace", side_effect=AssertionError("Must not write again")):
+            self.assertEqual(self.workspace.inspect(sync=True)[0]["status"], "in_sync")
+        self.assertNotIn("pending", self.workspace.state()["notes"][self.note.id])
+
+    def test_html_validation_preserves_all_paragraphs_and_rejects_loss(self):
+        for tag in ("p", "div"):
+            text = "Title\n" + "".join(f"KEEP_{i}\n" for i in range(7))
+            note = replace(self.note, html=f"<{tag}>Title</{tag}>" + "".join(
+                f"<{tag}>KEEP_{i}</{tag}>" for i in range(7)), text=text)
+            self.assertEqual(memo.text_style(note), "")
+        heading = replace(self.note, html='<div><b><span style="font-size: 24px">Synthetic 日本語メモ</span></b></div><div>KEEP_1</div>')
+        self.assertEqual(memo.text_style(heading), "h1")
+        trailing_br = replace(self.note, html="<div>Synthetic 日本語メモ</div><div>KEEP_1<br></div>")
+        self.assertEqual(memo.text_style(trailing_br), "")
+        for invalid in (replace(self.note, text="Missing paragraphs\n"),
+                        replace(self.note, html="<table><tr><td>KEEP</td></tr></table>"),
+                        replace(self.note, html="<div>Synthetic <b>日本語メモ</b></div><div>KEEP_1</div>"),
+                        replace(self.note, html='<div><a href="https://example.com">KEEP</a></div>')):
+            with self.assertRaises(ValueError):
+                memo.render_text(invalid, "New text\n")
+        for invalid_text in ("", "   \n", "NUL\0"):
+            with self.assertRaises(ValueError):
+                memo.render_text(self.note, invalid_text)
+
+    def test_missing_final_newline_is_not_an_endless_change(self):
+        self.path.write_text("No final newline")
+        self.assertEqual(self.workspace.inspect(sync=True)[0]["status"], "in_sync")
+        self.assertEqual(self.workspace.inspect(sync=True)[0]["status"], "in_sync")
+        self.assertEqual(self.path.read_text(), "No final newline")
 
 
 if __name__ == "__main__":

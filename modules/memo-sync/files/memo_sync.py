@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
-"""Register Notes as files and inspect both directions without overwriting either side."""
+"""Sync explicitly enrolled text notes, preserving both sides before every update."""
 
 import argparse
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
+import ctypes
 import difflib
 import fcntl
 import hashlib
+import html
+from html.parser import HTMLParser
 import json
 import math
 import os
@@ -70,9 +73,18 @@ class Notes:
         self.bridge = bridge
 
     def read(self, note_id=None):
+        request = {"operation": "read", "id": note_id} if note_id else {"operation": "selected"}
+        return self.request(request)
+
+    def replace(self, expected, text):
+        return self.request({
+            "operation": "replace", "id": expected.id, "expected": asdict(expected),
+            "html": render_text(expected, text), "text": file_text(text),
+        })
+
+    def request(self, request):
         if sys.platform != "darwin":
             raise RuntimeError("標準メモへの接続はmacOSでのみ利用できます。")
-        request = {"operation": "read", "id": note_id} if note_id else {"operation": "selected"}
         result = subprocess.run(
             ["/usr/bin/osascript", "-l", "JavaScript", str(self.bridge)],
             input=json.dumps(request), text=True, encoding="utf-8",
@@ -88,7 +100,7 @@ class Notes:
         if value.get("error"):
             raise RuntimeError(value["error"])
         note = Note.parse(value["note"]) if value.get("note") is not None else None
-        if note_id and note and note.id != note_id:
+        if request.get("id") and note and note.id != request["id"]:
             raise ValueError("登録したメモIDと読取結果が一致しません。")
         return note
 
@@ -109,6 +121,113 @@ class FixtureNotes:
             raise ValueError("fixtureのメモIDが一致しません。")
         return note
 
+    def replace(self, expected, text):
+        current = self.read(expected.id)
+        if current != expected:
+            raise RuntimeError("書込直前にメモが更新されました。")
+        rendered = render_text(expected, text)
+        note = Note(expected.id, text.splitlines()[0], rendered, file_text(text),
+                    str(time.time_ns()))
+        atomic_json(self.directory / (digest(note.id) + ".json"), asdict(note))
+        return note
+
+
+class TextHTML(HTMLParser):
+    """Accept text paragraphs and the native first-line title style only."""
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.stack, self.lines, self.line = [], [], ""
+        self.title_styles = set()
+        self.break_ended = False
+
+    def handle_starttag(self, tag, attrs):
+        if (tag in ("div", "p") and not self.stack and
+            attrs in ([], [("style", "white-space: pre-wrap")])):
+            self.stack.append(tag)
+            self.break_ended = False
+        elif tag == "br" and self.stack and not attrs:
+            self.lines.append(self.line)
+            self.line = ""
+            self.break_ended = True
+        elif tag in ("b", "h1", "span") and self.stack and not self.lines:
+            if tag == "span" and attrs != [("style", "font-size: 24px")]:
+                raise ValueError("対応していない書式があります。")
+            if tag != "span" and attrs:
+                raise ValueError("対応していない書式があります。")
+            self.stack.append(tag)
+        else:
+            raise ValueError("添付・表・箇条書き・本文の装飾は書き戻せません。")
+
+    def handle_endtag(self, tag):
+        if not self.stack or self.stack.pop() != tag:
+            raise ValueError("メモのHTML構造を安全に読み取れません。")
+        if not self.stack:
+            if not self.break_ended:
+                self.lines.append(self.line)
+            self.line = ""
+
+    def handle_data(self, data):
+        if self.stack:
+            self.line += data
+            if not self.lines and data.strip():
+                style = "h1" if "h1" in self.stack or "span" in self.stack else "b" if "b" in self.stack else ""
+                self.title_styles.add(style)
+            if data:
+                self.break_ended = False
+        elif data.strip():
+            raise ValueError("段落外の本文は書き戻せません。")
+
+    def handle_comment(self, data):
+        raise ValueError("対応していないHTMLがあります。")
+
+
+def text_style(note):
+    if note.attachments or note.shared:
+        raise ValueError("添付または共有を含むメモは書き戻せません。")
+    parser = TextHTML()
+    parser.feed(note.html)
+    parser.close()
+    if parser.stack or "".join(line + "\n" for line in parser.lines) != file_text(note.text):
+        raise ValueError("HTMLと本文の一致を確認できないため、書き戻しを停止しました。")
+    if len(parser.title_styles) > 1:
+        raise ValueError("タイトルの部分的な装飾は書き戻せません。")
+    return next(iter(parser.title_styles), "")
+
+
+def render_text(note, text):
+    style = text_style(note)
+    text = file_text(text)
+    if not text.strip() or any(ord(c) < 32 and c not in "\n\t" for c in text):
+        raise ValueError("空の本文・制御文字は書き戻せません。")
+    lines = text[:-1].split("\n")
+    rendered = []
+    for index, line in enumerate(lines):
+        value = html.escape(line) if line else "<br>"
+        if index == 0 and style:
+            value = "<" + style + ">" + value + "</" + style + ">"
+        # Notes otherwise collapses indentation, repeated spaces, and tabs.
+        rendered.append('<div style="white-space: pre-wrap">' + value + "</div>")
+    result = "\n".join(rendered)
+    if len(result.encode("utf-8")) > MAX_BYTES:
+        raise ValueError("書き戻すHTMLが容量上限を超えています。")
+    return result
+
+
+def swap_file(path, staging):
+    """Atomically retain the displaced file, including an intervening editor save."""
+    libc = ctypes.CDLL(None, use_errno=True)
+    if sys.platform == "darwin":
+        swap, directory = libc.renameatx_np, -2
+    elif sys.platform.startswith("linux"):
+        swap, directory = libc.renameat2, -100
+    else:
+        raise RuntimeError("このOSでは安全なファイル更新を利用できません。")
+    swap.argtypes = [ctypes.c_int, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p, ctypes.c_uint]
+    swap.restype = ctypes.c_int
+    if swap(directory, os.fsencode(path), directory, os.fsencode(staging), 2):
+        raise OSError(ctypes.get_errno(), "ファイルの交換に失敗しました。")
+
 
 def read_text(path):
     fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
@@ -125,6 +244,15 @@ def write_new(path, text):
         stream.write(text)
         stream.flush()
         os.fsync(stream.fileno())
+    sync_directory(path.parent)
+
+
+def sync_directory(path):
+    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
 
 
 def atomic_json(path, value):
@@ -134,6 +262,7 @@ def atomic_json(path, value):
         if path.is_symlink():
             raise ValueError("管理ファイルへのシンボリックリンクは使用できません。")
         os.replace(temporary, path)
+        sync_directory(path.parent)
     finally:
         temporary.unlink(missing_ok=True)
 
@@ -145,6 +274,7 @@ def classify(base, local, remote):
         raise ValueError("異なるメモの比較はできません。")
     if local is None:
         return "local_missing"
+    local = file_text(local)
     if local == file_text(remote.text):
         if remote.fingerprint == base.fingerprint:
             return "in_sync"
@@ -165,10 +295,12 @@ class Workspace:
         self.root = Path(root).expanduser().resolve()
         self.meta = self.root / ".memo-sync"
         self.source = source
+        self.observed = {}
 
     def prepare(self):
         self.root.mkdir(parents=True, exist_ok=True)
-        for directory in (self.meta, self.meta / "history", self.meta / "reports"):
+        for directory in (self.meta, self.meta / "history", self.meta / "reports",
+                          self.meta / "local-history", self.meta / "operations"):
             if directory.is_symlink():
                 raise ValueError("管理ディレクトリへのシンボリックリンクは使用できません。")
             directory.mkdir(exist_ok=True, mode=0o700)
@@ -192,8 +324,23 @@ class Workspace:
         if not path.exists():
             return {"version": 1, "notes": {}}
         state = json.loads(read_text(path))
-        if state.get("version") != 1 or not isinstance(state.get("notes"), dict):
+        if not isinstance(state, dict) or state.get("version") != 1 or not isinstance(state.get("notes"), dict):
             raise ValueError("管理状態の形式が不正です。")
+        for note_id, record in state["notes"].items():
+            if (not isinstance(note_id, str) or not note_id or not isinstance(record, dict) or
+                not isinstance(record.get("base"), str) or
+                type(record.get("sync_enabled", False)) is not bool):
+                raise ValueError("登録の管理状態が不正です。")
+            self.note_path(record.get("file"))
+            pending = record.get("pending")
+            if pending is not None and (
+                not isinstance(pending, dict) or
+                pending.get("direction") not in ("push_pending", "pull_pending") or
+                any(not isinstance(pending.get(key), str) or re.fullmatch(pattern, pending[key]) is None
+                    for key, pattern in (("operation", r"[0-9a-f]{32}"),
+                                         ("target", r"[0-9a-f]{64}"), ("local", r"[0-9a-f]{64}")))
+            ):
+                raise ValueError("同期処理の記録が不正です。")
         return state
 
     def note_path(self, name):
@@ -232,14 +379,17 @@ class Workspace:
             raise ValueError("原本への参照とメモが一致しません。")
         return note
 
-    def register(self, note_id=None):
+    def register(self, note_id=None, sync=False):
         with self.lock():
             note = self.source.read(note_id)
             if note is None:
                 raise ValueError("対象のメモが見つかりません。")
             state = self.state()
             if note.id in state["notes"]:
-                return self.note_path(state["notes"][note.id]["file"])
+                path = self.note_path(state["notes"][note.id]["file"])
+                if sync:
+                    self.try_enroll(state, note, path)
+                return path
             # Preserve the complete source before producing any editable file.
             base = self.snapshot(note)
             title = re.sub(r'[\x00-\x1f/\\:*?"<>|]', "_", note.title).strip(" .")
@@ -256,14 +406,103 @@ class Workspace:
                 raise ValueError("既存ファイルと衝突しない名前を選べませんでした。")
             state["notes"][note.id] = {"file": path.name, "base": base}
             atomic_json(self.meta / "state.json", state)
+            if sync:
+                self.try_enroll(state, note, path)
             return path
 
-    def inspect(self, filename=None):
+    def try_enroll(self, state, note, path):
+        try:
+            self.enroll(state, note, path)
+        except ValueError as error:
+            print("memo-sync: 登録済み。自動同期は停止: " + str(error), file=sys.stderr)
+
+    def enroll(self, state, note, path):
+        text_style(note)
+        record = state["notes"][note.id]
+        local = read_text(path)
+        status = classify(self.base(record), local, note)
+        if status == "conflict" or (record.get("pending") and file_text(local) != file_text(note.text)):
+            raise ValueError("両側の変更を確認し、本文を一致させてから有効化してください。")
+        if file_text(local) == file_text(note.text):
+            record["base"] = self.snapshot(note)
+            record.pop("pending", None)
+        record["sync_enabled"] = True
+        atomic_json(self.meta / "state.json", state)
+
+    def enable(self, filename, enabled=True):
+        with self.lock():
+            state = self.state()
+            for note_id, record in state["notes"].items():
+                if record["file"] == Path(filename).name:
+                    if not enabled:
+                        record["sync_enabled"] = False
+                        atomic_json(self.meta / "state.json", state)
+                        return
+                    note = self.source.read(note_id)
+                    if note is None:
+                        raise ValueError("対象のメモが見つかりません。")
+                    self.enroll(state, note, self.note_path(record["file"]))
+                    return
+            raise ValueError("このファイルは登録されていません。")
+
+    def sync_note(self, state, record, path, local, remote, status):
+        target = file_text(local) if status == "push_pending" else file_text(remote.text)
+        if status == "push_pending":
+            render_text(remote, local)  # Reject unsupported contents before journaling.
+        local_backup = self.meta / "local-history" / (digest(local) + ".txt")
+        if local_backup.exists():
+            if read_text(local_backup) != local:
+                raise ValueError("保存したファイル原本が一致しません。")
+        else:
+            write_new(local_backup, local)
+        operation = uuid.uuid4().hex
+        record["pending"] = {
+            "operation": operation, "direction": status, "target": digest(target),
+            "local": digest(local),
+        }
+        atomic_json(self.meta / "operations" / (operation + ".json"), {
+            **record["pending"], "file": path.name, "note_id": remote.id,
+            "local_backup": str(local_backup.relative_to(self.meta)),
+            "remote_backup": self.snapshot(remote),
+        })
+        # A durable marker makes a timeout/crash fail closed on the next run.
+        atomic_json(self.meta / "state.json", state)
+        if read_text(path) != local:
+            raise RuntimeError("同期直前にファイルが更新されました。履歴を確認してください。")
+        if status == "push_pending":
+            updated = self.source.replace(remote, local)
+            if updated is None or updated.id != remote.id or file_text(updated.text) != target:
+                raise RuntimeError("書き戻した本文が一致しません。原本を保全して同期を停止しました。")
+            self.snapshot(updated)
+            if read_text(path) != local:
+                raise RuntimeError("書込中にファイルが更新されました。同期を停止しました。")
+        else:
+            updated = self.source.read(remote.id)
+            if updated != remote:
+                raise RuntimeError("同期直前にメモが更新されました。同期を停止しました。")
+            staging = self.meta / "local-history" / (operation + "-displaced.txt")
+            write_new(staging, target)
+            swap_file(path, staging)
+            sync_directory(path.parent)
+            sync_directory(staging.parent)
+            # The displaced inode stays in history even if an editor saved at the swap.
+            if read_text(staging) != local:
+                raise RuntimeError("ファイル交換中に編集されました。displaced.txtに編集内容を保全しました。")
+            if read_text(path) != target:
+                raise RuntimeError("ファイル更新後に編集されました。同期を停止しました。")
+        record["base"] = self.snapshot(updated)
+        record.pop("pending")
+        atomic_json(self.meta / "state.json", state)
+        return updated
+
+    def inspect(self, filename=None, sync=False, stable=False):
         results = []
         with self.lock():
-            for note_id, record in self.state()["notes"].items():
+            state = self.state()
+            for note_id, record in state["notes"].items():
                 if filename and record["file"] != Path(filename).name:
                     continue
+                baseline = record["base"]
                 base = self.base(record)
                 if base.id != note_id:
                     raise ValueError("原本のメモIDが一致しません。")
@@ -281,10 +520,50 @@ class Workspace:
                 if remote:
                     self.snapshot(remote)
                 status = classify(base, local, remote)
+                error = None
+                enabled = record.get("sync_enabled", False)
+                signature = (local, remote.fingerprint if remote else None)
+                settled = self.observed.get(note_id) == signature
+                self.observed[note_id] = signature
+                pending = record.get("pending")
+                if pending:
+                    # Resume only a fully verified completed operation, never retry a write blindly.
+                    displaced_ok = True
+                    if pending["direction"] == "pull_pending":
+                        displaced = self.meta / "local-history" / (pending["operation"] + "-displaced.txt")
+                        displaced_ok = displaced.exists() and digest(read_text(displaced)) == pending["local"]
+                    if (sync and not pending.get("error") and displaced_ok and remote and local is not None and
+                        digest(file_text(local)) == pending["target"] and
+                        file_text(local) == file_text(remote.text)):
+                        record["base"] = self.snapshot(remote)
+                        record.pop("pending")
+                        atomic_json(self.meta / "state.json", state)
+                        status = "in_sync"
+                    else:
+                        status = "interrupted"
+                        error = pending.get("error", "中断された同期があります。原本・ファイル履歴を確認してください。")
+                elif sync and enabled and remote and local is not None and (not stable or settled):
+                    try:
+                        if status in ("push_pending", "pull_pending"):
+                            remote = self.sync_note(state, record, path, local, remote, status)
+                            status = "in_sync"
+                        elif status in ("converged", "format_changed"):
+                            record["base"] = self.snapshot(remote)
+                            atomic_json(self.meta / "state.json", state)
+                            status = "in_sync"
+                    except (OSError, ValueError, RuntimeError, subprocess.TimeoutExpired) as exc:
+                        error = str(exc)
+                        if record.get("pending"):
+                            record["pending"]["error"] = error
+                            atomic_json(self.meta / "state.json", state)
+                        status = "interrupted" if record.get("pending") else "unsupported"
+                if record["base"] != baseline:
+                    base = self.base(record)
+                    local = read_text(path)
                 current = remote or base
                 result = {
                     "file": path.name, "status": status,
-                    "note_id": note_id, "writes_enabled": False,
+                    "note_id": note_id, "writes_enabled": enabled, "error": error,
                     "attachments": current.attachments, "shared": current.shared,
                     "local_diff": list(difflib.unified_diff(
                         file_text(base.text).splitlines(keepends=True),
@@ -301,46 +580,69 @@ class Workspace:
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(prog="memo-sync", description="標準メモの登録・原本保全・双方向差分検知。上書き同期は無効です。")
+    parser = argparse.ArgumentParser(prog="memo-sync", description="標準メモとファイルの双方向同期。明示的に有効化したメモのみ更新します。")
     parser.add_argument("--root", type=Path, default=Path.home() / "Documents/memo")
     parser.add_argument("--bridge-path", type=Path, default=Path(__file__).with_name("notes.js"), help=argparse.SUPPRESS)
     parser.add_argument("--fixture-dir", type=Path, help="テスト用スナップショットを使用。標準メモへ接続しません。")
     commands = parser.add_subparsers(dest="command", required=True)
     register = commands.add_parser("register", help="標準メモで選択した1件を登録")
     register.add_argument("--note-id")
+    register.add_argument("--sync", action="store_true", help="対応するテキストメモの自動同期も有効化")
+    for command in ("enable", "disable"):
+        enrollment = commands.add_parser(command, help="登録ファイルの自動同期を" + ("有効化" if command == "enable" else "停止"))
+        enrollment.add_argument("file")
     status = commands.add_parser("status", help="両側の変更と競合を確認")
     status.add_argument("--json", action="store_true")
     diff = commands.add_parser("diff", help="登録したファイルの両側の差分を表示")
     diff.add_argument("file")
-    watch = commands.add_parser("watch", help="変更検知を継続。ファイルとメモを上書きしません")
+    sync = commands.add_parser("sync", help="有効化したメモを一度双方向同期")
+    sync.add_argument("file", nargs="?")
+    sync.add_argument("--json", action="store_true")
+    watch = commands.add_parser("watch", help="有効化したメモの双方向同期を継続")
     watch.add_argument("--interval", type=float, default=5)
     args = parser.parse_args(argv)
     source = FixtureNotes(args.fixture_dir) if args.fixture_dir else Notes(args.bridge_path)
     workspace = Workspace(args.root, source)
     try:
         if args.command == "register":
-            print(workspace.register(args.note_id))
-        elif args.command in ("status", "diff"):
-            results = workspace.inspect(args.file if args.command == "diff" else None)
-            if args.command == "status" and args.json:
+            print(workspace.register(args.note_id, args.sync))
+        elif args.command in ("enable", "disable"):
+            workspace.enable(args.file, args.command == "enable")
+        elif args.command in ("status", "diff", "sync"):
+            results = workspace.inspect(args.file if args.command in ("diff", "sync") else None,
+                                        sync=args.command == "sync")
+            if args.command != "diff" and args.json:
                 print(json.dumps(results, ensure_ascii=False, indent=2))
             for result in results:
                 if args.command == "diff":
                     print("".join(result["local_diff"] + result["remote_diff"]), end="")
                 elif not args.json:
-                    print(result["file"] + ": " + result["status"] + " (上書き無効)")
-            if not results and args.command == "status" and not args.json:
+                    print_result(result)
+            if not results and args.command != "diff" and not args.json:
                 print("登録されたメモはありません。")
+            if args.command == "sync" and any(r["status"] in ("conflict", "interrupted", "unsupported",
+                                                            "local_missing", "remote_missing") for r in results):
+                return 1
         else:
             if not math.isfinite(args.interval) or args.interval < 1:
                 raise ValueError("確認間隔は1秒以上にしてください。")
             previous = None
+            previous_error = None
             while True:
-                results = workspace.inspect()
+                try:
+                    results = workspace.inspect(sync=True, stable=True)
+                except (OSError, ValueError, RuntimeError, subprocess.TimeoutExpired) as error:
+                    # ponytail: one watcher per workspace; a busy foreground command waits one poll.
+                    if str(error) != previous_error:
+                        print("memo-sync: " + str(error), file=sys.stderr, flush=True)
+                    previous_error = str(error)
+                    time.sleep(args.interval)
+                    continue
+                previous_error = None
                 signature = json.dumps(results, ensure_ascii=False, sort_keys=True)
                 if signature != previous:
                     for result in results:
-                        print(result["file"] + ": " + result["status"] + " (上書き無効)", flush=True)
+                        print_result(result)
                     previous = signature
                 time.sleep(args.interval)
     except KeyboardInterrupt:
@@ -349,6 +651,13 @@ def main(argv=None):
         print("memo-sync: " + str(error), file=sys.stderr)
         return 1
     return 0
+
+
+def print_result(result):
+    label = "同期有効" if result["writes_enabled"] else "同期無効"
+    print(result["file"] + ": " + result["status"] + " (" + label + ")", flush=True)
+    if result["error"]:
+        print("memo-sync: " + result["error"], file=sys.stderr, flush=True)
 
 
 if __name__ == "__main__":

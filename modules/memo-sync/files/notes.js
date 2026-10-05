@@ -1,4 +1,4 @@
-// Read-only Notes adapter. JSON on stdin; snapshots on stdout. No UI scripting.
+// Notes adapter. JSON on stdin; snapshots on stdout. No UI scripting.
 ObjC.import("Foundation");
 
 function snapshot(note) {
@@ -37,7 +37,26 @@ function run() {
     if (request.operation === "read") {
       return JSON.stringify({ note: snapshot(notes.notes.byId(request.id)) });
     }
-    throw new Error("この初期版はメモの読取だけを許可しています。");
+    if (request.operation === "replace") {
+      if (typeof request.id !== "string" || !request.expected ||
+          request.expected.id !== request.id || typeof request.html !== "string" ||
+          typeof request.text !== "string" || !request.text.trim()) {
+        throw new Error("書込要求が不正です。");
+      }
+      var note = notes.notes.byId(request.id);
+      var current = snapshot(note);
+      if (current.shared || current.attachments !== 0 ||
+          JSON.stringify(current) !== JSON.stringify(request.expected)) {
+        throw new Error("書込直前にメモが更新されたか、添付・共有を含んでいます。");
+      }
+      note.body = request.html;
+      var updated = snapshot(note);
+      if (updated.text.replace(/\r\n?/g, "\n") !== request.text) {
+        return JSON.stringify({ error: "書き戻した本文が一致しません。同期を停止してください。", note: updated });
+      }
+      return JSON.stringify({ note: updated });
+    }
+    throw new Error("未対応の操作です。");
   } catch (error) {
     if (request.operation === "read" &&
         (error.errorNumber === -1728 || /\(-1728\)/.test(String(error)))) {
