@@ -37,7 +37,10 @@ delib.scopedModule {
       enable = true;
       config = {
         ProgramArguments = [
-          "${memoSync}/bin/memo-sync"
+          "${python}/bin/python3"
+          "${./files}/memo_sync.py"
+          "--bridge-path"
+          "${./files/notes.js}"
           "watch"
         ];
         RunAtLoad = true;
