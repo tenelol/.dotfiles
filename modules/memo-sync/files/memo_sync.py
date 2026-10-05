@@ -82,9 +82,12 @@ class Note:
 class Notes:
     def __init__(self, bridge):
         self.bridge = bridge
+        self.locations = {}
 
     def read(self, note_id=None):
         request = {"operation": "read", "id": note_id} if note_id else {"operation": "selected"}
+        if note_id and self.locations:
+            request["locations"] = self.locations
         return self.request(request)
 
     def replace(self, expected, text):
@@ -97,7 +100,9 @@ class Notes:
         return self.request({"operation": "list"})
 
     def folders(self):
-        return self.request({"operation": "folders"})
+        folders = self.request({"operation": "folders"})
+        self.locations = {folder["id"]: folder for folder in folders}
+        return folders
 
     def ensure_folder(self, parts):
         return self.request({"operation": "ensure_folder", "folder": list(parts)})

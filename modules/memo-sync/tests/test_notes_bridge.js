@@ -147,3 +147,10 @@ for (const request of [{ ...create, folder_id: "stale" }, { ...create, account: 
 assert.ok(execute(create, { folderShared: true }).result.error);
 assert.ok(execute(create, { badReadback: true }).result.error);
 console.log("Folders bridge: nested creation, safe names, destination checks, shared refusal, and fidelity passed");
+const staleLocation = { id: "folder-0", path: ["stale"], account: "account-id", default_account: true };
+const cached = execute({ operation: "read", id: "fixture-id",
+  locations: { "folder-0": staleLocation } }).result.note;
+assert.deepEqual(cached.folder, ["stale"]);
+result = execute({ ...replacement, expected: cached });
+assert.ok(result.result.error);
+assert.equal(result.writes, 0, "A cached location must never bypass the fresh write precondition");

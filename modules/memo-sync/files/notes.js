@@ -58,14 +58,18 @@ function ensureFolder(app, parts) {
   return parent;
 }
 
-function snapshot(note) {
+function snapshot(note, locations) {
   if (inTrash(note)) {
     throw new Error("削除済みのメモは同期できません。");
   }
   if (note.passwordProtected()) {
     throw new Error("ロックされたメモは登録できません。");
   }
-  var folder = folderInfo(note.container());
+  var container = note.container();
+  var folderId = container.id();
+  var folder = locations && locations[folderId];
+  // Read-only polling reuses one folder inventory per scan. Writes always use fresh metadata.
+  if (!folder || folder.id !== folderId) folder = folderInfo(container);
   var before = note.modificationDate().toISOString();
   var value = {
     id: note.id(),
@@ -101,7 +105,7 @@ function run() {
     }
     if (request.operation === "read") {
       var target = notes.notes.byId(request.id);
-      return JSON.stringify({ note: inTrash(target) ? null : snapshot(target) });
+      return JSON.stringify({ note: inTrash(target) ? null : snapshot(target, request.locations) });
     }
     if (request.operation === "list") {
       // Notes' all-notes collection includes trash. The scripting dictionary has no trash flag.
