@@ -660,6 +660,26 @@ class DeletionAndMarkdownTests(unittest.TestCase):
             self.assertEqual(trash.call_count, 1)
         self.assertEqual(self.workspace.inspect()[0]["status"], "delete_interrupted")
 
+    def test_deletion_immediately_after_a_verified_push_can_complete(self):
+        self.workspace.deletions(True)
+        self.workspace.local_work()
+        self.path.write_text("Title\nSaved then deleted\n")
+        self.workspace.local_work()
+        original = self.source.replace
+
+        def delete_after_write(expected, text):
+            updated = original(expected, text)
+            self.path.unlink()
+            return updated
+
+        self.source.replace = delete_after_write
+        self.workspace.inspect(sync=True)
+        record = self.workspace.state()["notes"][self.note.id]
+        self.assertNotIn("pending", record)
+        self.assertEqual(self.workspace.base(record).text, "Title\nSaved then deleted\n")
+        self.workspace.delete_note(self.path.name)
+        self.assertIsNone(self.source.read(self.note.id))
+
     def test_markdown_roundtrip_preserves_content_and_original_file_syntax(self):
         self.workspace.markdown(True)
         fence = chr(96) * 3

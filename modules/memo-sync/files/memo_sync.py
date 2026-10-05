@@ -1154,7 +1154,12 @@ class Workspace:
             if use_markdown:
                 verify_markdown(updated, local)
             self.snapshot(updated)
-            if read_text(path) != local:
+            try:
+                after_write = read_text(path)
+            except FileNotFoundError:
+                after_write = None
+            # The verified Notes write is complete even if the user has now deleted the file.
+            if after_write is not None and after_write != local:
                 raise RuntimeError("書込中にファイルが更新されました。同期を停止しました。")
         else:
             updated = self.source.read(remote.id)
@@ -1275,7 +1280,11 @@ class Workspace:
                         status = "interrupted" if record.get("pending") else "unsupported"
                 if record["base"] != baseline:
                     base = self.base(record)
-                    local = read_text(path)
+                    try:
+                        local = read_text(path)
+                    except FileNotFoundError:
+                        local = None
+                        status = "local_missing"
                 current = remote or base
                 diff_base = self.local_base(record)
                 if diff_base is None:
