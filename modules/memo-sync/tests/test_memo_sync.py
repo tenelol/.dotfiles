@@ -26,6 +26,82 @@ spec.loader.exec_module(memo)
 
 
 class MemoSyncTests(unittest.TestCase):
+    def test_recreated_filename_binds_to_new_note_after_deletion(self):
+        self.workspace.markdown(True);self.workspace.discover_local();self.workspace.deletions(True)
+        path=self.root/'reuse.md';path.write_text('# Old\n')
+        self.workspace.discover_local();self.workspace.local_work()
+        old_id=next(iter(self.workspace.state()['notes']))
+        path.unlink();self.workspace.delete_note('reuse.md')
+        text='# New\n\n| A | B |\n|---|---|\n|one|two|\n'
+        path.write_text(text);self.workspace.discover_local()
+        active=[k for k,r in self.workspace.state()['notes'].items() if not r.get('deleted')]
+        self.assertEqual(len(active),1);self.assertNotEqual(active[0],old_id)
+        self.assertEqual(len(self.workspace.inspect('reuse.md')),1)
+        self.assertEqual(len(self.workspace.inspect()),1)
+        self.workspace.enable('reuse.md')
+        self.assertTrue(memo.markdown_matches(self.source.read(active[0]),text))
+        path.unlink();self.workspace.delete_note('reuse.md')
+        self.assertIsNone(self.source.read(active[0]))
+
+    def test_table_cells_and_note_identity_survive_moves_in_both_directions(self):
+        self.workspace.markdown(True)
+        self.workspace.discover_local()
+        path = self.root / "table.md"
+        text = "# Table\n\n| A | B |\n|---|---|\n|one|日本語|\n|three|four|\n"
+        path.write_text(text)
+        self.workspace.discover_local()
+        state = self.workspace.state()
+        note_id = next(key for key, r in state['notes'].items() if r['file'] == path.name)
+        note = self.source.read(note_id)
+        self.assertTrue(memo.markdown_matches(note, text))
+        bad = replace(note, html=note.html.replace('>one</td>', '>on</td>').replace('>日本語</td>', '>e日本語</td>'))
+        self.assertFalse(memo.markdown_matches(bad, text))
+        self.workspace.local_work()
+        target = self.root / "b" / path.name
+        target.parent.mkdir();path.rename(target)
+        self.assertEqual(self.workspace.local_work()[0]["move:table.md"], "b/table.md")
+        self.workspace.move_local("table.md", "b/table.md")
+        moved = self.source.read(note_id)
+        self.assertEqual(moved.fingerprint, note.fingerprint)
+        destination = self.source.ensure_folder(("c",))
+        self.source.move(moved, destination)
+        self.workspace.discover_local()
+        self.assertFalse(target.exists())
+        self.assertEqual((self.root/'c/table.md').read_text(), text)
+        self.assertEqual(self.workspace.state()['notes'][note_id]['file'], 'c/table.md')
+        self.assertEqual(self.workspace.inspect('c/table.md')[0]['status'], 'in_sync')
+
+    def test_remote_move_does_not_overwrite_a_local_file(self):
+        self.workspace.discover_local()
+        path = self.root / 'source.md';path.write_text('Source\n')
+        self.workspace.discover_local()
+        note_id = next(key for key, r in self.workspace.state()['notes'].items() if r['file']=='source.md')
+        folder = self.source.ensure_folder(('destination',))
+        target = self.root/'destination/source.md';target.parent.mkdir();target.write_text('Keep this file\n')
+        self.source.move(self.source.read(note_id), folder)
+        result=self.workspace.inspect('source.md',sync=True)[0]
+        self.assertEqual(result['status'],'folder_changed')
+        self.assertEqual(target.read_text(),'Keep this file\n')
+        self.assertEqual(path.read_text(),'Source\n')
+
+    def test_interrupted_move_reserves_destination_and_blocks_deletion(self):
+        self.workspace.discover_local()
+        path=self.root/'old.md';path.write_text('Original\n')
+        self.workspace.discover_local();self.workspace.deletions(True);self.workspace.local_work()
+        target=self.root/'destination/new.md';target.parent.mkdir();path.rename(target)
+        ids=self.source.list_ids();move=self.source.move
+        def interrupted(expected, destination):
+            move(expected, destination)
+            raise RuntimeError('response lost after move')
+        self.source.move=interrupted
+        with self.assertRaises(RuntimeError):self.workspace.move_local('old.md','destination/new.md')
+        self.workspace.discover_local()
+        self.assertEqual(self.source.list_ids(),ids)
+        self.assertNotIn('create:destination/new.md',self.workspace.local_work()[0])
+        self.workspace.delete_note('old.md')
+        self.assertEqual(self.source.list_ids(),ids)
+        self.assertEqual(self.workspace.inspect('old.md')[0]['status'],'move_interrupted')
+
     def test_new_folder_and_file_are_armed_at_publication(self):
         self.workspace.deletions(True)
         self.source.ensure_folder(("remote",))

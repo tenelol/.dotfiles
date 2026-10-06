@@ -6,6 +6,12 @@ function inTrash(note) {
   return folder === "Recently Deleted" || folder === "最近削除した項目";
 }
 
+function tableOnly(note, count) {
+  return Number.isInteger(count) && count > 0 && note.attachments === count &&
+    (note.html.match(/<table(?:\s|>)/gi) || []).length === count &&
+    !/<(?:img|audio|video|iframe)\b/i.test(note.html);
+}
+
 function folderInfo(folder) {
   var app = Application("Notes");
   var accountIds = app.accounts.id();
@@ -150,6 +156,7 @@ function run() {
     }
     if (request.operation === "folders") {
       var folders = [];
+      var noteLocations = {};
       var account = notes.defaultAccount();
       var accountId = account.id();
       var defaultFolderId = account.defaultFolder().id();
@@ -165,11 +172,12 @@ function run() {
           var path = parentPath.concat([name]);
           folders.push({ id: id, path: id === defaultFolderId ? [] : path,
             account: accountId, default_account: true });
+          folder.notes.id().forEach(function(noteId) { noteLocations[noteId] = id; });
           walk(folder, depth + 1, path);
         });
       }
       walk(account, 0, []);
-      return JSON.stringify({ folders: folders });
+      return JSON.stringify({ folders: folders, note_locations: noteLocations });
     }
     if (request.operation === "ensure_folder") {
       return JSON.stringify({ folder: folderInfo(ensureFolder(notes, request.folder)) });
@@ -204,7 +212,8 @@ function run() {
       var created = notes.Note({ body: request.html });
       destination.notes.push(created);
       var result = snapshot(created);
-      if (request.content_key ? result.text.replace(/\s+/g, "") !== request.content_key :
+      if (request.tables_after ? !tableOnly(result, request.tables_after) :
+          request.content_key ? result.text.replace(/\s+/g, "") !== request.content_key :
           result.text.replace(/\r\n?/g, "\n") !== request.text) {
         return JSON.stringify({ error: "作成した本文が一致しません。再作成せず確認してください。", note: result });
       }
@@ -218,17 +227,39 @@ function run() {
       }
       var note = notes.notes.byId(request.id);
       var current = snapshot(note);
-      if (current.shared || current.attachments !== 0 ||
+      if (current.shared || (current.attachments !== 0 && !tableOnly(current, request.tables_before)) ||
           JSON.stringify(current) !== JSON.stringify(request.expected)) {
         throw new Error("書込直前にメモが更新されたか、添付・共有を含んでいます。");
       }
       note.body = request.html;
       var updated = snapshot(note);
-      if (request.content_key ? updated.text.replace(/\s+/g, "") !== request.content_key :
+      if (request.tables_after ? !tableOnly(updated, request.tables_after) :
+          request.content_key ? updated.text.replace(/\s+/g, "") !== request.content_key :
           updated.text.replace(/\r\n?/g, "\n") !== request.text) {
         return JSON.stringify({ error: "書き戻した本文が一致しません。同期を停止してください。", note: updated });
       }
       return JSON.stringify({ note: updated });
+    }
+    if (request.operation === "move_note") {
+      if (!request.expected || request.expected.id !== request.id || !request.destination) {
+        throw new Error("移動要求が不正です。");
+      }
+      var target = notes.notes.byId(request.id);
+      var current = snapshot(target);
+      var destination = notes.folders.byId(request.destination.id);
+      if (current.shared || target.container().shared() || !current.default_account || destination.shared() ||
+          current.account !== request.destination.account ||
+          JSON.stringify(current) !== JSON.stringify(request.expected) ||
+          JSON.stringify(folderInfo(destination)) !== JSON.stringify(request.destination)) {
+        throw new Error("移動前にメモ・移動先が変わったか、共有・別アカウントです。");
+      }
+      if (current.folder_id !== request.destination.id) notes.move(target, { to: destination });
+      var moved = snapshot(notes.notes.byId(request.id));
+      if (moved.folder_id !== request.destination.id || moved.html !== current.html ||
+          moved.text !== current.text || moved.attachments !== current.attachments) {
+        throw new Error("移動後の本文・添付・移動先が一致しません。");
+      }
+      return JSON.stringify({ note: moved });
     }
     if (request.operation === "trash") {
       if (typeof request.id !== "string" || !request.expected || request.expected.id !== request.id) {

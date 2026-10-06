@@ -3,7 +3,7 @@
 
 import argparse
 from contextlib import contextmanager
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 import ctypes
 import difflib
 import fcntl
@@ -61,21 +61,22 @@ def markdown_html(text):
     from bs4 import BeautifulSoup
     ast = mistune.create_markdown(renderer="ast", plugins=["table", "task_lists", "strikethrough"])(text)
     allowed = {"heading", "paragraph", "blank_line", "text", "strong", "emphasis",
-               "codespan", "block_code", "list", "list_item", "block_text", "softbreak", "linebreak"}
+               "codespan", "block_code", "list", "list_item", "block_text", "softbreak", "linebreak",
+               "table", "table_head", "table_body", "table_row", "table_cell"}
 
     def check(nodes):
         for node in nodes:
             if (node["type"] not in allowed or
                 (node["type"] == "list" and node.get("attrs", {}).get("ordered")) or
                 (node["type"] == "heading" and node.get("attrs", {}).get("level", 1) > 2)):
-                raise ValueError("リンク・番号付きリスト・画像・表・HTMLなどは、書式を保持できないため停止します。")
+                raise ValueError("リンク・番号付きリスト・画像・HTMLなどは、書式を保持できないため停止します。")
             check(node.get("children", []))
 
     check(ast)
     if not text.strip():
         raise ValueError("空のMarkdownは書き戻せません。")
     soup = BeautifulSoup(mistune.html(text), "html.parser")
-    for tag in soup.find_all(["p", "h1", "h2", "h3", "h4", "h5", "h6", "pre", "li"]):
+    for tag in soup.find_all(["p", "h1", "h2", "h3", "h4", "h5", "h6", "pre", "li", "td", "th"]):
         tag["style"] = "white-space: pre-wrap"
     result = str(soup)
     if len(result.encode()) > MAX_BYTES:
@@ -86,11 +87,40 @@ def markdown_html(text):
 def markdown_text(note):
     from bs4 import BeautifulSoup
     from markdownify import markdownify
-    if note.attachments or note.shared:
-        raise ValueError("添付・共有を含むメモはMarkdownで書き戻せません。")
     soup = BeautifulSoup(note.html, "html.parser")
+    tables = soup.find_all("table")
+    if note.shared or note.attachments != len(tables):
+        raise ValueError("表以外の添付・共有を含むメモはMarkdownで書き戻せません。")
+    full_key = content_key(soup.get_text())
+    outside = "".join(t for t in soup.find_all(string=True) if not t.find_parent("table"))
+    if (content_key(outside) != content_key(note.text.replace("\ufffc", "")) or
+        note.text.count("\ufffc") != len(tables)):
+        raise ValueError("HTMLと全文の一致を確認できないため停止しました。")
+    for wrapper in list(soup.find_all("object")):
+        if len(wrapper.find_all("table")) != 1 or any(
+            t.strip() for t in wrapper.find_all(string=True) if not t.find_parent("table")
+        ):
+            raise ValueError("表以外のオブジェクトは書き戻せません。")
+        wrapper.unwrap()
+    for table in tables:
+        if table.find_parent("table"):
+            raise ValueError("入れ子の表は書き戻せません。")
+        rows = table.find_all("tr")
+        widths = {len(row.find_all(["td", "th"], recursive=False)) for row in rows}
+        if not rows or len(widths) != 1 or 0 in widths or table.find(attrs={"rowspan": True}) or table.find(attrs={"colspan": True}):
+            raise ValueError("結合セルや不均一な列数の表は書き戻せません。")
+        for tag in table.find_all(True) + [table]:
+            if tag.name in ("table", "tbody", "thead", "tr", "td", "th"):
+                if set(tag.attrs) - {"style", "cellspacing", "cellpadding", "valign", "align"}:
+                    raise ValueError("未対応の表属性があります。")
+                tag.attrs = {}
+            elif tag.name == "font" and tag.get("face", "").startswith(".Hira"):
+                tag.unwrap()
+        for cell in rows[0].find_all(["td", "th"], recursive=False):
+            cell.name = "th"
     allowed = {"div", "p", "br", "b", "strong", "i", "em", "span", "ul", "li",
-               "h1", "h2", "h3", "h4", "h5", "h6", "pre", "code", "tt", "font"}
+               "h1", "h2", "h3", "h4", "h5", "h6", "pre", "code", "tt", "font",
+               "table", "thead", "tbody", "tr", "td", "th"}
     for tag in soup.find_all(True):
         if tag.name not in allowed:
             raise ValueError("このメモの書式はMarkdown往復に対応していません。")
@@ -100,8 +130,6 @@ def markdown_text(note):
             if key == "style" and re.fullmatch(r"(font-size:\s*(?:24|18|16|14|12)px|white-space:\s*pre-wrap);?", value):
                 continue
             raise ValueError("このメモの属性はMarkdown往復に対応していません。")
-    if content_key(soup.get_text()) != content_key(note.text):
-        raise ValueError("HTMLと全文の一致を確認できないため停止しました。")
     for block in list(soup.find_all(["div", "p"])):
         fonts = block.find_all("font")
         spans = block.find_all("span")
@@ -127,7 +155,7 @@ def markdown_text(note):
         tag.name = "code"
     value = file_text(markdownify(str(soup), heading_style="ATX", bullets="-", code_language=""))
     _, key = markdown_html(value)
-    if key != content_key(note.text):
+    if key != full_key:
         raise ValueError("Markdown変換で本文が変化したため停止しました。")
     return value
 
@@ -152,9 +180,28 @@ def verify_markdown(note, text):
 
     if code_content(text) != code_content(converted):
         raise ValueError("コードの空白・インデントが変化したため同期を停止しました。")
-    if markdown_html(text)[1] != content_key(note.text):
+    if markdown_html(text)[1] != markdown_html(converted)[1]:
         raise ValueError("Markdownの全文が一致しません。")
+    from bs4 import BeautifulSoup
+    def cells(value):
+        soup = BeautifulSoup(markdown_html(value)[0], "html.parser")
+        return [[[c.get_text().strip("\n") for c in r.find_all(["th", "td"], recursive=False)]
+                 for r in t.find_all("tr")] for t in soup.find_all("table")]
+    if cells(text) != cells(converted):
+        raise ValueError("表の行・列・セル内容が一致しません。")
     return converted
+
+
+def markdown_matches(note, text):
+    try:
+        verify_markdown(note, text)
+        return True
+    except ValueError:
+        return False
+
+
+def table_count(html_text):
+    return len(re.findall(r"<table(?:\s|>)", html_text, flags=re.I))
 
 
 @dataclass(frozen=True)
@@ -221,6 +268,8 @@ class Notes:
         return self.request({
             "operation": "replace", "id": expected.id, "expected": asdict(expected),
             "html": rendered, "text": file_text(text), "content_key": key,
+            "tables_before": table_count(expected.html) if markdown else 0,
+            "tables_after": table_count(rendered) if markdown else 0,
         })
 
     def replace_images(self, expected, text):
@@ -269,10 +318,15 @@ class Notes:
         rendered, key = markdown_html(text) if markdown else (text_html(text), None)
         return self.request({"operation": "create", "folder": list(folder["path"]),
                              "folder_id": folder["id"], "account": folder["account"],
-                             "html": rendered, "text": file_text(text), "content_key": key})
+                             "html": rendered, "text": file_text(text), "content_key": key,
+                             "tables_after": table_count(rendered) if markdown else 0})
 
     def trash(self, expected):
         return self.request({"operation": "trash", "id": expected.id, "expected": asdict(expected)})
+
+    def move(self, expected, destination):
+        return self.request({"operation": "move_note", "id": expected.id,
+                             "expected": asdict(expected), "destination": destination})
 
     def delete_folder(self, expected):
         return self.request({"operation": "delete_folder", "expected": expected})
@@ -311,6 +365,11 @@ class Notes:
                 raise ValueError("更新日時一覧の形式が不正です。")
             return index
         if request["operation"] in ("folders", "ensure_folder"):
+            if request["operation"] == "folders":
+                locations = value.get("note_locations", {})
+                if not isinstance(locations, dict) or not all(isinstance(k, str) and isinstance(v, str) for k, v in locations.items()):
+                    raise ValueError("メモの所属フォルダ一覧が不正です。")
+                self.note_locations = locations
             result = value.get("folders") if request["operation"] == "folders" else [value.get("folder")]
             if not isinstance(result, list):
                 raise ValueError("フォルダ一覧の形式が不正です。")
@@ -343,6 +402,13 @@ class FixtureNotes:
             raise ValueError("fixtureのメモIDが一致しません。")
         return note
 
+    def move(self, expected, destination):
+        if self.read(expected.id) != expected or expected.shared or not expected.default_account or destination["account"] != expected.account:
+            raise RuntimeError("移動前のメモが一致しません。")
+        note = replace(expected, folder_id=destination["id"], folder=tuple(destination["path"]))
+        atomic_json(self.directory / (digest(note.id) + ".json"), asdict(note))
+        return note
+
     def replace(self, expected, text, markdown=False):
         current = self.read(expected.id)
         if current != expected:
@@ -350,11 +416,14 @@ class FixtureNotes:
         rendered = markdown_html(text)[0] if markdown else render_text(expected, text)
         if markdown:
             from bs4 import BeautifulSoup
-            plain = "".join(BeautifulSoup(rendered, "html.parser").stripped_strings)
+            soup = BeautifulSoup(rendered, "html.parser")
+            for table in soup.find_all("table"):
+                table.replace_with("\ufffc")
+            plain = "".join(soup.stripped_strings)
         else:
             plain = file_text(text)
         note = Note(expected.id, text.splitlines()[0], rendered, plain,
-                    str(time.time_ns()), folder_id=expected.folder_id, folder=expected.folder,
+                    str(time.time_ns()), attachments=table_count(rendered), folder_id=expected.folder_id, folder=expected.folder,
                     account=expected.account, default_account=expected.default_account)
         atomic_json(self.directory / (digest(note.id) + ".json"), asdict(note))
         return note
@@ -376,6 +445,8 @@ class FixtureNotes:
 
     def folders(self):
         path = self.directory / "folders.json"
+        self.note_locations = {key: Note.parse(json.loads(read_text(self.directory / (digest(key) + ".json")))).folder_id
+                               for key in self.list_ids()}
         if path.exists():
             return [parse_folder(item) for item in json.loads(read_text(path))]
         return [{"id": "fixture-root", "path": [], "account": "fixture-account", "default_account": True}]
@@ -394,11 +465,14 @@ class FixtureNotes:
         rendered = markdown_html(text)[0] if markdown else text_html(text)
         if markdown:
             from bs4 import BeautifulSoup
-            plain = "".join(BeautifulSoup(rendered, "html.parser").stripped_strings)
+            soup = BeautifulSoup(rendered, "html.parser")
+            for table in soup.find_all("table"):
+                table.replace_with("\ufffc")
+            plain = "".join(soup.stripped_strings)
         else:
             plain = file_text(text)
         note = Note("created-" + uuid.uuid4().hex, text.splitlines()[0], rendered,
-                    plain, str(time.time_ns()), folder_id=folder["id"],
+                    plain, str(time.time_ns()), attachments=table_count(rendered), folder_id=folder["id"],
                     folder=tuple(folder["path"]), account=folder["account"])
         atomic_json(self.directory / (digest(note.id) + ".json"), asdict(note))
         return note
@@ -528,6 +602,19 @@ def swap_file(path, staging):
     swap.restype = ctypes.c_int
     if swap(directory, os.fsencode(path), directory, os.fsencode(staging), 2):
         raise OSError(ctypes.get_errno(), "ファイルの交換に失敗しました。")
+
+
+def move_file(source, destination):
+    """Atomic move that refuses to replace an existing destination."""
+    libc = ctypes.CDLL(None, use_errno=True)
+    function, directory, flag = (libc.renameatx_np, -2, 4) if sys.platform == "darwin" else (libc.renameat2, -100, 1)
+    function.argtypes = [ctypes.c_int, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p, ctypes.c_uint]
+    function.restype = ctypes.c_int
+    if function(directory, os.fsencode(source), directory, os.fsencode(destination), flag):
+        raise OSError(ctypes.get_errno(), "移動先が存在するか、ファイルを移動できません。")
+    sync_directory(source.parent)
+    if source.parent != destination.parent:
+        sync_directory(destination.parent)
 
 
 def read_text(path):
@@ -660,6 +747,13 @@ class Workspace:
                 not re.fullmatch(r"[0-9a-f]{32}", deletion["operation"])
             ):
                 raise ValueError("削除処理の管理状態が不正です。")
+            movement = record.get("pending_move")
+            if movement is not None and (not isinstance(movement, dict) or
+                not isinstance(movement.get("error"), str) or
+                not re.fullmatch(r"[0-9a-f]{32}", movement.get("operation", ""))):
+                raise ValueError("移動処理の管理状態が不正です。")
+            if movement:
+                self.note_path(movement.get("target"))
             self.note_path(record.get("file"))
             pending = record.get("pending")
             if pending is not None and (
@@ -832,7 +926,7 @@ class Workspace:
             path = directory / (title + suffix + ".md")
             filename = path.relative_to(self.root).as_posix()
             self.note_path(filename)
-            if any(record["file"] == filename for record in state["notes"].values()):
+            if any(record["file"] == filename and not record.get("deleted") for record in state["notes"].values()):
                 continue  # A missing file still belongs to its original note.
             try:
                 write_new(path, initial)
@@ -886,7 +980,7 @@ class Workspace:
                     "errors": errors}
 
     def discover_local(self, stable=False, refresh=True, filenames=None):
-        """Add folders and nonempty files; never infer a move or retry an ambiguous create."""
+        """Reconcile known locations and add files without duplicating an ambiguous move."""
         with self.lock():
             state = self.state()
             errors = {}
@@ -901,6 +995,17 @@ class Workspace:
                 except (OSError, ValueError) as error:
                     errors[name if name is not None else folder["id"]] = str(error)
             known = state.setdefault("folders", {})
+            if refresh:
+                for note_id, record in state["notes"].items():
+                    location = getattr(self.source, "note_locations", {}).get(note_id)
+                    if (location and record.get("folder_id") and location != record["folder_id"] and
+                        record.get("pull_enabled") and not record.get("deleted") and not record.get("pending_move")):
+                        try:
+                            remote = self.source.read(note_id)
+                            if remote:
+                                self.pull_move(state, record, remote)
+                        except (OSError, ValueError, RuntimeError, subprocess.TimeoutExpired) as error:
+                            errors[record["file"]] = str(error)
             if "" in known and "" in folders and known[""]["id"] != folders[""]["id"]:
                 errors[""] = "既定アカウントまたはフォルダが変わっています。"
             files = []
@@ -922,9 +1027,10 @@ class Workspace:
                     continue
                 files.extend(Path(parent) / name for name in names if name.endswith(".md"))
             atomic_json(self.meta / "state.json", state)
-            mapped = {record["file"] for record in state["notes"].values()}
+            mapped = {record["file"] for record in state["notes"].values() if not record.get("deleted")}
+            mapped.update(r["pending_move"]["target"] for r in state["notes"].values() if r.get("pending_move"))
             missing = [record for record in state["notes"].values()
-                       if not self.note_path(record["file"]).exists()]
+                       if not record.get("deleted") and not self.note_path(record["file"]).exists()]
             pending = state.setdefault("creates", {})
             for path in files:
                 filename = path.relative_to(self.root).as_posix()
@@ -938,6 +1044,10 @@ class Workspace:
                            for name in mapped):
                         continue  # Case-only aliases and hard links are not a new note.
                     text = read_text(path)
+                    identity = path.stat(follow_symlinks=False)
+                    if any(r.get("file_identity") == [identity.st_dev, identity.st_ino] and not r.get("deleted")
+                           for r in state["notes"].values()):
+                        continue  # An existing note's inode is handled only by the move operation.
                     if not text.strip():
                         continue  # A touched file waits for its first real save.
                     signature = digest(text)
@@ -974,7 +1084,7 @@ class Workspace:
                     if not stat.S_ISREG(identity.st_mode):
                         raise ValueError("作成元のファイルが入れ替わったため停止しました。")
                     note = self.source.create(folder, text, markdown=True) if use_markdown else self.source.create(folder, text)
-                    matches = note and (content_key(note.text) == markdown_html(text)[1] if use_markdown
+                    matches = note and (markdown_matches(note, text) if use_markdown
                                         else file_text(note.text) == file_text(text))
                     if (not matches or
                         note.folder_id != folder["id"] or note.account != folder["account"]):
@@ -1007,7 +1117,8 @@ class Workspace:
         with self.lock():
             state = self.state()
             work = {}
-            mapped = {record["file"] for record in state["notes"].values()}
+            mapped = {record["file"] for record in state["notes"].values() if not record.get("deleted")}
+            mapped.update(r["pending_move"]["target"] for r in state["notes"].values() if r.get("pending_move"))
             visible = {}
             directories_seen = {}
             for parent, directories, names in os.walk(self.root, followlinks=False):
@@ -1032,12 +1143,17 @@ class Workspace:
                                identities[name] not in directories_seen.values() and
                                not self.note_path(name).exists()}
             for record in state["notes"].values():
-                if record.get("deleted") or not (record.get("sync_enabled") or record.get("pull_enabled")):
+                if record.get("deleted") or record.get("pending_move") or not (record.get("sync_enabled") or record.get("pull_enabled")):
                     continue
                 try:
                     text = read_text(self.note_path(record["file"]))
                 except FileNotFoundError:
                     path = self.note_path(record["file"])
+                    candidates = [name for name, identity in visible.items() if name not in mapped and
+                                  list(identity) == record.get("file_identity") and not name.startswith("_accounts/")]
+                    if len(candidates) == 1 and path.parent.is_dir() and not record.get("pending"):
+                        work["move:" + record["file"]] = candidates[0]
+                        continue
                     if (state.get("delete_enabled") and record.get("delete_armed") and
                         not record.get("pending_delete") and (path.parent.is_dir() or
                             path.parent.relative_to(self.root).as_posix() in missing_folders) and
@@ -1045,6 +1161,10 @@ class Workspace:
                                 for name, identity in visible.items() if name != record["file"])):
                         work["delete:" + record["file"]] = record["base"]
                     continue
+                identity = list(visible.get(record["file"], ()))
+                if record.get("file_identity") != identity:
+                    record["file_identity"] = identity
+                    changed = True
                 if state.get("delete_enabled"):
                     identity = list(visible.get(record["file"], ()))
                     local_hash = digest(text)
@@ -1078,6 +1198,8 @@ class Workspace:
                     path = Path(parent) / name
                     filename = path.relative_to(self.root).as_posix()
                     if filename in mapped or filename in state.get("creates", {}):
+                        continue
+                    if filename in [value for key, value in work.items() if key.startswith("move:")]:
                         continue
                     self.note_path(filename)
                     text = read_text(path)
@@ -1144,11 +1266,92 @@ class Workspace:
             atomic_json(self.meta / "markdown-skipped.json", skipped)
             return skipped
 
+    def begin_move(self, state, record, remote, local, target, direction):
+        if any(record.get(key) for key in ("pending", "pending_delete", "pending_move")):
+            raise RuntimeError("未完了の同期があるため移動を停止しました。")
+        operation = uuid.uuid4().hex
+        atomic_json(self.meta / "operations" / (operation + ".json"), {
+            "type": direction, "note_id": remote.id, "from": record["file"], "to": target,
+            "remote_backup": self.snapshot(remote), "local_backup": self.save_local(local)})
+        record["pending_move"] = {"operation": operation, "target": target,
+                                  "error": "移動処理の途中です。結果を確認してください。"}
+        atomic_json(self.meta / "state.json", state)
+
+    def finish_move(self, state, record, remote, target):
+        record.update(file=target, folder_id=remote.folder_id,
+                      remote_directory=self.folder_name({"path": list(remote.folder), "account": remote.account,
+                                                        "default_account": remote.default_account}) or ".")
+        path = self.note_path(target)
+        if path.exists():
+            info = path.stat()
+            record.update(file_identity=[info.st_dev, info.st_ino], last_local=self.save_local(read_text(path)))
+        record.pop("pending_move")
+        atomic_json(self.meta / "state.json", state)
+
+    def move_local(self, filename, target):
+        with self.lock():
+            state = self.state()
+            note_id, record = next(((k, r) for k, r in state["notes"].items()
+                                    if r["file"] == filename and not r.get("deleted")), (None, None))
+            if record is None:
+                return
+            if record.get("deleted") or not (record.get("sync_enabled") or record.get("pull_enabled")):
+                return
+            old, path = self.note_path(filename), self.note_path(target)
+            if old.exists() or not old.parent.is_dir() or target.startswith("_accounts/"):
+                raise ValueError("フォルダ自体の移動・別アカウントへの移動は停止しています。")
+            info = path.stat()
+            if [info.st_dev, info.st_ino] != record.get("file_identity"):
+                raise ValueError("移動したファイルを一意に確認できません。")
+            local = read_text(path)
+            remote = self.source.read(note_id)
+            if (not remote or remote.shared or not remote.default_account or remote.folder_id != record.get("folder_id") or
+                (self.folder_name({"path": list(remote.folder), "account": remote.account,
+                                   "default_account": remote.default_account}) or ".") != record.get("remote_directory", ".")):
+                raise ValueError("両側で移動されたか、共有・別アカウントのメモです。")
+            destination = self.source.ensure_folder(path.parent.relative_to(self.root).parts)
+            self.remember_folder(state, destination)
+            self.begin_move(state, record, remote, local, target, "push_move")
+            if old.exists() or read_text(path) != local:
+                raise RuntimeError("移動の反映前にファイルが変わりました。")
+            moved = self.source.move(remote, destination)
+            if moved.id != note_id or moved.fingerprint != remote.fingerprint or moved.folder_id != destination["id"]:
+                raise RuntimeError("移動後のID・本文・移動先が一致しません。")
+            self.finish_move(state, record, moved, target)
+
+    def pull_move(self, state, record, remote):
+        previous_directory = record.get("remote_directory", ".")
+        if previous_directory == ".":
+            previous_directory = ""
+        previous_account = self.base(record).account or state.get("folders", {}).get(
+            previous_directory, {}).get("account")
+        if remote.shared or not remote.default_account or previous_account != remote.account:
+            raise ValueError("共有・別アカウントへの移動は停止しています。")
+        old = self.note_path(record["file"])
+        if not old.exists():
+            raise ValueError("両側で移動または削除されています。双方を保全して停止しました。")
+        folder = {"id": remote.folder_id, "path": list(remote.folder),
+                  "account": remote.account, "default_account": remote.default_account}
+        directory = self.remember_folder(state, folder)
+        path = directory / old.name
+        target = path.relative_to(self.root).as_posix()
+        self.note_path(target)
+        if path == old:
+            raise ValueError("同じ場所のフォルダIDが変わったため停止しました。")
+        if path.exists() or any(r is not record and r["file"] == target and not r.get("deleted") for r in state["notes"].values()):
+            raise ValueError("移動先に同名ファイルがあります。上書きせず停止しました。")
+        local = read_text(old)
+        self.begin_move(state, record, remote, local, target, "pull_move")
+        move_file(old, path)
+        self.finish_move(state, record, remote, target)
+
     def delete_note(self, filename):
         with self.lock():
             state = self.state()
-            note_id, record = next((key, value) for key, value in state["notes"].items()
-                                   if value["file"] == filename)
+            note_id, record = next(((key, value) for key, value in state["notes"].items()
+                                    if value["file"] == filename and not value.get("deleted")), (None, None))
+            if record is None:
+                return
             path = self.note_path(filename)
             if (not state.get("delete_enabled") or not record.get("delete_armed") or
                 not (record.get("sync_enabled") or record.get("pull_enabled")) or
@@ -1156,7 +1359,7 @@ class Workspace:
                     path.parent.relative_to(self.root).as_posix() not in state.get("folder_identity", {})) or
                 record.get("deleted")):
                 return
-            if record.get("pending_delete"):
+            if record.get("pending_delete") or record.get("pending_move"):
                 return
             if not path.parent.is_dir() and not self.folder_missing(state, path.parent.relative_to(self.root).as_posix()):
                 return
@@ -1237,8 +1440,10 @@ class Workspace:
 
     def enroll(self, state, note, path):
         record = state["notes"][note.id]
+        if record.get("pending_move"):
+            raise ValueError("未完了の移動があります。移動先と操作記録を確認してください。")
         use_markdown = record.get("markdown", False)
-        image_text = bool(note.attachments)
+        image_text = bool(note.attachments) and not (use_markdown and table_count(note.html) == note.attachments)
         if image_text:
             validate_images(note)
             if use_markdown:
@@ -1262,6 +1467,8 @@ class Workspace:
         record["sync_enabled"] = True
         record["pull_enabled"] = True
         record["image_text"] = image_text
+        info = path.stat()
+        record["file_identity"] = [info.st_dev, info.st_ino]
         record.pop("write_blocked", None)
         atomic_json(self.meta / "state.json", state)
 
@@ -1269,7 +1476,7 @@ class Workspace:
         with self.lock():
             state = self.state()
             for note_id, record in state["notes"].items():
-                if record["file"] == self.filename(filename):
+                if record["file"] == self.filename(filename) and not record.get("deleted"):
                     if not enabled:
                         record["sync_enabled"] = False
                         record["pull_enabled"] = False
@@ -1329,7 +1536,7 @@ class Workspace:
                 raise
             # The image adapter additionally checks exact text except native image-boundary line breaks.
             matches = updated and (content_key(image_plain(updated.text)) == content_key(target) if image_text else
-                                   content_key(updated.text) == markdown_html(local)[1] if use_markdown else
+                                   markdown_matches(updated, local) if use_markdown else
                                    file_text(updated.text) == target)
             if updated is None or updated.id != remote.id or not matches:
                 raise RuntimeError("書き戻した本文が一致しません。原本を保全して同期を停止しました。")
@@ -1370,18 +1577,21 @@ class Workspace:
         results = []
         with self.lock():
             state = self.state()
+            active_names = {r["file"] for r in state["notes"].values() if not r.get("deleted")}
             for note_id, record in state["notes"].items():
                 if filename and record["file"] != self.filename(filename):
+                    continue
+                if record.get("deleted") and record["file"] in active_names:
                     continue
                 baseline = record["base"]
                 base = self.base(record)
                 if base.id != note_id:
                     raise ValueError("原本のメモIDが一致しません。")
                 path = self.note_path(record["file"])
-                if record.get("deleted") or record.get("pending_delete"):
-                    results.append({"file": record["file"], "status": "deleted" if record.get("deleted") else "delete_interrupted",
+                if record.get("deleted") or record.get("pending_delete") or record.get("pending_move"):
+                    results.append({"file": record["file"], "status": "deleted" if record.get("deleted") else "move_interrupted" if record.get("pending_move") else "delete_interrupted",
                                     "note_id": note_id, "writes_enabled": False, "pull_enabled": False,
-                                    "error": record.get("pending_delete", {}).get("error"),
+                                    "error": (record.get("pending_move") or record.get("pending_delete", {})).get("error"),
                                     "local_diff": [], "remote_diff": []})
                     continue
                 try:
@@ -1401,6 +1611,14 @@ class Workspace:
                     local = None
                 if remote:
                     self.snapshot(remote)
+                if (sync and remote and record.get("pull_enabled") and record.get("folder_id") and
+                    remote.folder_id != record["folder_id"]):
+                    try:
+                        self.pull_move(state, record, remote)
+                        path = self.note_path(record["file"])
+                        local = read_text(path)
+                    except (OSError, ValueError, RuntimeError, subprocess.TimeoutExpired) as exc:
+                        read_error = str(exc)
                 try:
                     status = "unavailable" if read_error else classify(
                         base, local, remote, self.local_base(record), record.get("markdown", False), record.get("image_text", False))
@@ -1434,7 +1652,7 @@ class Workspace:
                         displaced_ok = displaced.exists() and digest(read_text(displaced)) == pending["local"]
                     if (sync and not pending.get("error") and not pending.get("image_text") and displaced_ok and remote and local is not None and
                         digest(file_text(local)) == pending["target"] and
-                        (content_key(remote.text) == markdown_html(local)[1] if pending.get("markdown")
+                        (markdown_matches(remote, local) if pending.get("markdown")
                          else file_text(local) == file_text(remote.text))):
                         record["base"] = self.snapshot(remote)
                         if pending.get("markdown"):
@@ -1528,6 +1746,8 @@ def watch_workspace(workspace, interval):
                 selected = (name, work[name])
                 if name.startswith("delete:"):
                     workspace.delete_note(name[len("delete:"):])
+                elif name.startswith("move:"):
+                    workspace.move_local(name[len("move:"):], work[name])
                 elif name.startswith("delete-folder:"):
                     workspace.delete_folder(name[len("delete-folder:"):])
                 elif name.startswith(("create:", "directory:")):
@@ -1570,6 +1790,8 @@ def watch_workspace(workspace, interval):
                 if candidates:
                     note_id = candidates[0]
                     (modified, filename), _ = queue.pop(note_id)
+                    if note_id in state["notes"]:
+                        filename = state["notes"][note_id]["file"]
                     if filename is None:
                         workspace.import_all(note_ids=[note_id])
                     else:
@@ -1660,7 +1882,7 @@ def main(argv=None):
                 print("登録されたメモはありません。")
             if args.command == "sync" and any(r["status"] in ("conflict", "interrupted", "unsupported",
                                                             "local_missing", "remote_missing", "unavailable",
-                                                            "folder_changed", "create_interrupted", "delete_interrupted") for r in results):
+                                                            "folder_changed", "create_interrupted", "delete_interrupted", "move_interrupted") for r in results):
                 return 1
             if any(r["status"] == "unavailable" for r in results):
                 return 1

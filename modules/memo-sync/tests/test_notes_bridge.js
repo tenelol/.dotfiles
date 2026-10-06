@@ -51,6 +51,7 @@ function execute(request, options = {}) {
     const result = { id: () => id, name: () => name, shared: () => !!options.folderShared, exists: () => true };
     result.folders = children(result);
     result.notes = children(result);
+    result.notes.id = () => [];
     return result;
   }
   const root = folder("Notes");

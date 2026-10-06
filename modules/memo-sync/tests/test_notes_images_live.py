@@ -31,6 +31,7 @@ return id of n
 end tell
 end run'''
         note_id = subprocess.check_output(["/usr/bin/osascript", "-e", script, title, str(image)], text=True).strip()
+        destination = None
         try:
             editor = NotesText()
             try:
@@ -49,11 +50,20 @@ end run'''
                 after = source.request({"operation": "ui_state", "id": note_id})
                 assert before["attachments"] == after["attachments"]
                 assert before["foreground"] == after["foreground"]
-            print("PASS: native multiline image edits, stable local baseline, attachments, and foreground")
+            original = source.read(note_id)
+            destination = source.ensure_folder([title + ' destination'])
+            moved = source.move(original, destination)
+            source.move(moved, source.ensure_folder([]))
+            after = source.request({"operation": "ui_state", "id": note_id})
+            assert before["attachments"] == after["attachments"]
+            assert before["foreground"] == after["foreground"]
+            print("PASS: native image edits and moves, stable attachments and foreground")
         finally:
             note = source.read(note_id)
             if note and note.title == title:
                 source.trash(note)
+            if destination:
+                source.delete_folder(destination)
 
 
 if __name__ == "__main__":
