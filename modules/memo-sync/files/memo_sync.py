@@ -1118,7 +1118,12 @@ class Workspace:
                     if filename in pending:
                         pending[filename]["error"] = str(error)
                         atomic_json(self.meta / "state.json", state)
-            atomic_json(self.meta / "directory-errors.json", errors)
+            error_path = self.meta / "directory-errors.json"
+            if filenames is not None and error_path.exists():
+                previous = json.loads(read_text(error_path))
+                errors = {**{name: error for name, error in previous.items()
+                             if name.endswith(".md") and name not in filenames}, **errors}
+            atomic_json(error_path, errors)
             return errors
 
     def local_work(self):
@@ -1593,6 +1598,7 @@ class Workspace:
                 raise RuntimeError("同期直前にメモが更新されました。同期を停止しました。")
             staging = self.meta / "local-history" / (operation + "-displaced.txt")
             write_new(staging, target)
+            incoming = staging.stat(follow_symlinks=False)
             swap_file(path, staging)
             sync_directory(path.parent)
             sync_directory(staging.parent)
@@ -1601,6 +1607,7 @@ class Workspace:
                 raise RuntimeError("ファイル交換中に編集されました。displaced.txtに編集内容を保全しました。")
             if read_text(path) != target:
                 raise RuntimeError("ファイル更新後に編集されました。同期を停止しました。")
+            record["file_identity"] = [incoming.st_dev, incoming.st_ino]
         record["base"] = self.snapshot(updated)
         if use_markdown or image_text:
             if use_markdown:

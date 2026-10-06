@@ -26,6 +26,28 @@ spec.loader.exec_module(memo)
 
 
 class MemoSyncTests(unittest.TestCase):
+    def test_folder_poll_keeps_an_unresolved_file_error_visible(self):
+        self.workspace.markdown(True)
+        self.workspace.discover_local()
+        path=self.root/'unsupported.md';path.write_text('[link](https://example.com)\n')
+        self.assertIn(path.name,self.workspace.discover_local(filenames={path.name}))
+        self.assertIn(path.name,self.workspace.discover_local(filenames=set()))
+        path.write_text('Supported text\n')
+        self.assertNotIn(path.name,self.workspace.discover_local(filenames={path.name}))
+
+    def test_move_immediately_after_receiving_an_update_keeps_the_same_note(self):
+        self.workspace.discover_local()
+        path=self.root/'instant.md';path.write_text('Instant\n')
+        self.workspace.discover_local()
+        note_id=next(k for k,r in self.workspace.state()['notes'].items() if r['file']==path.name)
+        self.source.replace(self.source.read(note_id),'Instant\nRemote edit\n')
+        self.assertEqual(self.workspace.inspect(path.name,sync=True)[0]['status'],'in_sync')
+        target=self.root/'moved'/path.name;target.parent.mkdir();path.rename(target)
+        self.assertEqual(self.workspace.local_work()[0].get('move:instant.md'),'moved/instant.md')
+        self.workspace.move_local('instant.md','moved/instant.md')
+        self.assertEqual(self.workspace.state()['notes'][note_id]['file'],'moved/instant.md')
+        self.assertEqual(self.source.read(note_id).text,'Instant\nRemote edit\n')
+
     def test_recreated_filename_binds_to_new_note_after_deletion(self):
         self.workspace.markdown(True);self.workspace.discover_local();self.workspace.deletions(True)
         path=self.root/'reuse.md';path.write_text('# Old\n')
