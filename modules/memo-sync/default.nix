@@ -33,6 +33,9 @@ delib.scopedModule {
 
   home.ifEnabled = {
     home.packages = [ memoSync ];
+    programs.nixvim.extraConfigLua = ''
+      dofile("${./files/neovim.lua}").setup(nil, "${memoSync}/bin/memo-sync")
+    '';
     launchd.agents.memo-sync = {
       enable = true;
       config = {

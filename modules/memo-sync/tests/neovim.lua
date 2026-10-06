@@ -1,0 +1,37 @@
+local root, module = arg[1], arg[2]
+dofile(module).setup(root)
+vim.cmd.edit(vim.fn.fnameescape(root .. '/Shared.md'))
+assert(vim.bo.readonly, 'Unsupported shared notes must be visibly read-only')
+vim.api.nvim_buf_set_lines(0, 0, -1, false, { 'SHARED DRAFT' })
+assert(not pcall(vim.cmd, 'write'), 'A normal save must refuse a read-only mirror')
+assert(not pcall(vim.cmd, 'write!'), 'Force-write must not silently bypass the mirror protection')
+assert(vim.fn.readfile(root .. '/Shared.md')[1] == 'Shared')
+assert(vim.api.nvim_buf_get_lines(0, 0, -1, false)[1] == 'SHARED DRAFT')
+vim.cmd('enew!')
+vim.cmd.edit(vim.fn.fnameescape(root .. '/Plain.md'))
+assert(not vim.bo.readonly)
+vim.api.nvim_buf_set_lines(0, 0, -1, false, { 'Plain', 'LOCAL' })
+vim.cmd.write()
+vim.fn.system({arg[3],arg[4],'--root',root,'--fixture-dir',arg[5],'sync','Plain.md'})
+assert(vim.v.shell_error == 0)
+local output = vim.api.nvim_exec2('MemoSyncStatus', {output=true}).output
+assert(output:find('同期済', 1, true), output)
+local fixture=root .. '/../fixtures/' .. vim.fn.sha256('plain') .. '.json'
+local note=vim.json.decode(table.concat(vim.fn.readfile(fixture),'\n'))
+note.text='Plain\nEXTERNAL UPDATE FOR CLEAN BUFFER\n'
+note.html='<div>Plain</div><div>EXTERNAL UPDATE FOR CLEAN BUFFER</div>'
+note.modified='updated'
+vim.fn.writefile({vim.json.encode(note)},fixture)
+vim.fn.system({arg[3],arg[4],'--root',root,'--fixture-dir',arg[5],'sync','Plain.md'})
+assert(vim.v.shell_error == 0)
+vim.cmd.MemoSyncStatus()
+assert(vim.api.nvim_buf_get_lines(0,0,-1,false)[2] == 'EXTERNAL UPDATE FOR CLEAN BUFFER', 'A clean buffer should reload received changes')
+vim.api.nvim_buf_set_lines(0, 0, -1, false, { 'Plain', 'UNSAVED DRAFT' })
+vim.fn.writefile({ 'Plain', 'REMOTE DISK EDIT' }, root .. '/Plain.md')
+assert(not pcall(vim.cmd, 'write'), 'A dirty buffer must not overwrite a newer disk version')
+assert(vim.fn.readfile(root .. '/Plain.md')[2] == 'REMOTE DISK EDIT')
+assert(vim.api.nvim_buf_get_lines(0, 0, -1, false)[2] == 'UNSAVED DRAFT')
+vim.cmd.MemoSyncDiff()
+local diff=table.concat(vim.api.nvim_buf_get_lines(0,0,-1,false),'\n')
+assert(diff:find('-REMOTE DISK EDIT',1,true) and diff:find('+UNSAVED DRAFT',1,true),diff)
+vim.cmd('qa!')

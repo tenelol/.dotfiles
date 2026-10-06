@@ -5,6 +5,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import time
 import uuid
 
 FILES = Path(__file__).resolve().parents[1] / "files"
@@ -50,14 +51,29 @@ end run'''
                 after = source.request({"operation": "ui_state", "id": note_id})
                 assert before["attachments"] == after["attachments"]
                 assert before["foreground"] == after["foreground"]
-            original = source.read(note_id)
             destination = source.ensure_folder([title + ' destination'])
-            moved = source.move(original, destination)
-            source.move(moved, source.ensure_folder([]))
+            source.move(source.read(note_id), destination)
+            home = source.ensure_folder([])
+            source.move(source.read(note_id), home)
             after = source.request({"operation": "ui_state", "id": note_id})
             assert before["attachments"] == after["attachments"]
             assert before["foreground"] == after["foreground"]
-            print("PASS: native image edits and moves, stable attachments and foreground")
+            subprocess.run(["/usr/bin/osascript", "-e", '''on run argv
+tell application "Notes" to delete every attachment of note id (item 1 of argv)
+end run''', note_id], check=True, capture_output=True, text=True)
+            assert source.read(note_id).attachments == 0
+            assert workspace.inspect(path.name, sync=True)[0]["status"] == "in_sync"
+            path.write_text(path.read_text() + "After removing image\n")
+            result = workspace.inspect(path.name, sync=True)[0]
+            deadline = time.monotonic() + 15
+            while result["status"] == "waiting" and time.monotonic() < deadline:
+                time.sleep(1)
+                result = workspace.inspect(path.name, sync=True)[0]
+            assert result["status"] == "in_sync", result
+            workspace.markdown(True)
+            record = workspace.state()["notes"][note_id]
+            assert record["markdown"] and not record.get("image_text")
+            print("PASS: native image edits/moves, stable attachments/foreground, editing after image removal")
         finally:
             note = source.read(note_id)
             if note and note.title == title:

@@ -141,8 +141,9 @@ class MemoSyncTests(unittest.TestCase):
         self.assertTrue(self.workspace.state()["notes"][note.id]["image_text"])
         path.write_text("Image note\nAFTER\n\n")
         self.source.replace_images = lambda *args: (_ for _ in ()).throw(memo.DeferredSync("busy"))
-        with self.assertRaises(memo.DeferredSync):
-            self.workspace.inspect(path.name, sync=True)
+        result = self.workspace.inspect(path.name, sync=True)[0]
+        self.assertEqual(result["status"], "waiting")
+        self.assertEqual(result["error"], "busy")
         self.assertNotIn("pending", self.workspace.state()["notes"][note.id])
         self.assertEqual(self.source.read(note.id), note)
         def partial(expected, text):
@@ -390,6 +391,23 @@ class MemoSyncTests(unittest.TestCase):
 
 
 class BidirectionalTests(unittest.TestCase):
+    def test_consecutive_saves_follow_the_verified_write_without_losing_the_newer_file(self):
+        first, latest = 'First save\n', 'Latest save\n'
+        self.path.write_text(first)
+        original = self.source.replace
+        def save_again_during_write(expected, text):
+            updated = original(expected, text)
+            self.path.write_text(latest)
+            return updated
+        self.source.replace = save_again_during_write
+        self.assertEqual(self.workspace.inspect(sync=True)[0]['status'], 'push_pending')
+        self.assertEqual(self.path.read_text(), latest)
+        self.assertEqual(self.source.read(self.note.id).text, first)
+        self.assertNotIn('pending', self.workspace.state()['notes'][self.note.id])
+        self.source.replace = original
+        self.assertEqual(self.workspace.inspect(sync=True)[0]['status'], 'in_sync')
+        self.assertEqual(self.source.read(self.note.id).text, latest)
+
     # Reuse the existing offline workspace; every operation crosses the production interface.
     remote = MemoSyncTests.remote
     cli = MemoSyncTests.cli
@@ -730,7 +748,68 @@ class FolderSyncTests(unittest.TestCase):
 
 
 class WatchLatencyTests(unittest.TestCase):
+    def test_transient_read_failure_retries_the_same_saved_content(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            source = memo.FixtureNotes(Path(temporary)/"fixtures")
+            source.directory.mkdir()
+            note = memo.Note("retry", "Retry", "<div>Retry</div>", "Retry\n", "old")
+            (source.directory / (memo.digest(note.id)+".json")).write_text(json.dumps(asdict(note)))
+            workspace = memo.Workspace(Path(temporary)/"memo", source)
+            path = workspace.register(note.id, sync=True)
+            path.write_text("Retry\nSaved once\n")
+            read = source.read
+            failures = [1]
+            def flaky(note_id=None):
+                if failures[0]:
+                    failures[0] -= 1
+                    raise RuntimeError("Temporary Notes read failure")
+                return read(note_id)
+            clock = [0.0]
+            class Done(Exception): pass
+            def tick(seconds):
+                clock[0] += seconds
+                if read(note.id).text == "Retry\nSaved once\n" or clock[0] > 6: raise Done
+            with patch.object(source,"read",side_effect=flaky), \
+                 patch.object(memo.time,"monotonic",side_effect=lambda: clock[0]), \
+                 patch.object(memo.time,"sleep",side_effect=tick), self.assertRaises(Done):
+                memo.watch_workspace(workspace,1)
+            self.assertEqual(read(note.id).text,"Retry\nSaved once\n")
+
     remote = MemoSyncTests.remote
+
+    def test_missing_state_never_recreates_existing_notes(self):
+        MemoSyncTests.setUp(self)
+        self.root.mkdir()
+        path=self.root/'orphan.md';path.write_text('Existing mirror\n')
+        before=self.source.list_ids()
+        try:
+            result=subprocess.run([sys.executable,str(SCRIPT),'--root',str(self.root),
+                                   '--fixture-dir',str(self.fixtures),'watch'],capture_output=True,text=True,timeout=1)
+        except subprocess.TimeoutExpired:
+            self.fail('Watcher did not stop when existing files had no mapping state')
+        self.assertNotEqual(result.returncode,0)
+        self.assertIn('state.json',result.stderr)
+        self.assertEqual(self.source.list_ids(),before)
+        self.assertEqual(path.read_text(),'Existing mirror\n')
+
+    def test_invalid_file_does_not_stop_other_notes(self):
+        MemoSyncTests.setUp(self)
+        self.workspace.discover_local()
+        (self.root/'broken.md').write_bytes(b'\xff\xfe')
+        os.mkfifo(self.root/'pipe.md')
+        (self.root/'good.md').write_text('Good note\n')
+        worker=subprocess.Popen([sys.executable,str(SCRIPT),'--root',str(self.root),
+                                 '--fixture-dir',str(self.fixtures),'watch'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+        try:
+            until=time.monotonic()+3
+            while time.monotonic()<until:
+                if any(self.source.read(k).title=='Good note' for k in self.source.list_ids()):break
+                time.sleep(.05)
+            self.assertTrue(any(self.source.read(k).title=='Good note' for k in self.source.list_ids()))
+            self.assertIn('broken.md',json.loads((self.workspace.meta/'local-errors.json').read_text()))
+            self.assertIn('pipe.md',json.loads((self.workspace.meta/'local-errors.json').read_text()))
+        finally:
+            worker.terminate();worker.wait(timeout=3)
 
     def test_remote_changes_are_not_starved_by_index_polling_or_audits(self):
         class Done(Exception):
@@ -839,6 +918,15 @@ class WatchLatencyTests(unittest.TestCase):
 
 
 class DeletionAndMarkdownTests(unittest.TestCase):
+    def test_native_inline_code_and_code_block_keep_their_whitespace(self):
+        note = memo.Note("code", "inline", '<div><font face="Courier"><tt>inline</tt></font>'
+                         '<span style="font-size: 13px"><tt><br></tt></span></div>'
+                         '<div><font face="Courier"><tt>  indented\tcode</tt></font></div>',
+                         "inline\n  indented\tcode\n", "now")
+        memo.verify_markdown(note, "`inline`\n\n```\n  indented\tcode\n```\n")
+        with self.assertRaises(ValueError):
+            memo.verify_markdown(note, "`inline`\n\n```\nindented code\n```\n")
+
     remote = MemoSyncTests.remote
 
     def setUp(self):
@@ -929,7 +1017,9 @@ class DeletionAndMarkdownTests(unittest.TestCase):
                             text=remote.text.replace("KEEP_2", "REMOTE_2")))
         self.assertEqual(self.workspace.inspect(sync=True)[0]["status"], "in_sync")
         self.assertIn("REMOTE_2", memo.markdown_html(self.path.read_text())[1])
-        for body in ("1. ordered\n", "[link](https://example.com)\n", "![image](x.png)\n"):
+        for body in ("1. ordered\n", "[link](https://example.com)\n", "![image](x.png)\n",
+                     "- [ ] task\n", "~~struck~~\n", "<div>raw HTML</div>\n", "### Third\n",
+                     "> quoted\n", "---\n", ""):
             with self.assertRaises(ValueError):
                 memo.markdown_html(body)
         for tag in ("p", "div"):

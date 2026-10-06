@@ -16,12 +16,17 @@ def main():
     parser.parse_args()
     source = memo.Notes(FILES / 'notes.js')
     title = 'memo-sync tables moves test ' + uuid.uuid4().hex[:8]
-    text = '# ' + title + '\n\n| A | B | C |\n|:---|:---:|---:|\n|one|日本語|three|\n|aa||cc|\n\nTAIL\n'
+    text = ('# ' + title + '\n\n## Heading\n\n**bold** and *italic* 日本語 🌱 & < >\n\n'
+            '- first\n  - nested\n- second\n\n`inline`\n\n```\n  indented\tcode\n```\n\n'
+            '| A | B | C |\n|:---|:---:|---:|\n|one|日本語|three|\n|aa||cc|\n\nTAIL\n')
     original_folder = source.ensure_folder([])
     note = source.create(original_folder, text, markdown=True)
     created_folders = []
     try:
-        memo.verify_markdown(note, text)
+        try:
+            memo.verify_markdown(note, text)
+        except ValueError as error:
+            raise AssertionError((str(error), note.html)) from error
         with tempfile.TemporaryDirectory(prefix='memo-tables-moves-live-') as temporary:
             workspace = memo.Workspace(Path(temporary)/'memo', source)
             workspace.markdown(True)

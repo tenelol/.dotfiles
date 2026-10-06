@@ -145,6 +145,7 @@ local function setup_lualine()
                 },
             },
             lualine_c = {
+                { function() return vim.b.memo_sync_status or '' end },
                 {
                     'filename',
                     path = 0, -- 1:ファイルパスを表示、0:非表示

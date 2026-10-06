@@ -127,8 +127,9 @@ class NotesText:
 
     def set(self, element, name, value):
         with self.string(name) as key:
-            if self.ax.AXUIElementSetAttributeValue(element, key, value):
-                raise RuntimeError("標準メモの部分編集に失敗しました。")
+            error = self.ax.AXUIElementSetAttributeValue(element, key, value)
+            if error:
+                raise RuntimeError(f"標準メモの部分編集に失敗しました: {name} ({error})")
 
     def select(self, title, selected):
         needle = "".join(title.split())[:24]
@@ -142,11 +143,17 @@ class NotesText:
             if len(matches) > 20:
                 raise DeferredSync("対象メモを一覧から絞り込めないため、書き込みを保留しています。")
             for row in matches:
-                self.set(row, "AXSelected", C.c_void_p.in_dll(self.cf, "kCFBooleanTrue").value)
+                if selected():
+                    break
+                try:
+                    self.set(row, "AXSelected", C.c_void_p.in_dll(self.cf, "kCFBooleanTrue").value)
+                except RuntimeError as error:
+                    raise DeferredSync(str(error)) from error
                 if selected():
                     break
             else:
-                raise DeferredSync("標準メモで対象が一覧に表示されると、画像付きメモの同期を再開します。")
+                if not selected():
+                    raise DeferredSync("標準メモで対象が一覧に表示されると、画像付きメモの同期を再開します。")
         finally:
             for row in matches:
                 self.cf.CFRelease(row)
