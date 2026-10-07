@@ -26,6 +26,28 @@ spec.loader.exec_module(memo)
 
 
 class MemoSyncTests(unittest.TestCase):
+    def test_extensionless_note_fills_blank_title_and_keeps_body_through_rename(self):
+        self.workspace.markdown(True);self.workspace.discover_local()
+        folder=self.root/'book';folder.mkdir();path=folder/'本';path.write_text('\n誰のためのデザイン\n')
+        (folder/'image.png').write_bytes(b'not a note');(folder/'.hidden').write_text('Hidden\n')
+        self.assertIn('create:book/本',self.workspace.local_work()[0])
+        self.assertEqual(self.workspace.discover_local(filenames={'book/本'}),{})
+        self.assertEqual(path.read_text(),'本\n誰のためのデザイン\n')
+        note_id=next(k for k,r in self.workspace.state()['notes'].items() if r['file']=='book/本')
+        self.assertEqual(self.source.read(note_id).title,'本')
+        target=folder/'読書';path.rename(target)
+        self.assertEqual(self.workspace.local_work()[0].get('move:book/本'),'book/読書')
+        self.workspace.move_local('book/本','book/読書')
+        self.assertEqual(self.workspace.inspect('book/読書',sync=True)[0]['status'],'in_sync')
+        self.assertEqual(target.read_text(),'読書\n誰のためのデザイン\n')
+        self.assertEqual(self.source.read(note_id).title,'読書')
+        raw=folder/'本 [raw]';raw.write_text('\n<div>KEEP</div>\n')
+        self.workspace.discover_local(filenames={'book/本 [raw]'})
+        raw_id=next(k for k,r in self.workspace.state()['notes'].items() if r['file']=='book/本 [raw]')
+        self.assertEqual(self.source.read(raw_id).title,'本 [raw]')
+        self.assertEqual(raw.read_text(),'本 [raw]\n<div>KEEP</div>\n')
+        self.assertFalse(any(r['file'].endswith(('image.png','.hidden')) for r in self.workspace.state()['notes'].values()))
+
     def test_unresolved_write_cannot_be_followed_by_automatic_deletion(self):
         self.workspace.discover_local();self.workspace.deletions(True)
         path=self.root/'pending.md';path.write_text('Pending\nKEEP\n');self.workspace.discover_local()

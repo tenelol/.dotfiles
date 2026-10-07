@@ -38,11 +38,13 @@ local function safe_relative(name)
 end
 
 local function relative(buf)
+  if vim.bo[buf].buftype~='' then return nil end
   local path = vim.fs.normalize(vim.api.nvim_buf_get_name(buf))
   path = uv.fs_realpath(path) or ((uv.fs_realpath(vim.fs.dirname(path)) or vim.fs.dirname(path)) .. '/' .. vim.fs.basename(path))
   if path:sub(1,#root+1) ~= root .. '/' then return nil end
   local name = path:sub(#root+2)
-  return safe_relative(name) and name:sub(-3) == '.md' and name or nil
+  local base=vim.fs.basename(name)
+  return safe_relative(name) and (base:sub(-3):lower() == '.md' or not base:find('.',1,true)) and name or nil
 end
 
 local function readonly(buf, blocked)
@@ -72,6 +74,7 @@ local function refresh(buf, capture)
   local previous_path=t.path
   tracked[buf] = t
   vim.bo[buf].backupcopy='yes'
+  if vim.bo[buf].filetype=='' then vim.bo[buf].filetype='markdown' end
   local state = json(root .. '/.memo-sync/state.json')
   local id, record
   if state and state.version == 1 and type(state.notes) == 'table' then
@@ -187,6 +190,10 @@ function M.setup(directory, executable)
     local text=read(root .. '/' .. t.path)
     if (text and vim.fn.sha256(text) or nil) ~= t.hash then
       error('memo-sync: 外部更新との競合です。未保存の編集を別名で保存するか、:MemoSyncDiff で確認してください。')
+    end
+    if not t.id and vim.api.nvim_buf_get_lines(a.buf,0,1,false)[1]:match('^%s*$') then
+      local title=vim.fs.basename(t.path):gsub('%.[mM][dD]$','')
+      vim.api.nvim_buf_set_lines(a.buf,0,1,false,{title})
     end
   end})
   vim.api.nvim_create_autocmd('BufWipeout',{group=group,callback=function(a) tracked[a.buf]=nil end})

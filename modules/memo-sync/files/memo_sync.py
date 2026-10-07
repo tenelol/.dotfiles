@@ -51,17 +51,20 @@ def image_plain(text):
     return file_text(text.replace("\ufffc", ""))
 
 
+def is_note_file(name):
+    path = Path(name)
+    return not path.name.startswith(".") and path.suffix.lower() in ("", ".md")
+
+
 def retitle(text, title, markdown):
-    if not text.strip():
-        raise ValueError("本文が空のため、改名による書き戻しを停止しました。")
     title = unicodedata.normalize("NFC", title)
     if not title.strip() or any(ord(c) < 32 or c in "\u2028\u2029" for c in title):
         raise ValueError("タイトルには空文字や改行を使用できません。")
-    first, separator, body = file_text(text).partition("\n")
+    first, _, body = file_text(text).partition("\n")
     prefix = re.match(r"^(#{1,6})[ \t]+", first) if markdown else None
     if markdown:
         title = re.sub("([" + re.escape(string.punctuation) + "])", r"\\\1", title)
-    return (prefix.group() if prefix else "") + title + separator + body
+    return (prefix.group() if prefix else "") + title + "\n" + body
 
 
 def validate_images(note):
@@ -1082,7 +1085,7 @@ class Workspace:
                             retryable.append(str(error))
                 if name in errors or name not in folders:
                     continue
-                files.extend(Path(parent) / name for name in names if name.endswith(".md"))
+                files.extend(Path(parent) / name for name in names if is_note_file(name))
             atomic_json(self.meta / "state.json", state)
             mapped = {record["file"] for record in state["notes"].values() if not record.get("deleted")}
             mapped.update(r["pending_move"]["target"] for r in state["notes"].values() if r.get("pending_move"))
@@ -1117,12 +1120,18 @@ class Workspace:
                            file_text(self.base(record).text) == file_text(text) for record in missing):
                         raise ValueError("既存メモの移動候補です。新規メモとして複製しません。")
                     use_markdown = state.get("markdown_enabled", False)
+                    original = text
                     literal = False
                     if use_markdown:
                         try:
                             markdown_html(text)
                         except ValueError:
                             literal, use_markdown = True, False
+                    if not text.partition("\n")[0].strip() or text.partition("\n")[0] == path.stem:
+                        text = retitle(text, path.stem, use_markdown)
+                        if text != original:
+                            self.save_local(original)
+                            signature = digest(text)
                     if not use_markdown:
                         text_html(text)
                     backup = self.meta / "local-history" / (signature + ".txt")
@@ -1144,10 +1153,12 @@ class Workspace:
                         before_create = read_text(path)
                     except FileNotFoundError:
                         before_create = None
-                    if before_create != text:
+                    if before_create != original:
                         pending.pop(filename)
                         atomic_json(self.meta / "state.json", state)
                         continue
+                    if text != original:
+                        replace_local(path, self.meta / "local-history" / (operation + "-displaced.txt"), original, text)
                     identity = path.stat(follow_symlinks=False)
                     if not stat.S_ISREG(identity.st_mode):
                         raise ValueError("作成元のファイルが入れ替わったため停止しました。")
@@ -1184,8 +1195,9 @@ class Workspace:
             error_path = self.meta / "directory-errors.json"
             if filenames is not None and error_path.exists():
                 previous = json.loads(read_text(error_path))
+                present = {path.relative_to(self.root).as_posix() for path in files}
                 errors = {**{name: error for name, error in previous.items()
-                             if name.endswith(".md") and name not in filenames}, **errors}
+                             if name in present and name not in filenames}, **errors}
             atomic_json(error_path, errors)
             if retryable:
                 raise DeferredSync(retryable[0])
@@ -1197,7 +1209,7 @@ class Workspace:
             if not (self.meta / "state.json").exists():
                 for parent, directories, files in os.walk(self.root, followlinks=False):
                     directories[:] = [n for n in directories if not n.startswith(".") and not (Path(parent)/n).is_symlink()]
-                    if any(n.endswith(".md") and not n.startswith(".") for n in files):
+                    if any(is_note_file(n) for n in files):
                         raise MissingStateError("state.jsonがない既存フォルダです。重複作成を防ぐため停止しました。管理状態を復旧してください。")
                 atomic_json(self.meta / "state.json", self.state())
             state = self.state()
@@ -1214,7 +1226,7 @@ class Workspace:
                 info = Path(parent).stat()
                 directories_seen[Path(parent).relative_to(self.root).as_posix()] = [info.st_dev, info.st_ino]
                 for name in names:
-                    if name.endswith(".md"):
+                    if is_note_file(name):
                         filename = (Path(parent) / name).relative_to(self.root).as_posix()
                         try:
                             path = self.note_path(filename)
@@ -1434,6 +1446,8 @@ class Workspace:
                     raise ValueError("両側で移動されたか、別アカウントのメモです。")
                 renamed_text = local
                 if renamed:
+                    if not local.strip():
+                        raise ValueError("本文が空のため、改名による書き戻しを停止しました。")
                     status = classify(self.base(record), local, remote, self.local_base(record),
                                       record.get("markdown", False), record.get("image_text", False))
                     if status in ("conflict", "pull_pending"):
