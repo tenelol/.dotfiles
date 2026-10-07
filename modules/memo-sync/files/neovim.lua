@@ -60,12 +60,18 @@ local function refresh(buf, capture)
   if not vim.api.nvim_buf_is_valid(buf) or not vim.api.nvim_buf_is_loaded(buf) then return end
   local name = relative(buf)
   if not name then
-    if tracked[buf] then readonly(buf,false);tracked[buf]=nil end
+    if tracked[buf] then
+      readonly(buf,false)
+      vim.bo[buf].backupcopy=tracked[buf].backupcopy
+      tracked[buf]=nil
+    end
     vim.b[buf].memo_sync_status = nil
     return
   end
-  local t = tracked[buf] or {path=name}
+  local t = tracked[buf] or {path=name,backupcopy=vim.bo[buf].backupcopy}
+  local previous_path=t.path
   tracked[buf] = t
+  vim.bo[buf].backupcopy='yes'
   local state = json(root .. '/.memo-sync/state.json')
   local id, record
   if state and state.version == 1 and type(state.notes) == 'table' then
@@ -77,7 +83,10 @@ local function refresh(buf, capture)
     end
     if not record and t.id and state.notes[t.id] and not state.notes[t.id].deleted then
       local candidate = state.notes[t.id]
-      if safe_relative(candidate.file) and not uv.fs_stat(root .. '/' .. name) and uv.fs_stat(root .. '/' .. candidate.file) then
+      local current=uv.fs_stat(root .. '/' .. name)
+      local destination_stat=safe_relative(candidate.file) and uv.fs_stat(root .. '/' .. candidate.file) or nil
+      if candidate.file ~= t.path and destination_stat and (not current or
+        (current.dev==destination_stat.dev and current.ino==destination_stat.ino)) then
         local destination = root .. '/' .. candidate.file
         local other = vim.fn.bufnr(destination)
         if other == -1 or other == buf then
@@ -87,11 +96,15 @@ local function refresh(buf, capture)
       end
     end
   end
+  if record and record.file == name and vim.fs.basename(vim.api.nvim_buf_get_name(buf)) ~= vim.fs.basename(name) then
+    vim.api.nvim_buf_set_name(buf, root .. '/' .. name)
+  end
   local contents = read(root .. '/' .. name)
   local hash = contents and vim.fn.sha256(contents) or nil
-  if capture or t.path ~= name or not t.captured then
+  if capture or not t.captured or (t.path ~= name and not hash) then
     t.path, t.hash, t.captured = name, hash, true
   end
+  t.path=name
   if id then t.id=id end
   local phase, reason, blocked = 'unknown', nil, false
   local report = id and json(root .. '/.memo-sync/reports/' .. vim.fn.sha256(id) .. '.json') or nil
@@ -130,7 +143,11 @@ local function refresh(buf, capture)
     else phase='unsaved' end
   elseif not blocked and not reason and hash ~= t.hash and hash and vim.fn.mode():sub(1,1) ~= 'i' then
     vim.bo[buf].autoread = true
-    vim.cmd('silent! checktime ' .. buf)
+    if previous_path ~= name then
+      vim.api.nvim_buf_call(buf,function() vim.cmd('silent keepalt edit') end)
+    else
+      vim.cmd('silent! checktime ' .. buf)
+    end
     if not vim.bo[buf].modified then t.hash=hash end
   end
   readonly(buf,blocked)
@@ -148,7 +165,9 @@ end
 
 function M.stop()
   if M.timer then M.timer:stop();M.timer:close();M.timer=nil end
-  for buf in pairs(tracked) do if vim.api.nvim_buf_is_valid(buf) then readonly(buf,false) end end
+  for buf,t in pairs(tracked) do
+    if vim.api.nvim_buf_is_valid(buf) then readonly(buf,false);vim.bo[buf].backupcopy=t.backupcopy end
+  end
 end
 
 function M.setup(directory, executable)

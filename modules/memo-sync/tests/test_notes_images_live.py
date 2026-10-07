@@ -58,6 +58,17 @@ end run'''
             after = source.request({"operation": "ui_state", "id": note_id})
             assert before["attachments"] == after["attachments"]
             assert before["foreground"] == after["foreground"]
+            renamed = path.with_name(title + ' renamed.md')
+            path.rename(renamed)
+            workspace.move_local(path.name,renamed.name)
+            path = renamed
+            result = workspace.inspect(path.name,sync=True)[0]
+            assert result['status'] == 'in_sync', result
+            renamed_note = source.read(note_id)
+            assert renamed_note.title == title + ' renamed'
+            after = source.request({"operation": "ui_state", "id": note_id})
+            assert before["attachments"] == after["attachments"]
+            assert before["foreground"] == after["foreground"]
             subprocess.run(["/usr/bin/osascript", "-e", '''on run argv
 tell application "Notes" to delete every attachment of note id (item 1 of argv)
 end run''', note_id], check=True, capture_output=True, text=True)
@@ -76,7 +87,7 @@ end run''', note_id], check=True, capture_output=True, text=True)
             print("PASS: native image edits/moves, stable attachments/foreground, editing after image removal")
         finally:
             note = source.read(note_id)
-            if note and note.title == title:
+            if note and note.title in (title, title + ' renamed'):
                 source.trash(note)
             if destination:
                 source.delete_folder(destination)

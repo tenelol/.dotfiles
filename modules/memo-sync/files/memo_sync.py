@@ -16,6 +16,7 @@ import os
 from pathlib import Path
 import re
 import stat
+import string
 import subprocess
 import sys
 import time
@@ -48,6 +49,19 @@ def content_key(text):
 
 def image_plain(text):
     return file_text(text.replace("\ufffc", ""))
+
+
+def retitle(text, title, markdown):
+    if not text.strip():
+        raise ValueError("本文が空のため、改名による書き戻しを停止しました。")
+    title = unicodedata.normalize("NFC", title)
+    if not title.strip() or any(ord(c) < 32 or c in "\u2028\u2029" for c in title):
+        raise ValueError("タイトルには空文字や改行を使用できません。")
+    first, separator, body = file_text(text).partition("\n")
+    prefix = re.match(r"^(#{1,6})[ \t]+", first) if markdown else None
+    if markdown:
+        title = re.sub("([" + re.escape(string.punctuation) + "])", r"\\\1", title)
+    return (prefix.group() if prefix else "") + title + separator + body
 
 
 def validate_images(note):
@@ -623,6 +637,20 @@ def swap_file(path, staging):
         raise OSError(ctypes.get_errno(), "ファイルの交換に失敗しました。")
 
 
+def replace_local(path, staging, expected, target):
+    """Retain the displaced inode and reject an intervening editor save."""
+    write_new(staging, target)
+    incoming = staging.stat(follow_symlinks=False)
+    swap_file(path, staging)
+    sync_directory(path.parent)
+    sync_directory(staging.parent)
+    if read_text(staging) != expected:
+        raise RuntimeError("ファイル交換中に編集されました。displaced.txtに編集内容を保全しました。")
+    if read_text(path) != target:
+        raise RuntimeError("ファイル更新後に編集されました。同期を停止しました。")
+    return [incoming.st_dev, incoming.st_ino]
+
+
 def move_file(source, destination):
     """Atomic move that refuses to replace an existing destination."""
     libc = ctypes.CDLL(None, use_errno=True)
@@ -1112,7 +1140,11 @@ class Workspace:
                                  "local_backup": str(backup.relative_to(self.meta))})
                     pending[filename] = marker
                     atomic_json(self.meta / "state.json", state)
-                    if read_text(path) != text:
+                    try:
+                        before_create = read_text(path)
+                    except FileNotFoundError:
+                        before_create = None
+                    if before_create != text:
                         pending.pop(filename)
                         atomic_json(self.meta / "state.json", state)
                         continue
@@ -1174,6 +1206,7 @@ class Workspace:
             mapped = {record["file"] for record in state["notes"].values() if not record.get("deleted")}
             mapped.update(r["pending_move"]["target"] for r in state["notes"].values() if r.get("pending_move"))
             visible = {}
+            by_identity = {}
             directories_seen = {}
             for parent, directories, names in os.walk(self.root, followlinks=False):
                 directories[:] = [name for name in directories if not name.startswith(".") and
@@ -1187,6 +1220,7 @@ class Workspace:
                             path = self.note_path(filename)
                             info = path.stat()
                             visible[filename] = (info.st_dev, info.st_ino)
+                            by_identity.setdefault((info.st_dev, info.st_ino), []).append(filename)
                         except (OSError, ValueError) as error:
                             errors[filename] = str(error)
             changed = False
@@ -1204,16 +1238,19 @@ class Workspace:
                 if record.get("deleted") or record.get("pending_move") or not (record.get("sync_enabled") or record.get("pull_enabled")):
                     continue
                 try:
-                    text = read_text(self.note_path(record["file"]))
-                except FileNotFoundError:
                     path = self.note_path(record["file"])
-                    candidates = [name for name, identity in visible.items() if name not in mapped and
-                                  list(identity) == record.get("file_identity") and not name.startswith("_accounts/")]
-                    if len(candidates) == 1 and path.parent.is_dir() and not record.get("pending"):
+                    candidates = by_identity.get(tuple(record.get("file_identity", [])), [])
+                    if (record["file"] not in visible and len(candidates) == 1 and candidates[0] not in mapped and
+                        not candidates[0].startswith("_accounts/") and path.parent.is_dir() and not record.get("pending")):
                         work["move:" + record["file"]] = candidates[0]
                         continue
+                    text = read_text(path)
+                except FileNotFoundError:
+                    if record["file"] in visible:
+                        continue  # The file moved after this inventory; classify it on the next scan.
+                    path = self.note_path(record["file"])
                     if (state.get("delete_enabled") and record.get("delete_armed") and
-                        not record.get("pending_delete") and (path.parent.is_dir() or
+                        not record.get("pending") and not record.get("pending_delete") and (path.parent.is_dir() or
                             path.parent.relative_to(self.root).as_posix() in missing_folders) and
                         not any(list(identity) == record.get("file_identity")
                                 for name, identity in visible.items() if name != record["file"])):
@@ -1246,36 +1283,32 @@ class Workspace:
                 if (record.get("sync_enabled") and not record.get("pending") and
                     file_text(text) != file_text(base_text)):
                     work[record["file"]] = digest(text)
-            for parent, directories, names in os.walk(self.root, followlinks=False):
-                directories[:] = [name for name in directories if not name.startswith(".") and
-                                   name != "_accounts" and not (Path(parent) / name).is_symlink()]
-                relative = Path(parent).relative_to(self.root).as_posix()
+            for relative in directories_seen:
+                if "_accounts" in Path(relative).parts:
+                    continue
                 relative = "" if relative == "." else unicodedata.normalize("NFC", relative)
                 if relative not in state.get("folders", {}):
                     work["directory:" + relative] = relative
-                for name in names:
-                    if not name.endswith(".md"):
-                        continue
-                    path = Path(parent) / name
-                    filename = path.relative_to(self.root).as_posix()
-                    if filename in mapped or filename in state.get("creates", {}):
-                        continue
-                    if filename in [value for key, value in work.items() if key.startswith("move:")]:
-                        continue
-                    try:
-                        self.note_path(filename)
-                        text = read_text(path)
-                    except (OSError, ValueError) as error:
-                        errors[filename] = str(error)
-                        continue
-                    if text.strip():
-                        work["create:" + filename] = digest(text)
-                        # A copied/moved file must not turn its old path into a destructive deletion.
-                        for record in state["notes"].values():
-                            key = "delete:" + record["file"]
-                            if key in work and (digest(text) == record.get("last_local") or
-                                                Path(record["file"]).name == path.name):
-                                work.pop(key)
+            moving = {target for name, target in work.items() if name.startswith("move:")}
+            for filename in visible:
+                if ("_accounts" in Path(filename).parts[:-1] or filename in mapped or
+                    filename in state.get("creates", {}) or filename in moving):
+                    continue
+                try:
+                    path = self.note_path(filename)
+                    text = read_text(path)
+                except (OSError, ValueError) as error:
+                    errors[filename] = str(error)
+                    continue
+                if text.strip():
+                    signature = digest(text)
+                    work["create:" + filename] = signature
+                    # A copied/moved file must not turn its old path into a destructive deletion.
+                    for record in state["notes"].values():
+                        key = "delete:" + record["file"]
+                        if key in work and (signature == record.get("last_local") or
+                                            Path(record["file"]).name == path.name):
+                            work.pop(key)
             if changed:
                 atomic_json(self.meta / "state.json", state)
             if errors != self.local_errors or not (self.meta / "local-errors.json").exists():
@@ -1378,7 +1411,9 @@ class Workspace:
             if record.get("deleted") or not (record.get("sync_enabled") or record.get("pull_enabled")):
                 return
             old, path = self.note_path(filename), self.note_path(target)
-            if old.exists() or not old.parent.is_dir() or target.startswith("_accounts/"):
+            alias = (old.parent == path.parent and old.exists() and path.exists() and
+                     os.path.samefile(old, path) and old.name not in os.listdir(old.parent))
+            if (old.exists() and not alias) or not old.parent.is_dir() or target.startswith("_accounts/"):
                 raise ValueError("フォルダ自体の移動・別アカウントへの移動は停止しています。")
             info = path.stat()
             if not identified and [info.st_dev, info.st_ino] != record.get("file_identity"):
@@ -1389,12 +1424,26 @@ class Workspace:
                 raise ValueError("移動先は別のメモに登録されています。")
             try:
                 local = read_text(path)
+                renamed = old.name != path.name
+                if renamed and not record.get("sync_enabled"):
+                    raise ValueError("本文が読み取り専用のメモは、タイトル行の変更を同期できません。")
                 remote = self.source.read(note_id)
                 if (not remote or not remote.default_account or remote.folder_id != record.get("folder_id") or
                     (self.folder_name({"path": list(remote.folder), "account": remote.account,
                                        "default_account": remote.default_account}) or ".") != record.get("remote_directory", ".")):
                     raise ValueError("両側で移動されたか、別アカウントのメモです。")
-                destination = self.source.ensure_folder(path.parent.relative_to(self.root).parts)
+                renamed_text = local
+                if renamed:
+                    status = classify(self.base(record), local, remote, self.local_base(record),
+                                      record.get("markdown", False), record.get("image_text", False))
+                    if status in ("conflict", "pull_pending"):
+                        raise ValueError("メモ側にも未同期の本文変更があるため、改名を停止しました。")
+                    markdown = not record.get("literal") and not record.get("image_text") and (
+                        record.get("markdown") or state.get("markdown_enabled"))
+                    renamed_text = retitle(local, path.stem, markdown)
+                destination = ({"id": remote.folder_id, "path": list(remote.folder), "account": remote.account,
+                                "default_account": remote.default_account} if old.parent == path.parent and remote.folder_id else
+                               self.source.ensure_folder(path.parent.relative_to(self.root).parts))
                 self.remember_folder(state, destination)
             except (OSError, ValueError, RuntimeError, subprocess.TimeoutExpired) as error:
                 self.file_error(target, str(error))
@@ -1402,11 +1451,18 @@ class Workspace:
                     raise
                 raise DeferredSync(str(error)) from error
             self.begin_move(state, record, remote, local, target, "push_move")
-            if old.exists() or read_text(path) != local:
+            if (old.exists() and not alias) or read_text(path) != local:
                 raise RuntimeError("移動の反映前にファイルが変わりました。")
-            moved = self.source.move(remote, destination)
+            moved = self.source.move(remote, destination) if remote.folder_id != destination["id"] else remote
             if moved.id != note_id or moved.fingerprint != remote.fingerprint or moved.folder_id != destination["id"]:
                 raise RuntimeError("移動後のID・本文・移動先が一致しません。")
+            if renamed and status in ("converged", "format_changed"):
+                record["base"] = self.snapshot(remote)
+                if record.get("base_local"):
+                    record["base_local"] = self.save_local(local)
+            if renamed_text != local:
+                staging = self.meta / "local-history" / (record["pending_move"]["operation"] + "-displaced.txt")
+                replace_local(path, staging, local, renamed_text)
             self.finish_move(state, record, moved, target)
 
     def pull_move(self, state, record, remote):
@@ -1449,7 +1505,7 @@ class Workspace:
                     path.parent.relative_to(self.root).as_posix() not in state.get("folder_identity", {})) or
                 record.get("deleted")):
                 return
-            if record.get("pending_delete") or record.get("pending_move"):
+            if record.get("pending") or record.get("pending_delete") or record.get("pending_move"):
                 return
             if not path.parent.is_dir() and not self.folder_missing(state, path.parent.relative_to(self.root).as_posix()):
                 return
@@ -1664,17 +1720,7 @@ class Workspace:
             if updated != remote:
                 raise RuntimeError("同期直前にメモが更新されました。同期を停止しました。")
             staging = self.meta / "local-history" / (operation + "-displaced.txt")
-            write_new(staging, target)
-            incoming = staging.stat(follow_symlinks=False)
-            swap_file(path, staging)
-            sync_directory(path.parent)
-            sync_directory(staging.parent)
-            # The displaced inode stays in history even if an editor saved at the swap.
-            if read_text(staging) != local:
-                raise RuntimeError("ファイル交換中に編集されました。displaced.txtに編集内容を保全しました。")
-            if read_text(path) != target:
-                raise RuntimeError("ファイル更新後に編集されました。同期を停止しました。")
-            record["file_identity"] = [incoming.st_dev, incoming.st_ino]
+            record["file_identity"] = replace_local(path, staging, local, target)
         record["base"] = self.snapshot(updated)
         if literal:
             record.update(literal=True, markdown=False, base_local=self.save_local(local if status == "push_pending" else target))
@@ -1851,24 +1897,30 @@ def watch_workspace(workspace, interval):
         try:
             now = time.monotonic()
             work, state = workspace.local_work()
+            versions = dict(work)
+            for name, target in work.items():
+                if name.startswith("move:"):
+                    info = workspace.note_path(target).stat(follow_symlinks=False)
+                    versions[name] = (target, info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
             observed = {name: value for name, value in observed.items() if name in work}
             handled = {name: value for name, value in handled.items() if name in work}
-            for name, signature in work.items():
+            for name, signature in versions.items():
                 if name not in observed or observed[name][0] != signature:
                     observed[name] = (signature, now)
                     retry_after.pop(name, None)
             ready = [name for name, signature in work.items()
                      if now - observed[name][1] >= (DELETE_SETTLE_SECONDS if name.startswith(("delete:", "delete-folder:")) else SAVE_SETTLE_SECONDS)
-                     and handled.get(name) != signature and now >= retry_after.get(name, 0)
+                     and handled.get(name) != versions[name] and now >= retry_after.get(name, 0)
                      and (not name.startswith("delete-folder:") or folder_ready(state, name[len("delete-folder:"):]))]
             results = []
             if ready:
                 name = ready[0]
-                selected = (name, work[name])
+                selected = (name, versions[name])
                 if name.startswith("delete:"):
                     workspace.delete_note(name[len("delete:"):])
                 elif name.startswith("move:"):
                     workspace.move_local(name[len("move:"):], work[name])
+                    results = workspace.inspect(work[name], sync=True)
                 elif name.startswith("delete-folder:"):
                     workspace.delete_folder(name[len("delete-folder:"):])
                 elif name.startswith(("create:", "directory:")):
@@ -1876,7 +1928,7 @@ def watch_workspace(workspace, interval):
                     workspace.discover_local(refresh=False, filenames=filenames)
                 else:
                     results = workspace.inspect(name, sync=True)
-                handled[name] = work[name]
+                handled[name] = versions[name]
             elif now >= next_index:
                 index = workspace.source.index()
                 for note_id, record in state["notes"].items():
@@ -1995,6 +2047,10 @@ def main(argv=None):
                 print(json.dumps({"skipped": skipped}, ensure_ascii=False, indent=2))
         elif args.command == "move":
             workspace.move_local(args.old, args.new, identified=True)
+            results = workspace.inspect(args.new, sync=True)
+            for result in results:
+                print_result(result)
+            return int(any(r["status"] not in ("in_sync", "waiting", "push_pending") for r in results))
         elif args.command in ("enable", "disable"):
             workspace.enable(args.file, args.command == "enable")
         elif args.command in ("status", "diff", "sync"):

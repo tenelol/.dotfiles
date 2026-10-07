@@ -26,6 +26,84 @@ spec.loader.exec_module(memo)
 
 
 class MemoSyncTests(unittest.TestCase):
+    def test_unresolved_write_cannot_be_followed_by_automatic_deletion(self):
+        self.workspace.discover_local();self.workspace.deletions(True)
+        path=self.root/'pending.md';path.write_text('Pending\nKEEP\n');self.workspace.discover_local()
+        note_id=next(k for k,r in self.workspace.state()['notes'].items() if r['file']==path.name)
+        original=self.source.read(note_id);path.write_text('Pending\nEDITED\n')
+        with patch.object(self.source,'replace',side_effect=RuntimeError('Unknown write outcome')):
+            self.assertEqual(self.workspace.inspect(path.name,sync=True)[0]['status'],'interrupted')
+        path.unlink()
+        self.assertNotIn('delete:pending.md',self.workspace.local_work()[0])
+        self.workspace.delete_note('pending.md')
+        self.assertEqual(self.source.read(note_id),original)
+
+    def test_rename_does_not_bypass_empty_body_protection(self):
+        self.workspace.discover_local()
+        old=self.root/'old.md';old.write_text('Old\nKEEP BODY\n');self.workspace.discover_local()
+        note_id=next(k for k,r in self.workspace.state()['notes'].items() if r['file']==old.name)
+        before=self.source.read(note_id);old.write_text('');new=old.with_name('new.md');old.rename(new)
+        with self.assertRaises(ValueError):self.workspace.move_local(old.name,new.name)
+        self.assertEqual(self.source.read(note_id),before)
+        self.assertEqual(new.read_text(),'')
+
+    def test_hardlink_is_not_an_explicit_case_only_rename(self):
+        self.workspace.discover_local()
+        old=self.root/'original.md';old.write_text('Original\n');self.workspace.discover_local()
+        target=self.root/'copy.md';os.link(old,target)
+        with self.assertRaises(ValueError):self.workspace.move_local(old.name,target.name,identified=True)
+        self.assertTrue(os.path.samefile(old,target))
+
+    def test_rename_before_creation_does_not_leave_an_interrupted_create(self):
+        self.workspace.discover_local()
+        old=self.workspace.root/'fresh.md';old.write_text('Fresh\n')
+        target=old.with_name('renamed.md');read=memo.read_text;calls=[0]
+        before=set(self.source.list_ids())
+        def rename_before_write(path):
+            if path==old:
+                calls[0]+=1
+                if calls[0]==2:old.rename(target)
+            return read(path)
+        with patch.object(memo,'read_text',side_effect=rename_before_write):
+            self.workspace.discover_local(filenames={old.name})
+        self.assertNotIn(old.name,self.workspace.state().get('creates',{}))
+        self.assertEqual(set(self.source.list_ids()),before)
+        self.workspace.discover_local(filenames={target.name})
+        self.assertEqual(len(set(self.source.list_ids())-before),1)
+
+    def test_rename_during_scan_waits_for_a_consistent_inventory(self):
+        self.workspace.discover_local();self.workspace.deletions(True)
+        old=self.workspace.root/'before.md';old.write_text('Before\nBODY\n');self.workspace.discover_local()
+        target=self.workspace.root/'after.md';original_read=memo.read_text;renamed=[False]
+        def rename_while_reading(path):
+            if path==old and not renamed[0]:
+                renamed[0]=True;old.rename(target);target.write_text('Before\nEDITED\n')
+            return original_read(path)
+        with patch.object(memo,'read_text',side_effect=rename_while_reading):
+            work,_=self.workspace.local_work()
+        self.assertNotIn('delete:before.md',work)
+        self.assertNotIn('create:after.md',work)
+        self.assertEqual(self.workspace.local_work()[0].get('move:before.md'),'after.md')
+
+    def test_case_only_rename_updates_title_line_and_preserves_remaining_body(self):
+        self.workspace.discover_local()
+        old=self.root/'alpha.md';old.write_text('Original heading\nBODY\n')
+        self.workspace.discover_local()
+        note_id=next(k for k,r in self.workspace.state()['notes'].items() if r['file']==old.name)
+        before=self.source.read(note_id)
+        target=old.with_name('Alpha.md');old.rename(target)
+        work,_=self.workspace.local_work()
+        self.assertEqual(work.get('move:alpha.md'),'Alpha.md')
+        self.workspace.move_local('alpha.md','Alpha.md')
+        self.assertEqual(self.workspace.inspect('Alpha.md',sync=True)[0]['status'],'in_sync')
+        after=self.source.read(note_id)
+        self.assertEqual(after.title,'Alpha')
+        self.assertEqual(after.text,'Alpha\nBODY\n')
+        self.assertEqual(target.read_text(),'Alpha\nBODY\n')
+        target.write_text('Alpha\nEDITED\n')
+        self.assertEqual(self.workspace.inspect('Alpha.md',sync=True)[0]['status'],'in_sync')
+        self.assertEqual(self.source.read(note_id).title,'Alpha')
+
     def test_explicit_shared_move_retains_sharing_native_body_and_local_draft(self):
         self.workspace.discover_local()
         folder=self.source.ensure_folder(())
@@ -814,6 +892,24 @@ class FolderSyncTests(unittest.TestCase):
 
 
 class WatchLatencyTests(unittest.TestCase):
+    def test_editing_a_blocked_rename_retries_with_the_resolved_body(self):
+        MemoSyncTests.setUp(self)
+        self.workspace.discover_local()
+        old=self.root/'old.md';old.write_text('Original\nBODY\n');self.workspace.discover_local()
+        note_id=next(k for k,r in self.workspace.state()['notes'].items() if r['file']==old.name)
+        remote=self.source.replace(self.source.read(note_id),'Original\nREMOTE BODY\n')
+        target=self.root/'renamed.md';old.rename(target);clock=[0.0];resolved=[False]
+        class Done(Exception):pass
+        def tick(seconds):
+            clock[0]+=seconds
+            if clock[0]>=2 and not resolved[0]:target.write_text(remote.text);resolved[0]=True
+            if self.source.read(note_id).title=='renamed' or clock[0]>7:raise Done
+        with patch.object(memo.time,'monotonic',side_effect=lambda:clock[0]), \
+             patch.object(memo.time,'sleep',side_effect=tick),self.assertRaises(Done):
+            memo.watch_workspace(self.workspace,1)
+        self.assertEqual(self.source.read(note_id).text,'renamed\nREMOTE BODY\n')
+        self.assertEqual(target.read_text(),'renamed\nREMOTE BODY\n')
+
     def test_move_retries_a_transient_failure_before_any_native_mutation(self):
         MemoSyncTests.setUp(self)
         self.workspace.discover_local()
