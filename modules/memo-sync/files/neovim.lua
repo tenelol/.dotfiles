@@ -100,6 +100,10 @@ local function refresh(buf, capture)
   elseif record then
     if not record.sync_enabled and record.pull_enabled then
       phase, reason, blocked = 'read_only', record.write_blocked or '標準メモで編集してください。', true
+      if report and report.baseline == record.base and report.local_hash == hash and
+        (report.status == 'push_pending' or report.status == 'conflict') then
+        reason = reason .. ' ローカルの追記は未反映です。:MemoSyncDiff で確認できます。'
+      end
     elseif not record.sync_enabled and not record.pull_enabled then
       phase = 'disabled'
     elseif record.pending_move then
@@ -133,6 +137,9 @@ local function refresh(buf, capture)
   t.phase, t.reason, t.blocked = phase, type(reason)=='string' and reason or nil, blocked
   vim.b[buf].memo_sync_state = phase
   vim.b[buf].memo_sync_status = 'メモ: ' .. (labels[phase] or phase)
+  if record and record.literal then
+    vim.b[buf].memo_sync_status = vim.b[buf].memo_sync_status .. '・原文'
+  end
   if t.reason and t.reason ~= t.notified then
     vim.notify(vim.fs.basename(name) .. ': ' .. t.reason, vim.log.levels.WARN, {title='memo-sync'})
     t.notified=t.reason
@@ -167,7 +174,7 @@ function M.setup(directory, executable)
   vim.api.nvim_create_autocmd('VimLeavePre',{group=group,callback=M.stop})
   vim.api.nvim_create_user_command('MemoSyncStatus',function()
     local buf=vim.api.nvim_get_current_buf();refresh(buf,false);local t=tracked[buf]
-    vim.api.nvim_echo({{t and ((labels[t.phase] or t.phase) .. (t.reason and ': '..t.reason or '')) or 'memo-syncの対象外です。'}},true,{})
+    vim.api.nvim_echo({{t and ((vim.b[buf].memo_sync_status or labels[t.phase] or t.phase) .. (t.reason and ': '..t.reason or '')) or 'memo-syncの対象外です。'}},true,{})
   end,{force=true})
   vim.api.nvim_create_user_command('MemoSyncDiff',function()
     local buf=vim.api.nvim_get_current_buf();refresh(buf,false);local t=tracked[buf]

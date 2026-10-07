@@ -26,10 +26,54 @@ spec.loader.exec_module(memo)
 
 
 class MemoSyncTests(unittest.TestCase):
+    def test_explicit_shared_move_retains_sharing_native_body_and_local_draft(self):
+        self.workspace.discover_local()
+        folder=self.source.ensure_folder(())
+        note=replace(self.source.create(folder,'Shared note\nOriginal\n'),shared=True)
+        self.remote(note);self.workspace.import_all(enable=True)
+        old=self.root/'Shared note.md';target=self.root/'else'/'Shared note.md';target.parent.mkdir()
+        target.write_text('Shared note\nLocal draft\n');old.unlink()
+        with self.assertRaises(ValueError):self.workspace.move_local(old.name,'else/Shared note.md')
+        self.workspace.move_local(old.name,'else/Shared note.md',identified=True)
+        current=self.source.read(note.id)
+        self.assertTrue(current.shared);self.assertEqual(current.html,note.html)
+        self.assertEqual(current.folder,('else',))
+        self.assertEqual(target.read_text(),'Shared note\nLocal draft\n')
+        self.assertFalse(self.workspace.state()['notes'][note.id]['sync_enabled'])
+
+    def test_existing_markdown_can_fall_back_without_losing_table_cells(self):
+        self.workspace.markdown(True);self.workspace.discover_local()
+        path=self.root/'table-mode.md';path.write_text('# Table\n\n| A | B |\n|---|---|\n|one|two|\n')
+        self.workspace.discover_local()
+        text=path.read_text()+'\n> quoted\n';path.write_text(text)
+        result=self.workspace.inspect(path.name,sync=True)[0]
+        self.assertEqual(result['status'],'in_sync',result.get('error'))
+        self.assertEqual(self.source.read(result['note_id']).text,text)
+        self.assertTrue(self.workspace.state()['notes'][result['note_id']]['literal'])
+        self.assertEqual(self.workspace.inspect(path.name,sync=True)[0]['status'],'in_sync')
+
+    def test_unsupported_markdown_keeps_literal_source_and_syncs_both_ways(self):
+        self.workspace.markdown(True)
+        self.workspace.discover_local()
+        text='---\n### Heading\n\n> quote\n\n![image](missing.png)\n\n<a href="x">HTML</a>\n'
+        path=self.root/'literal.md';path.write_text(text)
+        self.assertEqual(self.workspace.discover_local(filenames={path.name}),{})
+        note_id=next(k for k,r in self.workspace.state()['notes'].items() if r['file']==path.name)
+        self.assertTrue(self.workspace.state()['notes'][note_id]['literal'])
+        self.assertEqual(self.source.read(note_id).text,text)
+        path.write_text(text+'LOCAL\n')
+        self.assertEqual(self.workspace.inspect(path.name,sync=True)[0]['status'],'in_sync')
+        remote=self.source.read(note_id)
+        self.remote(replace(remote,text=remote.text+'REMOTE\n',html=remote.html+'<div>REMOTE</div>'))
+        self.assertEqual(self.workspace.inspect(path.name,sync=True)[0]['status'],'in_sync')
+        self.assertEqual(path.read_text(),text+'LOCAL\nREMOTE\n')
+        self.workspace.markdown(True)
+        self.assertEqual(path.read_text(),text+'LOCAL\nREMOTE\n')
+
     def test_folder_poll_keeps_an_unresolved_file_error_visible(self):
         self.workspace.markdown(True)
         self.workspace.discover_local()
-        path=self.root/'unsupported.md';path.write_text('[link](https://example.com)\n')
+        path=self.root/'unsupported.md';path.write_text('invalid\x00text\n')
         self.assertIn(path.name,self.workspace.discover_local(filenames={path.name}))
         self.assertIn(path.name,self.workspace.discover_local(filenames=set()))
         path.write_text('Supported text\n')
@@ -770,6 +814,27 @@ class FolderSyncTests(unittest.TestCase):
 
 
 class WatchLatencyTests(unittest.TestCase):
+    def test_move_retries_a_transient_failure_before_any_native_mutation(self):
+        MemoSyncTests.setUp(self)
+        self.workspace.discover_local()
+        path=self.root/'retry-move.md';path.write_text('Move\n')
+        self.workspace.discover_local()
+        target=self.root/'destination'/path.name;target.parent.mkdir();path.rename(target)
+        ensure=self.source.ensure_folder;failed=[False];clock=[0.0]
+        def flaky(parts):
+            if not failed[0]:failed[0]=True;raise RuntimeError('Temporary destination lookup failure')
+            return ensure(parts)
+        class Done(Exception):pass
+        def tick(seconds):
+            clock[0]+=seconds
+            if any(r['file']=='destination/retry-move.md' for r in self.workspace.state()['notes'].values()) or clock[0]>8:raise Done
+        with patch.object(self.source,'ensure_folder',side_effect=flaky), \
+             patch.object(self.workspace,'discover_local',return_value={}), \
+             patch.object(memo.time,'monotonic',side_effect=lambda:clock[0]), \
+             patch.object(memo.time,'sleep',side_effect=tick),self.assertRaises(Done):
+            memo.watch_workspace(self.workspace,1)
+        self.assertTrue(any(r['file']=='destination/retry-move.md' for r in self.workspace.state()['notes'].values()))
+
     def test_transient_read_failure_retries_the_same_saved_content(self):
         with tempfile.TemporaryDirectory() as temporary:
             source = memo.FixtureNotes(Path(temporary)/"fixtures")

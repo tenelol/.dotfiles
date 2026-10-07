@@ -247,7 +247,7 @@ function run() {
       var target = notes.notes.byId(request.id);
       var current = snapshot(target);
       var destination = notes.folders.byId(request.destination.id);
-      if (current.shared || target.container().shared() || !current.default_account || destination.shared() ||
+      if (target.container().shared() || !current.default_account || destination.shared() ||
           current.account !== request.destination.account ||
           JSON.stringify(current) !== JSON.stringify(request.expected) ||
           JSON.stringify(folderInfo(destination)) !== JSON.stringify(request.destination)) {
@@ -256,7 +256,7 @@ function run() {
       if (current.folder_id !== request.destination.id) notes.move(target, { to: destination });
       var moved = snapshot(notes.notes.byId(request.id));
       if (moved.folder_id !== request.destination.id || moved.html !== current.html ||
-          moved.text !== current.text || moved.attachments !== current.attachments) {
+          moved.text !== current.text || moved.attachments !== current.attachments || moved.shared !== current.shared) {
         throw new Error("移動後の本文・添付・移動先が一致しません。");
       }
       return JSON.stringify({ note: moved });

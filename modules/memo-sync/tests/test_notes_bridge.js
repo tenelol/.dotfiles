@@ -59,6 +59,8 @@ function execute(request, options = {}) {
   account.folders.push(root);
   account.folders.push(trashFolder);
   account.defaultFolder = () => root;
+  const destination = options.moveDestination ? folder("Destination") : null;
+  if (destination) account.folders.push(destination);
   if (options.staleFolder) account.folders.push({
     exists: () => false,
     name: () => { throw new Error("Deleted folder cannot be resolved"); },
@@ -92,6 +94,7 @@ function execute(request, options = {}) {
   application.folders = Object.assign(() => [root, trashFolder], {
     whose: () => () => [trashFolder],
     byId: id => {
+      if (destination && id === destination.id()) return destination;
       if (id !== root.id()) throw new Error("Can't get folder (-1728)");
       return root;
     },
@@ -103,6 +106,13 @@ function execute(request, options = {}) {
     assert.equal(target, note);
     writes++;
     note.container = () => trashFolder;
+  };
+  application.move = (target, {to}) => {
+    assert.equal(target, note);
+    assert.equal(to, destination);
+    writes++;
+    note.container = () => destination;
+    if (options.dropShare) fixture.shared = false;
   };
   const context = vm.createContext({
     ObjC: { import: () => {}, unwrap: (value) => value },
@@ -174,6 +184,15 @@ assert.ok(execute(create, { folderShared: true }).result.error);
 assert.ok(execute(create, { badReadback: true }).result.error);
 console.log("Folders bridge: nested creation, safe names, destination checks, shared refusal, and fidelity passed");
 const staleLocation = { id: "folder-0", path: ["stale"], account: "account-id", default_account: true };
+const sharedBefore = execute({ operation: "read", id: "fixture-id" }, {shared: true}).result.note;
+const movement = {operation: "move_note", id: "fixture-id", expected: sharedBefore,
+  destination: {id: "folder-2", path: ["Destination"], account: "account-id", default_account: true}};
+result = execute(movement, {shared: true, moveDestination: true});
+assert.equal(result.result.note?.shared, true);
+assert.equal(result.result.note.html, sharedBefore.html);
+assert.equal(result.writes, 1);
+assert.ok(execute(movement, {shared: true, moveDestination: true, dropShare: true}).result.error);
+assert.equal(execute(movement, {shared: true, moveDestination: true, folderShared: true}).writes, 0);
 const cached = execute({ operation: "read", id: "fixture-id",
   locations: { "folder-0": staleLocation } }).result.note;
 assert.deepEqual(cached.folder, ["stale"]);
