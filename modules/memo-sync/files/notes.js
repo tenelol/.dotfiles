@@ -51,7 +51,7 @@ function ensureFolder(app, parts) {
   var parent = account;
   parts.forEach(function(name) {
     var matches = parent.folders().filter(function(folder) {
-      return folder.name().normalize("NFC") === name && folder.container().id() === parent.id();
+      return folder.exists() && folder.name().normalize("NFC") === name && folder.container().id() === parent.id();
     });
     if (matches.length > 1) throw new Error("同名フォルダを一意に選べません。");
     var folder = matches[0];

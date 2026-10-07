@@ -59,6 +59,10 @@ function execute(request, options = {}) {
   account.folders.push(root);
   account.folders.push(trashFolder);
   account.defaultFolder = () => root;
+  if (options.staleFolder) account.folders.push({
+    exists: () => false,
+    name: () => { throw new Error("Deleted folder cannot be resolved"); },
+  });
   note.container = () => options.trash ? trashFolder : root;
   note.properties = () => ({ ...Object.fromEntries(Object.keys(fixture).map(key => [key, note[key]() ])),
     container: note.container(), modificationDate: note.modificationDate() });
@@ -150,6 +154,7 @@ assert.equal(result.writes, 1);
 assert.equal(result.result.note.text, "Truncated\n");
 console.log("Notes bridge: listing, trash, read, guarded write, stale read, metadata, and fidelity: 20 checks passed");
 assert.deepEqual(execute({ operation: "ensure_folder", folder: ["a", "b"] }).result.folder.path, ["a", "b"]);
+assert.deepEqual(execute({ operation: "ensure_folder", folder: ["a", "b"] }, { staleFolder: true }).result.folder?.path, ["a", "b"]);
 assert.deepEqual(execute({ operation: "folders" }).result.folders.map(f => f.path), [[]]);
 for (const path of [[".."], [".memo-sync"], ["a/b"], ["Notes"], ["Recently Deleted"]]) {
   assert.ok(execute({ operation: "ensure_folder", folder: path }).result.error);
