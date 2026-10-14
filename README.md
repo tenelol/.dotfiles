@@ -45,8 +45,8 @@ module or selected outputs; options remain declared on all hosts.
 Direct Nix fixtures under feature `tests/` use `.nix-test` so denix does not
 discover them as configuration modules.
 
-Rices select `myconfig.desktop.darwin.windowManager` (`native`, `rift`, or
-`aerospace`) and `myconfig.desktop.linux.windowManager` (`none`, `niri`, or
+Rices select `myconfig.desktop.darwin.windowManager` (`native`, `rift`, `aerospace`,
+or `omniwm`) and `myconfig.desktop.linux.windowManager` (`none`, `niri`, or
 `hyprland`). Provider enable options are derived and read-only; AutoRaise follows
 the AeroSpace selection. Use these selectors when changing a rice with the usual
 `nh` workflow.
@@ -121,6 +121,13 @@ To refresh an extension, download its pinned release, apply its existing patches
 | `mac` | Native macOS |
 | `rift` | Rift |
 | `aerospace` | AeroSpace + AutoRaise |
+| `omniwm` | OmniWM with its built-in workspace bar and borders |
+
+Select OmniWM with `nh darwin switch . -H macbook-omniwm`; return with
+`nh darwin switch . -H macbook-rift`. The denix rice stops the previous window
+manager before activation. OmniWM needs Accessibility and Input Monitoring
+permissions on first launch. Its preferences remain editable in the app;
+set Claude's workspace to `9` in App Rules when trying this rice.
 
 macOS wallpapers are managed in System Settings. denix/Home Manager does not set them during `nh darwin switch`.
 

@@ -5,7 +5,7 @@ delib.module {
   options =
     with delib;
     moduleOptions {
-      darwin.windowManager = enumOption [ "native" "rift" "aerospace" ] (
+      darwin.windowManager = enumOption [ "native" "rift" "aerospace" "omniwm" ] (
         if hostTraits.darwinDesktop then "rift" else "native"
       );
       linux.windowManager = enumOption [ "none" "niri" "hyprland" ] (
@@ -18,6 +18,7 @@ delib.module {
       rift = hostTraits.darwinDesktop && cfg.darwin.windowManager == "rift";
       aerospace = hostTraits.darwinDesktop && cfg.darwin.windowManager == "aerospace";
       autoraise = hostTraits.darwinDesktop && cfg.darwin.windowManager == "aerospace";
+      omniwm = hostTraits.darwinDesktop && cfg.darwin.windowManager == "omniwm";
       niri = hostTraits.linuxDesktop && cfg.linux.windowManager == "niri";
       hyprland = hostTraits.linuxDesktop && cfg.linux.windowManager == "hyprland";
     };

@@ -170,6 +170,7 @@
       darwinCheckTargets = [
         "macbook-rift"
         "macbook-aerospace"
+        "macbook-omniwm"
         "macbook-mac"
       ];
       # Evaluate the default host configurations in CI. Rice variants remain

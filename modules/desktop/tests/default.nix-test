@@ -4,6 +4,7 @@ let
     "rift"
     "aerospace"
     "autoraise"
+    "omniwm"
     "niri"
     "hyprland"
   ];
@@ -17,7 +18,7 @@ let
       home-manager.users = lib.mkOption {
         type = lib.types.attrsOf (
           lib.types.submoduleWith {
-            modules = [ { options = lib.genAttrs [ "home" "xdg" "launchd" ] (_: opaque); } ];
+            modules = [ { options = lib.genAttrs [ "home" "xdg" "launchd" "programs" ] (_: opaque); } ];
           }
         );
         default = { };
@@ -43,6 +44,7 @@ let
           };
         };
         pkgs.coreutils = "/stub/coreutils";
+        pkgs.callPackage = _: _: "/stub/package";
       };
       modules = [
         schema
@@ -71,17 +73,22 @@ let
             rift = backend == "rift";
             aerospace = backend == "aerospace";
             autoraise = backend == "aerospace";
+            omniwm = backend == "omniwm";
             niri = false;
             hyprland = false;
           };
         in
         assert selection result == expected;
+        assert
+          (result.config.home-manager.users.probe.programs.omniwm.enable or false)
+          == (backend == "omniwm");
         true
       )
       [
         "native"
         "rift"
         "aerospace"
+        "omniwm"
       ];
   linuxCases =
     map
@@ -95,6 +102,7 @@ let
             rift = false;
             aerospace = false;
             autoraise = false;
+            omniwm = false;
             niri = backend == "niri";
             hyprland = backend == "hyprland";
           };

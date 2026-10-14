@@ -29,10 +29,14 @@ pgrep() { [ "$2" = "$RUNNING_WM" ]; }
 
 cases = [
     ("", "", "mac"),
-    ("", "aerospace/aerospace.toml", "aerospace"),
-    ("", "rift/config.toml", "rift"),
-    ("AeroSpace", "rift/config.toml", "aerospace"),
-    ("rift", "aerospace/aerospace.toml", "rift"),
+    ("", ".config/aerospace/aerospace.toml", "aerospace"),
+    ("", ".config/rift/config.toml", "rift"),
+    ("", "Library/LaunchAgents/org.nix-community.home.omniwm.plist", "omniwm"),
+    ("OmniWM", ".config/rift/config.toml", "omniwm"),
+    ("AeroSpace", ".config/rift/config.toml", "aerospace"),
+    ("rift", ".config/aerospace/aerospace.toml", "rift"),
+    ("rift", "Library/LaunchAgents/org.nix-community.home.omniwm.plist", "rift"),
+    ("", ".config/omniwm/settings.toml", "mac"),
     ("Rift", "", "rift"),
 ]
 
@@ -42,7 +46,7 @@ for running, config, expected in cases:
         with tempfile.TemporaryDirectory() as directory:
             home = Path(directory)
             if config:
-                path = home / ".config" / config
+                path = home / config
                 path.parent.mkdir(parents=True)
                 path.touch()
             if wallpaper:
@@ -62,4 +66,4 @@ for running, config, expected in cases:
                 assert "macbook-" + expected in output, (running, config, wallpaper, output)
                 assert "wallpaper" not in output, output
 
-print("Darwin target detection: 48 checks passed")
+print(f"Darwin target detection: {len(cases) * 4 * 2} checks passed")

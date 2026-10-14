@@ -271,12 +271,18 @@ check_darwin_desktop() {
 
   section "Darwin Desktop"
 
-  if has pgrep && pgrep -qx AeroSpace >/dev/null 2>&1; then
+  if has pgrep && pgrep -qx OmniWM >/dev/null 2>&1; then
+    target="macbook-omniwm"
+    status ok "window manager" "OmniWM is running"
+  elif has pgrep && pgrep -qx AeroSpace >/dev/null 2>&1; then
     target="macbook-aerospace"
     status ok "window manager" "AeroSpace is running"
   elif has pgrep && { pgrep -qx rift >/dev/null 2>&1 || pgrep -qx Rift >/dev/null 2>&1; }; then
     target="macbook-rift"
     status ok "window manager" "Rift is running"
+  elif [ -e "$HOME/Library/LaunchAgents/org.nix-community.home.omniwm.plist" ]; then
+    target="macbook-omniwm"
+    status warn "window manager" "OmniWM agent exists, but process is not running"
   elif [ -e "$HOME/.config/aerospace/aerospace.toml" ]; then
     target="macbook-aerospace"
     status warn "window manager" "AeroSpace config exists, but process is not running"
@@ -289,7 +295,9 @@ check_darwin_desktop() {
   fi
   status info "switch target" "$target"
 
-  if has pgrep && pgrep -qx sketchybar >/dev/null 2>&1; then
+  if [ "$target" = "macbook-omniwm" ]; then
+    status info "desktop bar" "OmniWM rice uses its built-in workspace bar"
+  elif has pgrep && pgrep -qx sketchybar >/dev/null 2>&1; then
     status ok "sketchybar" "running"
   elif [ -x /opt/homebrew/bin/sketchybar ]; then
     status warn "sketchybar" "installed but not running"

@@ -38,10 +38,14 @@ is_rebuild_running() {
 detect_target_configuration() {
   local rice
 
-  if /usr/bin/pgrep -qx AeroSpace >/dev/null 2>&1; then
+  if /usr/bin/pgrep -qx OmniWM >/dev/null 2>&1; then
+    rice="omniwm"
+  elif /usr/bin/pgrep -qx AeroSpace >/dev/null 2>&1; then
     rice="aerospace"
   elif /usr/bin/pgrep -qx rift >/dev/null 2>&1 || /usr/bin/pgrep -qx Rift >/dev/null 2>&1; then
     rice="rift"
+  elif [ -e "$HOME/Library/LaunchAgents/org.nix-community.home.omniwm.plist" ]; then
+    rice="omniwm"
   elif [ -e "$HOME/.config/aerospace/aerospace.toml" ]; then
     rice="aerospace"
   elif [ -e "$HOME/.config/rift/config.toml" ]; then
