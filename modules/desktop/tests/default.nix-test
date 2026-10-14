@@ -34,6 +34,7 @@ let
         inherit delib host;
         profile.username = "probe";
         hm.dag = {
+          entryBetween = before: after: data: { inherit before after data; };
           entryAfter = after: data: {
             inherit after data;
             before = [ ];
@@ -44,6 +45,7 @@ let
           };
         };
         pkgs.coreutils = "/stub/coreutils";
+        pkgs.python3 = "/stub/python3";
         pkgs.callPackage = _: _: "/stub/package";
       };
       modules = [

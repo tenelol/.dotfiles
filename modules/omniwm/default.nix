@@ -4,6 +4,7 @@
   hostTraits,
   hm,
   lib,
+  pkgs,
   profile,
   ...
 }:
@@ -45,6 +46,10 @@ delib.scopedModule {
         StandardErrorPath = "/tmp/omniwm.err.log";
       };
     };
+    home.activation.configureOmniwm = hm.dag.entryBetween [ "setupLaunchAgents" ] [ "linkGeneration" ] ''
+      $DRY_RUN_CMD ${pkgs.python3}/bin/python3 ${./files/apply-rift-preset.py} \
+        "$HOME/.config/omniwm/settings.toml" ${./files/rift-preset.json}
+    '';
     home.activation.registerOmniwm = hm.dag.entryAfter [ "setupLaunchAgents" ] ''
       $DRY_RUN_CMD /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister \
         -f /Applications/OmniWM.app

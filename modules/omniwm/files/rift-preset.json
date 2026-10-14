@@ -1,0 +1,38 @@
+{
+  "hotkeys": {
+    "focus.left": "Option+H",
+    "focus.down": "Option+J",
+    "focus.up": "Option+K",
+    "focus.right": "Option+L",
+    "move.left": "Option+Shift+H",
+    "move.down": "Option+Shift+J",
+    "move.up": "Option+Shift+K",
+    "move.right": "Option+Shift+L",
+    "focusPrevious": "Unassigned",
+    "workspaceBackAndForth": "Option+Tab",
+    "switchWorkspace.previous": "Option+U",
+    "switchWorkspace.next": "Option+I",
+    "toggleFocusedWindowFloating": "Option+Shift+Space",
+    "toggleFullscreen": "Option+Shift+F",
+    "toggleContainerFullPrimarySpan": "Unassigned",
+    "toggleWorkspaceLayout": "Unassigned",
+    "setContainerPrimarySpan.decrease10Percent": "Option+Minus",
+    "setContainerPrimarySpan.increase10Percent": "Option+Equal",
+    "focusMonitorPrevious": "Option+Shift+Left Arrow",
+    "focusMonitorNext": "Option+Shift+Right Arrow",
+    "moveWindowToMonitor.left": "Control+Option+Shift+H",
+    "moveWindowToMonitor.right": "Control+Option+Shift+L"
+  },
+  "appWorkspaces": {
+    "com.mitchellh.ghostty": "1",
+    "company.thebrowser.dia": "1",
+    "com.hnc.Discord": "2",
+    "com.tinyspeck.slackmacgap": "3",
+    "jp.naver.line.mac": "4",
+    "com.apple.mail": "5",
+    "com.apple.Music": "6",
+    "com.apple.Notes": "8",
+    "com.anthropic.claudefordesktop": "9",
+    "com.openai.codex": "9"
+  }
+}
