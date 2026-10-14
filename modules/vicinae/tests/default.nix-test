@@ -1,0 +1,71 @@
+let
+  inherit (import ../../../extensions/module-scope/tests/harness.nix) lib base mkDelib;
+  opaque = lib.mkOption {
+    type = lib.types.attrsOf lib.types.anything;
+    default = { };
+  };
+  evaluate = system: server:
+    let
+      result = lib.evalModules {
+        specialArgs = {
+          inherit lib;
+          delib = mkDelib (if lib.hasSuffix "-darwin" system then "darwin" else "nixos");
+          host = {
+            name = "fixture";
+            inherit system;
+            isServer = server;
+          };
+          pkgs = {
+            vicinae = "/fixture/vicinae";
+            writeText = _: text: text;
+          };
+          hm.dag.entryBefore = before: data: { inherit before data; };
+        };
+        modules = [
+          {
+            options.home-manager.users = lib.mkOption {
+              type = lib.types.attrsOf (
+                lib.types.submoduleWith {
+                  modules = [
+                    { options = lib.genAttrs [ "home" "programs" "launchd" "systemd" ] (_: opaque); }
+                  ];
+                }
+              );
+              default = { };
+            };
+          }
+          ../../host-policy
+          ../default.nix
+        ]
+        ++ base.extensions.args.modules;
+      };
+    in
+    result.config.home-manager.users.probe or { };
+  mac = evaluate "aarch64-darwin" false;
+  linux = evaluate "x86_64-linux" false;
+  server = evaluate "x86_64-linux" true;
+  macAgent = mac.launchd.agents.vicinae.config;
+  macSettings = builtins.fromJSON macAgent.EnvironmentVariables.VICINAE_OVERRIDES;
+  linuxSettings = builtins.fromJSON (
+    lib.removePrefix "VICINAE_OVERRIDES=" (builtins.head linux.systemd.user.services.vicinae.Service.Environment)
+  );
+in
+assert mac.home.packages == [ "/fixture/vicinae" ];
+assert macAgent.ProgramArguments == [ "/fixture/vicinae/bin/vicinae" "server" ];
+assert macAgent.RunAtLoad && macAgent.KeepAlive.Crashed;
+assert macSettings.global_shortcuts.toggle == "control+space";
+assert lib.hasInfix "-dict-add 64" mac.home.activation.vicinaeShortcut.data;
+assert mac.programs == { };
+assert linux.programs.vicinae.enable && linux.programs.vicinae.systemd.enable;
+assert linux.programs.vicinae.package == "/fixture/vicinae";
+assert !(linux.programs.vicinae ? settings);
+assert linuxSettings.launcher_window.compact_mode.enabled;
+assert !(linuxSettings ? global_shortcuts);
+assert linux.launchd == { };
+assert (server.programs.vicinae or null) == null;
+assert (server.launchd.agents.vicinae or null) == null;
+{
+  darwin = "launchd with Command-Space";
+  linux = "Home Manager systemd with writable user settings";
+  servers = "excluded";
+}

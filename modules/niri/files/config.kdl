@@ -336,7 +336,7 @@ binds {
 
     // Suggested binds for running programs: terminal, app launcher, screen locker.
     Alt+Return hotkey-overlay-title="Open a Terminal: Ghostty" { spawn-sh "PATH=$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PATH; exec ghostty"; }
-    Alt+Space hotkey-overlay-title="Run an Application: fuzzel" { spawn-sh "PATH=$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PATH; exec fuzzel"; }
+    Alt+Space hotkey-overlay-title="Run an Application: Vicinae" { spawn-sh "PATH=$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PATH; exec vicinae toggle"; }
     Alt+Shift+Period hotkey-overlay-title="Emoji Picker: fuzzel" { spawn-sh "PATH=$HOME/.local/bin:$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PATH; exec emoji-fuzzel"; }
     Alt+Ctrl+Escape hotkey-overlay-title="Lock the Screen: swaylock" { spawn "swaylock"; }
 

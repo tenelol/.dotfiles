@@ -14,6 +14,7 @@ auto_focus_blacklist = [
   "com.apple.SecurityAgent",
   "com.apple.Spotlight",
   "com.raycast.macos",
+  "com.vicinaehq.Vicinae",
 ]
 run_on_start = [
   "/bin/sh -lc \"$HOME/.config/rift/sketchybar-workspace-subscribe\"",
