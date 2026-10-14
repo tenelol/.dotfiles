@@ -16,7 +16,11 @@ let
             isServer = server;
           };
           pkgs = {
-            vicinae = "/fixture/vicinae";
+            vicinae = rec {
+              outPath = "/fixture/vicinae";
+              patches = [ "/fixture/upstream.patch" ];
+              overrideAttrs = change: { inherit outPath; } // change { inherit patches; };
+            };
             writeText = _: text: text;
           };
           hm.dag.entryBefore = before: data: { inherit before data; };
@@ -50,14 +54,16 @@ let
     lib.removePrefix "VICINAE_OVERRIDES=" (builtins.head linux.systemd.user.services.vicinae.Service.Environment)
   );
 in
-assert mac.home.packages == [ "/fixture/vicinae" ];
+assert map toString mac.home.packages == [ "/fixture/vicinae" ];
 assert macAgent.ProgramArguments == [ "/fixture/vicinae/bin/vicinae" "server" ];
 assert macAgent.RunAtLoad && macAgent.KeepAlive.Crashed;
 assert macSettings.global_shortcuts.toggle == "control+space";
 assert lib.hasInfix "-dict-add 64" mac.home.activation.vicinaeShortcut.data;
 assert mac.programs == { };
 assert linux.programs.vicinae.enable && linux.programs.vicinae.systemd.enable;
-assert linux.programs.vicinae.package == "/fixture/vicinae";
+assert linux.programs.vicinae.package == builtins.head mac.home.packages;
+assert builtins.head linux.programs.vicinae.package.patches == "/fixture/upstream.patch";
+assert builtins.all builtins.pathExists (lib.tail linux.programs.vicinae.package.patches);
 assert !(linux.programs.vicinae ? settings);
 assert linuxSettings.launcher_window.compact_mode.enabled;
 assert !(linuxSettings ? global_shortcuts);

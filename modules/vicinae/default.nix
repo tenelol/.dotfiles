@@ -7,6 +7,12 @@
   ...
 }:
 let
+  package = pkgs.vicinae.overrideAttrs (old: {
+    patches = (old.patches or [ ]) ++ [
+      ./files/vicinae-compact-transition.patch
+      ./files/vicinae-selection-highlight.patch
+    ];
+  });
   settings = pkgs.writeText "vicinae-settings.json" (
     builtins.toJSON (
       {
@@ -31,19 +37,19 @@ delib.scopedModule {
     lib.optionalAttrs hostTraits.linuxDesktop {
       programs.vicinae = {
         enable = true;
-        package = pkgs.vicinae;
+        inherit package;
         systemd.enable = true;
       };
       # Keep settings.json writable for preferences changed in the app.
       systemd.user.services.vicinae.Service.Environment = [ "VICINAE_OVERRIDES=${settings}" ];
     }
     // lib.optionalAttrs hostTraits.darwinDesktop {
-      home.packages = [ pkgs.vicinae ];
+      home.packages = [ package ];
       launchd.agents.vicinae = {
         enable = true;
         config = {
           ProgramArguments = [
-            "${pkgs.vicinae}/bin/vicinae"
+            "${package}/bin/vicinae"
             "server"
           ];
           EnvironmentVariables.VICINAE_OVERRIDES = "${settings}";

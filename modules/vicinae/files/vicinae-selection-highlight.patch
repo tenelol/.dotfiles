@@ -1,0 +1,74 @@
+Adapted from https://github.com/glassesneo/dotfiles/blob/38534df75a90579ee92bae5a75b10391bec2f5a6/modules/programs/vicinae/vicinae-selection-highlight.patch
+Ported to Vicinae 0.29.0; selection geometry uses QML bindings.
+
+diff --git a/src/server/src/ui/qml/list/SelectableDelegate.qml b/src/server/src/ui/qml/list/SelectableDelegate.qml
+--- a/src/server/src/ui/qml/list/SelectableDelegate.qml
++++ b/src/server/src/ui/qml/list/SelectableDelegate.qml
+@@ -42,10 +42,10 @@
+         anchors.leftMargin: root.appearance.rowInset
+         anchors.rightMargin: root.appearance.rowInset
+         radius: root.appearance.rowRadius
+-        backgroundColor: root.appearance.delegateBackdrop
++        backgroundColor: root.selected ? "transparent" : root.appearance.delegateBackdrop
+         color: {
+             if (root.selected)
+-                return root.appearance.selectionFill;
++                return "transparent";
+             if (root.hovered)
+                 return root.appearance.hoverFill;
+             return root.appearance.delegateBackdrop;
+diff --git a/src/server/src/ui/qml/views/GenericListView.qml b/src/server/src/ui/qml/views/GenericListView.qml
+--- a/src/server/src/ui/qml/views/GenericListView.qml
++++ b/src/server/src/ui/qml/views/GenericListView.qml
+@@ -8,6 +8,11 @@
+     id: root
+
+     required property SectionListModel listModel
++    readonly property LauncherAppearance appearance: (root.Window.window as LauncherWindow)?.appearance ?? fallbackAppearance
++
++    LauncherAppearance {
++        id: fallbackAppearance
++    }
+
+     property alias model: listView.model
+     property alias delegate: listView.delegate
+@@ -225,7 +230,39 @@
+                 cacheBuffer: 200
+                 interactive: false
+                 boundsBehavior: Flickable.StopAtBounds
++                highlightFollowsCurrentItem: false
+                 highlightMoveDuration: 0
++                highlight: Item {
++                    visible: listView.currentIndex >= 0 && listView.currentItem !== null
++                    enabled: false
++                    y: listView.currentItem?.y ?? 0
++                    height: listView.currentItem?.height ?? 0
++                    width: listView.width
++
++                    Behavior on y {
++                        enabled: root.visible && listView.currentIndex >= 0
++                        NumberAnimation {
++                            duration: 120
++                            easing.type: Easing.OutCubic
++                        }
++                    }
++                    Behavior on height {
++                        enabled: root.visible && listView.currentIndex >= 0
++                        NumberAnimation {
++                            duration: 120
++                            easing.type: Easing.OutCubic
++                        }
++                    }
++
++                    SourceBlendRect {
++                        anchors.fill: parent
++                        anchors.leftMargin: root.appearance.rowInset
++                        anchors.rightMargin: root.appearance.rowInset
++                        radius: root.appearance.rowRadius
++                        backgroundColor: root.appearance.delegateBackdrop
++                        color: root.appearance.selectionFill
++                    }
++                }
+                 currentIndex: -1
+
+                 property real _lastContentHeight: 0

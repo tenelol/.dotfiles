@@ -1,0 +1,85 @@
+Adapted from https://github.com/glassesneo/dotfiles/blob/38534df75a90579ee92bae5a75b10391bec2f5a6/modules/programs/vicinae/vicinae-compact-transition.patch
+Ported to Vicinae 0.29.0; selection geometry uses QML bindings.
+
+diff --git a/src/server/src/ui/qml/launcher/LauncherWindow.qml b/src/server/src/ui/qml/launcher/LauncherWindow.qml
+--- a/src/server/src/ui/qml/launcher/LauncherWindow.qml
++++ b/src/server/src/ui/qml/launcher/LauncherWindow.qml
+@@ -140,7 +140,17 @@
+             HorizontalLoadingBar {
+                 Layout.fillWidth: true
+                 implicitHeight: Launcher.searchVisible ? 1 : 0
+-                visible: Launcher.searchVisible && !Launcher.compacted
++                opacity: Launcher.compacted ? 0 : 1
++                visible: Launcher.searchVisible && opacity > 0
++                enabled: !Launcher.compacted
++
++                Behavior on opacity {
++                    enabled: root.visible && root.opacity > 0
++                    NumberAnimation {
++                        duration: 120
++                        easing.type: Easing.InOutQuad
++                    }
++                }
+                 loading: Launcher.isLoading
+                 dividerVisible: root.appearance.searchDividerVisible
+             }
+@@ -166,7 +176,17 @@
+                         StackView {
+                             id: commandStack
+                             anchors.fill: parent
+-                            visible: !Launcher.compacted
++                            opacity: Launcher.compacted ? 0 : 1
++                            visible: opacity > 0
++                            enabled: !Launcher.compacted
++
++                            Behavior on opacity {
++                                enabled: root.visible && root.opacity > 0
++                                NumberAnimation {
++                                    duration: 120
++                                    easing.type: Easing.InOutQuad
++                                }
++                            }
+                         }
+                     }
+                 }
+@@ -190,7 +210,17 @@
+
+         Loader {
+             id: floatingStatusBar
+-            visible: !Launcher.compacted && !Launcher.hasOverlay && Launcher.statusBarVisible
++            opacity: Launcher.compacted ? 0 : 1
++            visible: opacity > 0 && !Launcher.hasOverlay && Launcher.statusBarVisible
++            enabled: !Launcher.compacted
++
++            Behavior on opacity {
++                enabled: root.visible && root.opacity > 0
++                NumberAnimation {
++                    duration: 120
++                    easing.type: Easing.InOutQuad
++                }
++            }
+             anchors.left: parent.left
+             anchors.right: parent.right
+             anchors.bottom: parent.bottom
+diff --git a/src/server/src/ui/qml/launcher/LauncherWindowMacOS.qml b/src/server/src/ui/qml/launcher/LauncherWindowMacOS.qml
+--- a/src/server/src/ui/qml/launcher/LauncherWindowMacOS.qml
++++ b/src/server/src/ui/qml/launcher/LauncherWindowMacOS.qml
+@@ -20,8 +20,16 @@
+     autoPlaceOnShow: false
+
+     height: _contentH
+-    minimumHeight: _contentH
+-    maximumHeight: _contentH
++    minimumHeight: Math.min(height, _contentH)
++    maximumHeight: Math.max(height, _contentH)
++
++    Behavior on height {
++        enabled: visible && opacity > 0
++        NumberAnimation {
++            duration: 200
++            easing.type: Easing.InOutQuad
++        }
++    }
+
+     onAboutToShow: Launcher.prepareShow()
+     onShown: Launcher.finalizeShow()
