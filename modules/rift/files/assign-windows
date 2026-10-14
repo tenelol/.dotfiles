@@ -38,4 +38,5 @@ assign_app jp.naver.line.mac 3
 assign_app com.apple.mail 4
 assign_app com.apple.Music 5
 assign_app com.apple.Notes 7
+assign_app com.anthropic.claudefordesktop 8
 assign_app com.openai.codex 8

@@ -133,6 +133,7 @@ app_rules = [
   { app_id = "com.apple.mail", workspace = 4 },
   { app_id = "com.apple.Music", workspace = 5 },
   { app_id = "com.apple.Notes", workspace = 7 },
+  { app_id = "com.anthropic.claudefordesktop", workspace = 8 },
   { app_id = "com.openai.codex", workspace = 8 },
   { app_name = "System Settings", manage = false },
   { app_name = "System Preferences", manage = false },
