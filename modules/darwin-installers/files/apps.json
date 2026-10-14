@@ -94,6 +94,15 @@
     "teamId": "SY64MV22J9"
   },
   {
+    "name": "omniwm",
+    "app": "OmniWM",
+    "bundleId": "com.barut.OmniWM",
+    "teamId": "VF8LDJRGFM",
+    "cli": {
+      "omniwmctl": "OmniWM.app/Contents/MacOS/omniwmctl"
+    }
+  },
+  {
     "name": "zed",
     "app": "Zed",
     "bundleId": "dev.zed.Zed",

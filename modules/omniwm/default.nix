@@ -2,8 +2,8 @@
   delib,
   desktopSelection,
   hostTraits,
+  hm,
   lib,
-  pkgs,
   profile,
   ...
 }:
@@ -33,8 +33,21 @@ delib.scopedModule {
     /usr/bin/pkill -u ${profile.username} -x OmniWM >/dev/null 2>&1 || true
   '';
 
-  home.ifEnabled.programs.omniwm = {
-    enable = true;
-    package = pkgs.callPackage ../../packages/omniwm.nix { };
+  home.ifEnabled = {
+    launchd.agents.omniwm = {
+      enable = true;
+      config = {
+        ProgramArguments = [ "/Applications/OmniWM.app/Contents/MacOS/OmniWM" ];
+        KeepAlive = true;
+        RunAtLoad = true;
+        ProcessType = "Interactive";
+        StandardOutPath = "/tmp/omniwm.log";
+        StandardErrorPath = "/tmp/omniwm.err.log";
+      };
+    };
+    home.activation.registerOmniwm = hm.dag.entryAfter [ "setupLaunchAgents" ] ''
+      $DRY_RUN_CMD /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister \
+        -f /Applications/OmniWM.app
+    '';
   };
 }

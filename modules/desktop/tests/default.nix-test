@@ -80,7 +80,7 @@ let
         in
         assert selection result == expected;
         assert
-          (result.config.home-manager.users.probe.programs.omniwm.enable or false)
+          (result.config.home-manager.users.probe.launchd.agents.omniwm.enable or false)
           == (backend == "omniwm");
         true
       )

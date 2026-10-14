@@ -20,6 +20,7 @@ let
     };
     desktopSelection.omniwm = true;
     hostTraits.darwinDesktop = true;
+    hm = {};
     lib.mkAfter = value: value;
     pkgs = {};
     profile.username = "fixture";

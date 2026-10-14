@@ -18,9 +18,10 @@ let
   packageSources = {
     boringnotch = pkgs.callPackage ./boringnotch.nix { };
     moocs-collect = import ./moocs-collect.nix { inherit pkgs lib; };
+    omniwm = pkgs.callPackage ./omniwm.nix { };
   };
 
-  # These three sources have an existing package or a vendor installer layout.
+  # These sources have an existing package or a vendor installer layout.
   # All Cask sources, including pinned bootstrap overrides, use the same path.
   sourceFor =
     spec:
