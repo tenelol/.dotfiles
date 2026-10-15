@@ -60,6 +60,7 @@ not part of the installation workflow.
 | --- | --- |
 | Self-updating GUI apps | [app catalog](./modules/darwin-installers/files/apps.json), rendered by [macos-apps.nix](./packages/macos-apps.nix) |
 | Native PKG and Mac App Store apps | [darwin-installers](./modules/darwin-installers) |
+| Patched azooKey input method | [azookey](./modules/azookey), built by [azookey-desktop.nix](./packages/azookey-desktop.nix) with the system Xcode outside the Nix sandbox |
 | Immutable GUI bundles, CLI Casks and fonts | [brew-casks](./modules/brew-casks) |
 | Other CLI tools | [darwin-cli](./modules/darwin-cli) |
 

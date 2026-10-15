@@ -1,0 +1,30 @@
+let
+  repository = toString ../../../.;
+  configuration = (builtins.getFlake "git+file://${repository}").darwinConfigurations.macbook-rift;
+  inherit (configuration) config pkgs;
+  lib = pkgs.lib;
+  label = "dev.ensan.inputmethod.azooKeyMac.ConverterServer";
+  agent = config.launchd.user.agents.azookey-converter-server.serviceConfig;
+  package = pkgs.callPackage ../../../packages/azookey-desktop.nix { };
+  manifest = builtins.fromJSON (
+    builtins.unsafeDiscardStringContext config.environment.etc."dotfiles/installers.json".source.text
+  );
+  installerNames = map (entry: entry.name) manifest.packages;
+  activation = builtins.unsafeDiscardStringContext config.system.activationScripts.postActivation.text;
+  appSource = builtins.unsafeDiscardStringContext "${package}/azooKeyMac.app";
+in
+assert config.myconfig.darwin.azookey.patched;
+assert !(builtins.elem "azookey" installerNames);
+assert agent.Label == label;
+assert agent.MachServices.${label};
+assert agent.ProgramArguments == [ "${package}/${package.converterServer}" ];
+assert lib.hasInfix appSource activation;
+# 入れ替えは入力ソースの選択より前に行う
+assert
+  lib.length (lib.splitString appSource (
+    builtins.head (lib.splitString "select-azookey-input-source" activation)
+  )) > 1;
+{
+  inherit installerNames;
+  converterServer = agent.ProgramArguments;
+}
