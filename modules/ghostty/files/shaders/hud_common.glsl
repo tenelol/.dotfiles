@@ -67,21 +67,30 @@ const float HUD_WAVE_REACH_CELLS = 7.0;
 const float HUD_WAVE_WIDTH = 16.0;
 const float HUD_WAVE_STRENGTH = 12.0;
 
-float hudWaveRadius(float t, float cellHeight) {
-    return HUD_WAVE_REACH_CELLS * cellHeight * hudEaseOut(t / HUD_WAVE_DURATION);
+// `scale` shrinks reach, ring width and push together for smaller ripples.
+float hudWaveRadius(float t, float cellHeight, float scale) {
+    return HUD_WAVE_REACH_CELLS * scale * cellHeight * hudEaseOut(t / HUD_WAVE_DURATION);
 }
 
-vec3 hudShockwave(vec3 color, vec2 uv, vec2 offset, float t, float cellHeight) {
+float hudWaveRadius(float t, float cellHeight) {
+    return hudWaveRadius(t, cellHeight, 1.0);
+}
+
+vec3 hudShockwave(vec3 color, vec2 uv, vec2 offset, float t, float cellHeight, float scale) {
     if (t <= 0.0 || t >= HUD_WAVE_DURATION) {
         return color;
     }
     float dist = length(offset);
     float fade = 1.0 - t / HUD_WAVE_DURATION;
-    float ring = exp(-pow((dist - hudWaveRadius(t, cellHeight)) / HUD_WAVE_WIDTH, 2.0));
+    float ring = exp(-pow((dist - hudWaveRadius(t, cellHeight, scale)) / (HUD_WAVE_WIDTH * scale), 2.0));
     vec2 push = dist > 1e-3 ? offset / dist : vec2(0.0);
-    vec2 warped = clamp(uv - push * ring * HUD_WAVE_STRENGTH * fade / iResolution.xy, vec2(0.0), vec2(1.0));
+    vec2 warped = clamp(uv - push * ring * HUD_WAVE_STRENGTH * scale * fade / iResolution.xy, vec2(0.0), vec2(1.0));
     color = mix(color, texture(iChannel0, warped).rgb, ring * fade);
     return color + hudAccent() * ring * fade * 0.10;
+}
+
+vec3 hudShockwave(vec3 color, vec2 uv, vec2 offset, float t, float cellHeight) {
+    return hudShockwave(color, uv, offset, t, cellHeight, 1.0);
 }
 
 // Flash of the impact cell, decaying from the moment of contact.
