@@ -98,6 +98,7 @@ delib.module {
         "ghostty/shaders/readability_scrim.glsl".source = mkReadabilityShader myconfig;
         "ghostty/shaders/cursor_smear.glsl".source = mkHudShader "cursor_smear.glsl";
         "ghostty/shaders/typing_ignite.glsl".source = mkHudShader "typing_ignite.glsl";
+        "ghostty/shaders/typing_bolt.glsl".source = mkHudShader "typing_bolt.glsl";
         "ghostty/shaders/jump_lockon.glsl".source = mkHudShader "jump_lockon.glsl";
       };
     };

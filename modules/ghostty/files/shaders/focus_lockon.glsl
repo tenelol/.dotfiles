@@ -1,55 +1,66 @@
-// Window lock-on when Ghostty gains focus: corner brackets home in from beyond
-// the window edges, snap onto the frame with the same wobble as the cursor
-// reticle, flash, and fade while a faint glow washes along the edges.
+// Input-line lock-on when Ghostty gains focus: corner brackets collapse from a
+// tall frame onto the line being typed (from the left edge to just past the
+// cursor), snap with the same wobble as the cursor reticle, flash, and fade
+// while a faint band lights the line.
 
 const float DURATION = 0.62;
 const float LOCK_TIME = 0.20;
-const float INSET = 14.0;
-const float START_OVERSHOOT = 1.10;
-const float ARM_FRACTION = 0.07;
-const float BRACKET_WIDTH = 2.6;
-const float WOBBLE_FREQUENCY = 34.0;
-const float WOBBLE_DAMPING = 12.0;
-const float WOBBLE_AMOUNT = 0.012;
-const float EDGE_GLOW = 0.10;
+const float EDGE_INSET = 6.0;
+const float TRAIL_CELLS = 1.5;
+const float MIN_WIDTH_CELLS = 10.0;
+const float START_ROWS = 3.0;
+const float START_SPREAD_CELLS = 1.5;
+const float PAD = 3.0;
+const float BRACKET_WIDTH = 2.2;
+const float WOBBLE_FREQUENCY = 38.0;
+const float WOBBLE_DAMPING = 13.0;
+const float WOBBLE_AMOUNT = 0.25;
+const float BAND_OPACITY = 0.08;
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     vec4 base = texture(iChannel0, fragCoord / iResolution.xy);
     fragColor = base;
 
     float elapsed = iTime - iTimeFocus;
-    if (iFocus == 0 || elapsed >= DURATION) {
+    if (iFocus == 0 || iCursorVisible == 0 || elapsed >= DURATION) {
         return;
     }
 
-    vec2 center = iResolution.xy * 0.5;
+    float cellHeight = max(iCurrentCursor.w, 1.0);
+    float cellWidth = max(iCurrentCursor.z, cellHeight * 0.5);
+    float lineY = iCurrentCursor.y - cellHeight * 0.5;
+    float left = EDGE_INSET;
+    float right = min(iResolution.x - EDGE_INSET, max(iCurrentCursor.x + cellWidth * TRAIL_CELLS, left + cellWidth * MIN_WIDTH_CELLS));
+    vec2 center = vec2((left + right) * 0.5, lineY);
+    vec2 rest = vec2((right - left) * 0.5, cellHeight * 0.5) + PAD;
+
     vec2 offset = fragCoord - center;
-    vec2 rest = center - INSET;
+    if (abs(offset.y) > cellHeight * (START_ROWS + 1.0) || abs(offset.x) > rest.x + cellHeight * (START_SPREAD_CELLS + 1.0)) {
+        return;
+    }
+
     float lockTime = elapsed - LOCK_TIME;
     float homing = hudHoming(elapsed / LOCK_TIME);
-    float scale = mix(START_OVERSHOOT, 1.0, homing) - hudWobble(lockTime, WOBBLE_FREQUENCY, WOBBLE_DAMPING) * WOBBLE_AMOUNT;
-    vec2 frame = rest * scale;
+    float wobble = hudWobble(lockTime, WOBBLE_FREQUENCY, WOBBLE_DAMPING) * WOBBLE_AMOUNT;
+    // Collapse mostly vertically onto the row; the wobble squeezes it past the line.
+    vec2 frame = vec2(
+        rest.x + cellHeight * START_SPREAD_CELLS * (1.0 - homing),
+        rest.y + cellHeight * START_ROWS * (1.0 - homing)
+    ) - vec2(cellHeight * 0.3, rest.y) * wobble;
 
-    // Only the corners can be lit, so skip the middle of the window cheaply.
-    float arm = min(rest.x, rest.y) * 2.0 * ARM_FRACTION;
-    vec2 q = abs(offset);
-    float edge = min(rest.x - q.x, rest.y - q.y);
-    if (q.x < frame.x - arm - 4.0 && q.y < frame.y - arm - 4.0 && edge > INSET * 4.0) {
-        return;
-    }
-
+    float arm = cellHeight * 0.7;
     float bracket = hudBrackets(offset, frame, arm, BRACKET_WIDTH);
     float bracketAlpha = smoothstep(0.0, 0.05, elapsed) * (1.0 - smoothstep(LOCK_TIME + 0.12, DURATION, elapsed));
     vec3 bracketColor = mix(hudAccent(), HUD_FLASH, exp(-abs(lockTime) * 16.0) * 0.7);
 
-    // Edge glow released at lock time, strongest along the border.
-    float glow = 0.0;
+    // Band across the locked line, released at contact.
+    float band = 0.0;
     if (lockTime > 0.0) {
-        float border = min(center.x - q.x, center.y - q.y);
-        glow = exp(-max(border, 0.0) / (INSET * 2.0)) * exp(-lockTime * 7.0) * EDGE_GLOW;
+        vec2 d = abs(offset) - rest;
+        band = (1.0 - smoothstep(0.0, 3.0, max(d.x, d.y))) * exp(-lockTime * 6.0) * BAND_OPACITY;
     }
 
-    float alpha = bracket * bracketAlpha * 0.9 + glow;
-    vec3 color = base.rgb + bracketColor * bracket * bracketAlpha * 0.9 + hudAccent() * glow;
+    float alpha = bracket * bracketAlpha * 0.9 + band;
+    vec3 color = base.rgb + bracketColor * bracket * bracketAlpha * 0.9 + hudAccent() * band;
     fragColor = vec4(min(color, vec3(1.0)), max(base.a, hudSaturate(alpha)));
 }

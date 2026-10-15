@@ -62,6 +62,7 @@ custom-shader = ~/.config/ghostty/shaders/focus_lockon.glsl
 custom-shader = ~/.config/ghostty/shaders/readability_scrim.glsl
 custom-shader = ~/.config/ghostty/shaders/cursor_smear.glsl
 custom-shader = ~/.config/ghostty/shaders/typing_ignite.glsl
+custom-shader = ~/.config/ghostty/shaders/typing_bolt.glsl
 custom-shader = ~/.config/ghostty/shaders/jump_lockon.glsl
 custom-shader-animation = always
 
