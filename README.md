@@ -80,7 +80,9 @@ activation failure.
 
 ## Codex skills
 
-Keep provider files unchanged when refreshing a skill. Local integrations are limited to `imoocs`, `proxmox-pve`, `line-delivery`, `project-context-init`, and the personal `subagent-model-router` policy. The existing denix module and Home Manager deployment remain unchanged.
+Keep provider files unchanged when refreshing a skill. Local integrations are limited to `imoocs`, `proxmox-pve`, `line-delivery`, `project-context-init`, `ask-claude`, and the personal `subagent-model-router` policy. Home Manager deploys them through the existing denix module.
+
+Use `$ask-claude` in Codex to ask Claude Code a question, request a review, or delegate explicitly authorized edits through the existing CLI login. Questions and reviews use read-only tools by default; see the [skill](./.agents/skills/ask-claude/SKILL.md).
 
 | Skills | Provider |
 | --- | --- |
@@ -97,7 +99,7 @@ Run `claude` in a project directory (`cc` in Fish). The native Claude Code insta
 
 Home Manager builds `~/.claude/CLAUDE.md` and `~/.codex/AGENTS.md` from the [shared global rules](./modules/vault-context/files/shared/global-rules.md) plus each agent's own section ([Claude](./modules/vault-context/files/claude/CLAUDE.md), [Codex](./modules/vault-context/files/codex/AGENTS.md)) through the [context module](./modules/vault-context), so Codex-only rules stay out of Claude. Keep Claude's user settings writable. Set Project instructions to `claude-md-and-agents-md` to load project `AGENTS.md` alongside existing `CLAUDE.md`; this repository's `CLAUDE.md` imports `AGENTS.md` directly. See the [official instructions documentation](https://code.claude.com/docs/en/memory#agents-md).
 
-The [skills module](./modules/codex-skills) links Claude's personal skills individually to `~/.agents/skills/`, including the extension-owned skills, except those that only run on Codex or Pi (`subagent-model-router`, `pi-subagents`, `council-mode`). Both agents read the same files and supporting resources. Keep Claude's `synced/` skills and provider-owned plugins separate. Claude's `autoMemoryEnabled` is disabled in its writable user settings so lasting notes follow the shared [project context protocol](./modules/vault-context/files/codex/project-context-protocol.md); existing memories and each product's conversation history remain in place.
+The [skills module](./modules/codex-skills) links Claude's personal skills individually to `~/.agents/skills/`, including the extension-owned skills, except parent-side delegation and those that only run on Codex or Pi (`ask-claude`, `subagent-model-router`, `pi-subagents`, `council-mode`). Both agents read the same files and supporting resources. Keep Claude's `synced/` skills and provider-owned plugins separate. Claude's `autoMemoryEnabled` is disabled in its writable user settings so lasting notes follow the shared [project context protocol](./modules/vault-context/files/codex/project-context-protocol.md); existing memories and each product's conversation history remain in place.
 
 ## Pi
 

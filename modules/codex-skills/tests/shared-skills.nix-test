@@ -21,7 +21,7 @@ let
   repositorySkills = builtins.attrNames (
     lib.filterAttrs (_: type: type == "directory") (builtins.readDir ../../../.agents/skills)
   );
-  runtimeSpecificSkills = [ "council-mode" "pi-subagents" "subagent-model-router" ];
+  runtimeSpecificSkills = [ "ask-claude" "council-mode" "pi-subagents" "subagent-model-router" ];
 in
 assert builtins.all (name:
   files.".claude/skills/${name}".source == "/fixture/home/.agents/skills/${name}"

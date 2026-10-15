@@ -23,8 +23,9 @@ let
     playwright-cli = ".pi/agent/extensions/playwright-cli/node_modules/@playwright/cli/skills/playwright-cli";
     ponytail-bundle = ".pi/agent/extensions/ponytail/skills";
   };
-  # Skills that drive Codex model routing or Pi's subagent runtime cannot run in Claude Code.
+  # Keep parent-side Claude delegation, Codex model routing, and Pi runtime skills out of Claude Code.
   runtimeSpecificSkills = [
+    "ask-claude"
     "council-mode"
     "pi-subagents"
     "subagent-model-router"
