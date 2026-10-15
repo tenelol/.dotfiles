@@ -1,11 +1,8 @@
 local plugin = require("nix-plugin")
 local theme = require("core.theme")
 
-local function side_edge(state, win)
-  if state.current_position == "current" or vim.api.nvim_win_get_config(win).relative ~= "" then
-    return nil
-  end
-  return state.current_position == "right" and "right" or "left"
+local function is_side_panel(state, win)
+  return state.current_position ~= "current" and vim.api.nvim_win_get_config(win).relative == ""
 end
 
 local function close_tree(state)
@@ -13,19 +10,17 @@ local function close_tree(state)
   if not win or not vim.api.nvim_win_is_valid(win) then
     return
   end
-  local reveal = require("core.panel-reveal")
-  local edge = side_edge(state, win)
-  if not edge then
+  local panel = require("core.panel-motion")
+  if not is_side_panel(state, win) then
     require("neo-tree.ui.renderer").close(state)
     return
   end
-  if reveal.mode(win) == "close" then
+  if panel.mode(win) == "close" then
     return
   end
   local buf = vim.api.nvim_win_get_buf(win)
-  reveal.play(win, {
-    edge = edge,
-    mode = "close",
+  panel.close(win, {
+    axis = "width",
     on_done = function(completed)
       if completed and vim.api.nvim_win_is_valid(win) and vim.api.nvim_win_get_buf(win) == buf then
         require("neo-tree.ui.renderer").close(state)
@@ -34,15 +29,14 @@ local function close_tree(state)
   })
 end
 
-local function reveal_tree(event)
+local function open_tree(event)
   local win = event and event.winid
   if not win or not vim.api.nvim_win_is_valid(win) then
     return
   end
   local state = require("neo-tree.sources.manager").get_state(event.source)
-  local edge = side_edge(state, win)
-  if edge then
-    require("core.panel-reveal").play(win, { edge = edge, mode = "open" })
+  if is_side_panel(state, win) then
+    require("core.panel-motion").open(win, { axis = "width", size = vim.api.nvim_win_get_width(win) })
   end
 end
 
@@ -111,7 +105,7 @@ return {
         enable_diagnostics = true,
         commands = { slide_close = close_tree },
         event_handlers = {
-          { event = "neo_tree_window_after_open", handler = reveal_tree },
+          { event = "neo_tree_window_after_open", handler = open_tree },
         },
         default_component_configs = {
           container = { min_width = 28 },

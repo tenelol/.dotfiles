@@ -73,8 +73,8 @@ return {
           left = { size = 34 },
           bottom = { size = 10 },
         },
-        -- Panels open at full size; core.panel-reveal animates them instead
-        -- of resizing the window cell by cell.
+        -- core.panel-motion animates panels itself so it can hold Edgy off
+        -- and keep terminals from re-flowing mid-animation.
         animate = { enabled = false },
         exit_when_last = true,
         close_when_all_hidden = true,
