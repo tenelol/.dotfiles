@@ -11,11 +11,17 @@ let
   azooKeyApp = "/Library/Input Methods/azooKeyMac.app";
   converterServerLabel = "${azooKeyBundleID}.ConverterServer";
   patchedAzooKey = pkgs.callPackage ../../packages/azookey-desktop.nix { };
+  # CDHash は verbose 3 以上でないと出力されない
   cdHash =
-    app: ''$(/usr/bin/codesign -dv --verbose=1 "${app}" 2>&1 | /usr/bin/grep '^CDHash=' || true)'';
+    app: ''$(/usr/bin/codesign -d --verbose=3 "${app}" 2>&1 | /usr/bin/grep '^CDHash=' || true)'';
   # 公式 pkg の代わりに patch 版を配置する。署名の CDHash が変わったときだけ入れ替える
   installPatchedAzooKey = ''
-    if [ "${cdHash "${patchedAzooKey}/azooKeyMac.app"}" != "${cdHash azooKeyApp}" ]; then
+    wanted="${cdHash "${patchedAzooKey}/azooKeyMac.app"}"
+    if [ -z "$wanted" ]; then
+      echo "azookey: cannot read the CDHash of ${patchedAzooKey}/azooKeyMac.app" >&2
+      exit 1
+    fi
+    if [ "$wanted" != "${cdHash azooKeyApp}" ]; then
       stage="$(mktemp -d "/Library/Input Methods/.azookey.XXXXXX")"
       /usr/bin/ditto "${patchedAzooKey}/azooKeyMac.app" "$stage/azooKeyMac.app"
       if [ -e ${lib.escapeShellArg azooKeyApp} ]; then
