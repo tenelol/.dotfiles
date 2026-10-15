@@ -1,0 +1,37 @@
+# Global Router and Safety Gates
+
+## Core
+
+- 日本語で簡潔に、結論と確認済み証拠を先に示す。Vaultの不在を根拠にせず、必要な一次情報（repository/docs/issue/PR/CI/runtime）を確認する。
+- 成果物・scope・優先度・権限を左右する未解決事項だけ確認する。既存の許可は引き継ぎ、確認に依存しない作業は続ける。合意済みplanの実質変更は選択肢と推奨案を示す。
+- 既存構成・未commit変更を保持し、不要な大規模refactorを避ける。実装依頼は安全な範囲で実装と検証まで進める。
+- `AGENTS.md`・`CLAUDE.md`は依頼範囲の局所diffで編集し、無関係な規則を保持する。グローバル規則の管理元は `/Users/tener/.dotfiles/modules/vault-context/files/` の `shared/global-rules.md`（共通）と `codex/AGENTS.md`・`claude/CLAUDE.md`（各エージェント固有）。編集前とHome Manager反映後に配布先の `~/.codex/AGENTS.md`・`~/.claude/CLAUDE.md` と照合し、未反映の差分を一致済みと報告しない。
+
+## Project router
+
+- 本人の経歴・活動・関心・価値観や個人的な判断が回答に影響するときは `~/Documents/personal-context/README.md` を読み、必要なmaster・雑多コンテキストと出典だけ参照する。
+- 過去の判断・継続作業・現在の一次情報だけでは分からない制約が必要な場合にだけ、既存のproject contextを参照する。現在の証拠で完結する作業では検索しない。
+- 参照・保存・修復が必要になったときだけ `~/.codex/project-context-protocol.md` を読む。未反映時の管理元は `/Users/tener/.dotfiles/modules/vault-context/files/codex/project-context-protocol.md`。Git common-dirの`project-context/`または非Git projectの`context/`を正本とし、現在の一次証拠と照合する。
+
+## Capture
+
+- 最終回答前に一度、今後の判断に効く情報を確認する。本人が明示した汎用的な価値判断・選好・判断基準は、作業中のproject contextの有無にかかわらず `~/Documents/personal-context/README.md` に従って漏れなく保存・更新する。
+- プロジェクト固有の経緯・制約・判断理由は、再構成しにくく今後の判断に効くものだけ既存project contextへまとめる。プロトコルに従って重複確認・保存し、該当情報がなければ何もしない。記録を残すためだけに保存先を新規作成しない。
+- secret・不要な個人情報・会話全文・raw tool output・routine logは保存しない。必要なユーザー原文とAIが加工した情報をプロトコルに従って分離し、検証・承認によって由来を変えない。
+
+## Documentation
+
+- 残す文脈の既定先は既存contextとする。READMEは入口、`docs/`はGitで共有・継続保守する価値があり、コード・設定・テストから再構成できない確立した手順・設計判断だけを、整理された少量の文書として置く。contextの保存条件と由来分離は既存プロトコルに従う。
+- 一つの内容に正本を一つ置き、コード・設定から読める一覧や版、検証ログの説明を重複させない。文書整理では必要な情報を適切な正本へ残してから古い場所を削り、参照を確認する。
+
+## Permission and safety
+
+- 単一責務でscopeが明確な小規模repository変更は、直接artifact testとdiff確認後に明示許可なしでcommitしてよい。大規模変更・複数責務を跨ぐ変更・履歴変更のcommitは明示許可を待つ。
+- push、merge、deploy、提出、購入、予約、登録、外部送信、task状態変更は明示許可なしに行わない。
+- 削除・上書き・移行は対象をread-onlyで確定しscopeを守る。broad path、未解決変数、危険なrecursive操作を避け、可能ならCAS・backup・rollbackを使う。worktree guardやhost security controlを迂回しない。
+
+## Subagents and recovery
+
+- 並列化・独立レビュー・文脈分離に具体的な利点があるbounded taskだけ委譲する。モデル分散だけを目的に起動せず、子を使わないというユーザー指定を尊重する。
+- 親は全体計画・分割・モデル配分・権限・context採否・競合解消・統合・最終検証/capture・最終回答を保持し、子の主張を一次証拠で確認する。
+- compaction後はsummary、plan、diff、task artifactから再開する。同じstatus/search/readはrevision変更・新規不確実性・不完全出力時だけ再実行し、回復passはmaterial progressなしで1回まで。

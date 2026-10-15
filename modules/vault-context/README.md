@@ -12,7 +12,7 @@
 
 | 構成要素 | 役割 | 主な配置 |
 | --- | --- | --- |
-| エージェント共通ルール | いつ過去の文脈を読むか、保存条件、作業権限を定める | Codex: `~/.codex/AGENTS.md`、Claude Code: それをimportする`~/.claude/CLAUDE.md`、Pi: `~/.pi/agent/AGENTS.md` |
+| エージェント共通ルール | いつ過去の文脈を読むか、保存条件、作業権限を定める | Codex: `~/.codex/AGENTS.md`、Claude Code: `~/.claude/CLAUDE.md`（どちらも共通ルール＋固有部）、Pi: `~/.pi/agent/AGENTS.md` |
 | 共有プロトコル | 正本の探し方、原文とAI出力の分離、検索・保存・旧記録の扱いを定める | 各エージェントの `project-context-protocol.md` |
 | プロジェクト固有ルール | そのリポジトリの構成・検証・コミット方針など | プロジェクトの `AGENTS.md` |
 | プロジェクトコンテキスト | タスクをまたいで残す原文・原資料・AIによる分析 | Git共通ディレクトリの `project-context/`、または非Gitプロジェクトの `context/` |
@@ -21,7 +21,7 @@
 
 日常作業で確認する一次情報は、現在のリポジトリ、公式文書、Issue、PR、CI、実行結果など。保存された過去の記録も、必要に応じて現在の一次情報と照合する。
 
-CodexとPiはエージェント共通ルールをそれぞれ持ち、Claude CodeはCodexのルールをimportする。コンテキストのプロトコルは同じ管理元を使う。同じGitリポジトリを扱う場合、保存先も同じGit共通ディレクトリに解決される。この共有はローカルのClaude Codeが対象で、Claudeの通常チャットやCoworkの設定とは別になる。
+CodexとClaude Codeは共通ルールに各エージェント固有の記述を足したものを使い、Piは独自のルールを持つ。コンテキストのプロトコルは同じ管理元を使う。同じGitリポジトリを扱う場合、保存先も同じGit共通ディレクトリに解決される。この共有はローカルのClaude Codeが対象で、Claudeの通常チャットやCoworkの設定とは別になる。
 
 ## 2. 保存先とディレクトリ構造
 
@@ -108,8 +108,9 @@ rg --hidden --no-ignore -n -i --glob '*.md' --glob '!README.md' \
 
 | 管理元 | 配布先・役割 |
 | --- | --- |
-| `modules/vault-context/files/codex/AGENTS.md` | `~/.codex/AGENTS.md` |
-| `modules/vault-context/files/claude/CLAUDE.md` | `~/.claude/CLAUDE.md`。Codexの共通ルールをimport |
+| `modules/vault-context/files/shared/global-rules.md` | CodexとClaude Codeの共通ルール |
+| `modules/vault-context/files/codex/AGENTS.md` | Codex固有部。共通ルールと結合して `~/.codex/AGENTS.md` |
+| `modules/vault-context/files/claude/CLAUDE.md` | Claude Code固有部。共通ルールと結合して `~/.claude/CLAUDE.md` |
 | `modules/pi-coding-agent/files/AGENTS.md` | `~/.pi/agent/AGENTS.md` |
 | `modules/vault-context/files/codex/project-context-protocol.md` | `~/.codex/project-context-protocol.md` と `~/.pi/agent/project-context-protocol.md` |
 | `.agents/skills/project-context-init/SKILL.md` | `~/.agents/skills/project-context-init/SKILL.md` |
@@ -184,7 +185,9 @@ v2以前の `canonical` にはAIが整理した文章も含まれ得る。ディ
 以下のリンクは、このファイルをリポジトリ内で開いた場合の参照先。
 
 - [共有プロトコル](files/codex/project-context-protocol.md)
-- [Codex共通ルール](files/codex/AGENTS.md)
+- [共通ルール](files/shared/global-rules.md)
+- [Codex固有ルール](files/codex/AGENTS.md)
+- [Claude Code固有ルール](files/claude/CLAUDE.md)
 - [Pi共通ルール](../pi-coding-agent/files/AGENTS.md)
 - [初期化スキル](../../.agents/skills/project-context-init/SKILL.md)
 - [初期化の実装](files/project-context-init.py)

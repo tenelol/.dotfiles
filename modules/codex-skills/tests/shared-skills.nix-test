@@ -21,10 +21,12 @@ let
   repositorySkills = builtins.attrNames (
     lib.filterAttrs (_: type: type == "directory") (builtins.readDir ../../../.agents/skills)
   );
+  runtimeSpecificSkills = [ "council-mode" "pi-subagents" "subagent-model-router" ];
 in
 assert builtins.all (name:
   files.".claude/skills/${name}".source == "/fixture/home/.agents/skills/${name}"
-) repositorySkills;
+) (lib.subtractLists runtimeSpecificSkills repositorySkills);
+assert builtins.all (name: !(files ? ".claude/skills/${name}")) runtimeSpecificSkills;
 assert files.".claude/skills/playwright-cli".source == "/fixture/home/.agents/skills/playwright-cli";
 assert files.".claude/skills/ponytail-help".source == "/fixture/home/.agents/skills/ponytail-bundle/ponytail-help";
 assert !(files ? ".claude/skills/ponytail-bundle");

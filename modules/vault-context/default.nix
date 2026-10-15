@@ -8,6 +8,7 @@
   ...
 }:
 let
+  sharedRules = builtins.readFile ./files/shared/global-rules.md;
   vaultContextMcp = inputs.vault-context.packages.${pkgs.stdenv.hostPlatform.system}.default;
   vaultContextIntegrationCheck =
     pkgs.runCommand "vault-context-dotfiles-integration-check"
@@ -104,12 +105,13 @@ delib.scopedModule {
 
   home.ifEnabled = {
     home.file = {
+      # Each agent gets the shared rules plus only its own runtime-specific section.
       ".codex/AGENTS.md" = {
-        source = ./files/codex/AGENTS.md;
+        text = sharedRules + builtins.readFile ./files/codex/AGENTS.md;
         force = true;
       };
       ".claude/CLAUDE.md" = {
-        source = ./files/claude/CLAUDE.md;
+        text = sharedRules + builtins.readFile ./files/claude/CLAUDE.md;
         force = true;
       };
       ".codex/project-context-protocol.md" = {

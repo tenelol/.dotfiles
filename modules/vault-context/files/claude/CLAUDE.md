@@ -1,4 +1,3 @@
-@~/.codex/AGENTS.md
 
 # Claude Code environment
 

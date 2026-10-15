@@ -23,9 +23,17 @@ let
     playwright-cli = ".pi/agent/extensions/playwright-cli/node_modules/@playwright/cli/skills/playwright-cli";
     ponytail-bundle = ".pi/agent/extensions/ponytail/skills";
   };
+  # Skills that drive Codex model routing or Pi's subagent runtime cannot run in Claude Code.
+  runtimeSpecificSkills = [
+    "council-mode"
+    "pi-subagents"
+    "subagent-model-router"
+  ];
   claudeSkillTargets =
     lib.mapAttrs (name: _: ".agents/skills/${name}") (
-      skills // builtins.removeAttrs extensionSkillTargets [ "ponytail-bundle" ]
+      builtins.removeAttrs (skills // extensionSkillTargets) (
+        runtimeSpecificSkills ++ [ "ponytail-bundle" ]
+      )
     )
     // lib.genAttrs [
       "ponytail"
@@ -36,12 +44,9 @@ let
       "ponytail-review"
     ] (name: ".agents/skills/ponytail-bundle/${name}");
   linkExtensionSkills = lib.concatStringsSep "\n" (
-    lib.mapAttrsToList (
-      name: target:
-      ''
-        $DRY_RUN_CMD ln -sfn "$HOME/${target}" "$HOME/.agents/skills/${name}"
-      ''
-    ) extensionSkillTargets
+    lib.mapAttrsToList (name: target: ''
+      $DRY_RUN_CMD ln -sfn "$HOME/${target}" "$HOME/.agents/skills/${name}"
+    '') extensionSkillTargets
   );
 in
 delib.scopedModule {
