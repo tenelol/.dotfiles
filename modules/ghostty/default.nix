@@ -8,6 +8,13 @@ let
   baseConfig =
     if pkgs.stdenv.hostPlatform.isDarwin then ./files/config-darwin else ./files/config;
 
+  # Cursor and focus effects share hud_common.glsl; Ghostty has no includes.
+  mkHudShader =
+    name:
+    pkgs.writeText "ghostty-${name}" (
+      builtins.readFile ./files/shaders/hud_common.glsl + "\n" + builtins.readFile ./files/shaders/${name}
+    );
+
   mkReadabilityShader =
     myconfig:
     pkgs.writeText "ghostty-readability-scrim.glsl" ''
@@ -87,11 +94,11 @@ delib.module {
       xdg.configFile = {
         "ghostty/config".source = mkConfig myconfig;
         "ghostty/shaders/aurora.glsl".source = auroraShader;
-        "ghostty/shaders/liquid_glass_focus.glsl".source = ./files/shaders/liquid_glass_focus.glsl;
+        "ghostty/shaders/focus_lockon.glsl".source = mkHudShader "focus_lockon.glsl";
         "ghostty/shaders/readability_scrim.glsl".source = mkReadabilityShader myconfig;
-        "ghostty/shaders/cursor_smear.glsl".source = ./files/shaders/cursor_smear.glsl;
-        "ghostty/shaders/typing_ignite.glsl".source = ./files/shaders/typing_ignite.glsl;
-        "ghostty/shaders/jump_lockon.glsl".source = ./files/shaders/jump_lockon.glsl;
+        "ghostty/shaders/cursor_smear.glsl".source = mkHudShader "cursor_smear.glsl";
+        "ghostty/shaders/typing_ignite.glsl".source = mkHudShader "typing_ignite.glsl";
+        "ghostty/shaders/jump_lockon.glsl".source = mkHudShader "jump_lockon.glsl";
       };
     };
 }

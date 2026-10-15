@@ -14,17 +14,19 @@ import unittest
 
 MODULE = Path(__file__).resolve().parent.parent
 PREFIX = (MODULE / "tests/shadertoy_prefix.glsl").read_text()
+# The Nix module prepends the shared HUD helpers to every local effect.
+HUD = (MODULE / "files/shaders/hud_common.glsl").read_text()
 
 
 class ShaderTest(unittest.TestCase):
     def test_local_shaders_compile(self) -> None:
-        shaders = sorted((MODULE / "files/shaders").glob("*.glsl"))
+        shaders = sorted(p for p in (MODULE / "files/shaders").glob("*.glsl") if p.name != "hud_common.glsl")
         self.assertTrue(shaders)
         with tempfile.TemporaryDirectory() as tmp:
             for shader in shaders:
                 with self.subTest(shader=shader.name):
                     frag = Path(tmp) / f"{shader.stem}.frag"
-                    frag.write_text(PREFIX + shader.read_text())
+                    frag.write_text(PREFIX + HUD + "\n" + shader.read_text())
                     result = subprocess.run(
                         ["glslangValidator", "-G", "-o", str(Path(tmp) / "out.spv"), str(frag)],
                         capture_output=True,
