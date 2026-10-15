@@ -16,7 +16,7 @@ index 5f92529..dae2331 100644
      public struct IncludeContextInAITransform: BoolConfigItem {
          public init() {}
 diff --git a/azooKeyMac/InputController/CandidateWindow/BaseCandidateViewController.swift b/azooKeyMac/InputController/CandidateWindow/BaseCandidateViewController.swift
-index 0e62f73..9aa1e4f 100644
+index 0e62f73..f911200 100644
 --- a/azooKeyMac/InputController/CandidateWindow/BaseCandidateViewController.swift
 +++ b/azooKeyMac/InputController/CandidateWindow/BaseCandidateViewController.swift
 @@ -93,6 +93,7 @@ class BaseCandidateViewController: NSViewController {
@@ -56,7 +56,7 @@ index 0e62f73..9aa1e4f 100644
  
      internal func updateSelection(to row: Int, notifySelectionChange: Bool = true) {
          if row == -1 {
-+            self.decoration.moveSelection(to: nil)
++            self.decoration.moveSelection(toRow: nil)
              return
          }
          self.tableView.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
@@ -64,7 +64,7 @@ index 0e62f73..9aa1e4f 100644
          self.updateSelectionCallback(row, notifySelectionChange: notifySelectionChange)
          self.currentSelectedRow = row
          self.updateVisibleRows()
-+        self.decoration.moveSelection(to: self.tableView.rect(ofRow: row))
++        self.decoration.moveSelection(toRow: row)
      }
  
      internal func updateSelectionCallback(_ row: Int, notifySelectionChange: Bool) {}
@@ -79,10 +79,10 @@ index 0e62f73..9aa1e4f 100644
  
 diff --git a/azooKeyMac/InputController/DopamineEffect/DopamineCandidateDecoration.swift b/azooKeyMac/InputController/DopamineEffect/DopamineCandidateDecoration.swift
 new file mode 100644
-index 0000000..1d03791
+index 0000000..5549b47
 --- /dev/null
 +++ b/azooKeyMac/InputController/DopamineEffect/DopamineCandidateDecoration.swift
-@@ -0,0 +1,205 @@
+@@ -0,0 +1,219 @@
 +import AppKit
 +import Core
 +import QuartzCore
@@ -113,6 +113,8 @@ index 0000000..1d03791
 +    private let selection = CAGradientLayer()
 +    private let sheen = CAGradientLayer()
 +    private var selectionVisible = false
++    private var lastScrollOffset: CGFloat = 0
++    private weak var tableView: NSTableView?
 +
 +    private var isEnabled: Bool {
 +        Config.DopamineEffects().value
@@ -121,6 +123,7 @@ index 0000000..1d03791
 +    func install(in container: NSView, tableView: NSTableView) {
 +        container.wantsLayer = true
 +        tableView.wantsLayer = true
++        self.tableView = tableView
 +
 +        // 枠は回転する円錐グラデーションを細い角丸の線で切り抜いて作る
 +        self.borderGradient.type = .conic
@@ -183,15 +186,18 @@ index 0000000..1d03791
 +        self.applyEnabledState()
 +    }
 +
-+    func moveSelection(to rowRect: CGRect?) {
++    func moveSelection(toRow row: Int?) {
 +        self.applyEnabledState()
-+        guard self.isEnabled, let rowRect, !rowRect.isEmpty else {
++        guard self.isEnabled, let row, let target = self.layerRect(ofRow: row) else {
 +            self.selection.opacity = 0
 +            self.selectionVisible = false
 +            return
 +        }
-+        let target = rowRect.insetBy(dx: 5, dy: 2)
-+        let previous = self.selection.presentation()?.frame ?? self.selection.frame
++        // 選択に合わせて一覧がスクロールした分だけ開始位置をずらし、見た目の位置から動かす
++        let scrollOffset = self.tableView?.enclosingScrollView?.contentView.bounds.minY ?? 0
++        var previous = self.selection.presentation()?.frame ?? self.selection.frame
++        previous.origin.y += scrollOffset - self.lastScrollOffset
++        self.lastScrollOffset = scrollOffset
 +
 +        CATransaction.begin()
 +        CATransaction.setDisableActions(true)
@@ -203,7 +209,12 @@ index 0000000..1d03791
 +        self.selection.opacity = 1
 +        CATransaction.commit()
 +
-+        if self.selectionVisible, previous != target {
++        if !self.selectionVisible {
++            let pop = CAKeyframeAnimation(keyPath: "transform.scale")
++            pop.values = [0.85, 1.04, 1]
++            pop.duration = 0.25
++            self.selection.add(pop, forKey: "pop")
++        } else if previous != target {
 +            let move = CASpringAnimation(keyPath: "position")
 +            move.fromValue = NSValue(point: CGPoint(x: previous.midX, y: previous.midY))
 +            move.toValue = NSValue(point: CGPoint(x: target.midX, y: target.midY))
@@ -219,11 +230,6 @@ index 0000000..1d03791
 +            size.stiffness = 420
 +            size.duration = size.settlingDuration
 +            self.selection.add(size, forKey: "size")
-+        } else {
-+            let pop = CAKeyframeAnimation(keyPath: "transform.scale")
-+            pop.values = [0.85, 1.04, 1]
-+            pop.duration = 0.25
-+            self.selection.add(pop, forKey: "pop")
 +        }
 +
 +        let sweep = CABasicAnimation(keyPath: "position.x")
@@ -237,6 +243,14 @@ index 0000000..1d03791
 +        self.sheen.add(sweep, forKey: "sweep")
 +        self.sheen.add(sheenOpacity, forKey: "sheenOpacity")
 +        self.selectionVisible = true
++    }
++
++    /// clip view 側で座標系が反転済みのため、行の矩形はそのまま layer 座標として使える
++    private func layerRect(ofRow row: Int) -> CGRect? {
++        guard let tableView = self.tableView, row >= 0, row < tableView.numberOfRows else {
++            return nil
++        }
++        return tableView.rect(ofRow: row).insetBy(dx: 5, dy: 2)
 +    }
 +
 +    /// ウィンドウが表示されたときに下から浮き上がらせる
