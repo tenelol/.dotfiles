@@ -127,9 +127,10 @@ Select OmniWM with `nh darwin switch . -H macbook-omniwm`; return with
 `nh darwin switch . -H macbook-rift`. The denix rice stops the previous window
 manager before activation. OmniWM needs Accessibility and Input Monitoring
 permissions on first launch. Its preferences remain editable in the app. After
-OmniWM creates its initial settings, switching applies the
+OmniWM creates its initial settings, the next switch seeds the
 [Rift-style controls and app assignments](./modules/omniwm/files/rift-preset.json)
-while preserving other preferences, workspace IDs, and monitor routing.
+once. Later rice switches preserve GUI changes, including shortcuts and app
+assignments, as well as workspace IDs and monitor routing.
 Unsupported Rift layouts and command-launch bindings are not emulated.
 
 macOS wallpapers are managed in System Settings. denix/Home Manager does not set them during `nh darwin switch`.

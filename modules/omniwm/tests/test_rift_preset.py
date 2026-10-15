@@ -68,6 +68,22 @@ class RiftPresetTests(unittest.TestCase):
             module.apply(path, PRESET)
             self.assertEqual((path.stat().st_ino, path.stat().st_mtime_ns), (before.st_ino, before.st_mtime_ns))
 
+    def test_gui_changes_after_initial_apply_are_preserved(self):
+        for initial in (fixture(), module.configure(fixture(), PRESET)):
+            with self.subTest(initially_matches_preset=initial != fixture()):
+                with tempfile.TemporaryDirectory() as directory:
+                    path = Path(directory) / "settings.toml"
+                    path.write_text(initial)
+                    module.apply(path, PRESET)
+                    edited = path.read_text().replace('binding = "Option+H"', 'binding = "Control+Option+H"')
+                    edited = edited.replace('assignToWorkspace = "9"', 'assignToWorkspace = "8"', 1)
+                    edited += '\n[[workspaces]]\nid = "workspace-10"\nname = "10"\n'
+                    path.write_text(edited)
+                    before = path.stat()
+                    module.apply(path, PRESET)
+                    self.assertEqual(path.read_text(), edited)
+                    self.assertEqual(path.stat().st_mtime_ns, before.st_mtime_ns)
+
     def test_preset_matches_rift_assignments_and_direction_keys(self):
         rift = tomllib.loads((FEATURE.parent / "rift/files/config.toml").read_text())
         expected = {r["app_id"]: str(r["workspace"] + 1)

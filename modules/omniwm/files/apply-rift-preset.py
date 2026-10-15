@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Apply the Rift-like controls while preserving OmniWM's editable settings."""
+"""Seed Rift-like controls once, then preserve OmniWM's GUI settings."""
 
 import hashlib
 import json
@@ -79,14 +79,16 @@ def configure(text, preset):
 
 
 def apply(path, preset):
+    marker = path.with_name(".rift-preset-applied")
     # shortcut: first launch creates the full schema; apply on the next switch for a fresh Mac.
-    if not path.exists():
+    if not path.exists() or marker.exists():
         return
     if path.is_symlink():
         raise ValueError("refusing to replace a settings symlink")
     original = path.read_bytes()
     changed = configure(original.decode(), preset).encode()
     if changed == original:
+        marker.touch(mode=0o600, exist_ok=False)
         return
     backup = path.with_name(path.name + ".before-rift-" + hashlib.sha256(original).hexdigest()[:12])
     if not backup.exists():
@@ -105,6 +107,7 @@ def apply(path, preset):
         if path.read_bytes() != original:
             raise ValueError("settings changed during preparation; retry")
         os.replace(staged, path)
+        marker.touch(mode=0o600, exist_ok=False)
         print(f"OmniWM Rift controls applied; backup: {backup}")
     finally:
         if staged is not None:
