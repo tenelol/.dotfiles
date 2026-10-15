@@ -121,6 +121,7 @@ delib.module {
       '';
       extraConfigLua = ''
         require("core.plugin-loader")
+        require("core.yank-animation").setup()
       '';
       extraPlugins = builtins.attrValues nvim.nixManagedPlugins;
       extraFiles."lua".source = nvim.nvimLuaConfig;
