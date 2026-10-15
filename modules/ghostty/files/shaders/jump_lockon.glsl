@@ -13,10 +13,6 @@ const float BRACKET_ARM = 0.45;
 const float WOBBLE_FREQUENCY = 42.0;
 const float WOBBLE_DAMPING = 14.0;
 const float WOBBLE_AMOUNT = 0.22;
-const float WAVE_DURATION = 0.48;
-const float WAVE_REACH = 7.0;
-const float WAVE_WIDTH = 16.0;
-const float WAVE_STRENGTH = 12.0;
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     vec2 uv = fragCoord / iResolution.xy;
@@ -43,23 +39,13 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     vec2 offset = fragCoord - to;
     float dist = length(offset);
     float waveTime = elapsed - LOCK_TIME;
-    float waveRadius = WAVE_REACH * cellHeight * hudEaseOut(waveTime / WAVE_DURATION);
-    if (dist > START_SCALE * length(cellHalf) * 1.5 && dist > waveRadius + WAVE_WIDTH * 3.0) {
+    if (dist > START_SCALE * length(cellHalf) * 1.5 && dist > hudWaveRadius(waveTime, cellHeight) + HUD_WAVE_WIDTH * 3.0) {
         return;
     }
 
-    vec3 color = base.rgb;
-    float alpha = 0.0;
-
     // Refracting shockwave released at lock time.
-    if (waveTime > 0.0 && waveTime < WAVE_DURATION) {
-        float waveFade = 1.0 - waveTime / WAVE_DURATION;
-        float ring = exp(-pow((dist - waveRadius) / WAVE_WIDTH, 2.0));
-        vec2 push = dist > 1e-3 ? offset / dist : vec2(0.0);
-        vec2 warpedUv = clamp(uv - push * ring * WAVE_STRENGTH * waveFade / iResolution.xy, vec2(0.0), vec2(1.0));
-        color = mix(color, texture(iChannel0, warpedUv).rgb, ring * waveFade);
-        color += hudAccent() * ring * waveFade * 0.10;
-    }
+    vec3 color = hudShockwave(base.rgb, uv, offset, waveTime, cellHeight);
+    float alpha = 0.0;
 
     // The frame accelerates in like a homing reticle, then the impact
     // squeezes it past the cell and it rings out on a damped wobble.
@@ -75,12 +61,9 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     color += bracketColor * bracket * bracketAlpha * 0.9;
 
     // Cell flash at the instant of lock.
-    if (waveTime > 0.0) {
-        vec2 d = abs(offset) - cellHalf;
-        float cellGlow = exp(-max(max(d.x, d.y), 0.0) * 0.25) * exp(-waveTime * 10.0);
-        alpha += cellGlow * 0.35;
-        color += mix(hudAccent(), iCurrentCursorColor.rgb, 0.5) * cellGlow * 0.35;
-    }
+    float cellGlow = hudCellFlash(offset, cellHalf, waveTime);
+    alpha += cellGlow * 0.35;
+    color += mix(hudAccent(), iCurrentCursorColor.rgb, 0.5) * cellGlow * 0.35;
 
     fragColor = vec4(min(color, vec3(1.0)), max(base.a, hudSaturate(alpha)));
 }

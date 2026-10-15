@@ -59,3 +59,59 @@ float hudBrackets(vec2 offset, vec2 halfSize, float arm, float width) {
     );
     return 1.0 - smoothstep(width * 0.5, width * 0.5 + 1.2, d);
 }
+
+// Shockwave shared by the jump reticle and the focus ripple: a refracting
+// ring that rolls out from the origin of `offset`, tinted with the accent.
+const float HUD_WAVE_DURATION = 0.48;
+const float HUD_WAVE_REACH_CELLS = 7.0;
+const float HUD_WAVE_WIDTH = 16.0;
+const float HUD_WAVE_STRENGTH = 12.0;
+
+float hudWaveRadius(float t, float cellHeight) {
+    return HUD_WAVE_REACH_CELLS * cellHeight * hudEaseOut(t / HUD_WAVE_DURATION);
+}
+
+vec3 hudShockwave(vec3 color, vec2 uv, vec2 offset, float t, float cellHeight) {
+    if (t <= 0.0 || t >= HUD_WAVE_DURATION) {
+        return color;
+    }
+    float dist = length(offset);
+    float fade = 1.0 - t / HUD_WAVE_DURATION;
+    float ring = exp(-pow((dist - hudWaveRadius(t, cellHeight)) / HUD_WAVE_WIDTH, 2.0));
+    vec2 push = dist > 1e-3 ? offset / dist : vec2(0.0);
+    vec2 warped = clamp(uv - push * ring * HUD_WAVE_STRENGTH * fade / iResolution.xy, vec2(0.0), vec2(1.0));
+    color = mix(color, texture(iChannel0, warped).rgb, ring * fade);
+    return color + hudAccent() * ring * fade * 0.10;
+}
+
+// Flash of the impact cell, decaying from the moment of contact.
+float hudCellFlash(vec2 offset, vec2 cellHalf, float t) {
+    if (t <= 0.0) {
+        return 0.0;
+    }
+    vec2 d = abs(offset) - cellHalf;
+    return exp(-max(max(d.x, d.y), 0.0) * 0.25) * exp(-t * 10.0);
+}
+
+// Glyph coverage inside one cell, so effects light a single character and
+// never its neighbours.
+float hudGlyphMask(vec2 p, vec2 center, vec2 halfSize) {
+    vec2 d = abs(p - center) - halfSize;
+    if (max(d.x, d.y) > 0.0) {
+        return 0.0;
+    }
+    vec3 ink = texture(iChannel0, p / iResolution.xy).rgb;
+    vec3 weights = vec3(0.2126, 0.7152, 0.0722);
+    return smoothstep(0.12, 0.45, dot(ink, weights) - dot(iBackgroundColor, weights));
+}
+
+// Small bloom of a glyph: its mask on a tight ring and a wider, offset ring.
+float hudGlyphGlow(vec2 p, vec2 center, vec2 halfSize, float radius) {
+    float glow = hudGlyphMask(p, center, halfSize) * 0.6;
+    for (int i = 0; i < 8; ++i) {
+        float angle = float(i) * 0.78539816;
+        glow += hudGlyphMask(p + vec2(cos(angle), sin(angle)) * radius, center, halfSize) * 0.12;
+        glow += hudGlyphMask(p + vec2(cos(angle + 0.3927), sin(angle + 0.3927)) * radius * 2.5, center, halfSize) * 0.06;
+    }
+    return hudSaturate(glow);
+}

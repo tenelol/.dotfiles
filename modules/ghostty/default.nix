@@ -94,7 +94,7 @@ delib.module {
       xdg.configFile = {
         "ghostty/config".source = mkConfig myconfig;
         "ghostty/shaders/aurora.glsl".source = auroraShader;
-        "ghostty/shaders/focus_lockon.glsl".source = mkHudShader "focus_lockon.glsl";
+        "ghostty/shaders/focus_ripple.glsl".source = mkHudShader "focus_ripple.glsl";
         "ghostty/shaders/readability_scrim.glsl".source = mkReadabilityShader myconfig;
         "ghostty/shaders/cursor_smear.glsl".source = mkHudShader "cursor_smear.glsl";
         "ghostty/shaders/typing_ignite.glsl".source = mkHudShader "typing_ignite.glsl";

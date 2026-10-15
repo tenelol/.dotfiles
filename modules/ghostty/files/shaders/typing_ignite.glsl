@@ -12,21 +12,6 @@ const float HEAT_TIME = 0.24;
 const float SCAN_SPREAD = 1.8;
 const float SCAN_OPACITY = 0.5;
 
-float luma(vec3 c) {
-    return dot(c, vec3(0.2126, 0.7152, 0.0722));
-}
-
-float insideBox(vec2 p, vec2 center, vec2 halfSize) {
-    vec2 d = abs(p - center) - halfSize;
-    return step(max(d.x, d.y), 0.0);
-}
-
-// Glyph coverage of the typed cell only, so neighbours never light up.
-float glyphMask(vec2 p, vec2 center, vec2 halfSize) {
-    float ink = luma(texture(iChannel0, p / iResolution.xy).rgb) - luma(iBackgroundColor);
-    return smoothstep(0.12, 0.45, ink) * insideBox(p, center, halfSize);
-}
-
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     vec4 base = texture(iChannel0, fragCoord / iResolution.xy);
     fragColor = base;
@@ -58,17 +43,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     float fade = (1.0 - life) * (1.0 - life);
     vec3 heat = mix(HUD_FLASH, hudAccent(), smoothstep(0.0, HEAT_TIME, elapsed));
 
-    // Cheap bloom: the glyph mask sampled on a tight and a wide ring, with the
-    // wide ring offset by half a step so the halo stays round.
-    float glow = glyphMask(fragCoord, cell, cellHalf) * 0.6;
-    for (int i = 0; i < 8; ++i) {
-        float angle = float(i) * 0.78539816;
-        vec2 dir = vec2(cos(angle), sin(angle));
-        vec2 wideDir = vec2(cos(angle + 0.3927), sin(angle + 0.3927));
-        glow += glyphMask(fragCoord + dir * GLOW_TAP_RADIUS, cell, cellHalf) * 0.12;
-        glow += glyphMask(fragCoord + wideDir * GLOW_TAP_RADIUS * 2.5, cell, cellHalf) * 0.06;
-    }
-    float alpha = hudSaturate(glow) * GLOW_OPACITY * fade;
+    float alpha = hudGlyphGlow(fragCoord, cell, cellHalf, GLOW_TAP_RADIUS) * GLOW_OPACITY * fade;
 
     // Scan line spreading sideways from the cell's baseline.
     float spread = cellHalf.x * (1.0 + SCAN_SPREAD * sqrt(life));
