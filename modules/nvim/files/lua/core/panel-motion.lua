@@ -137,8 +137,8 @@ local function animate(win, opts)
   end)
 end
 
---- Grow `win` along `axis` ("width" or "height") to `size`. Reversing a close
---- continues from the current size.
+--- Grow `win` along `axis` ("width" or "height") to `size`, then call
+--- `on_done(completed)` if given. Reversing a close continues from the current size.
 function M.open(win, opts)
   local continuing = active[win] and active[win].mode == "close"
   animate(win, {
@@ -147,6 +147,7 @@ function M.open(win, opts)
     mode = "open",
     from = continuing and size_of(win, opts.axis) or 1,
     lock = opts.lock ~= false,
+    on_done = opts.on_done,
   })
 end
 

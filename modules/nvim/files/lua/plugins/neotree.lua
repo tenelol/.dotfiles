@@ -5,6 +5,28 @@ local function is_side_panel(state, win)
   return state.current_position ~= "current" and vim.api.nvim_win_get_config(win).relative == ""
 end
 
+-- Inner width neo-tree should lay out for while a panel animates. Its
+-- containers right-align to the measured width, and its resize monitor
+-- re-renders on every change, so git and diagnostic icons would otherwise
+-- slide across the panel as it grows or shrinks.
+local settling = {}
+local measure_patched = false
+
+local function hold_layout(win)
+  local utils = require("neo-tree.utils")
+  if not measure_patched then
+    measure_patched = true
+    local measure = utils.get_inner_win_width
+    utils.get_inner_win_width = function(winid)
+      return settling[winid] or measure(winid)
+    end
+  end
+  settling[win] = settling[win] or utils.get_inner_win_width(win)
+  return function()
+    settling[win] = nil
+  end
+end
+
 local function close_tree(state)
   local win = state.winid
   if not win or not vim.api.nvim_win_is_valid(win) then
@@ -19,9 +41,11 @@ local function close_tree(state)
     return
   end
   local buf = vim.api.nvim_win_get_buf(win)
+  local release = hold_layout(win)
   panel.close(win, {
     axis = "width",
     on_done = function(completed)
+      release()
       if completed and vim.api.nvim_win_is_valid(win) and vim.api.nvim_win_get_buf(win) == buf then
         require("neo-tree.ui.renderer").close(state)
       end
@@ -36,7 +60,9 @@ local function open_tree(event)
   end
   local state = require("neo-tree.sources.manager").get_state(event.source)
   if is_side_panel(state, win) then
-    require("core.panel-motion").open(win, { axis = "width", size = vim.api.nvim_win_get_width(win) })
+    -- Measured before the panel collapses, so the first render uses the final width.
+    local release = hold_layout(win)
+    require("core.panel-motion").open(win, { axis = "width", size = vim.api.nvim_win_get_width(win), on_done = release })
   end
 end
 

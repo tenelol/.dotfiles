@@ -19,6 +19,7 @@ for _ = 1, 2 do
   local tree_window = state.winid
   assert(vim.api.nvim_win_get_width(tree_window) <= 2, "Neo-tree was shown at full width before opening animation")
   local intermediate = false
+  local measured = {}
   local early_content = false
   assert(
     vim.wait(1500, function()
@@ -27,6 +28,10 @@ for _ = 1, 2 do
         vim.api.nvim_exec_autocmds("WinResized", {})
       end
       intermediate = intermediate or (width > 1 and width < 34)
+      if width < 34 then
+        -- Neo-tree must keep laying out for the final width so icons hold still.
+        measured[require("neo-tree.utils").get_inner_win_width(tree_window)] = true
+      end
       if width > 1 and width < 34 then
         early_content = early_content
           or table.concat(vim.api.nvim_buf_get_lines(state.bufnr, 0, -1, false), "\n"):find("example.txt", 1, true)
@@ -37,6 +42,8 @@ for _ = 1, 2 do
     "Neo-tree opening animation did not settle"
   )
   assert(intermediate, "Neo-tree snapped open without sliding")
+  local final_inner = require("neo-tree.utils").get_inner_win_width(tree_window)
+  assert(vim.tbl_count(measured) == 1 and measured[final_inner], "Neo-tree measured a moving width: " .. vim.inspect(measured))
   assert(early_content, "Neo-tree filenames appeared only after opening animation")
   assert(vim.g.minianimate_disable ~= true, "MiniAnimate stayed disabled after sidebar animation")
   state.commands.slide_close(state)
