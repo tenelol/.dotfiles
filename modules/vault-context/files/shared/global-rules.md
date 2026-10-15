@@ -9,7 +9,7 @@
 
 ## Project router
 
-- 本人の経歴・活動・関心・価値観や個人的な判断が回答に影響するときは `~/Documents/personal-context/README.md` を読み、必要なmaster・雑多コンテキストと出典だけ参照する。
+- 本人の経歴・活動・関心・価値観や個人的な判断が回答に影響するときは `~/Documents/personal-context/README.md` を読み、必要なmaster・雑多コンテキストと出典だけ参照する。キャリア・学習・生活の相談、本人に向けた提案や優先順位付け、本人名義・本人紹介の文章、日記の壁打ちが該当する。該当するか迷う場合も短いREADMEを入口にし、本人固有の事情で結論が変わるときだけ参照先へ進む。
 - 過去の判断・継続作業・現在の一次情報だけでは分からない制約が必要な場合にだけ、既存のproject contextを参照する。現在の証拠で完結する作業では検索しない。
 - 参照・保存・修復が必要になったときだけ `~/.codex/project-context-protocol.md` を読む。未反映時の管理元は `/Users/tener/.dotfiles/modules/vault-context/files/codex/project-context-protocol.md`。Git common-dirの`project-context/`または非Git projectの`context/`を正本とし、現在の一次証拠と照合する。
 
