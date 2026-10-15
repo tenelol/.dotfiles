@@ -9,9 +9,11 @@ assert(_G.MiniAnimate == nil, "Animations should wait for VeryLazy")
 vim.api.nvim_exec_autocmds("User", { pattern = "VeryLazy" })
 
 local animate = require("mini.animate")
-for _, action in ipairs({ "scroll", "resize", "open", "close" }) do
+for _, action in ipairs({ "scroll", "resize" }) do
   assert(animate.config[action].enable, action .. " animation is disabled")
 end
+-- Window open/close is handled by the lock-on in core.targets.
+assert(not animate.config.open.enable and not animate.config.close.enable, "Window wipes should stay off")
 assert(animate.config.cursor.timing(1, 30) < animate.config.cursor.timing(30, 30), "Cursor should ease out")
 assert(#animate.config.cursor.path({ 100, 100 }) <= 30, "Long cursor jumps need a bounded path")
 assert(#animate.config.cursor.path({ 0, 8 }) > 0, "Word jumps should show a cursor trail")
@@ -57,10 +59,12 @@ local function check_animation(action, command)
   vim.api.nvim_exec_autocmds("WinScrolled", {})
   assert(vim.wait(1000, function() return finished end), action .. " animation did not finish")
 end
-check_animation("Open", "vsplit")
+vim.cmd("vsplit")
+-- MiniAnimate snapshots the layout on WinScrolled; record the split first.
+vim.api.nvim_exec_autocmds("WinScrolled", {})
 local width = vim.api.nvim_win_get_width(0) - 5
 check_animation("Resize", "vertical resize " .. width)
 assert(vim.api.nvim_win_get_width(0) == width, "Resize changed the target width")
-check_animation("Close", "close")
+vim.cmd("close")
 assert(#vim.api.nvim_list_wins() == 1, "Animation window leaked")
 print("Easing, responsive scrolling, window animations, and final layout: OK")

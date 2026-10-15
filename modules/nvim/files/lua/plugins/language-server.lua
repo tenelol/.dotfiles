@@ -119,8 +119,14 @@ return {
                         lsp_format = "fallback",
                     })
                 end, "Format buffer")
-                map("n", "[d", vim.diagnostic.goto_prev, "Previous diagnostic")
-                map("n", "]d", vim.diagnostic.goto_next, "Next diagnostic")
+                map("n", "[d", function()
+                    vim.diagnostic.goto_prev()
+                    require("core.targets").diagnostic()
+                end, "Previous diagnostic")
+                map("n", "]d", function()
+                    vim.diagnostic.goto_next()
+                    require("core.targets").diagnostic()
+                end, "Next diagnostic")
 
                 if client:supports_method("textDocument/documentHighlight") then
                     vim.api.nvim_create_autocmd({ "CursorHold", "CursorHoldI" }, {

@@ -24,6 +24,10 @@ return {
         stages = "fade_in_slide_out",
         fps = 60,
         timeout = 2000,
+        on_open = function(win)
+          -- Notifications fade in where they rest, so lock onto that spot.
+          require("core.motion").lock(require("core.motion").window_rect(win), { spread = 0.6 })
+        end,
       })
 
       vim.notify = notify

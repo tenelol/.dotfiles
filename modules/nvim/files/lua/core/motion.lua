@@ -77,6 +77,7 @@ end
 
 --- Lock brackets onto an editor-grid rectangle (0-based row/col of its content).
 --- `opts.delay` postpones the approach so the lock lands when other motion settles;
+--- `opts.spread` scales how far outside the target the brackets start;
 --- `opts.on_lock` runs at the moment of contact.
 function M.lock(rect, opts)
   opts = opts or {}
@@ -86,6 +87,7 @@ function M.lock(rect, opts)
   next_id = next_id + 1
   local id = "motion_lock_" .. next_id
   local delay = opts.delay or 0
+  local reach = opts.spread or 1
   local wins, locked, fading = {}, false, false
 
   local function close()
@@ -100,8 +102,8 @@ function M.lock(rect, opts)
   locks[id] = close
 
   local function place(spread)
-    local rows = math.floor(SPREAD_ROWS * spread + 0.5)
-    local cols = math.floor(SPREAD_COLS * spread + 0.5)
+    local rows = math.floor(SPREAD_ROWS * reach * spread + 0.5)
+    local cols = math.floor(SPREAD_COLS * reach * spread + 0.5)
     for i, corner in ipairs(CORNERS) do
       local row, col = corner_pos(rect, corner, rows, cols)
       local config = { relative = "editor", row = row, col = col, width = 2, height = 1 }
@@ -171,6 +173,25 @@ function M.unlock(id)
   if id and locks[id] then
     M.stop(id)
     locks[id]()
+  end
+end
+
+--- Editor-grid bounding box of the visible part of buffer ranges in `win`;
+--- each range is `{ row = 0-based, first = 1-based byte, last = 1-based byte }`.
+function M.text_rect(win, ranges)
+  local top, left, bottom, right
+  for _, range in ipairs(ranges) do
+    local a = vim.fn.screenpos(win, range.row + 1, range.first)
+    local b = vim.fn.screenpos(win, range.row + 1, range.last)
+    if a.row > 0 and b.row > 0 then
+      top = math.min(top or a.row, a.row)
+      bottom = math.max(bottom or b.row, b.row)
+      left = math.min(left or a.col, a.col)
+      right = math.max(right or b.endcol, b.endcol)
+    end
+  end
+  if top then
+    return { row = top - 1, col = left - 1, height = bottom - top + 1, width = right - left + 1 }
   end
 end
 

@@ -48,24 +48,6 @@ local function region(buf, regtype)
   return ranges
 end
 
--- Editor-grid bounding box of the visible part of the region.
-local function screen_rect(win, ranges)
-  local top, left, bottom, right
-  for _, range in ipairs(ranges) do
-    local a = vim.fn.screenpos(win, range.row + 1, range.first)
-    local b = vim.fn.screenpos(win, range.row + 1, range.last)
-    if a.row > 0 and b.row > 0 then
-      top = math.min(top or a.row, a.row)
-      bottom = math.max(bottom or b.row, b.row)
-      left = math.min(left or a.col, a.col)
-      right = math.max(right or b.endcol, b.endcol)
-    end
-  end
-  if top then
-    return { row = top - 1, col = left - 1, height = bottom - top + 1, width = right - left + 1 }
-  end
-end
-
 local function paint(state, level)
   if not vim.api.nvim_buf_is_valid(state.buf) then
     return
@@ -125,7 +107,7 @@ function M.play(buf, regtype)
     end)
   end
 
-  local rect = screen_rect(vim.api.nvim_get_current_win(), ranges)
+  local rect = motion.text_rect(vim.api.nvim_get_current_win(), ranges)
   if not rect then
     paint(state, 1)
     cool()
