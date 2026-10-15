@@ -52,9 +52,9 @@ copy-on-select = false
 custom-shader = ~/.config/ghostty/shaders/aurora.glsl
 # custom-shader = ~/.config/ghostty/shaders/liquid_glass_focus.glsl
 custom-shader = ~/.config/ghostty/shaders/readability_scrim.glsl
-# custom-shader = ~/.config/ghostty/shaders/cursor_warp.glsl
-# custom-shader = ~/.config/ghostty/shaders/typing_sparks.glsl
-# custom-shader = ~/.config/ghostty/shaders/cursor_ink_ripple.glsl
+# custom-shader = ~/.config/ghostty/shaders/cursor_smear.glsl
+# custom-shader = ~/.config/ghostty/shaders/typing_ignite.glsl
+# custom-shader = ~/.config/ghostty/shaders/jump_lockon.glsl
 custom-shader-animation = true
 
 # Quick terminal

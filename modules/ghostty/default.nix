@@ -89,9 +89,9 @@ delib.module {
         "ghostty/shaders/aurora.glsl".source = auroraShader;
         "ghostty/shaders/liquid_glass_focus.glsl".source = ./files/shaders/liquid_glass_focus.glsl;
         "ghostty/shaders/readability_scrim.glsl".source = mkReadabilityShader myconfig;
-        "ghostty/shaders/cursor_warp.glsl".source = ./files/shaders/cursor_warp.glsl;
-        "ghostty/shaders/typing_sparks.glsl".source = ./files/shaders/typing_sparks.glsl;
-        "ghostty/shaders/cursor_ink_ripple.glsl".source = ./files/shaders/cursor_ink_ripple.glsl;
+        "ghostty/shaders/cursor_smear.glsl".source = ./files/shaders/cursor_smear.glsl;
+        "ghostty/shaders/typing_ignite.glsl".source = ./files/shaders/typing_ignite.glsl;
+        "ghostty/shaders/jump_lockon.glsl".source = ./files/shaders/jump_lockon.glsl;
       };
     };
 }
