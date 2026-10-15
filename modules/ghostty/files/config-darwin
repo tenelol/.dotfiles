@@ -60,8 +60,9 @@ right-click-action = "context-menu"
 # Custom shaders
 custom-shader = ~/.config/ghostty/shaders/liquid_glass_focus.glsl
 custom-shader = ~/.config/ghostty/shaders/readability_scrim.glsl
-custom-shader = ~/.config/ghostty/shaders/cursor_tail.glsl
-custom-shader = ~/.config/ghostty/shaders/ripple_rectangle_cursor.glsl
+custom-shader = ~/.config/ghostty/shaders/cursor_warp.glsl
+custom-shader = ~/.config/ghostty/shaders/typing_sparks.glsl
+custom-shader = ~/.config/ghostty/shaders/cursor_ink_ripple.glsl
 custom-shader-animation = always
 
 # Quick terminal

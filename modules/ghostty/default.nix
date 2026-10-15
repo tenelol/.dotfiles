@@ -75,47 +75,6 @@ let
           --replace-fail 'fragColor = vec4(finalColor, terminalColor.a);' 'fragColor = vec4(finalColor, max(terminalColor.a, finalSnakeAlpha * GLOW_OPACITY));'
       '';
 
-  cursorTailShader =
-    pkgs.runCommand "ghostty-cursor-tail-subtle.glsl"
-      {
-        src = pkgs.fetchurl {
-          url = "https://raw.githubusercontent.com/sahaj-b/ghostty-cursor-shaders/06d4e90fb5410e9c4d0b3131584060adddf89406/cursor_tail.glsl";
-          hash = "sha256-CEEjiRG9USeW8i9c+FbFgt8Rzcrc11KFNHOfvH0soxI=";
-        };
-      }
-      ''
-        substitute "$src" "$out" \
-          --replace-fail 'vec4 TRAIL_COLOR = vec4(sRGBToLinear(iCurrentCursorColor.rgb), iCurrentCursorColor.a);' 'vec4 TRAIL_COLOR = vec4(sRGBToLinear(iCurrentCursorColor.rgb), iCurrentCursorColor.a * 0.55);' \
-          --replace-fail 'const float DURATION = 0.09;' 'const float DURATION = 0.13;' \
-          --replace-fail 'const float THRESHOLD_MIN_DISTANCE = 1.5;' 'const float THRESHOLD_MIN_DISTANCE = 1.0;'
-      '';
-
-  rippleRectangleCursorShader =
-    pkgs.runCommand "ghostty-ripple-rectangle-cursor-subtle.glsl"
-      {
-        src = pkgs.fetchurl {
-          url = "https://raw.githubusercontent.com/sahaj-b/ghostty-cursor-shaders/06d4e90fb5410e9c4d0b3131584060adddf89406/ripple_rectangle_cursor.glsl";
-          hash = "sha256-KnrJqjKjyxNku33b2eYHCSquwKzibVsPO8pB5xxugMg=";
-        };
-      }
-      ''
-        cp "$src" "$out"
-        substituteInPlace "$out" \
-          --replace-fail 'const float MAX_SIZE = 0.05;' 'const float MAX_SIZE = 0.034;' \
-          --replace-fail 'const float RING_THICKNESS = 0.02;' 'const float RING_THICKNESS = 0.018;' \
-          --replace-fail 'vec4 COLOR = vec4(0.35, 0.36, 0.44, 1.0);' 'vec4 COLOR = vec4(0.35, 0.36, 0.44, 0.68);' \
-          --replace-fail 'const float BLUR = 1.0;' 'const float BLUR = 1.2;'
-        awk '
-          /^    \/\/ Normalization & setup \(-1 to 1 coords\)/ {
-            print "    if (iFocus == 0) {";
-            print "        return;";
-            print "    }";
-            print "";
-          }
-          { print }
-        ' "$out" > "$out.tmp"
-        mv "$out.tmp" "$out"
-      '';
 in
 delib.module {
   name = "ghostty";
@@ -130,8 +89,9 @@ delib.module {
         "ghostty/shaders/aurora.glsl".source = auroraShader;
         "ghostty/shaders/liquid_glass_focus.glsl".source = ./files/shaders/liquid_glass_focus.glsl;
         "ghostty/shaders/readability_scrim.glsl".source = mkReadabilityShader myconfig;
-        "ghostty/shaders/cursor_tail.glsl".source = cursorTailShader;
-        "ghostty/shaders/ripple_rectangle_cursor.glsl".source = rippleRectangleCursorShader;
+        "ghostty/shaders/cursor_warp.glsl".source = ./files/shaders/cursor_warp.glsl;
+        "ghostty/shaders/typing_sparks.glsl".source = ./files/shaders/typing_sparks.glsl;
+        "ghostty/shaders/cursor_ink_ripple.glsl".source = ./files/shaders/cursor_ink_ripple.glsl;
       };
     };
 }
