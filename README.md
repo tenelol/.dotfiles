@@ -90,6 +90,12 @@ Keep provider files unchanged when refreshing a skill. Local integrations are li
 
 `hatch-pet` uses the v2 skill bundled in ChatGPT.app through `~/.agents/skills/hatch-pet`; it is not copied into this repository. Pi extension-owned skills are linked from their packaged extension directories rather than duplicated. Skill security checks use the upstream [Cisco AI Defense scanner](https://github.com/cisco-ai-defense/skill-scanner) CLI (`skill-scanner`).
 
+## Claude Code
+
+Run `claude` in a project directory (`cc` in Fish). The native Claude Code installation updates itself with `claude update` and uses the existing Claude subscription login.
+
+The [global Claude instructions](./modules/vault-context/files/claude/CLAUDE.md) import Codex's shared rules; denix/Home Manager deploys this bridge through the [context module](./modules/vault-context). Keep Claude's user settings writable. Set Project instructions to `claude-md-and-agents-md` to load project `AGENTS.md` alongside existing `CLAUDE.md`; this repository's `CLAUDE.md` imports `AGENTS.md` directly. See the [official instructions documentation](https://code.claude.com/docs/en/memory#agents-md).
+
 ## Pi
 
 [`modules/pi-coding-agent`](./modules/pi-coding-agent) uses denix and Home Manager's `home.file` declarations for Pi configuration and resource links. `settings.json`, `models.json`, `keybindings.json`, and `zentui.json` are maintained in dotfiles and applied with the normal `nh` workflow; Pi's own settings saves are not persisted. Home Manager derives the acknowledged changelog version from the Pi package, preventing repeated release notes and writes to its read-only settings after upgrades.

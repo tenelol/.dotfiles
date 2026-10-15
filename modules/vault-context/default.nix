@@ -108,6 +108,10 @@ delib.scopedModule {
         source = ./files/codex/AGENTS.md;
         force = true;
       };
+      ".claude/CLAUDE.md" = {
+        source = ./files/claude/CLAUDE.md;
+        force = true;
+      };
       ".codex/project-context-protocol.md" = {
         source = ./files/codex/project-context-protocol.md;
         force = true;

@@ -2,7 +2,7 @@
 
 確認日: 2026-09-23
 
-対象: このdotfilesで管理するCodex・Pi共通のプロジェクトコンテキスト（`project-context/v3`）
+対象: このdotfilesで管理するCodex・Claude Code・Pi共通のプロジェクトコンテキスト（`project-context/v3`）
 
 この環境では、**全体の運用ルールはdotfilesで管理し、過去の判断に必要な原文・資料・AIの整理結果は各プロジェクトのローカル領域に保存する**。現在のコードや実行結果で分かることは、そちらを先に確認する。コンテキストを毎回すべて読み込んだり、会話をすべて保存したりはしない。
 
@@ -12,7 +12,7 @@
 
 | 構成要素 | 役割 | 主な配置 |
 | --- | --- | --- |
-| エージェント共通ルール | いつ過去の文脈を読むか、保存条件、作業権限を定める | Codex: `~/.codex/AGENTS.md`、Pi: `~/.pi/agent/AGENTS.md` |
+| エージェント共通ルール | いつ過去の文脈を読むか、保存条件、作業権限を定める | Codex: `~/.codex/AGENTS.md`、Claude Code: それをimportする`~/.claude/CLAUDE.md`、Pi: `~/.pi/agent/AGENTS.md` |
 | 共有プロトコル | 正本の探し方、原文とAI出力の分離、検索・保存・旧記録の扱いを定める | 各エージェントの `project-context-protocol.md` |
 | プロジェクト固有ルール | そのリポジトリの構成・検証・コミット方針など | プロジェクトの `AGENTS.md` |
 | プロジェクトコンテキスト | タスクをまたいで残す原文・原資料・AIによる分析 | Git共通ディレクトリの `project-context/`、または非Gitプロジェクトの `context/` |
@@ -21,7 +21,7 @@
 
 日常作業で確認する一次情報は、現在のリポジトリ、公式文書、Issue、PR、CI、実行結果など。保存された過去の記録も、必要に応じて現在の一次情報と照合する。
 
-CodexとPiはエージェント共通ルールをそれぞれ持つが、コンテキストのプロトコルは同じ管理元から配布する。同じGitリポジトリを扱う場合、保存先も同じGit共通ディレクトリに解決される。
+CodexとPiはエージェント共通ルールをそれぞれ持ち、Claude CodeはCodexのルールをimportする。コンテキストのプロトコルは同じ管理元を使う。同じGitリポジトリを扱う場合、保存先も同じGit共通ディレクトリに解決される。この共有はローカルのClaude Codeが対象で、Claudeの通常チャットやCoworkの設定とは別になる。
 
 ## 2. 保存先とディレクトリ構造
 
@@ -109,6 +109,7 @@ rg --hidden --no-ignore -n -i --glob '*.md' --glob '!README.md' \
 | 管理元 | 配布先・役割 |
 | --- | --- |
 | `modules/vault-context/files/codex/AGENTS.md` | `~/.codex/AGENTS.md` |
+| `modules/vault-context/files/claude/CLAUDE.md` | `~/.claude/CLAUDE.md`。Codexの共通ルールをimport |
 | `modules/pi-coding-agent/files/AGENTS.md` | `~/.pi/agent/AGENTS.md` |
 | `modules/vault-context/files/codex/project-context-protocol.md` | `~/.codex/project-context-protocol.md` と `~/.pi/agent/project-context-protocol.md` |
 | `.agents/skills/project-context-init/SKILL.md` | `~/.agents/skills/project-context-init/SKILL.md` |
