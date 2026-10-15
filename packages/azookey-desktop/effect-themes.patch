@@ -31,7 +31,7 @@ index 0da10cf..7155a38 100644
 +    }
 +}
 diff --git a/azooKeyMac/InputController/CandidateWindow/BaseCandidateViewController.swift b/azooKeyMac/InputController/CandidateWindow/BaseCandidateViewController.swift
-index 0e62f73..a8b96e2 100644
+index 0e62f73..c21cbfb 100644
 --- a/azooKeyMac/InputController/CandidateWindow/BaseCandidateViewController.swift
 +++ b/azooKeyMac/InputController/CandidateWindow/BaseCandidateViewController.swift
 @@ -93,6 +93,8 @@ class BaseCandidateViewController: NSViewController {
@@ -77,15 +77,19 @@ index 0e62f73..a8b96e2 100644
      }
  
      internal func configureWindowForRoundedCorners() {
-@@ -183,6 +205,7 @@ class BaseCandidateViewController: NSViewController {
+@@ -183,6 +205,11 @@ class BaseCandidateViewController: NSViewController {
          selectionIndex: Int?,
          cursorLocation: CGPoint
      ) {
 +        self.syncDecoration()
++        // 隠れていたウィンドウを出し直すときは、前回の変換で最後に選んでいた行から滑らせない
++        if self.view.window?.isVisible != true {
++            self.decoration?.moveSelection(toRow: nil)
++        }
          self.candidates = candidates
          self.currentSelectedRow = selectionIndex ?? -1
          self.tableView.reloadData()
-@@ -195,6 +218,7 @@ class BaseCandidateViewController: NSViewController {
+@@ -195,6 +222,7 @@ class BaseCandidateViewController: NSViewController {
  
      internal func updateSelection(to row: Int, notifySelectionChange: Bool = true) {
          if row == -1 {
@@ -93,7 +97,7 @@ index 0e62f73..a8b96e2 100644
              return
          }
          self.tableView.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
-@@ -202,6 +226,7 @@ class BaseCandidateViewController: NSViewController {
+@@ -202,6 +230,7 @@ class BaseCandidateViewController: NSViewController {
          self.updateSelectionCallback(row, notifySelectionChange: notifySelectionChange)
          self.currentSelectedRow = row
          self.updateVisibleRows()
@@ -101,7 +105,7 @@ index 0e62f73..a8b96e2 100644
      }
  
      internal func updateSelectionCallback(_ row: Int, notifySelectionChange: Bool) {}
-@@ -314,7 +339,7 @@ extension BaseCandidateViewController: NSTableViewDelegate, NSTableViewDataSourc
+@@ -314,7 +343,7 @@ extension BaseCandidateViewController: NSTableViewDelegate, NSTableViewDataSourc
          var rowView = tableView.makeView(withIdentifier: identifier, owner: nil) as? NSTableRowView
  
          if rowView == nil {
@@ -1169,10 +1173,10 @@ index 0000000..08218aa
 +}
 diff --git a/azooKeyMac/InputController/Effects/LockOnEffectTheme.swift b/azooKeyMac/InputController/Effects/LockOnEffectTheme.swift
 new file mode 100644
-index 0000000..372f1fd
+index 0000000..ee84ddd
 --- /dev/null
 +++ b/azooKeyMac/InputController/Effects/LockOnEffectTheme.swift
-@@ -0,0 +1,387 @@
+@@ -0,0 +1,389 @@
 +import AppKit
 +import QuartzCore
 +
@@ -1252,8 +1256,9 @@ index 0000000..372f1fd
 +
 +    /// 打鍵の残光。Ghostty の typing ignite と同じ長さにする
 +    private static let igniteDuration: CFTimeInterval = 0.42
-+    private static let lockTime: CFTimeInterval = 0.24
-+    private static let lockDuration: CFTimeInterval = 0.8
++    /// 確定は Enter の直後に手応えが欲しいので、ブラケットは短い距離を一瞬で吸い付かせる
++    private static let lockTime: CFTimeInterval = 0.08
++    private static let lockDuration: CFTimeInterval = 0.7
 +
 +    func keystroke(at caret: CGRect) {
 +        guard let (root, local) = EffectOverlayWindow.shared.prepareRoot(for: caret) else {
@@ -1301,7 +1306,7 @@ index 0000000..372f1fd
 +
 +    func commit(_ text: String, at caret: CGRect) {
 +        // 英字は1文字ずつ確定されるため、打鍵の残光だけにしてロックオンは出さない
-+        guard text.count >= 2, let (root, local) = EffectOverlayWindow.shared.prepareRoot(for: caret) else {
++        guard text.count >= 2 || !text.allSatisfy(\.isASCII), let (root, local) = EffectOverlayWindow.shared.prepareRoot(for: caret) else {
 +            return
 +        }
 +        let height = max(local.height, 12)
@@ -1316,12 +1321,12 @@ index 0000000..372f1fd
 +        brackets.opacity = 0
 +        root.addSublayer(brackets)
 +        let approachScale = CABasicAnimation(keyPath: "transform.scale")
-+        approachScale.fromValue = 2.6
++        approachScale.fromValue = 1.5
 +        approachScale.toValue = 1
 +        approachScale.duration = Self.lockTime
 +        approachScale.timingFunction = LockOnHUD.homing
 +        let approachTurn = CABasicAnimation(keyPath: "transform.rotation.z")
-+        approachTurn.fromValue = 0.9
++        approachTurn.fromValue = 0.3
 +        approachTurn.toValue = 0
 +        approachTurn.duration = Self.lockTime
 +        approachTurn.timingFunction = LockOnHUD.homing
@@ -1330,8 +1335,9 @@ index 0000000..372f1fd
 +        let color = LockOnHUD.cooling(keyPath: "strokeColor", duration: 0.3)
 +        color.beginTime = Self.lockTime
 +        let opacity = CAKeyframeAnimation(keyPath: "opacity")
-+        opacity.values = [0, 0.9, 1, 1, 0]
-+        opacity.keyTimes = [0, 0.15, 0.3, 0.7, 1]
++        // 確定した瞬間から見えているよう、最初のフレームから不透明にする
++        opacity.values = [1, 1, 0]
++        opacity.keyTimes = [0, 0.6, 1]
 +        let group = CAAnimationGroup()
 +        group.animations = [approachScale, approachTurn, wobble, color, opacity]
 +        group.duration = Self.lockDuration
@@ -1561,7 +1567,7 @@ index 0000000..372f1fd
 +    }
 +}
 diff --git a/azooKeyMac/InputController/azooKeyMacInputController.swift b/azooKeyMac/InputController/azooKeyMacInputController.swift
-index f10ba35..0881ffe 100644
+index f10ba35..78fd15a 100644
 --- a/azooKeyMac/InputController/azooKeyMacInputController.swift
 +++ b/azooKeyMac/InputController/azooKeyMacInputController.swift
 @@ -148,6 +148,7 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
@@ -1572,7 +1578,37 @@ index f10ba35..0881ffe 100644
          self.updateTransformSelectedTextMenuItemEnabledState()
          // ピン留めプロンプトのキャッシュを更新
          self.reloadPinnedPromptsCache()
-@@ -389,6 +390,9 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
+@@ -189,6 +190,19 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
+     @MainActor
+     override func commitComposition(_ sender: Any!) {
+         let activationGeneration = self.activationGeneration
++        // 入力ソースの切り替えでは直後に deactivate され、サーバーの応答は世代違いで捨てられて
++        // 入力中の文字が消える。表示中の文字列をここで同期的に確定し、サーバーには学習のために伝える
++        let text = self.currentMarkedText().elements.map(\.content).joined()
++        let client = (sender as? IMKTextInput) ?? self.client()
++        let insertedLocally = !text.isEmpty && client != nil
++        if insertedLocally, let client {
++            client.insertText(text, replacementRange: NSRange(location: NSNotFound, length: 0))
++            self.currentConverterView = nil
++            self.inputState = .none
++            self.refreshCandidateWindow()
++            self.refreshPredictionWindow()
++            self.refreshReplaceSuggestionWindow()
++        }
+         self.converterServerClient.sendIfSessionOpen({ _ in .composition(.commit) }, completion: { [weak self] response in
+             Task { @MainActor in
+                 guard let self,
+@@ -196,7 +210,8 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
+                       let response else {
+                     return
+                 }
+-                self.apply(response)
++                // 確定済みの文字列を応答から二重に挿入しない
++                self.apply(response, applyingEffects: !insertedLocally)
+             }
+         })
+     }
+@@ -389,6 +404,9 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
                      self.appendDebugMessage("Consumed delayed fallthrough event \(request.eventID)")
                  }
                  self.apply(response)
@@ -1582,7 +1618,23 @@ index f10ba35..0881ffe 100644
              }
          }
          return true
-@@ -423,6 +427,45 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
+@@ -408,13 +426,13 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
+     }
+ 
+     @MainActor
+-    private func apply(_ response: ConverterServerResponse) {
++    private func apply(_ response: ConverterServerResponse, applyingEffects: Bool = true) {
+         if let inputLanguage = response.inputLanguage {
+             self.inputLanguage = inputLanguage
+         }
+         self.inputState = response.inputState.inputState
+         self.currentConverterView = response.snapshot
+-        if let client = self.client() {
++        if applyingEffects, let client = self.client() {
+             for effect in response.effects {
+                 self.apply(effect, client: client)
+             }
+@@ -423,6 +441,45 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
          self.refreshCandidateWindow()
          self.refreshPredictionWindow()
          self.refreshReplaceSuggestionWindow()
@@ -1592,7 +1644,7 @@ index f10ba35..0881ffe 100644
 +                text += inserted
 +            }
 +        }
-+        if !committedText.isEmpty, let caret = self.effectCaretRect() {
++        if applyingEffects, !committedText.isEmpty, let caret = self.effectCaretRect() {
 +            EffectThemes.current.commit(committedText, at: caret)
 +        }
 +    }
