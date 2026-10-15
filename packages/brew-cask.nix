@@ -15,6 +15,7 @@
   sourceUrl ? null,
   fontFiles ? [ ],
   archiveMembers ? [ ],
+  packageFiles ? [ ],
 }:
 let
   packaged = cask.overrideAttrs (old: {
@@ -50,7 +51,17 @@ let
     # brew-nix's custom installPhase does not run postInstall hooks.
     installPhase =
       (
-        if fontFiles == [ ] then
+        if packageFiles != [ ] then
+          # Keep the vendor package layout that Homebrew stages in its Caskroom.
+          # Codex resolves helpers such as codex-code-mode-host relative to the
+          # package root that contains codex-package.json, not through PATH.
+          ''
+            package="$out/libexec"/${lib.escapeShellArg old.pname}
+            mkdir -p "$package" "$out/bin"
+            cp -R ${lib.escapeShellArgs packageFiles} "$package"/
+            ln -s "$package/bin"/${lib.escapeShellArg old.meta.mainProgram} "$out/bin"/${lib.escapeShellArg old.meta.mainProgram}
+          ''
+        else if fontFiles == [ ] then
           old.installPhase
         else
           ''

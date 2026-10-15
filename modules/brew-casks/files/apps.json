@@ -274,6 +274,12 @@
   "binaries": [
     {
       "name": "codex",
+      "packageFiles": [
+        "bin",
+        "codex-package.json",
+        "codex-path",
+        "codex-resources"
+      ],
       "completions": {
         "codex": {
           "bash": "share/bash-completion/completions/codex",
