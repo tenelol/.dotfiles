@@ -1,0 +1,35 @@
+let
+  lock = builtins.fromJSON (builtins.readFile ../../../flake.lock);
+  locked = lock.nodes.${lock.nodes.root.inputs.nixpkgs}.locked;
+  nixpkgs = builtins.fetchTree {
+    inherit (locked) type owner repo rev narHash;
+  };
+  lib = import (nixpkgs.outPath + "/lib");
+  module = import ../default.nix {
+    inherit lib;
+    delib = { scopedModule = value: value; singleEnableOption = value: value; };
+    hostTraits.macbook = true;
+    hm.dag.entryAfter = after: text: { inherit after text; };
+  };
+  home = (builtins.head module.home.ifEnabled.imports) {
+    config = {
+      home.homeDirectory = "/fixture/home";
+      lib.file.mkOutOfStoreSymlink = path: path;
+    };
+  };
+  files = home.home.file;
+  repositorySkills = builtins.attrNames (
+    lib.filterAttrs (_: type: type == "directory") (builtins.readDir ../../../.agents/skills)
+  );
+in
+assert builtins.all (name:
+  files.".claude/skills/${name}".source == "/fixture/home/.agents/skills/${name}"
+) repositorySkills;
+assert files.".claude/skills/playwright-cli".source == "/fixture/home/.agents/skills/playwright-cli";
+assert files.".claude/skills/ponytail-help".source == "/fixture/home/.agents/skills/ponytail-bundle/ponytail-help";
+assert !(files ? ".claude/skills/ponytail-bundle");
+assert !(files ? ".claude/skills/synced");
+assert builtins.all (name: files.${name}.force) (builtins.attrNames files);
+{
+  sharedSkills = builtins.attrNames files;
+}

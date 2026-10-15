@@ -23,6 +23,18 @@ let
     playwright-cli = ".pi/agent/extensions/playwright-cli/node_modules/@playwright/cli/skills/playwright-cli";
     ponytail-bundle = ".pi/agent/extensions/ponytail/skills";
   };
+  claudeSkillTargets =
+    lib.mapAttrs (name: _: ".agents/skills/${name}") (
+      skills // builtins.removeAttrs extensionSkillTargets [ "ponytail-bundle" ]
+    )
+    // lib.genAttrs [
+      "ponytail"
+      "ponytail-audit"
+      "ponytail-debt"
+      "ponytail-gain"
+      "ponytail-help"
+      "ponytail-review"
+    ] (name: ".agents/skills/ponytail-bundle/${name}");
   linkExtensionSkills = lib.concatStringsSep "\n" (
     lib.mapAttrsToList (
       name: target:
@@ -40,6 +52,21 @@ delib.scopedModule {
 
   home.ifEnabled = {
     home.file = repositorySkills;
+
+    imports = [
+      (
+        { config, ... }:
+        {
+          home.file = lib.mapAttrs' (
+            name: target:
+            lib.nameValuePair ".claude/skills/${name}" {
+              source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/${target}";
+              force = true;
+            }
+          ) claudeSkillTargets;
+        }
+      )
+    ];
 
     home.activation.linkPiExtensionSkills = hm.dag.entryAfter [ "linkGeneration" ] ''
       $DRY_RUN_CMD mkdir -p "$HOME/.agents/skills"

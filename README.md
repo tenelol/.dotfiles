@@ -96,6 +96,8 @@ Run `claude` in a project directory (`cc` in Fish). The native Claude Code insta
 
 The [global Claude instructions](./modules/vault-context/files/claude/CLAUDE.md) import Codex's shared rules; denix/Home Manager deploys this bridge through the [context module](./modules/vault-context). Keep Claude's user settings writable. Set Project instructions to `claude-md-and-agents-md` to load project `AGENTS.md` alongside existing `CLAUDE.md`; this repository's `CLAUDE.md` imports `AGENTS.md` directly. See the [official instructions documentation](https://code.claude.com/docs/en/memory#agents-md).
 
+The [skills module](./modules/codex-skills) links Claude's personal skills individually to `~/.agents/skills/`, including the extension-owned skills. Both agents read the same files and supporting resources. Keep Claude's `synced/` skills and provider-owned plugins separate. Claude's `autoMemoryEnabled` is disabled in its writable user settings so lasting notes follow the shared [project context protocol](./modules/vault-context/files/codex/project-context-protocol.md); existing memories and each product's conversation history remain in place.
+
 ## Pi
 
 [`modules/pi-coding-agent`](./modules/pi-coding-agent) uses denix and Home Manager's `home.file` declarations for Pi configuration and resource links. `settings.json`, `models.json`, `keybindings.json`, and `zentui.json` are maintained in dotfiles and applied with the normal `nh` workflow; Pi's own settings saves are not persisted. Home Manager derives the acknowledged changelog version from the Pi package, preventing repeated release notes and writes to its read-only settings after upgrades.
