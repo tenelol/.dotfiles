@@ -20,7 +20,7 @@ stdenvNoCC.mkDerivation {
     hash = "sha256-U3KkU2Ef+xyK07twh8vY7WbJz7h83AiuEzBT7h3APTo=";
   };
 
-  patches = [ ./azookey-desktop/dopamine-effects.patch ];
+  patches = [ ./azookey-desktop/effect-themes.patch ];
 
   # Nix のビルド環境では sandbox-exec を重ねられないため、SwiftPM の manifest・plugin と
   # Swift macro の sandbox を外す（xcodebuild 側は buildPhase の引数で指定する）
@@ -91,7 +91,7 @@ stdenvNoCC.mkDerivation {
   };
 
   meta = {
-    description = "azooKey for macOS with combo typing effects";
+    description = "azooKey for macOS with switchable typing effect themes";
     homepage = "https://github.com/azooKey/azooKey-Desktop";
     license = lib.licenses.mit;
     platforms = lib.platforms.darwin;

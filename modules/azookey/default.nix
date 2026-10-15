@@ -202,7 +202,7 @@ delib.module {
 
   options = delib.moduleOptions {
     enable = delib.boolOption hostTraits.macbook;
-    # コンボ演出 patch を当てたソースビルドを使う。false で公式署名の pkg に戻すときは、
+    # 演出テーマの patch を当てたソースビルドを使う。false で公式署名の pkg に戻すときは、
     # darwin-installers が ad-hoc 署名の bundle を拒否するため先に azooKeyMac.app を削除する
     patched = delib.boolOption true;
   };

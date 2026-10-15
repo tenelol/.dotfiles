@@ -1,111 +1,133 @@
-diff --git a/Core/Sources/Core/Configs/BoolConfigItem.swift b/Core/Sources/Core/Configs/BoolConfigItem.swift
-index 5f92529..dae2331 100644
---- a/Core/Sources/Core/Configs/BoolConfigItem.swift
-+++ b/Core/Sources/Core/Configs/BoolConfigItem.swift
-@@ -62,6 +62,12 @@ extension Config {
-         static let `default` = false
-         public static let key: String = "dev.ensan.inputmethod.azooKeyMac.preference.optionDirectFullWidthInput"
+diff --git a/Core/Sources/Core/Configs/StringConfigItem.swift b/Core/Sources/Core/Configs/StringConfigItem.swift
+index 0da10cf..7155a38 100644
+--- a/Core/Sources/Core/Configs/StringConfigItem.swift
++++ b/Core/Sources/Core/Configs/StringConfigItem.swift
+@@ -60,3 +60,27 @@ extension Config {
+         public static let key: String = "dev.ensan.inputmethod.azooKeyMac.preference.PromptHistory"
      }
-+    /// 打鍵・確定時にコンボ演出を表示する設定
-+    public struct DopamineEffects: BoolConfigItem {
+ }
++
++extension Config {
++    /// 打鍵・確定・候補ウィンドウの演出テーマのID
++    public struct EffectTheme: ConfigItem {
 +        public init() {}
-+        static let `default` = true
-+        public static let key: String = "dev.ensan.inputmethod.azooKeyMac.preference.dopamineEffects"
++
++        static let `default` = "dopamine"
++        /// テーマ選択の前に使っていた演出のオン・オフ設定
++        static let legacyEnabledKey = "dev.ensan.inputmethod.azooKeyMac.preference.dopamineEffects"
++        public static let key: String = "dev.ensan.inputmethod.azooKeyMac.preference.effectTheme"
++
++        public var value: String {
++            get {
++                if let value = Config.string(forKey: Self.key) {
++                    return value
++                }
++                return Config.object(forKey: Self.legacyEnabledKey) as? Bool == false ? "off" : Self.default
++            }
++            nonmutating set {
++                Config.set(newValue, forKey: Self.key)
++            }
++        }
 +    }
-     /// AI変換時にコンテキストを含めるかどうか
-     public struct IncludeContextInAITransform: BoolConfigItem {
-         public init() {}
++}
 diff --git a/azooKeyMac/InputController/CandidateWindow/BaseCandidateViewController.swift b/azooKeyMac/InputController/CandidateWindow/BaseCandidateViewController.swift
-index 0e62f73..f911200 100644
+index 0e62f73..a8b96e2 100644
 --- a/azooKeyMac/InputController/CandidateWindow/BaseCandidateViewController.swift
 +++ b/azooKeyMac/InputController/CandidateWindow/BaseCandidateViewController.swift
-@@ -93,6 +93,7 @@ class BaseCandidateViewController: NSViewController {
+@@ -93,6 +93,8 @@ class BaseCandidateViewController: NSViewController {
      internal var candidates: [ConverterCandidatePresentation] = []
      internal var tableView: NSTableView!
      internal var currentSelectedRow: Int = -1
-+    private let decoration = DopamineCandidateDecoration()
++    private var decoration: (any CandidateDecoration)?
++    private var decorationThemeID: String?
  
      override func loadView() {
          // 親ビュー（ZStackのような役割）
-@@ -145,10 +146,16 @@ class BaseCandidateViewController: NSViewController {
-         self.tableView.dataSource = self
-         self.tableView.selectionHighlightStyle = .regular
+@@ -147,6 +149,25 @@ class BaseCandidateViewController: NSViewController {
          self.tableView.rowHeight = 32
-+        self.decoration.install(in: containerView, tableView: self.tableView)
  
          self.view = containerView
-     }
- 
-+    override func viewDidLayout() {
-+        super.viewDidLayout()
-+        self.decoration.layout(in: self.view.bounds)
++        self.syncDecoration()
 +    }
 +
++    override func viewDidLayout() {
++        super.viewDidLayout()
++        self.decoration?.layout(in: self.view.bounds)
++    }
++
++    /// 選択中の演出テーマが変わっていたら装飾を付け替える
++    private func syncDecoration() {
++        let theme = EffectThemes.current
++        guard theme.id != self.decorationThemeID else {
++            return
++        }
++        self.decoration?.uninstall()
++        self.decoration = theme.makeCandidateDecoration()
++        self.decoration?.install(in: self.view, tableView: self.tableView)
++        self.decoration?.layout(in: self.view.bounds)
++        self.decorationThemeID = theme.id
+     }
+ 
      override func viewDidLoad() {
-         super.viewDidLoad()
-         configureWindowForRoundedCorners()
-@@ -157,6 +164,7 @@ class BaseCandidateViewController: NSViewController {
+@@ -157,6 +178,7 @@ class BaseCandidateViewController: NSViewController {
      override func viewDidAppear() {
          super.viewDidAppear()
          configureWindowForRoundedCorners()
-+        self.decoration.playAppear(on: self.view.layer)
++        self.decoration?.playAppear(on: self.view.layer)
      }
  
      internal func configureWindowForRoundedCorners() {
-@@ -195,6 +203,7 @@ class BaseCandidateViewController: NSViewController {
+@@ -183,6 +205,7 @@ class BaseCandidateViewController: NSViewController {
+         selectionIndex: Int?,
+         cursorLocation: CGPoint
+     ) {
++        self.syncDecoration()
+         self.candidates = candidates
+         self.currentSelectedRow = selectionIndex ?? -1
+         self.tableView.reloadData()
+@@ -195,6 +218,7 @@ class BaseCandidateViewController: NSViewController {
  
      internal func updateSelection(to row: Int, notifySelectionChange: Bool = true) {
          if row == -1 {
-+            self.decoration.moveSelection(toRow: nil)
++            self.decoration?.moveSelection(toRow: nil)
              return
          }
          self.tableView.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
-@@ -202,6 +211,7 @@ class BaseCandidateViewController: NSViewController {
+@@ -202,6 +226,7 @@ class BaseCandidateViewController: NSViewController {
          self.updateSelectionCallback(row, notifySelectionChange: notifySelectionChange)
          self.currentSelectedRow = row
          self.updateVisibleRows()
-+        self.decoration.moveSelection(toRow: row)
++        self.decoration?.moveSelection(toRow: row)
      }
  
      internal func updateSelectionCallback(_ row: Int, notifySelectionChange: Bool) {}
-@@ -314,7 +324,7 @@ extension BaseCandidateViewController: NSTableViewDelegate, NSTableViewDataSourc
+@@ -314,7 +339,7 @@ extension BaseCandidateViewController: NSTableViewDelegate, NSTableViewDataSourc
          var rowView = tableView.makeView(withIdentifier: identifier, owner: nil) as? NSTableRowView
  
          if rowView == nil {
 -            rowView = NSTableRowView()
-+            rowView = DopamineCandidateRowView()
++            rowView = EffectCandidateRowView()
              rowView?.identifier = identifier
          }
  
-diff --git a/azooKeyMac/InputController/DopamineEffect/DopamineCandidateDecoration.swift b/azooKeyMac/InputController/DopamineEffect/DopamineCandidateDecoration.swift
+diff --git a/azooKeyMac/InputController/Effects/DopamineCandidateDecoration.swift b/azooKeyMac/InputController/Effects/DopamineCandidateDecoration.swift
 new file mode 100644
-index 0000000..5549b47
+index 0000000..a8c7d6f
 --- /dev/null
-+++ b/azooKeyMac/InputController/DopamineEffect/DopamineCandidateDecoration.swift
-@@ -0,0 +1,219 @@
++++ b/azooKeyMac/InputController/Effects/DopamineCandidateDecoration.swift
+@@ -0,0 +1,175 @@
 +import AppKit
-+import Core
 +import QuartzCore
-+
-+/// コンボ演出が有効なとき、システムの選択ハイライトを描かずに装飾側のハイライトへ任せる行ビュー
-+final class DopamineCandidateRowView: NSTableRowView {
-+    override func drawSelection(in dirtyRect: NSRect) {
-+        guard !Config.DopamineEffects().value else {
-+            return
-+        }
-+        super.drawSelection(in: dirtyRect)
-+    }
-+}
 +
 +/// 候補ウィンドウの縁を流れるネオン枠と、選択行へ滑って移動するハイライト
 +@MainActor
-+final class DopamineCandidateDecoration {
++final class DopamineCandidateDecoration: CandidateDecoration {
 +    private static let cornerRadius: CGFloat = 16
 +    private static let borderColors: [NSColor] = [
-+        .dopamineHex(0xFF4D6D), .dopamineHex(0xFFE45C), .dopamineHex(0x5CFF8F),
-+        .dopamineHex(0x5CF2FF), .dopamineHex(0xB45CFF), .dopamineHex(0xFF4D6D)
++        .effectHex(0xFF4D6D), .effectHex(0xFFE45C), .effectHex(0x5CFF8F),
++        .effectHex(0x5CF2FF), .effectHex(0xB45CFF), .effectHex(0xFF4D6D)
 +    ]
-+    private static let selectionColors: [NSColor] = [.dopamineHex(0xFF4D9D), .dopamineHex(0xB45CFF), .dopamineHex(0x5C8BFF)]
++    private static let selectionColors: [NSColor] = [.effectHex(0xFF4D9D), .effectHex(0xB45CFF), .effectHex(0x5C8BFF)]
 +
 +    private let borderContainer = CALayer()
 +    private let borderGradient = CAGradientLayer()
@@ -115,10 +137,6 @@ index 0000000..5549b47
 +    private var selectionVisible = false
 +    private var lastScrollOffset: CGFloat = 0
 +    private weak var tableView: NSTableView?
-+
-+    private var isEnabled: Bool {
-+        Config.DopamineEffects().value
-+    }
 +
 +    func install(in container: NSView, tableView: NSTableView) {
 +        container.wantsLayer = true
@@ -163,7 +181,18 @@ index 0000000..5549b47
 +
 +        container.layer?.addSublayer(self.borderContainer)
 +        tableView.layer?.insertSublayer(self.selection, at: 0)
-+        self.applyEnabledState()
++
++        let spin = CABasicAnimation(keyPath: "transform.rotation.z")
++        spin.fromValue = 0
++        spin.toValue = -2 * CGFloat.pi
++        spin.duration = 3
++        spin.repeatCount = .infinity
++        self.borderGradient.add(spin, forKey: "spin")
++    }
++
++    func uninstall() {
++        self.borderContainer.removeFromSuperlayer()
++        self.selection.removeFromSuperlayer()
 +    }
 +
 +    func layout(in bounds: CGRect) {
@@ -183,18 +212,16 @@ index 0000000..5549b47
 +        self.borderGradient.bounds = CGRect(x: 0, y: 0, width: side, height: side)
 +        self.borderGradient.position = CGPoint(x: bounds.midX, y: bounds.midY)
 +        CATransaction.commit()
-+        self.applyEnabledState()
 +    }
 +
 +    func moveSelection(toRow row: Int?) {
-+        self.applyEnabledState()
-+        guard self.isEnabled, let row, let target = self.layerRect(ofRow: row) else {
++        guard let row, let tableView = self.tableView, let target = tableView.effectRect(ofRow: row, inset: CGSize(width: 5, height: 2)) else {
 +            self.selection.opacity = 0
 +            self.selectionVisible = false
 +            return
 +        }
 +        // 選択に合わせて一覧がスクロールした分だけ開始位置をずらし、見た目の位置から動かす
-+        let scrollOffset = self.tableView?.enclosingScrollView?.contentView.bounds.minY ?? 0
++        let scrollOffset = tableView.effectScrollOffset
 +        var previous = self.selection.presentation()?.frame ?? self.selection.frame
 +        previous.origin.y += scrollOffset - self.lastScrollOffset
 +        self.lastScrollOffset = scrollOffset
@@ -245,17 +272,9 @@ index 0000000..5549b47
 +        self.selectionVisible = true
 +    }
 +
-+    /// clip view 側で座標系が反転済みのため、行の矩形はそのまま layer 座標として使える
-+    private func layerRect(ofRow row: Int) -> CGRect? {
-+        guard let tableView = self.tableView, row >= 0, row < tableView.numberOfRows else {
-+            return nil
-+        }
-+        return tableView.rect(ofRow: row).insetBy(dx: 5, dy: 2)
-+    }
-+
 +    /// ウィンドウが表示されたときに下から浮き上がらせる
 +    func playAppear(on layer: CALayer?) {
-+        guard self.isEnabled, let layer else {
++        guard let layer else {
 +            return
 +        }
 +        let fade = CABasicAnimation(keyPath: "opacity")
@@ -271,53 +290,23 @@ index 0000000..5549b47
 +        group.duration = rise.settlingDuration
 +        layer.add(group, forKey: "appear")
 +    }
-+
-+    private func applyEnabledState() {
-+        let enabled = self.isEnabled
-+        self.borderContainer.isHidden = !enabled
-+        if enabled {
-+            if self.borderGradient.animation(forKey: "spin") == nil {
-+                let spin = CABasicAnimation(keyPath: "transform.rotation.z")
-+                spin.fromValue = 0
-+                spin.toValue = -2 * CGFloat.pi
-+                spin.duration = 3
-+                spin.repeatCount = .infinity
-+                self.borderGradient.add(spin, forKey: "spin")
-+            }
-+        } else {
-+            self.borderGradient.removeAnimation(forKey: "spin")
-+            self.selection.opacity = 0
-+            self.selectionVisible = false
-+        }
-+    }
 +}
-+
-+extension NSColor {
-+    static func dopamineHex(_ value: UInt32) -> NSColor {
-+        NSColor(
-+            srgbRed: CGFloat((value >> 16) & 0xFF) / 255,
-+            green: CGFloat((value >> 8) & 0xFF) / 255,
-+            blue: CGFloat(value & 0xFF) / 255,
-+            alpha: 1
-+        )
-+    }
-+}
-diff --git a/azooKeyMac/InputController/DopamineEffect/DopamineEffectOverlay.swift b/azooKeyMac/InputController/DopamineEffect/DopamineEffectOverlay.swift
+diff --git a/azooKeyMac/InputController/Effects/DopamineEffectTheme.swift b/azooKeyMac/InputController/Effects/DopamineEffectTheme.swift
 new file mode 100644
-index 0000000..38526d8
+index 0000000..fe734b9
 --- /dev/null
-+++ b/azooKeyMac/InputController/DopamineEffect/DopamineEffectOverlay.swift
-@@ -0,0 +1,771 @@
++++ b/azooKeyMac/InputController/Effects/DopamineEffectTheme.swift
+@@ -0,0 +1,695 @@
 +import AppKit
-+import Core
 +import CoreText
 +import QuartzCore
 +
-+/// 打鍵・確定に合わせて画面全体へコンボ演出を重ねるオーバーレイ。
-+/// IMKInputController はクライアントごとに生成されるため、演出状態は共有インスタンスで保持する。
++/// コンボ数・ランク・キーワードで派手に盛り上げる演出。
++/// IMKInputController はクライアントごとに生成されるため、コンボ状態はテーマ側で保持する。
 +@MainActor
-+final class DopamineEffectOverlay {
-+    static let shared = DopamineEffectOverlay()
++final class DopamineEffectTheme: EffectTheme {
++    let id = "dopamine"
++    let title = "ドーパミン"
 +
 +    private struct Rank {
 +        var letter: String
@@ -334,15 +323,13 @@ index 0000000..38526d8
 +    }
 +
 +    private static let comboTimeout: TimeInterval = 3.0
-+    /// 最も長い演出（粒子の寿命）が終わるまで待ってからウィンドウを隠す
-+    private static let idleHideDelay: TimeInterval = 5.0
 +    private static let keywordBufferLength = 32
 +
 +    private static let keywordEffects: [KeywordEffect] = [
 +        .init(
 +            keywords: ["リリース", "release", "ship", "デプロイ", "deploy", "完成", "マージ", "merge", "公開"],
 +            title: "SHIPPED!",
-+            colors: [.dopamineHex(0xB45CFF), .dopamineHex(0x5CF2FF), .dopamineHex(0x5CFF8F)],
++            colors: [.effectHex(0xB45CFF), .effectHex(0x5CF2FF), .effectHex(0x5CFF8F)],
 +            emoji: ["🚀", "✨"],
 +            tint: nil,
 +            rockets: true
@@ -350,61 +337,51 @@ index 0000000..38526d8
 +        .init(
 +            keywords: ["好き", "すき", "愛", "love", "かわいい", "可愛い"],
 +            title: "LOVE",
-+            colors: [.dopamineHex(0xFF4D6D), .dopamineHex(0xFF9ECF), .dopamineHex(0xFFD1E8)],
++            colors: [.effectHex(0xFF4D6D), .effectHex(0xFF9ECF), .effectHex(0xFFD1E8)],
 +            emoji: ["💖", "💕", "😍"],
-+            tint: .dopamineHex(0xFF2D6F)
++            tint: .effectHex(0xFF2D6F)
 +        ),
 +        .init(
 +            keywords: ["最強", "天才", "完璧", "最高", "critical"],
 +            title: "CRITICAL!!",
-+            colors: [.dopamineHex(0xFFE45C), .dopamineHex(0xFF9F1C), .dopamineHex(0xFF4D6D)],
++            colors: [.effectHex(0xFFE45C), .effectHex(0xFF9F1C), .effectHex(0xFF4D6D)],
 +            emoji: ["💎", "✨", "⭐️"],
-+            tint: .dopamineHex(0xFFB020)
++            tint: .effectHex(0xFFB020)
 +        ),
 +        .init(
 +            keywords: ["ドーパミン", "ドパ", "やばい", "ヤバい", "すごい", "凄い"],
 +            title: "MEGA HIT",
-+            colors: [.dopamineHex(0x5CF2FF), .dopamineHex(0x8F7BFF), .dopamineHex(0xFF5CF2)],
++            colors: [.effectHex(0x5CF2FF), .effectHex(0x8F7BFF), .effectHex(0xFF5CF2)],
 +            emoji: ["⚡️", "🔥", "💥"],
-+            tint: .dopamineHex(0x7B5CFF)
++            tint: .effectHex(0x7B5CFF)
 +        ),
 +        .init(
 +            keywords: ["ありがとう", "感謝", "thanks", "thank you"],
 +            title: "THANKS!!",
-+            colors: [.dopamineHex(0x5CFF8F), .dopamineHex(0xFFE45C)],
++            colors: [.effectHex(0x5CFF8F), .effectHex(0xFFE45C)],
 +            emoji: ["🙏", "🌸", "🎉"],
 +            tint: nil
 +        ),
 +        .init(
 +            keywords: ["バグ", "bug", "エラー", "error"],
 +            title: "BUG?!",
-+            colors: [.dopamineHex(0xA3FF5C), .dopamineHex(0x2EC27E)],
++            colors: [.effectHex(0xA3FF5C), .effectHex(0x2EC27E)],
 +            emoji: ["🐛", "💥", "🪲"],
-+            tint: .dopamineHex(0x2EC27E)
++            tint: .effectHex(0x2EC27E)
 +        )
 +    ]
 +
-+    private var window: NSPanel?
-+    private var rootLayer: CALayer?
 +    private var comboLayer: CALayer?
 +    private var comboTimerLayer: CALayer?
 +    private var combo = 0
 +    private var resetWorkItem: DispatchWorkItem?
-+    private var hideWorkItem: DispatchWorkItem?
 +    private var recentCommittedText = ""
 +    private var imageCache: [String: CGImage] = [:]
 +
-+    private init() {}
++    // MARK: - EffectTheme
 +
-+    private var isEnabled: Bool {
-+        Config.DopamineEffects().value
-+    }
-+
-+    // MARK: - Public entry points
-+
-+    /// 文字入力の打鍵ごとに呼ぶ。`point` はスクリーン座標（左下原点）のキャレット位置。
-+    func registerKeystroke(at point: CGPoint) {
-+        guard self.isEnabled, let (root, local) = self.prepareRoot(for: point) else {
++    func keystroke(at caret: CGRect) {
++        guard let (root, local) = self.prepareRoot(for: caret) else {
 +            return
 +        }
 +        self.combo += 1
@@ -418,9 +395,9 @@ index 0000000..38526d8
 +        self.scheduleComboReset()
 +    }
 +
-+    /// 確定文字列ごとに呼ぶ。キーワードを含む場合は専用の演出を出す。
-+    func registerCommit(_ text: String, at point: CGPoint) {
-+        guard self.isEnabled, let (root, local) = self.prepareRoot(for: point) else {
++    /// キーワードを含む確定文字列には専用の演出を出す
++    func commit(_ text: String, at caret: CGRect) {
++        guard let (root, local) = self.prepareRoot(for: caret) else {
 +            return
 +        }
 +        // 英字入力は1文字ずつ確定されるため、直近の確定文字列をまとめてキーワード判定する
@@ -430,64 +407,24 @@ index 0000000..38526d8
 +            self.recentCommittedText = ""
 +            self.playKeywordEffect(effect, near: local, in: root)
 +        } else if text.count >= 2 {
-+            self.showFloatingText("NICE!", colors: [.dopamineHex(0x5CF2FF), .dopamineHex(0xFFFFFF)], at: local, in: root)
++            self.showFloatingText("NICE!", colors: [.effectHex(0x5CF2FF), .effectHex(0xFFFFFF)], at: local, in: root)
 +        }
 +    }
 +
-+    // MARK: - Window
-+
-+    private func prepareRoot(for point: CGPoint) -> (CALayer, CGPoint)? {
-+        guard let screen = NSScreen.screens.first(where: { NSMouseInRect(point, $0.frame, false) }) ?? NSScreen.main else {
-+            return nil
-+        }
-+        let window = self.window ?? self.makeWindow()
-+        if window.frame != screen.frame {
-+            window.setFrame(screen.frame, display: false)
-+            CATransaction.begin()
-+            CATransaction.setDisableActions(true)
-+            self.rootLayer?.frame = CGRect(origin: .zero, size: screen.frame.size)
-+            CATransaction.commit()
-+        }
-+        window.orderFrontRegardless()
-+        self.scheduleHide()
-+        guard let root = self.rootLayer else {
-+            return nil
-+        }
-+        let local = CGPoint(x: point.x - screen.frame.minX, y: point.y - screen.frame.minY)
-+        return (root, local)
++    func makeCandidateDecoration() -> (any CandidateDecoration)? {
++        DopamineCandidateDecoration()
 +    }
 +
-+    private func makeWindow() -> NSPanel {
-+        let panel = NSPanel(
-+            contentRect: .zero,
-+            styleMask: [.borderless, .nonactivatingPanel],
-+            backing: .buffered,
-+            defer: false
-+        )
-+        panel.isOpaque = false
-+        panel.backgroundColor = .clear
-+        panel.hasShadow = false
-+        panel.ignoresMouseEvents = true
-+        panel.isReleasedWhenClosed = false
-+        panel.hidesOnDeactivate = false
-+        // 候補ウィンドウ（popUpMenu）やメニューバーより上に描く
-+        panel.level = .screenSaver
-+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
-+
-+        let view = NSView()
-+        view.wantsLayer = true
-+        let root = CALayer()
-+        root.masksToBounds = false
-+        view.layer = root
-+        panel.contentView = view
-+
-+        self.window = panel
-+        self.rootLayer = root
-+        return panel
++    /// コンボ演出はキャレット行の左端・中央を基準にする
++    private func prepareRoot(for caret: CGRect) -> (CALayer, CGPoint)? {
++        guard let (root, local) = EffectOverlayWindow.shared.prepareRoot(for: caret) else {
++            return nil
++        }
++        return (root, CGPoint(x: local.minX, y: local.midY))
 +    }
 +
 +    private var backingScale: CGFloat {
-+        self.window?.backingScaleFactor ?? NSScreen.main?.backingScaleFactor ?? 2
++        EffectOverlayWindow.shared.backingScale
 +    }
 +
 +    // MARK: - Combo
@@ -495,13 +432,13 @@ index 0000000..38526d8
 +    private static func rank(for combo: Int) -> Rank {
 +        switch combo {
 +        case ..<10:
-+            Rank(letter: "C", colors: [.dopamineHex(0x5CF2FF), .dopamineHex(0x3B82F6)])
++            Rank(letter: "C", colors: [.effectHex(0x5CF2FF), .effectHex(0x3B82F6)])
 +        case ..<20:
-+            Rank(letter: "B", colors: [.dopamineHex(0xFFE45C), .dopamineHex(0xFF9F1C)])
++            Rank(letter: "B", colors: [.effectHex(0xFFE45C), .effectHex(0xFF9F1C)])
 +        case ..<30:
-+            Rank(letter: "A", colors: [.dopamineHex(0xFFB020), .dopamineHex(0xFF4D6D)])
++            Rank(letter: "A", colors: [.effectHex(0xFFB020), .effectHex(0xFF4D6D)])
 +        default:
-+            Rank(letter: "S", colors: [.dopamineHex(0xFF4D6D), .dopamineHex(0xFFE45C), .dopamineHex(0x5CFF8F), .dopamineHex(0x5CF2FF), .dopamineHex(0xB45CFF)])
++            Rank(letter: "S", colors: [.effectHex(0xFF4D6D), .effectHex(0xFFE45C), .effectHex(0x5CFF8F), .effectHex(0x5CF2FF), .effectHex(0xB45CFF)])
 +        }
 +    }
 +
@@ -573,19 +510,6 @@ index 0000000..38526d8
 +        timer.add(drain, forKey: "drain")
 +    }
 +
-+    /// 透明でも全画面ウィンドウが前面に残ると他のツールやウィンドウマネージャから見えるため、
-+    /// 演出がない間は画面から外す
-+    private func scheduleHide() {
-+        self.hideWorkItem?.cancel()
-+        let workItem = DispatchWorkItem { [weak self] in
-+            MainActor.assumeIsolated {
-+                self?.window?.orderOut(nil)
-+            }
-+        }
-+        self.hideWorkItem = workItem
-+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.idleHideDelay, execute: workItem)
-+    }
-+
 +    private func scheduleComboReset() {
 +        self.resetWorkItem?.cancel()
 +        let workItem = DispatchWorkItem { [weak self] in
@@ -616,7 +540,7 @@ index 0000000..38526d8
 +        case 30...: "ON FIRE x\(self.combo)"
 +        default: "COMBO x\(self.combo)"
 +        }
-+        let colors: [NSColor] = [.dopamineHex(0x5CFF8F), .dopamineHex(0xFFE45C), .dopamineHex(0xFF9F1C), .dopamineHex(0xFF4D6D)]
++        let colors: [NSColor] = [.effectHex(0x5CFF8F), .effectHex(0xFFE45C), .effectHex(0xFF9F1C), .effectHex(0xFF4D6D)]
 +        // 入力中の文字を隠さないよう、節目の見出しは画面右上に出す
 +        let center = CGPoint(x: root.bounds.maxX - 280, y: root.bounds.maxY - 120)
 +        // 後から追加したレイヤーほど手前に描かれるため、見出しは最後に重ねる
@@ -668,7 +592,7 @@ index 0000000..38526d8
 +        let group = CAAnimationGroup()
 +        group.animations = [scale, rotation, opacity]
 +        group.duration = 1.7
-+        self.run(group, on: layer, removeAfter: true)
++        layer.addEffectAnimation(group, removeAfter: true)
 +    }
 +
 +    private func showFloatingText(_ text: String, colors: [NSColor], at point: CGPoint, in root: CALayer) {
@@ -693,7 +617,7 @@ index 0000000..38526d8
 +        group.animations = [rise, scale, opacity]
 +        group.duration = 0.8
 +        group.timingFunction = CAMediaTimingFunction(name: .easeOut)
-+        self.run(group, on: layer, removeAfter: true)
++        layer.addEffectAnimation(group, removeAfter: true)
 +    }
 +
 +    private func emitSparks(at point: CGPoint, colors: [NSColor], intensity: CGFloat, in root: CALayer) {
@@ -818,7 +742,7 @@ index 0000000..38526d8
 +        group.animations = [scale, opacity, width]
 +        group.duration = 0.75
 +        group.timingFunction = CAMediaTimingFunction(name: .easeOut)
-+        self.run(group, on: ring, removeAfter: true)
++        ring.addEffectAnimation(group, removeAfter: true)
 +    }
 +
 +    private func flashEdges(color: NSColor, in root: CALayer) {
@@ -837,7 +761,7 @@ index 0000000..38526d8
 +        opacity.values = [0, 0.7, 0.35, 0]
 +        opacity.keyTimes = [0, 0.1, 0.4, 1]
 +        opacity.duration = 0.8
-+        self.run(opacity, on: border, removeAfter: true)
++        border.addEffectAnimation(opacity, removeAfter: true)
 +    }
 +
 +    private func tintScreen(_ color: NSColor, in root: CALayer) {
@@ -851,7 +775,7 @@ index 0000000..38526d8
 +        opacity.values = [0, 1, 1, 0]
 +        opacity.keyTimes = [0, 0.15, 0.6, 1]
 +        opacity.duration = 1.4
-+        self.run(opacity, on: tint, removeAfter: true)
++        tint.addEffectAnimation(opacity, removeAfter: true)
 +    }
 +
 +    private func launchRockets(in root: CALayer) {
@@ -865,7 +789,7 @@ index 0000000..38526d8
 +            layer.contents = rocket
 +            layer.contentsScale = self.backingScale
 +            layer.bounds = CGRect(x: 0, y: 0, width: size, height: size)
-+            layer.shadowColor = NSColor.dopamineHex(0xFF9F1C).cgColor
++            layer.shadowColor = NSColor.effectHex(0xFF9F1C).cgColor
 +            layer.shadowOffset = .zero
 +            layer.shadowRadius = 10
 +            layer.shadowOpacity = 0.9
@@ -886,19 +810,8 @@ index 0000000..38526d8
 +            group.duration = .random(in: 0.9...1.5)
 +            group.beginTime = CACurrentMediaTime() + Double(index) * 0.07
 +            group.fillMode = .backwards
-+            self.run(group, on: layer, removeAfter: true)
++            layer.addEffectAnimation(group, removeAfter: true)
 +        }
-+    }
-+
-+    private func run(_ animation: CAAnimation, on layer: CALayer, removeAfter: Bool) {
-+        CATransaction.begin()
-+        if removeAfter {
-+            CATransaction.setCompletionBlock {
-+                layer.removeFromSuperlayer()
-+            }
-+        }
-+        layer.add(animation, forKey: nil)
-+        CATransaction.commit()
 +    }
 +
 +    private func clamped(_ center: CGPoint, size: CGSize, in bounds: CGRect) -> CGPoint {
@@ -1079,21 +992,597 @@ index 0000000..38526d8
 +        return path
 +    }
 +}
+diff --git a/azooKeyMac/InputController/Effects/EffectTheme.swift b/azooKeyMac/InputController/Effects/EffectTheme.swift
+new file mode 100644
+index 0000000..08218aa
+--- /dev/null
++++ b/azooKeyMac/InputController/Effects/EffectTheme.swift
+@@ -0,0 +1,169 @@
++import AppKit
++import Core
++import QuartzCore
++
++/// 打鍵・確定・候補ウィンドウに重ねる演出の一式。入力メニューと設定画面から切り替える。
++@MainActor
++protocol EffectTheme: AnyObject {
++    var id: String { get }
++    var title: String { get }
++    /// 文字を打つたびに呼ばれる。`caret` はスクリーン座標（左下原点）のキャレット行の矩形
++    func keystroke(at caret: CGRect)
++    /// 確定した文字列ごとに呼ばれる。`caret` は確定後のキャレット行の矩形
++    func commit(_ text: String, at caret: CGRect)
++    /// 候補ウィンドウの装飾。nil ならシステム標準の見た目のまま
++    func makeCandidateDecoration() -> (any CandidateDecoration)?
++}
++
++/// 候補ウィンドウ1枚ぶんの装飾。テーマが切り替わると外して作り直す
++@MainActor
++protocol CandidateDecoration: AnyObject {
++    func install(in container: NSView, tableView: NSTableView)
++    func uninstall()
++    func layout(in bounds: CGRect)
++    func moveSelection(toRow row: Int?)
++    func playAppear(on layer: CALayer?)
++}
++
++@MainActor
++enum EffectThemes {
++    static let off = OffEffectTheme()
++    static let all: [any EffectTheme] = [off, LockOnEffectTheme(), DopamineEffectTheme()]
++
++    static var current: any EffectTheme {
++        let id = Config.EffectTheme().value
++        return all.first { $0.id == id } ?? off
++    }
++
++    static var isActive: Bool {
++        current !== off
++    }
++}
++
++final class OffEffectTheme: EffectTheme {
++    let id = "off"
++    let title = "なし"
++    func keystroke(at caret: CGRect) {}
++    func commit(_ text: String, at caret: CGRect) {}
++    func makeCandidateDecoration() -> (any CandidateDecoration)? {
++        nil
++    }
++}
++
++/// 装飾がハイライトを描くテーマでは、システムの選択ハイライトを描かない行ビュー
++final class EffectCandidateRowView: NSTableRowView {
++    override func drawSelection(in dirtyRect: NSRect) {
++        guard !EffectThemes.isActive else {
++            return
++        }
++        super.drawSelection(in: dirtyRect)
++    }
++}
++
++/// 演出を描く全画面の透明パネル。全テーマで共有し、演出がない間は画面から外す
++@MainActor
++final class EffectOverlayWindow {
++    static let shared = EffectOverlayWindow()
++
++    /// 最も長い演出（粒子の寿命）が終わるまで待ってからウィンドウを隠す
++    private static let idleHideDelay: TimeInterval = 5.0
++
++    private var window: NSPanel?
++    private var rootLayer: CALayer?
++    private var hideWorkItem: DispatchWorkItem?
++
++    private init() {}
++
++    var backingScale: CGFloat {
++        self.window?.backingScaleFactor ?? NSScreen.main?.backingScaleFactor ?? 2
++    }
++
++    /// `rect` を含むスクリーンへウィンドウを合わせて前面に出し、描画先のレイヤーとローカル座標の矩形を返す
++    func prepareRoot(for rect: CGRect) -> (CALayer, CGRect)? {
++        let point = CGPoint(x: rect.minX, y: rect.midY)
++        guard let screen = NSScreen.screens.first(where: { NSMouseInRect(point, $0.frame, false) }) ?? NSScreen.main else {
++            return nil
++        }
++        let window = self.window ?? self.makeWindow()
++        if window.frame != screen.frame {
++            window.setFrame(screen.frame, display: false)
++            CATransaction.begin()
++            CATransaction.setDisableActions(true)
++            self.rootLayer?.frame = CGRect(origin: .zero, size: screen.frame.size)
++            CATransaction.commit()
++        }
++        window.orderFrontRegardless()
++        self.scheduleHide()
++        guard let root = self.rootLayer else {
++            return nil
++        }
++        return (root, rect.offsetBy(dx: -screen.frame.minX, dy: -screen.frame.minY))
++    }
++
++    private func makeWindow() -> NSPanel {
++        let panel = NSPanel(
++            contentRect: .zero,
++            styleMask: [.borderless, .nonactivatingPanel],
++            backing: .buffered,
++            defer: false
++        )
++        panel.isOpaque = false
++        panel.backgroundColor = .clear
++        panel.hasShadow = false
++        panel.ignoresMouseEvents = true
++        panel.isReleasedWhenClosed = false
++        panel.hidesOnDeactivate = false
++        // 候補ウィンドウ（popUpMenu）やメニューバーより上に描く
++        panel.level = .screenSaver
++        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
++
++        let view = NSView()
++        view.wantsLayer = true
++        let root = CALayer()
++        root.masksToBounds = false
++        view.layer = root
++        panel.contentView = view
++
++        self.window = panel
++        self.rootLayer = root
++        return panel
++    }
++
++    /// 透明でも全画面ウィンドウが前面に残ると他のツールやウィンドウマネージャから見えるため、
++    /// 演出がない間は画面から外す
++    private func scheduleHide() {
++        self.hideWorkItem?.cancel()
++        let workItem = DispatchWorkItem { [weak self] in
++            MainActor.assumeIsolated {
++                self?.window?.orderOut(nil)
++            }
++        }
++        self.hideWorkItem = workItem
++        DispatchQueue.main.asyncAfter(deadline: .now() + Self.idleHideDelay, execute: workItem)
++    }
++}
++
++extension CALayer {
++    /// アニメーションを付け、`removeAfter` なら終わったときにレイヤーごと外す
++    func addEffectAnimation(_ animation: CAAnimation, removeAfter: Bool) {
++        CATransaction.begin()
++        if removeAfter {
++            CATransaction.setCompletionBlock { [weak self] in
++                self?.removeFromSuperlayer()
++            }
++        }
++        self.add(animation, forKey: nil)
++        CATransaction.commit()
++    }
++}
++
++extension NSColor {
++    static func effectHex(_ value: UInt32) -> NSColor {
++        NSColor(
++            srgbRed: CGFloat((value >> 16) & 0xFF) / 255,
++            green: CGFloat((value >> 8) & 0xFF) / 255,
++            blue: CGFloat(value & 0xFF) / 255,
++            alpha: 1
++        )
++    }
++}
+diff --git a/azooKeyMac/InputController/Effects/LockOnEffectTheme.swift b/azooKeyMac/InputController/Effects/LockOnEffectTheme.swift
+new file mode 100644
+index 0000000..372f1fd
+--- /dev/null
++++ b/azooKeyMac/InputController/Effects/LockOnEffectTheme.swift
+@@ -0,0 +1,387 @@
++import AppKit
++import QuartzCore
++
++/// Ghostty・Neovim の lock-on HUD と同じ動きの言葉で作った控えめな演出。
++/// アクセント1色と白のフラッシュ、加速しながら吸い付くホーミング、着弾後の減衰する揺れ、四隅のブラケットだけを使う。
++enum LockOnHUD {
++    static let accent = NSColor.effectHex(0x7AA2F7)
++    static let flash = NSColor.white
++
++    /// 目標へ加速しながら吸い付くホーミングの時間曲線（t² に近い ease-in）
++    static let homing = CAMediaTimingFunction(controlPoints: 0.55, 0, 1, 0.45)
++    static let easeOut = CAMediaTimingFunction(controlPoints: 0.2, 0.8, 0.3, 1)
++
++    /// 着弾後に一度振れて減衰する拡大率の揺れ
++    static func wobble(amount: CGFloat, duration: CFTimeInterval, frequency: Double = 42, damping: Double = 14) -> CAKeyframeAnimation {
++        let steps = 24
++        let animation = CAKeyframeAnimation(keyPath: "transform.scale")
++        animation.values = (0...steps).map { step in
++            let t = Double(step) / Double(steps) * duration
++            return 1 + amount * CGFloat(sin(t * frequency) * exp(-t * damping))
++        }
++        animation.duration = duration
++        return animation
++    }
++
++    /// `size` の矩形の四隅に置く L 字ブラケット
++    static func bracketPath(size: CGSize, arm: CGFloat) -> CGPath {
++        let width = size.width
++        let height = size.height
++        let arm = min(arm, width / 2, height / 2)
++        let path = CGMutablePath()
++        path.move(to: CGPoint(x: 0, y: arm))
++        path.addLine(to: .zero)
++        path.addLine(to: CGPoint(x: arm, y: 0))
++        path.move(to: CGPoint(x: width - arm, y: 0))
++        path.addLine(to: CGPoint(x: width, y: 0))
++        path.addLine(to: CGPoint(x: width, y: arm))
++        path.move(to: CGPoint(x: width, y: height - arm))
++        path.addLine(to: CGPoint(x: width, y: height))
++        path.addLine(to: CGPoint(x: width - arm, y: height))
++        path.move(to: CGPoint(x: arm, y: height))
++        path.addLine(to: CGPoint(x: 0, y: height))
++        path.addLine(to: CGPoint(x: 0, y: height - arm))
++        return path
++    }
++
++    static func makeBrackets(size: CGSize, arm: CGFloat, lineWidth: CGFloat = 2) -> CAShapeLayer {
++        let layer = CAShapeLayer()
++        layer.bounds = CGRect(origin: .zero, size: size)
++        layer.path = self.bracketPath(size: size, arm: arm)
++        layer.fillColor = nil
++        layer.strokeColor = self.accent.cgColor
++        layer.lineWidth = lineWidth
++        layer.lineCap = .square
++        layer.shadowColor = self.accent.cgColor
++        layer.shadowOffset = .zero
++        layer.shadowRadius = 5
++        layer.shadowOpacity = 0.9
++        return layer
++    }
++
++    /// 白で点いてアクセントへ冷める色の変化
++    static func cooling(keyPath: String, duration: CFTimeInterval) -> CABasicAnimation {
++        let animation = CABasicAnimation(keyPath: keyPath)
++        animation.fromValue = self.flash.cgColor
++        animation.toValue = self.accent.cgColor
++        animation.duration = duration
++        animation.timingFunction = self.easeOut
++        return animation
++    }
++}
++
++@MainActor
++final class LockOnEffectTheme: EffectTheme {
++    let id = "lockon"
++    let title = "ロックオン"
++
++    /// 打鍵の残光。Ghostty の typing ignite と同じ長さにする
++    private static let igniteDuration: CFTimeInterval = 0.42
++    private static let lockTime: CFTimeInterval = 0.24
++    private static let lockDuration: CFTimeInterval = 0.8
++
++    func keystroke(at caret: CGRect) {
++        guard let (root, local) = EffectOverlayWindow.shared.prepareRoot(for: caret) else {
++            return
++        }
++        let height = max(local.height, 12)
++
++        // キャレット位置に白く点いてアクセントへ冷める縦の残光
++        let ignite = CALayer()
++        ignite.bounds = CGRect(x: 0, y: 0, width: 2, height: height * 0.8)
++        ignite.position = CGPoint(x: local.minX, y: local.midY)
++        ignite.backgroundColor = LockOnHUD.accent.cgColor
++        ignite.shadowColor = LockOnHUD.accent.cgColor
++        ignite.shadowOffset = .zero
++        ignite.shadowRadius = 6
++        ignite.shadowOpacity = 1
++        ignite.opacity = 0
++        root.addSublayer(ignite)
++        ignite.addEffectAnimation(self.fadingGroup(
++            [LockOnHUD.cooling(keyPath: "backgroundColor", duration: 0.24)],
++            duration: Self.igniteDuration
++        ), removeAfter: true)
++
++        // ベースラインから左右へ広がる細い走査線
++        let scan = CAGradientLayer()
++        scan.colors = [NSColor.clear.cgColor, LockOnHUD.accent.cgColor, LockOnHUD.flash.cgColor, LockOnHUD.accent.cgColor, NSColor.clear.cgColor]
++        scan.locations = [0, 0.3, 0.5, 0.7, 1]
++        scan.startPoint = CGPoint(x: 0, y: 0.5)
++        scan.endPoint = CGPoint(x: 1, y: 0.5)
++        scan.bounds = CGRect(x: 0, y: 0, width: height * 3.2, height: 1.5)
++        scan.position = CGPoint(x: local.minX - height * 0.3, y: local.minY + 1)
++        scan.shadowColor = LockOnHUD.accent.cgColor
++        scan.shadowOffset = .zero
++        scan.shadowRadius = 3
++        scan.shadowOpacity = 0.8
++        scan.opacity = 0
++        root.addSublayer(scan)
++        let spread = CABasicAnimation(keyPath: "transform.scale.x")
++        spread.fromValue = 0.15
++        spread.toValue = 1
++        spread.duration = Self.igniteDuration
++        spread.timingFunction = LockOnHUD.easeOut
++        scan.addEffectAnimation(self.fadingGroup([spread], duration: Self.igniteDuration, peak: 0.55), removeAfter: true)
++    }
++
++    func commit(_ text: String, at caret: CGRect) {
++        // 英字は1文字ずつ確定されるため、打鍵の残光だけにしてロックオンは出さない
++        guard text.count >= 2, let (root, local) = EffectOverlayWindow.shared.prepareRoot(for: caret) else {
++            return
++        }
++        let height = max(local.height, 12)
++        // 確定した文字列の幅は分からないため、行の高さから推定したフォントで測る
++        let font = NSFont.systemFont(ofSize: height * 0.78)
++        let width = min(max(NSAttributedString(string: text, attributes: [.font: font]).size().width, height), 640)
++        let box = CGRect(x: local.minX - width, y: local.minY, width: width, height: height).insetBy(dx: -4, dy: -3)
++
++        // 四隅のブラケットが広い枠から回り込みつつ加速して吸い付く
++        let brackets = LockOnHUD.makeBrackets(size: box.size, arm: min(box.height * 0.45, 12))
++        brackets.position = CGPoint(x: box.midX, y: box.midY)
++        brackets.opacity = 0
++        root.addSublayer(brackets)
++        let approachScale = CABasicAnimation(keyPath: "transform.scale")
++        approachScale.fromValue = 2.6
++        approachScale.toValue = 1
++        approachScale.duration = Self.lockTime
++        approachScale.timingFunction = LockOnHUD.homing
++        let approachTurn = CABasicAnimation(keyPath: "transform.rotation.z")
++        approachTurn.fromValue = 0.9
++        approachTurn.toValue = 0
++        approachTurn.duration = Self.lockTime
++        approachTurn.timingFunction = LockOnHUD.homing
++        let wobble = LockOnHUD.wobble(amount: 0.12, duration: 0.36)
++        wobble.beginTime = Self.lockTime
++        let color = LockOnHUD.cooling(keyPath: "strokeColor", duration: 0.3)
++        color.beginTime = Self.lockTime
++        let opacity = CAKeyframeAnimation(keyPath: "opacity")
++        opacity.values = [0, 0.9, 1, 1, 0]
++        opacity.keyTimes = [0, 0.15, 0.3, 0.7, 1]
++        let group = CAAnimationGroup()
++        group.animations = [approachScale, approachTurn, wobble, color, opacity]
++        group.duration = Self.lockDuration
++        brackets.addEffectAnimation(group, removeAfter: true)
++
++        // 吸い付いた瞬間に文字列の上を白く光らせ、細い衝撃波を外へ転がす
++        let flash = CALayer()
++        flash.frame = box
++        flash.cornerRadius = 3
++        flash.backgroundColor = LockOnHUD.flash.withAlphaComponent(0.28).cgColor
++        flash.opacity = 0
++        root.addSublayer(flash)
++        let flashOpacity = CAKeyframeAnimation(keyPath: "opacity")
++        flashOpacity.values = [0, 1, 0]
++        flashOpacity.keyTimes = [0, 0.1, 1]
++        flashOpacity.duration = 0.3
++        flashOpacity.beginTime = CACurrentMediaTime() + Self.lockTime
++        flashOpacity.fillMode = .backwards
++        flash.addEffectAnimation(flashOpacity, removeAfter: true)
++
++        let wave = CAShapeLayer()
++        wave.bounds = CGRect(origin: .zero, size: box.size)
++        wave.position = CGPoint(x: box.midX, y: box.midY)
++        wave.path = CGPath(roundedRect: wave.bounds, cornerWidth: 4, cornerHeight: 4, transform: nil)
++        wave.fillColor = nil
++        wave.strokeColor = LockOnHUD.accent.cgColor
++        wave.lineWidth = 1
++        wave.opacity = 0
++        root.addSublayer(wave)
++        let waveScale = CABasicAnimation(keyPath: "transform.scale")
++        waveScale.fromValue = 1
++        waveScale.toValue = 1.35
++        waveScale.timingFunction = LockOnHUD.easeOut
++        let waveOpacity = CABasicAnimation(keyPath: "opacity")
++        waveOpacity.fromValue = 0.6
++        waveOpacity.toValue = 0
++        let waveGroup = CAAnimationGroup()
++        waveGroup.animations = [waveScale, waveOpacity]
++        waveGroup.duration = 0.48
++        waveGroup.beginTime = CACurrentMediaTime() + Self.lockTime
++        wave.addEffectAnimation(waveGroup, removeAfter: true)
++    }
++
++    func makeCandidateDecoration() -> (any CandidateDecoration)? {
++        LockOnCandidateDecoration()
++    }
++
++    /// 一瞬で点いて二乗で消える不透明度を付けたグループ
++    private func fadingGroup(_ animations: [CAAnimation], duration: CFTimeInterval, peak: Float = 1) -> CAAnimationGroup {
++        let opacity = CAKeyframeAnimation(keyPath: "opacity")
++        opacity.values = [0, peak, peak * 0.56, peak * 0.25, 0]
++        opacity.keyTimes = [0, 0.05, 0.25, 0.5, 1]
++        let group = CAAnimationGroup()
++        group.animations = animations + [opacity]
++        group.duration = duration
++        return group
++    }
++}
++
++/// 候補ウィンドウの細いアクセント枠と、選択行へ吸い付くブラケット
++@MainActor
++final class LockOnCandidateDecoration: CandidateDecoration {
++    private static let cornerRadius: CGFloat = 16
++    private static let moveDuration: CFTimeInterval = 0.14
++    private static let restingFill = LockOnHUD.accent.withAlphaComponent(0.22)
++
++    private let border = CAShapeLayer()
++    private let windowBrackets = CAShapeLayer()
++    private let selection = CALayer()
++    private let selectionFill = CALayer()
++    private let selectionBrackets = CAShapeLayer()
++    private weak var tableView: NSTableView?
++    private var selectionVisible = false
++    private var lastScrollOffset: CGFloat = 0
++
++    func install(in container: NSView, tableView: NSTableView) {
++        container.wantsLayer = true
++        tableView.wantsLayer = true
++        self.tableView = tableView
++
++        self.border.fillColor = nil
++        self.border.strokeColor = LockOnHUD.accent.withAlphaComponent(0.45).cgColor
++        self.border.lineWidth = 1
++        self.border.zPosition = 100
++        self.windowBrackets.fillColor = nil
++        self.windowBrackets.strokeColor = LockOnHUD.accent.cgColor
++        self.windowBrackets.lineWidth = 2
++        self.windowBrackets.lineCap = .square
++        self.windowBrackets.zPosition = 101
++
++        self.selectionFill.cornerRadius = 6
++        self.selectionFill.backgroundColor = Self.restingFill.cgColor
++        self.selectionBrackets.fillColor = nil
++        self.selectionBrackets.strokeColor = LockOnHUD.accent.cgColor
++        self.selectionBrackets.lineWidth = 1.5
++        self.selectionBrackets.lineCap = .square
++        self.selectionBrackets.shadowColor = LockOnHUD.accent.cgColor
++        self.selectionBrackets.shadowOffset = .zero
++        self.selectionBrackets.shadowRadius = 4
++        self.selectionBrackets.shadowOpacity = 0.8
++        self.selection.addSublayer(self.selectionFill)
++        self.selection.addSublayer(self.selectionBrackets)
++        self.selection.opacity = 0
++
++        container.layer?.addSublayer(self.border)
++        container.layer?.addSublayer(self.windowBrackets)
++        tableView.layer?.insertSublayer(self.selection, at: 0)
++    }
++
++    func uninstall() {
++        self.border.removeFromSuperlayer()
++        self.windowBrackets.removeFromSuperlayer()
++        self.selection.removeFromSuperlayer()
++    }
++
++    func layout(in bounds: CGRect) {
++        CATransaction.begin()
++        CATransaction.setDisableActions(true)
++        self.border.frame = bounds
++        self.border.path = CGPath(
++            roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5),
++            cornerWidth: Self.cornerRadius - 0.5,
++            cornerHeight: Self.cornerRadius - 0.5,
++            transform: nil
++        )
++        // 角丸の内側に収まるよう少し内側へ置く
++        let frame = bounds.insetBy(dx: 5, dy: 5)
++        self.windowBrackets.frame = frame
++        self.windowBrackets.path = LockOnHUD.bracketPath(size: frame.size, arm: 12)
++        CATransaction.commit()
++    }
++
++    func moveSelection(toRow row: Int?) {
++        guard let row, let tableView = self.tableView, let target = tableView.effectRect(ofRow: row, inset: CGSize(width: 5, height: 2)) else {
++            self.selection.opacity = 0
++            self.selectionVisible = false
++            return
++        }
++        // 選択に合わせて一覧がスクロールした分だけ開始位置をずらし、見た目の位置から動かす
++        let scrollOffset = tableView.effectScrollOffset
++        var previous = self.selection.presentation()?.frame ?? self.selection.frame
++        previous.origin.y += scrollOffset - self.lastScrollOffset
++        self.lastScrollOffset = scrollOffset
++
++        CATransaction.begin()
++        CATransaction.setDisableActions(true)
++        self.selection.frame = target
++        self.selectionFill.frame = CGRect(origin: .zero, size: target.size)
++        self.selectionBrackets.frame = CGRect(origin: .zero, size: target.size)
++        self.selectionBrackets.path = LockOnHUD.bracketPath(size: target.size, arm: 7)
++        self.selection.opacity = 1
++        CATransaction.commit()
++
++        var lockDelay: CFTimeInterval = 0
++        if !self.selectionVisible {
++            // 初回は少し広い枠から吸い付く
++            let approach = CABasicAnimation(keyPath: "transform.scale")
++            approach.fromValue = 1.25
++            approach.toValue = 1
++            approach.duration = Self.moveDuration
++            approach.timingFunction = LockOnHUD.homing
++            self.selectionBrackets.add(approach, forKey: "approach")
++            lockDelay = Self.moveDuration
++        } else if previous.origin != target.origin {
++            let move = CABasicAnimation(keyPath: "position")
++            move.fromValue = NSValue(point: CGPoint(x: previous.midX, y: previous.midY))
++            move.toValue = NSValue(point: CGPoint(x: target.midX, y: target.midY))
++            move.duration = Self.moveDuration
++            move.timingFunction = LockOnHUD.homing
++            self.selection.add(move, forKey: "move")
++            lockDelay = Self.moveDuration
++        }
++        self.selectionVisible = true
++
++        // 着いた瞬間に白く点いてアクセントへ冷め、ブラケットが一度揺れて止まる
++        let now = CACurrentMediaTime()
++        let wobble = LockOnHUD.wobble(amount: 0.08, duration: 0.3)
++        wobble.beginTime = now + lockDelay
++        self.selectionBrackets.add(wobble, forKey: "wobble")
++        let flash = CABasicAnimation(keyPath: "backgroundColor")
++        flash.fromValue = LockOnHUD.flash.withAlphaComponent(0.45).cgColor
++        flash.toValue = Self.restingFill.cgColor
++        flash.duration = 0.28
++        flash.timingFunction = LockOnHUD.easeOut
++        flash.beginTime = now + lockDelay
++        self.selectionFill.add(flash, forKey: "flash")
++        let cool = LockOnHUD.cooling(keyPath: "strokeColor", duration: 0.28)
++        cool.beginTime = now + lockDelay
++        self.selectionBrackets.add(cool, forKey: "cool")
++    }
++
++    /// ウィンドウが出たときに四隅のブラケットが外側から吸い付き、枠が一度光る
++    func playAppear(on layer: CALayer?) {
++        let approach = CABasicAnimation(keyPath: "transform.scale")
++        approach.fromValue = 1.12
++        approach.toValue = 1
++        approach.duration = 0.2
++        approach.timingFunction = LockOnHUD.homing
++        let fade = CABasicAnimation(keyPath: "opacity")
++        fade.fromValue = 0
++        fade.toValue = 1
++        fade.duration = 0.12
++        let group = CAAnimationGroup()
++        group.animations = [approach, fade]
++        group.duration = 0.2
++        self.windowBrackets.add(group, forKey: "appear")
++
++        let flash = CAKeyframeAnimation(keyPath: "strokeColor")
++        flash.values = [LockOnHUD.accent.withAlphaComponent(0.45).cgColor, LockOnHUD.flash.cgColor, LockOnHUD.accent.withAlphaComponent(0.45).cgColor]
++        flash.keyTimes = [0, 0.35, 1]
++        flash.duration = 0.5
++        self.border.add(flash, forKey: "flash")
++    }
++}
++
++extension NSTableView {
++    /// 行の矩形を装飾レイヤーの座標で返す。clip view 側で座標系が反転済みのため、そのまま使える
++    func effectRect(ofRow row: Int, inset: CGSize) -> CGRect? {
++        guard row >= 0, row < self.numberOfRows else {
++            return nil
++        }
++        return self.rect(ofRow: row).insetBy(dx: inset.width, dy: inset.height)
++    }
++
++    var effectScrollOffset: CGFloat {
++        self.enclosingScrollView?.contentView.bounds.minY ?? 0
++    }
++}
 diff --git a/azooKeyMac/InputController/azooKeyMacInputController.swift b/azooKeyMac/InputController/azooKeyMacInputController.swift
-index f10ba35..4e6306c 100644
+index f10ba35..0881ffe 100644
 --- a/azooKeyMac/InputController/azooKeyMacInputController.swift
 +++ b/azooKeyMac/InputController/azooKeyMacInputController.swift
-@@ -389,6 +389,9 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
+@@ -148,6 +148,7 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
+         super.activateServer(sender)
+         self.activationGeneration &+= 1
+         self.updateLiveConversionToggleMenuItem(newValue: self.liveConversionEnabled)
++        self.updateEffectThemeMenuItems()
+         self.updateTransformSelectedTextMenuItemEnabledState()
+         // ピン留めプロンプトのキャッシュを更新
+         self.reloadPinnedPromptsCache()
+@@ -389,6 +390,9 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
                      self.appendDebugMessage("Consumed delayed fallthrough event \(request.eventID)")
                  }
                  self.apply(response)
-+                if Self.isDopamineKeystroke(event), let point = self.dopamineAnchorPoint() {
-+                    DopamineEffectOverlay.shared.registerKeystroke(at: point)
++                if Self.isEffectKeystroke(event), let caret = self.effectCaretRect() {
++                    EffectThemes.current.keystroke(at: caret)
 +                }
              }
          }
          return true
-@@ -423,6 +426,44 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
+@@ -423,6 +427,45 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
          self.refreshCandidateWindow()
          self.refreshPredictionWindow()
          self.refreshReplaceSuggestionWindow()
@@ -1103,13 +1592,13 @@ index f10ba35..4e6306c 100644
 +                text += inserted
 +            }
 +        }
-+        if !committedText.isEmpty, let point = self.dopamineAnchorPoint() {
-+            DopamineEffectOverlay.shared.registerCommit(committedText, at: point)
++        if !committedText.isEmpty, let caret = self.effectCaretRect() {
++            EffectThemes.current.commit(committedText, at: caret)
 +        }
 +    }
 +
-+    /// 文字を打った打鍵だけをコンボに数える（Enter・Backspace・矢印キー・ショートカットは除く）
-+    private static func isDopamineKeystroke(_ event: KeyEventCore) -> Bool {
++    /// 文字を打った打鍵だけを演出の対象にする（Enter・Backspace・矢印キー・ショートカットは除く）
++    private static func isEffectKeystroke(_ event: KeyEventCore) -> Bool {
 +        guard event.modifierFlags.isDisjoint(with: [.command, .control]),
 +              let scalar = event.characters?.unicodeScalars.first else {
 +            return false
@@ -1118,10 +1607,10 @@ index f10ba35..4e6306c 100644
 +        return scalar.value >= 0x20 && scalar.value != 0x7F && !(0xF700...0xF8FF).contains(scalar.value)
 +    }
 +
-+    /// 演出の基準位置（スクリーン座標）。キャレット位置を取れないクライアントではマウス位置を使う
++    /// 演出の基準にするキャレット行の矩形（スクリーン座標）。取れないクライアントではマウス位置を使う
 +    @MainActor
-+    private func dopamineAnchorPoint() -> CGPoint? {
-+        guard Config.DopamineEffects().value, let client = self.client() else {
++    private func effectCaretRect() -> CGRect? {
++        guard EffectThemes.isActive, let client = self.client() else {
 +            return nil
 +        }
 +        let selection = self.currentMarkedText().selectionRange.location
@@ -1131,30 +1620,90 @@ index f10ba35..4e6306c 100644
 +            var rect: NSRect = .zero
 +            client.attributes(forCharacterIndex: index, lineHeightRectangle: &rect)
 +            if rect != .zero {
-+                return CGPoint(x: rect.minX, y: rect.midY)
++                return rect
 +            }
 +        }
-+        return NSEvent.mouseLocation
++        let mouse = NSEvent.mouseLocation
++        return CGRect(x: mouse.x, y: mouse.y - 9, width: 0, height: 18)
      }
  
      @MainActor
+diff --git a/azooKeyMac/InputController/azooKeyMacInputControllerHelper.swift b/azooKeyMac/InputController/azooKeyMacInputControllerHelper.swift
+index 9b993b4..4a20ac2 100644
+--- a/azooKeyMac/InputController/azooKeyMacInputControllerHelper.swift
++++ b/azooKeyMac/InputController/azooKeyMacInputControllerHelper.swift
+@@ -14,6 +14,8 @@ extension azooKeyMacInputController {
+         self.transformSelectedTextMenuItem.target = self
+         self.appMenu.addItem(self.transformSelectedTextMenuItem)
+         self.appMenu.addItem(NSMenuItem.separator())
++        self.addEffectThemeMenuItems()
++        self.appMenu.addItem(NSMenuItem.separator())
+         self.appMenu.addItem(NSMenuItem(title: "設定…", action: #selector(self.openConfigWindow(_:)), keyEquivalent: ""))
+         self.appMenu.addItem(NSMenuItem(title: "View on GitHub…", action: #selector(self.openGitHubRepository(_:)), keyEquivalent: ""))
+         self.updateTransformSelectedTextMenuItemEnabledState()
+@@ -31,6 +33,41 @@ extension azooKeyMacInputController {
+         self.liveConversionToggleMenuItem.title = "ライブ変換"
+     }
+ 
++    // MARK: - Effect Theme
++
++    /// 入力メニューにテーマを並べ、選ぶとその場で切り替える
++    private func addEffectThemeMenuItems() {
++        let header = NSMenuItem(title: "演出テーマ", action: nil, keyEquivalent: "")
++        header.isEnabled = false
++        self.appMenu.addItem(header)
++        // setupMenu は IMK から main thread で呼ばれる
++        let themes = MainActor.assumeIsolated { EffectThemes.all.map { (id: $0.id, title: $0.title) } }
++        for theme in themes {
++            let item = NSMenuItem(title: theme.title, action: #selector(self.selectEffectTheme(_:)), keyEquivalent: "")
++            item.representedObject = theme.id
++            item.indentationLevel = 1
++            self.appMenu.addItem(item)
++        }
++        self.updateEffectThemeMenuItems()
++    }
++
++    @objc func selectEffectTheme(_ sender: Any) {
++        // IMK はメニュー項目を kIMKCommandMenuItemName に入れた辞書を sender として渡す
++        let item = (sender as? NSMenuItem) ?? ((sender as? [AnyHashable: Any])?[kIMKCommandMenuItemName] as? NSMenuItem)
++        guard let id = item?.representedObject as? String else {
++            return
++        }
++        Config.EffectTheme().value = id
++        self.updateEffectThemeMenuItems()
++    }
++
++    func updateEffectThemeMenuItems() {
++        let current = Config.EffectTheme().value
++        for item in self.appMenu.items where item.action == #selector(self.selectEffectTheme(_:)) {
++            item.state = item.representedObject as? String == current ? .on : .off
++        }
++    }
++
+     private enum TransformMenuTitle {
+         static let normal = "いい感じ変換"
+         static let noBackend = "いい感じ変換（無効/バックエンドなし）"
 diff --git a/azooKeyMac/Windows/ConfigWindow.swift b/azooKeyMac/Windows/ConfigWindow.swift
-index 099d430..3b3612f 100644
+index 099d430..c3ae6d5 100644
 --- a/azooKeyMac/Windows/ConfigWindow.swift
 +++ b/azooKeyMac/Windows/ConfigWindow.swift
 @@ -4,6 +4,7 @@ import SwiftUI
  
  struct ConfigWindow: View {
      @ConfigState private var liveConversion = Config.LiveConversion()
-+    @ConfigState private var dopamineEffects = Config.DopamineEffects()
++    @ConfigState private var effectTheme = Config.EffectTheme()
      @ConfigState private var inputStyle = Config.InputStyle()
      @ConfigState private var zenzaiProfile = Config.ZenzaiProfile()
      @ConfigState private var zenzaiPersonalizationLevel = Config.ZenzaiPersonalizationLevel()
-@@ -723,6 +724,7 @@ struct ConfigWindow: View {
+@@ -723,6 +724,11 @@ struct ConfigWindow: View {
  
              Section {
                  Toggle("ライブ変換を有効化", isOn: $liveConversion)
-+                Toggle("コンボ演出を表示", isOn: $dopamineEffects)
++                Picker("演出テーマ", selection: $effectTheme) {
++                    ForEach(EffectThemes.all, id: \.id) { theme in
++                        Text(theme.title).tag(theme.id)
++                    }
++                }
                  HStack {
                      TextField("変換プロフィール", text: $zenzaiProfile, prompt: Text("例：田中太郎/高校生"))
                      helpButton(
