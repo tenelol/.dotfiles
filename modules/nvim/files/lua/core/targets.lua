@@ -1,12 +1,13 @@
--- Lock-on for the places Neovim moves you to: the window you switch into, the
--- search match you land on, and the diagnostic you jump to. Windows get a
--- tighter, quicker lock so frequent switching stays calm.
+-- Lock-on for the places Neovim moves you to: a window as it opens, the search
+-- match you land on, and the diagnostic you jump to. Plain focus switches get
+-- no frame; the Ghostty cursor reticle already marks where you went.
 local motion = require("core.motion")
 
 local M = {}
 
 local window_lock
-local leaving_float = false
+-- Plain windows already seen; anything else in the layout is new.
+local known = {}
 
 local function lock_range(row, first, last, opts)
   local rect = motion.text_rect(vim.api.nvim_get_current_win(), { { row = row, first = first, last = last } })
@@ -45,9 +46,9 @@ local function is_plain_window(win)
   return vim.api.nvim_win_is_valid(win) and vim.api.nvim_win_get_config(win).relative == ""
 end
 
---- Lock onto a window that just gained focus.
+--- Lock onto a window that just opened.
 function M.window(win)
-  -- Panels animate in and land their own lock; returning from a popup is not a switch.
+  -- Panels animate in and land their own lock.
   if not is_plain_window(win) or require("core.panel-motion").is_active(win) then
     return
   end
@@ -85,25 +86,28 @@ function M.setup()
       end
     end,
   })
-  vim.api.nvim_create_autocmd("WinLeave", {
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    known[win] = true
+  end
+  vim.api.nvim_create_autocmd("WinNew", {
     group = group,
     callback = function()
-      leaving_float = not is_plain_window(vim.api.nvim_get_current_win())
-    end,
-  })
-  vim.api.nvim_create_autocmd("WinEnter", {
-    group = group,
-    callback = function()
-      if leaving_float then
-        return
-      end
-      local win = vim.api.nvim_get_current_win()
-      -- Plugins hop through windows transiently; only lock where focus settles.
+      -- WinNew does not name the window (a float may open without focus), and
+      -- the split has not settled yet, so look for unseen windows afterwards.
       vim.schedule(function()
-        if vim.api.nvim_get_current_win() == win then
-          M.window(win)
+        for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+          if not known[win] and is_plain_window(win) then
+            known[win] = true
+            M.window(win)
+          end
         end
       end)
+    end,
+  })
+  vim.api.nvim_create_autocmd("WinClosed", {
+    group = group,
+    callback = function(event)
+      known[tonumber(event.match)] = nil
     end,
   })
 end

@@ -41,7 +41,7 @@ return {
             end,
           }),
         },
-        -- New and focused windows land a lock-on from core.targets instead of a wipe.
+        -- New windows land a lock-on from core.targets instead of a wipe.
         open = { enable = false },
         close = { enable = false },
       })

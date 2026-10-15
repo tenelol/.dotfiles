@@ -71,23 +71,24 @@ local start = vim.fn.screenpos(0, 3, 8).col - 1
 assert(#rows == 4 and cols[1] == start - 1 and cols[4] == start + 2, "Diagnostic lock landed off its range: " .. vim.inspect({ rows, cols }))
 assert(settle())
 
--- Switching windows locks the window, but a lone window or a popup does not.
+-- A new split locks onto itself; switching focus or opening a popup does not.
 vim.cmd("vsplit")
 vim.wait(30)
+local fresh = vim.api.nvim_get_current_win()
+local rect = require("core.motion").window_rect(fresh)
+rows, cols = landed()
+assert(#rows == 4 and cols[1] <= rect.col, "A new split should lock onto itself")
 assert(settle())
 feed("<C-w>l")
 vim.wait(30)
-assert(#brackets() == 4, "Window switch should lock onto the window")
-local right = vim.api.nvim_get_current_win()
-assert(settle())
-local popup = vim.api.nvim_open_win(vim.api.nvim_create_buf(false, true), true, {
+assert(#brackets() == 0, "Switching focus must not frame the window")
+local popup = vim.api.nvim_open_win(vim.api.nvim_create_buf(false, true), false, {
   relative = "editor", row = 2, col = 2, width = 10, height = 2,
 })
-vim.api.nvim_win_close(popup, true)
-vim.api.nvim_set_current_win(right)
 vim.wait(30)
-assert(#brackets() == 0, "Returning from a popup is not a window switch")
+assert(#brackets() == 0, "An unfocused popup must not frame the current window")
+vim.api.nvim_win_close(popup, true)
 vim.cmd("only")
 vim.wait(30)
-assert(#brackets() == 0, "A lone window should not lock")
-print("Search, command search, diagnostic and window locks, counts, and popups: OK")
+assert(#brackets() == 0, "Closing windows should not lock")
+print("Search, command search, diagnostic and new-window locks, counts, and quiet focus switches: OK")
