@@ -73,11 +73,9 @@ return {
           left = { size = 34 },
           bottom = { size = 10 },
         },
-        animate = {
-          enabled = true,
-          fps = 120,
-          cps = 120,
-        },
+        -- Panels open at full size; core.panel-reveal animates them instead
+        -- of resizing the window cell by cell.
+        animate = { enabled = false },
         exit_when_last = true,
         close_when_all_hidden = true,
         wo = {

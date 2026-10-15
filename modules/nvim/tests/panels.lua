@@ -5,7 +5,6 @@ local spec = require("plugins.edgy")[1]
 spec.init()
 spec.config()
 local edgy = require("edgy")
-local animation = require("edgy.animate")
 local main = vim.api.nvim_get_current_win()
 local cwd = vim.fn.getcwd()
 
@@ -13,46 +12,50 @@ local directory = vim.fn.tempname()
 vim.fn.mkdir(directory, "p")
 vim.fn.writefile({ "example" }, directory .. "/example.txt")
 require("plugins.neotree")[1].config()
+local reveal = require("core.panel-reveal")
+local function floats()
+  local count = 0
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    if vim.api.nvim_win_get_config(win).relative ~= "" then
+      count = count + 1
+    end
+  end
+  return count
+end
+local base_floats = floats()
 for _ = 1, 2 do
   require("neo-tree.command").execute({ source = "filesystem", dir = directory, position = "left", action = "focus" })
   local state = require("neo-tree.sources.manager").get_state("filesystem")
   local tree_window = state.winid
-  assert(vim.api.nvim_win_get_width(tree_window) <= 2, "Neo-tree was shown at full width before opening animation")
-  local intermediate = false
+  -- The tree opens at full width so its content never re-lays out mid-animation.
+  assert(vim.api.nvim_win_get_width(tree_window) == 34, "Neo-tree must open at its final width")
+  assert(reveal.mode(tree_window) == "open", "Neo-tree opened without the reveal sweep")
+  assert(floats() == base_floats + 1, "Reveal overlay was not created")
   local early_content = false
   assert(
     vim.wait(1500, function()
-      local width = vim.api.nvim_win_get_width(tree_window)
-      if width == 1 then
-        vim.api.nvim_exec_autocmds("WinResized", {})
-      end
-      intermediate = intermediate or (width > 1 and width < 34)
-      if width > 1 and width < 34 then
+      if reveal.is_active(tree_window) then
         early_content = early_content
           or table.concat(vim.api.nvim_buf_get_lines(state.bufnr, 0, -1, false), "\n"):find("example.txt", 1, true)
             ~= nil
       end
-      return edgy.get_win(tree_window) and width == 34 and not animation.is_active()
+      return edgy.get_win(tree_window) and not reveal.is_active(tree_window)
     end, 5),
     "Neo-tree opening animation did not settle"
   )
-  assert(intermediate, "Neo-tree snapped open without sliding")
   assert(early_content, "Neo-tree filenames appeared only after opening animation")
-  assert(vim.g.minianimate_disable == false, "MiniAnimate stayed disabled after sidebar animation")
+  assert(vim.api.nvim_win_get_width(tree_window) == 34, "Reveal changed the tree width")
+  assert(floats() == base_floats, "Reveal overlay leaked after opening")
+  assert(vim.g.minianimate_disable ~= true, "MiniAnimate stayed disabled after sidebar animation")
   state.commands.slide_close(state)
-  local closing = false
+  assert(vim.api.nvim_win_is_valid(tree_window) and reveal.mode(tree_window) == "close", "Neo-tree snapped closed")
   assert(
     vim.wait(1500, function()
-      if not vim.api.nvim_win_is_valid(tree_window) then
-        return true
-      end
-      local width = vim.api.nvim_win_get_width(tree_window)
-      closing = closing or (width > 1 and width < 34)
-      return false
+      return not vim.api.nvim_win_is_valid(tree_window)
     end, 5),
     "Neo-tree closing animation did not finish"
   )
-  assert(closing, "Neo-tree snapped closed without sliding")
+  assert(floats() == base_floats, "Reveal overlay leaked after closing")
   vim.api.nvim_set_current_win(main)
   vim.wait(200, function()
     return false
@@ -80,12 +83,13 @@ for _, direction in ipairs({ "horizontal", "vertical", "float" }) do
     assert(vim.w[win].dotfiles_panel_animation, "Terminal opening animation did not start: " .. direction)
     local size = direction == "vertical" and vim.api.nvim_win_get_width or vim.api.nvim_win_get_height
     if direction ~= "float" then
-      assert(size(win) < target_size, "Terminal must start collapsed: " .. direction .. " " .. size(win))
+      -- Opening at full size keeps the shell from re-flowing on every frame.
+      assert(size(win) == target_size, "Terminal must open at full size: " .. direction .. " " .. size(win))
     end
     vim.api.nvim_chan_send(job, "slide-test\n")
     assert(
       vim.wait(1500, function()
-        return not vim.w[win].dotfiles_panel_animation and not animation.is_active()
+        return not vim.w[win].dotfiles_panel_animation and not reveal.is_active()
       end, 5),
       "Terminal opening animation did not settle"
     )
@@ -117,22 +121,14 @@ for _, direction in ipairs({ "horizontal", "vertical", "float" }) do
     assert(vim.g.minianimate_disable ~= true, "MiniAnimate stayed disabled after terminal animation")
     terminal.close(term)
     assert(term:is_open() and vim.w[win].dotfiles_panel_animation, "Terminal closed before its animation: " .. direction)
-    local closing = false
+    assert(reveal.mode(win) == "close", "Terminal snapped closed without the sweep: " .. direction)
     assert(
       vim.wait(1000, function()
-        if not vim.api.nvim_win_is_valid(win) then
-          return true
-        end
-        if direction == "float" then
-          closing = closing or vim.api.nvim_win_get_config(win).row > 3
-        else
-          closing = closing or (size(win) > 1 and size(win) < target_size)
-        end
-        return false
+        return not vim.api.nvim_win_is_valid(win)
       end, 5),
       "Terminal closing animation did not finish: " .. direction
     )
-    assert(closing, "Terminal snapped closed without sliding: " .. direction)
+    assert(floats() == base_floats, "Reveal overlay leaked: " .. direction)
     assert(term.job_id == job and vim.fn.jobwait({ job }, 0)[1] == -1, "Closing animation stopped the terminal job")
     vim.api.nvim_set_current_win(main)
     vim.wait(200, function()
@@ -142,10 +138,13 @@ for _, direction in ipairs({ "horizontal", "vertical", "float" }) do
 end
 local interrupted = terms[1]
 interrupted:open(10, "horizontal")
-assert(vim.wait(500, function()
-  return vim.api.nvim_win_get_height(interrupted.window) > 2
+assert(vim.wait(1000, function()
+  return not reveal.is_active(interrupted.window)
 end, 5))
 terminal.close(interrupted)
+vim.wait(60, function()
+  return false
+end)
 local reversing_window = interrupted.window
 terminal.show(interrupted)
 assert(interrupted.window == reversing_window, "Reopening during close replaced the terminal window")
