@@ -3,6 +3,7 @@ local theme = require("core.theme")
 
 local function apply_highlights()
   vim.api.nvim_set_hl(0, "SnacksIndentScope", { fg = theme.indent_scope, bold = true })
+  vim.api.nvim_set_hl(0, "SnacksIndentChunk", { fg = theme.blue, bold = true })
   vim.api.nvim_set_hl(0, "SnacksDim", { fg = theme.fg_dark })
 end
 
@@ -51,10 +52,22 @@ return {
             cursor = false,
             treesitter = { enabled = false },
           },
+          -- Nested scopes draw as a bracket pointing at the block body.
+          chunk = {
+            enabled = true,
+            only_current = true,
+            char = {
+              corner_top = "╭",
+              corner_bottom = "╰",
+              horizontal = "─",
+              vertical = "│",
+              arrow = ">",
+            },
+          },
           animate = {
-            style = "down",
-            easing = "linear",
-            duration = { step = 20, total = 300 },
+            style = "out",
+            easing = "outQuad",
+            duration = { step = 15, total = 260 },
           },
         },
       })
