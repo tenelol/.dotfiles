@@ -1,6 +1,10 @@
 
 # Claude Code environment
 
+## Language
+
+- Write everything the user sees in Japanese, not only the final answer: progress notes between tool calls, tool-call descriptions, task-list items, wrap-up recaps and questions. Think in Japanese where possible. Keep code, commands, identifiers and commit messages in their existing conventions.
+
 ## Nix and dotfiles
 
 - This is an aarch64-darwin macOS environment managed by nix-darwin, denix and integrated Home Manager in `~/.dotfiles`.
