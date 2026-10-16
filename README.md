@@ -76,7 +76,9 @@ activation failure.
 
 ## Apple Notesのローカル編集
 
-[memo-syncの手順](./docs/memo-sync.md)を参照。denix/Home ManagerでMac用CLI・登録用サービス・Neovimでmemoを使っている間だけ動く自動同期のlaunchd agentを配置する。全件取り込み、フォルダ・メモ作成、対応するMarkdown書式の往復、ファイル削除から「最近削除した項目」への移動に対応。保存を優先して同期し、原本と更新前のファイルを保持する。競合や対応外の書式では更新を停止。反映は通常のnhワークフローで行う。
+[memo-syncモジュール](./modules/memo-sync)がdenix/Home ManagerでMac用CLI・登録用サービス・Neovimでmemoを使っている間だけ動く自動同期のlaunchd agentを配置する。保存を優先して同期し、原本と更新前のファイルを保持する。競合や対応外の書式では更新を停止。反映は通常のnhワークフローで行う。
+
+初回は`memo-sync import-all`で全件を取り込み、標準メモへのオートメーション許可を確認して許可する。Neovimでmemoのバッファを開くか`:MemoSync`を実行している間だけ同期する。
 
 ## Codex skills
 
