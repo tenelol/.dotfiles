@@ -30,8 +30,169 @@ index 0da10cf..7155a38 100644
 +        }
 +    }
 +}
+diff --git a/DPGK-IME.md b/DPGK-IME.md
+new file mode 100644
+index 0000000..0c7331a
+--- /dev/null
++++ b/DPGK-IME.md
+@@ -0,0 +1,49 @@
++# dpgk-IME
++
++[azooKey-Desktop](https://github.com/azooKey/azooKey-Desktop) に、打鍵・確定・候補ウィンドウの演出を足した非公式フォークです。公式の azooKey とは関係ありません。不具合は本家ではなくこのフォークに報告してください。
++
++ベースは azooKey-Desktop の main（`bd90b7b`、v0.1.5-beta.1 より新しい開発版）です。
++
++## できること
++
++入力メニュー（メニューバーの azooKey）の「演出テーマ」から切り替えます。設定画面の「演出テーマ」でも選べます。
++
++| テーマ | 内容 |
++| --- | --- |
++| なし | 演出なし（本家と同じ見た目） |
++| 波紋 | 打鍵で小さな波紋、確定で文字列が光って大きな波紋が広がる。候補ウィンドウは選択行から波紋 |
++| ロックオン | 確定した文字列に四隅のブラケットが吸い付く。候補ウィンドウの選択行にもブラケット |
++| ドーパミン | コンボ数とランク表示、10コンボごとの花火、30コンボでフィーバー、キーワード（リリース・好き・最強など）で専用演出、確定の長さで NICE〜PERFECT |
++
++本家 main に対して次の修正も入っています。
++
++- 入力中に入力ソースを切り替えても、入力中の文字が消えない
++- 変換に1秒以上かかったときに、再接続を繰り返して入力が止まらない
++- 遅い打鍵の内訳を `log show --predicate 'subsystem == "dev.ensan.inputmethod.azooKeyMac" AND category == "latency"'` で確認できる
++
++## 動作環境
++
++- Apple Silicon の Mac（arm64 のみ）
++- macOS 15 以降を想定（作者は macOS 26 で使用）
++
++## インストール
++
++1. [Releases](../../releases) から `dpgk-IME-*.zip` をダウンロードして展開する
++2. ターミナルで展開したフォルダに入り、`./install.sh` を実行する（管理者パスワードを1回聞かれます）
++3. 初めて入れた場合は、ログアウトしてログインし直し、「システム設定 > キーボード > 入力ソース」で azooKey（日本語・英語）を追加する
++
++ビルド済みの app は Apple の開発者証明書ではなく ad-hoc 署名です。`install.sh` がダウンロード時の隔離属性を外してから入れます。
++
++公式の azooKey と同じ bundle ID（`dev.ensan.inputmethod.azooKeyMac`）を使うので、公式版が入っている場合は置き換わります。設定と学習データは公式版と共通です。
++
++## アンインストール
++
++展開したフォルダで `./uninstall.sh` を実行します。設定と学習データ（`~/Library/Group Containers/group.dev.ensan.inputmethod.azooKeyMac`）は残ります。公式版に戻す場合は、そのあと公式のインストーラを入れ直してください。
++
++## ソースからビルドする
++
++本家の [README](README.md) の「開発版のビルド・デバッグ」の手順（Git LFS・署名の設定・`install.sh`）がそのまま使えます。このフォークの変更は `dpgk-IME` ブランチにあり、追加したファイルは主に `azooKeyMac/InputController/Effects/` です。
++
++## ライセンス
++
++コードは本家と同じ MIT License です（[LICENSE](LICENSE)）。app に同梱している Zenzai の重み（zenz-v3.2-small-gguf）は Apache-2.0、言語モデル（base_n5_lm）を含むそのほかの同梱データは、それぞれの配布元の条件に従います。
+diff --git a/README.md b/README.md
+index e710c7a..6c4c37c 100644
+--- a/README.md
++++ b/README.md
+@@ -1,5 +1,8 @@
+ # azooKey on macOS
+ 
++> [!NOTE]
++> このブランチ（`dpgk-IME`）は演出テーマを足した非公式フォークです。使い方とインストールは [DPGK-IME.md](DPGK-IME.md) を見てください。以下は本家の README です。
++
+ [azooKey](https://github.com/ensan-hcl/azooKey)のmacOS版です。高精度なニューラルかな漢字変換エンジン「Zenzai」を導入した、オープンソースの日本語入力システムです。
+ 
+ **現在アルファ版のため、動作は一切保証できません**。
+diff --git a/Tools/dpgk-ime/install.sh b/Tools/dpgk-ime/install.sh
+new file mode 100755
+index 0000000..e91b549
+--- /dev/null
++++ b/Tools/dpgk-ime/install.sh
+@@ -0,0 +1,65 @@
++#!/usr/bin/env bash
++# dpgk-IME のビルド済み azooKeyMac.app を入れ、変換サーバーの LaunchAgent を登録する。
++# 配布 zip を展開したフォルダの中で実行する（管理者パスワードを1回聞かれる）。
++set -euo pipefail
++
++here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
++source_app="${here}/azooKeyMac.app"
++install_app="/Library/Input Methods/azooKeyMac.app"
++label="dev.ensan.inputmethod.azooKeyMac.ConverterServer"
++agent="${HOME}/Library/LaunchAgents/${label}.plist"
++domain="gui/$(id -u)"
++
++if [ "$(uname -m)" != "arm64" ]; then
++    echo "dpgk-IME は Apple Silicon の Mac 専用です" >&2
++    exit 1
++fi
++if [ ! -d "${source_app}" ]; then
++    echo "azooKeyMac.app が見つかりません: ${source_app}" >&2
++    exit 1
++fi
++
++# ad-hoc 署名のため、ダウンロードで付いた隔離属性を外さないと起動を拒否される
++xattr -dr com.apple.quarantine "${source_app}" 2>/dev/null || true
++codesign --verify --deep --strict "${source_app}"
++
++echo "azooKeyMac.app を ${install_app} に入れます"
++sudo rm -rf "${install_app}"
++sudo ditto "${source_app}" "${install_app}"
++
++mkdir -p "$(dirname "${agent}")"
++cat > "${agent}" <<PLIST
++<?xml version="1.0" encoding="UTF-8"?>
++<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
++<plist version="1.0">
++<dict>
++    <key>Label</key>
++    <string>${label}</string>
++    <key>ProgramArguments</key>
++    <array>
++        <string>${install_app}/Contents/Helpers/ConverterServer/ConverterServer</string>
++    </array>
++    <key>MachServices</key>
++    <dict>
++        <key>${label}</key>
++        <true/>
++    </dict>
++    <key>KeepAlive</key>
++    <true/>
++    <key>RunAtLoad</key>
++    <true/>
++</dict>
++</plist>
++PLIST
++
++launchctl bootout "${domain}/${label}" >/dev/null 2>&1 || true
++launchctl bootstrap "${domain}" "${agent}"
++# 起動中の IME は次の入力で新しい app から起動し直される
++pkill -x azooKeyMac >/dev/null 2>&1 || true
++
++cat <<'DONE'
++インストールしました。
++初めて入れた場合は、一度ログアウトしてログインし直してから
++「システム設定 > キーボード > 入力ソース」で azooKey（日本語・英語）を追加してください。
++演出は入力メニューの「演出テーマ」から切り替えられます。
++DONE
+diff --git a/Tools/dpgk-ime/uninstall.sh b/Tools/dpgk-ime/uninstall.sh
+new file mode 100755
+index 0000000..f171764
+--- /dev/null
++++ b/Tools/dpgk-ime/uninstall.sh
+@@ -0,0 +1,16 @@
++#!/usr/bin/env bash
++# install.sh で入れた azooKeyMac.app と変換サーバーの LaunchAgent を取り除く。
++# 学習データと設定（~/Library/Group Containers/group.dev.ensan.inputmethod.azooKeyMac）は残す。
++set -euo pipefail
++
++install_app="/Library/Input Methods/azooKeyMac.app"
++label="dev.ensan.inputmethod.azooKeyMac.ConverterServer"
++agent="${HOME}/Library/LaunchAgents/${label}.plist"
++
++launchctl bootout "gui/$(id -u)/${label}" >/dev/null 2>&1 || true
++rm -f "${agent}"
++pkill -x azooKeyMac >/dev/null 2>&1 || true
++if [ -d "${install_app}" ]; then
++    sudo rm -rf "${install_app}"
++fi
++echo "dpgk-IME を取り除きました。入力ソースの一覧に残っていれば、システム設定から削除してください。"
 diff --git a/azooKeyMac/InputController/CandidateWindow/BaseCandidateViewController.swift b/azooKeyMac/InputController/CandidateWindow/BaseCandidateViewController.swift
-index 0e62f73..c21cbfb 100644
+index 0e62f73..c8af52f 100644
 --- a/azooKeyMac/InputController/CandidateWindow/BaseCandidateViewController.swift
 +++ b/azooKeyMac/InputController/CandidateWindow/BaseCandidateViewController.swift
 @@ -93,6 +93,8 @@ class BaseCandidateViewController: NSViewController {
@@ -97,15 +258,24 @@ index 0e62f73..c21cbfb 100644
              return
          }
          self.tableView.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
-@@ -202,6 +230,7 @@ class BaseCandidateViewController: NSViewController {
+@@ -202,6 +230,16 @@ class BaseCandidateViewController: NSViewController {
          self.updateSelectionCallback(row, notifySelectionChange: notifySelectionChange)
          self.currentSelectedRow = row
          self.updateVisibleRows()
++        // リサイズ直後はレイアウトとスクロールが未反映で、1行上に描かれることがあるため確定させてから置く
++        self.view.layoutSubtreeIfNeeded()
 +        self.decoration?.moveSelection(toRow: row)
++        // それでもAppKitが次のrun loopで行を動かしたときに備え、描画後の位置で合わせ直す
++        DispatchQueue.main.async { [weak self] in
++            guard let self, self.currentSelectedRow == row else {
++                return
++            }
++            self.decoration?.alignSelection(toRow: row)
++        }
      }
  
      internal func updateSelectionCallback(_ row: Int, notifySelectionChange: Bool) {}
-@@ -314,7 +343,7 @@ extension BaseCandidateViewController: NSTableViewDelegate, NSTableViewDataSourc
+@@ -314,7 +352,7 @@ extension BaseCandidateViewController: NSTableViewDelegate, NSTableViewDataSourc
          var rowView = tableView.makeView(withIdentifier: identifier, owner: nil) as? NSTableRowView
  
          if rowView == nil {
@@ -170,10 +340,10 @@ index 627f9a5..3396aea 100644
                  self?.handleCommandTimeout()
 diff --git a/azooKeyMac/InputController/Effects/DopamineCandidateDecoration.swift b/azooKeyMac/InputController/Effects/DopamineCandidateDecoration.swift
 new file mode 100644
-index 0000000..317ce23
+index 0000000..f23a3f6
 --- /dev/null
 +++ b/azooKeyMac/InputController/Effects/DopamineCandidateDecoration.swift
-@@ -0,0 +1,246 @@
+@@ -0,0 +1,258 @@
 +import AppKit
 +import QuartzCore
 +
@@ -270,6 +440,18 @@ index 0000000..317ce23
 +        self.borderGradient.bounds = CGRect(x: 0, y: 0, width: side, height: side)
 +        self.borderGradient.position = CGPoint(x: bounds.midX, y: bounds.midY)
 +        CATransaction.commit()
++    }
++
++    func alignSelection(toRow row: Int) {
++        guard self.selectionVisible,
++              let target = self.tableView?.effectRect(ofRow: row, inset: CGSize(width: 5, height: 2)),
++              abs(target.minY - self.selection.frame.minY) > 1 else {
++            return
++        }
++        EffectLog.candidate.notice(
++            "realigned row \(row, privacy: .public) from y=\(Int(self.selection.frame.minY), privacy: .public) to y=\(Int(target.minY), privacy: .public)"
++        )
++        self.moveSelection(toRow: row)
 +    }
 +
 +    func moveSelection(toRow row: Int?) {
@@ -1399,12 +1581,13 @@ index 0000000..5b18ebc
 +}
 diff --git a/azooKeyMac/InputController/Effects/EffectTheme.swift b/azooKeyMac/InputController/Effects/EffectTheme.swift
 new file mode 100644
-index 0000000..131ace4
+index 0000000..addf7d1
 --- /dev/null
 +++ b/azooKeyMac/InputController/Effects/EffectTheme.swift
-@@ -0,0 +1,169 @@
+@@ -0,0 +1,177 @@
 +import AppKit
 +import Core
++import os
 +import QuartzCore
 +
 +/// 打鍵・確定・候補ウィンドウに重ねる演出の一式。入力メニューと設定画面から切り替える。
@@ -1427,7 +1610,14 @@ index 0000000..131ace4
 +    func uninstall()
 +    func layout(in bounds: CGRect)
 +    func moveSelection(toRow row: Int?)
++    /// 一覧のリサイズやスクロールが反映されたあとに、選択の装飾が行からずれていれば合わせ直す
++    func alignSelection(toRow row: Int)
 +    func playAppear(on layer: CALayer?)
++}
++
++/// 候補ウィンドウの位置ずれを調べるためのログ。入力内容は残さない
++enum EffectLog {
++    static let candidate = Logger(subsystem: "dev.ensan.inputmethod.azooKeyMac", category: "candidate")
 +}
 +
 +@MainActor
@@ -1574,10 +1764,10 @@ index 0000000..131ace4
 +}
 diff --git a/azooKeyMac/InputController/Effects/LockOnEffectTheme.swift b/azooKeyMac/InputController/Effects/LockOnEffectTheme.swift
 new file mode 100644
-index 0000000..61df860
+index 0000000..4e59ab8
 --- /dev/null
 +++ b/azooKeyMac/InputController/Effects/LockOnEffectTheme.swift
-@@ -0,0 +1,446 @@
+@@ -0,0 +1,470 @@
 +import AppKit
 +import QuartzCore
 +
@@ -1883,6 +2073,18 @@ index 0000000..61df860
 +        CATransaction.commit()
 +    }
 +
++    func alignSelection(toRow row: Int) {
++        guard self.selectionVisible,
++              let target = self.tableView?.effectRect(ofRow: row, inset: CGSize(width: 5, height: 2)),
++              abs(target.minY - self.selection.frame.minY) > 1 else {
++            return
++        }
++        EffectLog.candidate.notice(
++            "realigned row \(row, privacy: .public) from y=\(Int(self.selection.frame.minY), privacy: .public) to y=\(Int(target.minY), privacy: .public)"
++        )
++        self.moveSelection(toRow: row)
++    }
++
 +    func moveSelection(toRow row: Int?) {
 +        guard let row, let tableView = self.tableView, let target = tableView.effectRect(ofRow: row, inset: CGSize(width: 5, height: 2)) else {
 +            self.selection.opacity = 0
@@ -2012,12 +2214,24 @@ index 0000000..61df860
 +}
 +
 +extension NSTableView {
-+    /// 行の矩形を装飾レイヤーの座標で返す。clip view 側で座標系が反転済みのため、そのまま使える
++    /// 行の矩形を装飾レイヤーの座標で返す。実際に描かれている行ビューのレイヤーから変換し、
++    /// 取れないときだけ行番号から計算した矩形を使う
 +    func effectRect(ofRow row: Int, inset: CGSize) -> CGRect? {
 +        guard row >= 0, row < self.numberOfRows else {
 +            return nil
 +        }
-+        return self.rect(ofRow: row).insetBy(dx: inset.width, dy: inset.height)
++        var rect = self.rect(ofRow: row)
++        self.layoutSubtreeIfNeeded()
++        if let tableLayer = self.layer, let rowLayer = self.rowView(atRow: row, makeIfNecessary: false)?.layer {
++            let drawn = tableLayer.convert(rowLayer.bounds, from: rowLayer)
++            if abs(drawn.minY - rect.minY) > 1 {
++                EffectLog.candidate.notice(
++                    "row \(row, privacy: .public) is drawn at y=\(Int(drawn.minY), privacy: .public) but computed at y=\(Int(rect.minY), privacy: .public)"
++                )
++            }
++            rect = drawn
++        }
++        return rect.insetBy(dx: inset.width, dy: inset.height)
 +    }
 +
 +    var effectScrollOffset: CGFloat {
@@ -2142,7 +2356,7 @@ index 0000000..bd52ee5
 +    }
 +}
 diff --git a/azooKeyMac/InputController/azooKeyMacInputController.swift b/azooKeyMac/InputController/azooKeyMacInputController.swift
-index f10ba35..9054bd5 100644
+index f10ba35..7335a10 100644
 --- a/azooKeyMac/InputController/azooKeyMacInputController.swift
 +++ b/azooKeyMac/InputController/azooKeyMacInputController.swift
 @@ -1,6 +1,7 @@
@@ -2208,7 +2422,7 @@ index f10ba35..9054bd5 100644
          self.converterServerClient.sendKeyEvent(request) { [weak self] response in
              Task { @MainActor in
                  guard let self else {
-@@ -388,12 +407,49 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
+@@ -388,12 +407,66 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
                      // application へ後からイベントを戻せないため、ここでは漏らさない。
                      self.appendDebugMessage("Consumed delayed fallthrough event \(request.eventID)")
                  }
@@ -2231,6 +2445,23 @@ index f10ba35..9054bd5 100644
          return true
      }
  
++    /// 候補ウィンドウの選択行と入力中の文字が食い違ったときだけ、行番号を残す（入力内容は残さない）
++    private static func checkSelectionMatchesMarkedText(
++        candidates: [ConverterCandidatePresentation],
++        selectionIndex: Int?,
++        markedText: ConverterMarkedText
++    ) {
++        guard let selectionIndex, candidates.indices.contains(selectionIndex),
++              let focused = markedText.elements.first(where: { $0.focus == .focused })?.content,
++              candidates[selectionIndex].text != focused else {
++            return
++        }
++        let shownRow = candidates.firstIndex { $0.text == focused } ?? -1
++        EffectLog.candidate.notice(
++            "selection index \(selectionIndex, privacy: .public) does not match the marked text, which matches row \(shownRow, privacy: .public)"
++        )
++    }
++
 +    /// 入力が止まる原因を切り分けるため、遅かった打鍵だけ所要時間の内訳を残す
 +    /// （prepare: 入力先アプリへの同期問い合わせを含む送信前処理、roundtrip: 変換サーバーの待ち、
 +    /// apply: 結果の反映、effect: 演出）
@@ -2258,7 +2489,7 @@ index f10ba35..9054bd5 100644
      @MainActor
      func requestPredictiveSuggestionWithConverterServer(client: IMKTextInput) -> Bool {
          self.handleKeyEventWithConverterServer(
-@@ -408,13 +464,13 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
+@@ -408,13 +481,13 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
      }
  
      @MainActor
@@ -2274,7 +2505,7 @@ index f10ba35..9054bd5 100644
              for effect in response.effects {
                  self.apply(effect, client: client)
              }
-@@ -423,6 +479,45 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
+@@ -423,6 +496,45 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
          self.refreshCandidateWindow()
          self.refreshPredictionWindow()
          self.refreshReplaceSuggestionWindow()
@@ -2320,6 +2551,14 @@ index f10ba35..9054bd5 100644
      }
  
      @MainActor
+@@ -522,6 +634,7 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
+     private func refreshCandidateWindow(_ candidateWindow: ConverterCandidateWindow) {
+         switch candidateWindow {
+         case .selecting(let candidates, let selectionIndex):
++            Self.checkSelectionMatchesMarkedText(candidates: candidates, selectionIndex: selectionIndex, markedText: self.currentMarkedText())
+             var rect: NSRect = .zero
+             self.client().attributes(forCharacterIndex: 0, lineHeightRectangle: &rect)
+             self.candidatesViewController.showCandidateIndex = true
 diff --git a/azooKeyMac/InputController/azooKeyMacInputControllerHelper.swift b/azooKeyMac/InputController/azooKeyMacInputControllerHelper.swift
 index 9b993b4..4a20ac2 100644
 --- a/azooKeyMac/InputController/azooKeyMacInputControllerHelper.swift
