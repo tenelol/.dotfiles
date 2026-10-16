@@ -65,10 +65,10 @@ return {
           c.bg_visual = theme.bg_selection
           c.bg_search = theme.yellow
           c.diff = {
-            add = "#183242",
-            delete = "#202a45",
-            change = "#243149",
-            text = "#2b3f5c",
+            add = "#13292b",
+            delete = "#2a1a1f",
+            change = "#172338",
+            text = "#22355a",
           }
           c.git = {
             add = theme.green,
@@ -117,7 +117,7 @@ return {
             "@string.escape",
             "@string.regex",
             "@character",
-          }, { fg = theme.fg_dark, bg = "none" })
+          }, { fg = theme.green, bg = "none" })
 
           set_highlights(hl, {
             "Boolean",
@@ -130,7 +130,7 @@ return {
             "@constant.macro",
             "@number",
             "@number.float",
-          }, { fg = theme.fg_dark, bg = "none" })
+          }, { fg = theme.yellow, bg = "none" })
 
           set_highlights(hl, {
             "Type",
@@ -165,10 +165,17 @@ return {
             "@text.literal",
             "@lsp.type.function",
             "@lsp.type.method",
-            "@lsp.type.parameter",
             "@lsp.type.property",
             "@lsp.type.variable",
           }, { fg = theme.fg, bg = "none" })
+
+          -- Parameters read in Ghostty's italic face (Monaspace Radon), set apart
+          -- from the amber constants.
+          set_highlights(hl, {
+            "@variable.parameter",
+            "@variable.parameter.builtin",
+            "@lsp.type.parameter",
+          }, { fg = theme.purple, bg = "none", italic = true })
 
           set_highlights(hl, {
             "@punctuation",
@@ -192,7 +199,7 @@ return {
             "@function.method.call",
             "@method",
             "@method.call",
-          }, { fg = theme.fg, bg = "none" })
+          }, { fg = theme.fg_bright, bg = "none" })
 
           set_highlights(hl, {
             "Conditional",
@@ -221,7 +228,7 @@ return {
             "@keyword.return",
             "@keyword.type",
             "@label",
-          }, { fg = theme.fg_dark, bg = "none" })
+          }, { fg = theme.blue, bg = "none" })
 
           set_highlights(hl, {
             "Operator",
@@ -263,7 +270,7 @@ return {
           hl.SnacksIndentScope = { fg = theme.indent_scope, bg = "none", bold = true }
 
           hl.CursorLine = { bg = "none" }
-          hl.CursorLineNr = { fg = theme.fg_bright, bold = true }
+          hl.CursorLineNr = { fg = theme.blue, bold = true }
           hl.Visual = { bg = theme.bg_selection }
           hl.Search = { fg = theme.bg_dark, bg = theme.yellow }
           hl.IncSearch = { fg = theme.bg_dark, bg = theme.orange }
@@ -279,10 +286,10 @@ return {
           hl.DiagnosticUnderlineError = { sp = theme.red, undercurl = true }
           hl.DiagnosticUnderlineWarn = { sp = theme.yellow, undercurl = true }
           hl.Error = { fg = theme.red, bold = true }
-          hl.DiffAdd = { fg = theme.green, bg = "#183242" }
-          hl.DiffChange = { fg = theme.yellow, bg = "#243149" }
-          hl.DiffDelete = { fg = theme.red, bg = "#202a45" }
-          hl.DiffText = { fg = theme.fg, bg = "#2b3f5c" }
+          hl.DiffAdd = { fg = theme.green, bg = "#13292b" }
+          hl.DiffChange = { fg = theme.yellow, bg = "#172338" }
+          hl.DiffDelete = { fg = theme.red, bg = "#2a1a1f" }
+          hl.DiffText = { fg = theme.fg_bright, bg = "#22355a" }
 
           hl.TelescopeBorder = { fg = theme.blue, bg = "none" }
           hl.TelescopeNormal = { fg = theme.fg, bg = "none" }
@@ -299,15 +306,15 @@ return {
           hl.NeoTreeDiagnosticWarn = { fg = theme.yellow, bg = "none", bold = true }
           hl.NeoTreeDiagnosticInfo = { fg = theme.cyan, bg = "none" }
           hl.NeoTreeDiagnosticHint = { fg = theme.fg_dark, bg = "none" }
-          hl.NeoTreeGitAdded = { fg = theme.cyan, bg = "none" }
+          hl.NeoTreeGitAdded = { fg = theme.green, bg = "none" }
           hl.NeoTreeGitConflict = { fg = theme.red, bg = "none", bold = true }
           hl.NeoTreeGitDeleted = { fg = theme.red, bg = "none" }
           hl.NeoTreeGitIgnored = { fg = theme.comment, bg = "none" }
-          hl.NeoTreeGitModified = { fg = theme.fg_gutter, bg = "none" }
+          hl.NeoTreeGitModified = { fg = theme.yellow, bg = "none" }
           hl.NeoTreeGitRenamed = { fg = theme.blue0, bg = "none" }
-          hl.NeoTreeGitStaged = { fg = theme.cyan, bg = "none" }
-          hl.NeoTreeGitUntracked = { fg = theme.fg_gutter, bg = "none" }
-          hl.NeoTreeGitUnstaged = { fg = theme.fg_gutter, bg = "none" }
+          hl.NeoTreeGitStaged = { fg = theme.green, bg = "none" }
+          hl.NeoTreeGitUntracked = { fg = theme.fg_dark, bg = "none" }
+          hl.NeoTreeGitUnstaged = { fg = theme.yellow, bg = "none" }
           hl.NeoTreeModified = { fg = theme.fg_dark, bg = "none" }
 
           hl.NoiceCmdlinePopupBorder = { fg = theme.blue, bg = "none" }

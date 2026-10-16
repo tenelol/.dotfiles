@@ -94,14 +94,15 @@ delib.scopedModule {
         textStrong = strOption "0xffffffff";
         accent = strOption "0xff8bd5ff";
       };
+      # macOS uses the Glacier palette shared with Neovim; Linux keeps Tokyo Night.
       ghostty = {
-        foreground = strOption "c0caf5";
-        background = strOption (if pkgs.stdenv.hostPlatform.isDarwin then "0a0a0a" else "24283b");
+        foreground = strOption (if pkgs.stdenv.hostPlatform.isDarwin then "c9d4e3" else "c0caf5");
+        background = strOption (if pkgs.stdenv.hostPlatform.isDarwin then "0a0d12" else "24283b");
         backgroundBlur = intOption (if pkgs.stdenv.hostPlatform.isDarwin then 96 else 64);
         readabilityScrim = floatOption 0.42;
-        cursor = strOption "5f7695";
-        selectionForeground = strOption "c0caf5";
-        selectionBackground = strOption "364a82";
+        cursor = strOption (if pkgs.stdenv.hostPlatform.isDarwin then "8ab4f8" else "5f7695");
+        selectionForeground = strOption (if pkgs.stdenv.hostPlatform.isDarwin then "eef3fa" else "c0caf5");
+        selectionBackground = strOption (if pkgs.stdenv.hostPlatform.isDarwin then "1d2a3d" else "364a82");
       };
       jankyborders = {
         activeColor = strOption "gradient(top_left=0xff1e293b,bottom_right=0xffffffff)";

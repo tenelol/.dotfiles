@@ -2,34 +2,42 @@
 # See: https://ghostty.org/docs/config
 
 # Typography
-font-family = "JetBrains Mono"
+# Monaspace Neon for code; italics (comments) switch to the handwritten Radon.
+font-family = "Monaspace Neon"
+font-family-italic = "Monaspace Radon"
+font-family-bold-italic = "Monaspace Radon"
 font-size = 14
+# calt is Monaspace's texture healing; ss01-ss03 join ===, >= and arrows.
 font-feature = "calt"
+font-feature = "ss01"
+font-feature = "ss02"
+font-feature = "ss03"
 window-title-font-family = "SF Pro Text"
 
-# Visual style
-theme = "TokyoNight Storm"
+# Visual style: Glacier (matches modules/nvim/files/lua/core/theme.lua)
+# The foreground, background, cursor and selection lines are placeholders that
+# modules/ghostty swaps for myconfig.theme.ghostty values.
 foreground = c0caf5
 background = 24283b
 cursor-color = 7aa2f7
 selection-foreground = c0caf5
 selection-background = 364a82
-palette = 0=171b23
-palette = 1=c4a0e8
-palette = 2=88c0b8
-palette = 3=94b8c7
-palette = 4=7f9bc4
-palette = 5=a894c7
-palette = 6=5f7695
-palette = 7=b3bbc7
-palette = 8=4f5968
-palette = 9=c4a0e8
-palette = 10=88c0b8
-palette = 11=94b8c7
-palette = 12=7f9bc4
-palette = 13=a894c7
-palette = 14=5f7695
-palette = 15=d8dde6
+palette = 0=11161d
+palette = 1=f28b82
+palette = 2=93d3c9
+palette = 3=f2c37b
+palette = 4=8ab4f8
+palette = 5=c6a8f8
+palette = 6=8fd3e8
+palette = 7=c9d4e3
+palette = 8=475262
+palette = 9=f6a59e
+palette = 10=a9e0d7
+palette = 11=f6d29b
+palette = 12=a8c7fa
+palette = 13=d6c0fa
+palette = 14=a9e1f0
+palette = 15=eef3fa
 window-colorspace = "display-p3"
 background-opacity = 0.7
 background-opacity-cells = false
