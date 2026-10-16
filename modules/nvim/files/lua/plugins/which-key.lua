@@ -25,6 +25,7 @@ return {
                 { "<leader>d", group = "debug" },
                 { "<leader>h", group = "git hunk" },
                 { "<leader>l", group = "language" },
+                { "<leader>n", group = "org" },
                 { "<leader>o", group = "open" },
                 { "<leader>p", group = "platformio" },
                 { "<leader>r", group = "replace" },

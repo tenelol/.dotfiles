@@ -1,0 +1,13 @@
+local plugin = require("nix-plugin")
+
+return {
+  plugin.spec("orgmode", {
+    config = function()
+      require("orgmode").setup({
+        org_agenda_files = "~/org/**/*.org",
+        org_default_notes_file = "~/org/refile.org",
+        mappings = { prefix = "<Leader>n" },
+      })
+    end,
+  }),
+}
