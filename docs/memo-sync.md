@@ -4,7 +4,11 @@ memo-syncは、Macの標準メモで選択したメモを ~/Documents/memo/ に�
 
 ## 反映と登録
 
-denixの[memo-syncモジュール](../modules/memo-sync/default.nix)がHome Manager経由でCLI・Macのサービス・launchd agentを配置する。反映は現在のriceを確認した上でnh darwin switchを使う。常駐処理はローカル保存を優先し、0.35秒間変わらなかった本文を反映する。メモ側は一覧取得の完了後1秒間隔で更新日時をまとめて確認し、変わったメモを補助巡回より先に処理する。空フォルダの取り込み確認は2秒間隔。日時で検知できない変更は5分ごとの補助巡回で確認する。実際の反映時間には標準メモの読取・書込・照合時間も加わる。
+denixの[memo-syncモジュール](../modules/memo-sync/default.nix)がHome Manager経由でCLI・Macのサービス・launchd agentを配置する。反映は現在のriceを確認した上でnh darwin switchを使う。
+
+自動同期はNeovimの使用中だけ動く。フォーカス中のNeovimにmemo配下のバッファがある間、Neovimが.memo-sync/activeを1秒ごとに更新し、launchd agentを起動する。`:MemoSync`はmemoのバッファがなくてもそのNeovimの使用中は同期し、`:MemoSync!`で元に戻す。activeが30秒更新されないと、監視は処理の区切りで自ら終了する。フォーカスを外す・Neovimを終了しても30秒は続くため、直前の保存は反映される。停止中の標準メモ側の変更・新規メモ・ファイル削除は次の起動時に処理する。端末がフォーカス通知を送らない場合は、memoのバッファを開いている間は同期を続ける。
+
+監視はローカル保存を優先し、0.35秒間変わらなかった本文を反映する。メモ側は一覧取得の完了後1秒間隔で更新日時をまとめて確認し、変わったメモを補助巡回より先に処理する。空フォルダの取り込み確認は2秒間隔。日時で検知できない変更は5分ごとの補助巡回で確認する。実際の反映時間には標準メモの読取・書込・照合時間も加わる。
 
 | 操作 | memo/ → 標準メモ | 標準メモ → memo/ |
 | --- | --- | --- |
@@ -74,7 +78,7 @@ PNG・JPEG・GIFの画像付きメモは、画像を編集対象から外し、�
 
 前面アプリを切り替えず、背景のメモ一覧から対象を選ぶ。標準メモを前面で操作中、対象が一覧に出ていない、複数の編集ウインドウがある、またはAccessibility権限がない場合は書き込まず待機し、他のメモの同期を続ける。対象ID・画面本文が一致した場合だけ編集する。途中で内容が変わった場合は自動再試行を止める。
 
-常駐処理には、実際に動かすPython実行ファイルへの「システム設定 → プライバシーとセキュリティ → アクセシビリティ」の許可が必要。ターミナルやCodexへの許可だけではlaunchdからの実行を許可したことにならない。既存の画像付き登録は `memo-sync enable "メモ名.md"` で、対応形式と競合を確認して有効化する。
+自動同期には、実際に動かすPython実行ファイルへの「システム設定 → プライバシーとセキュリティ → アクセシビリティ」の許可が必要。ターミナルやCodexへの許可だけではlaunchdからの実行を許可したことにならない。既存の画像付き登録は `memo-sync enable "メモ名.md"` で、対応形式と競合を確認して有効化する。
 
 ## ファイル削除の同期
 
@@ -101,10 +105,10 @@ memo内のバッファは`backupcopy=yes`で保存し、保存直後の改名で
     memo-sync diff "メモ名.md"
     memo-sync sync
 
-statusとdiffは本文を更新しない。syncは有効化したメモを一度同期する。件数に応じて全件の読取時間もかかる。手動監視にはmemo-sync watchを使い、終了はCtrl+C。launchd agentと同じ保存先で同時に動かす必要はない。自動監視の確認・再起動には以下を使う。
+statusとdiffは本文を更新しない。syncは有効化したメモを一度同期する。件数に応じて全件の読取時間もかかる。手動監視にはmemo-sync watchを使い、終了はCtrl+C。launchd agentと同じ保存先で同時に動かす必要はない。Neovimが起動する監視の確認・起動には以下を使う。
 
     launchctl print gui/(id -u)/org.nix-community.home.memo-sync
-    launchctl kickstart -k gui/(id -u)/org.nix-community.home.memo-sync
+    launchctl kickstart gui/(id -u)/org.nix-community.home.memo-sync
 
 監視ログは ~/Library/Logs/memo-sync.log。
 

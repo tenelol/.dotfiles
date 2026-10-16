@@ -13,7 +13,7 @@ MODULE = Path(__file__).resolve().parents[1]
 
 class NeovimTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which('nvim'), 'Neovim is required')
-    def test_save_status_readonly_and_unsaved_edit_protection(self):
+    def test_save_status_readonly_unsaved_edit_protection_and_activation(self):
         with tempfile.TemporaryDirectory(prefix='memo-nvim-') as temporary:
             root=Path(temporary)/'memo';fixtures=Path(temporary)/'fixtures';fixtures.mkdir()
             for note_id, title, shared in [('plain','Plain',False),('shared','Shared',True)]:
@@ -34,4 +34,9 @@ class NeovimTests(unittest.TestCase):
             result=subprocess.run(['nvim','--headless','-u','NONE','-l',str(MODULE/'tests/neovim.lua'),
                                    str(root),str(MODULE/'files/neovim.lua'),sys.executable,
                                    str(MODULE/'files/memo_sync.py'),str(fixtures)],capture_output=True,text=True,timeout=15)
+            self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+            marker=Path(temporary)/'started'
+            result=subprocess.run(['nvim','--headless','-u','NONE','-l',str(MODULE/'tests/neovim_active.lua'),
+                                   str(root),str(MODULE/'files/neovim.lua'),str(marker)],
+                                  capture_output=True,text=True,timeout=20)
             self.assertEqual(result.returncode,0,result.stdout+result.stderr)

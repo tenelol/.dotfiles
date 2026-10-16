@@ -1,0 +1,22 @@
+local root, module, marker = arg[1], arg[2], arg[3]
+local active = root .. '/.memo-sync/active'
+local function exists(path) return vim.uv.fs_stat(path) ~= nil end
+dofile(module).setup(root, nil, { 'touch', marker })
+vim.wait(1500)
+assert(not exists(active), 'Neovim without memo buffers must leave the watcher idle')
+vim.cmd('MemoSync')
+assert(exists(active), ':MemoSync must mark memo-sync active immediately')
+assert(vim.wait(2000, function() return exists(marker) end), ':MemoSync must start the watcher')
+vim.cmd('MemoSync!')
+os.remove(active)
+vim.wait(1500)
+assert(not exists(active), ':MemoSync! must return to buffer-driven activation')
+vim.cmd.edit(vim.fn.fnameescape(root .. '/Plain.md'))
+assert(vim.wait(2000, function() return exists(active) end), 'A memo buffer must keep memo-sync active')
+vim.api.nvim_exec_autocmds('FocusLost', {})
+os.remove(active)
+vim.wait(1500)
+assert(not exists(active), 'An unfocused Neovim must let the watcher stop')
+vim.api.nvim_exec_autocmds('FocusGained', {})
+assert(exists(active), 'Regaining focus must resume memo-sync immediately')
+vim.cmd('qa!')

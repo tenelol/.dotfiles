@@ -1901,12 +1901,24 @@ class Workspace:
         return results
 
 
-def watch_workspace(workspace, interval):
+def idle_for(path):
+    try:
+        info = path.stat(follow_symlinks=False)
+    except FileNotFoundError:
+        return math.inf
+    return time.time() - info.st_mtime if stat.S_ISREG(info.st_mode) else math.inf
+
+
+def watch_workspace(workspace, interval, until_idle=None):
     observed, handled, seen, queue, reported = {}, {}, {}, {}, {}
     retry_after = {}
     next_index = next_folders = next_audit = 0
     previous_error = None
     while True:
+        # Neovim refreshes this file while it is in use; stopping only here never interrupts a write.
+        if until_idle is not None and idle_for(workspace.meta / "active") > until_idle:
+            print("memo-sync: Neovimでの利用がないため監視を終了します。", flush=True)
+            return
         selected = None
         try:
             now = time.monotonic()
@@ -2043,6 +2055,7 @@ def main(argv=None):
     sync.add_argument("--json", action="store_true")
     watch = commands.add_parser("watch", help="有効化したメモの双方向同期を継続")
     watch.add_argument("--interval", type=float, default=1, help="メモ側の更新日時を確認する間隔（秒）")
+    watch.add_argument("--until-idle", type=float, help="Neovimが.memo-sync/activeを更新しなくなってから終了するまでの秒数")
     args = parser.parse_args(argv)
     source = FixtureNotes(args.fixture_dir) if args.fixture_dir else Notes(args.bridge_path)
     workspace = Workspace(args.root, source)
@@ -2090,7 +2103,9 @@ def main(argv=None):
         else:
             if not math.isfinite(args.interval) or args.interval < 1:
                 raise ValueError("確認間隔は1秒以上にしてください。")
-            watch_workspace(workspace, args.interval)
+            if args.until_idle is not None and not (math.isfinite(args.until_idle) and args.until_idle >= 0):
+                raise ValueError("終了までの秒数は0以上にしてください。")
+            watch_workspace(workspace, args.interval, args.until_idle)
     except KeyboardInterrupt:
         return 0
     except (OSError, ValueError, RuntimeError, subprocess.TimeoutExpired) as error:

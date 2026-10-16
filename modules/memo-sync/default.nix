@@ -34,7 +34,9 @@ delib.scopedModule {
   home.ifEnabled = {
     home.packages = [ memoSync ];
     programs.nixvim.extraConfigLua = ''
-      dofile("${./files/neovim.lua}").setup(nil, "${memoSync}/bin/memo-sync")
+      dofile("${./files/neovim.lua}").setup(nil, "${memoSync}/bin/memo-sync", {
+        "/bin/launchctl", "kickstart", "gui/" .. vim.uv.getuid() .. "/org.nix-community.home.memo-sync",
+      })
     '';
     launchd.agents.memo-sync = {
       enable = true;
@@ -45,11 +47,13 @@ delib.scopedModule {
           "--bridge-path"
           "${./files/notes.js}"
           "watch"
+          "--until-idle"
+          "30"
         ];
-        RunAtLoad = true;
-        KeepAlive = true;
+        # Neovim starts the watcher on demand; it exits 30 seconds after Neovim stops using memo.
+        RunAtLoad = false;
+        KeepAlive = false;
         ProcessType = "Background";
-        ThrottleInterval = 10;
         Umask = 63;
         StandardOutPath = "/Users/${profile.username}/Library/Logs/memo-sync.log";
         StandardErrorPath = "/Users/${profile.username}/Library/Logs/memo-sync.log";

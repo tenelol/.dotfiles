@@ -1,6 +1,8 @@
 local M = {}
 local uv = vim.uv
-local root, command, tracked = nil, nil, {}
+local root, command, start, tracked = nil, nil, nil, {}
+-- The watcher polls Notes every second, so it only runs while this Neovim is in use for memo.
+local focused, manual, started_at = true, false, nil
 local labels = {
   in_sync = '同期済', converged = '同期済', format_changed = '同期済',
   push_pending = '同期待ち', pull_pending = '更新待ち', waiting = '同期待ち',
@@ -166,6 +168,34 @@ local function refresh(buf, capture)
   elseif not t.reason then t.notified=nil end
 end
 
+local function active()
+  if not focused then return false end
+  if manual then return true end
+  for buf in pairs(tracked) do
+    if vim.api.nvim_buf_is_valid(buf) and vim.bo[buf].buflisted then return true end
+  end
+  return false
+end
+
+local function keep_alive()
+  if not active() then started_at=nil;return end
+  local meta=root .. '/.memo-sync'
+  local stat=uv.fs_lstat(meta)
+  if not stat or stat.type~='directory' then return end
+  local path,now=meta .. '/active',os.time()
+  stat=uv.fs_lstat(path)
+  if not stat then
+    local fd=uv.fs_open(path,'wx',384)
+    if fd then uv.fs_close(fd) end
+  elseif stat.type~='file' then return end
+  uv.fs_utime(path,now,now)
+  -- Retry periodically in case the watcher was already exiting when this instance became active.
+  if start and (not started_at or uv.now()-started_at>=10000) then
+    started_at=uv.now()
+    pcall(vim.system,start,{text=true})
+  end
+end
+
 function M.stop()
   if M.timer then M.timer:stop();M.timer:close();M.timer=nil end
   for buf,t in pairs(tracked) do
@@ -173,12 +203,13 @@ function M.stop()
   end
 end
 
-function M.setup(directory, executable)
+function M.setup(directory, executable, starter)
   if _G.memo_sync then _G.memo_sync.stop() end
   _G.memo_sync=M
   root = vim.fs.normalize(directory or vim.fn.expand('~/Documents/memo'))
   root = uv.fs_realpath(root) or root
   command = executable or 'memo-sync'
+  start, focused, manual, started_at = starter, true, false, nil
   local group=vim.api.nvim_create_augroup('MemoSync',{clear=true})
   vim.api.nvim_create_autocmd({'BufReadPost','BufNewFile','BufWritePost'}, {group=group,callback=function(a) refresh(a.buf,true) end})
   vim.api.nvim_create_autocmd('BufEnter',{group=group,callback=function(a) refresh(a.buf,false) end})
@@ -198,6 +229,13 @@ function M.setup(directory, executable)
   end})
   vim.api.nvim_create_autocmd('BufWipeout',{group=group,callback=function(a) tracked[a.buf]=nil end})
   vim.api.nvim_create_autocmd('VimLeavePre',{group=group,callback=M.stop})
+  vim.api.nvim_create_autocmd('FocusGained',{group=group,callback=function() focused=true;keep_alive() end})
+  vim.api.nvim_create_autocmd('FocusLost',{group=group,callback=function() focused=false end})
+  vim.api.nvim_create_user_command('MemoSync',function(opts)
+    manual=not opts.bang;started_at=nil;keep_alive()
+    vim.api.nvim_echo({{manual and 'memo-sync: このNeovimの使用中は同期します。' or
+      'memo-sync: memoのバッファがある間だけ同期します。'}},true,{})
+  end,{bang=true,force=true})
   vim.api.nvim_create_user_command('MemoSyncStatus',function()
     local buf=vim.api.nvim_get_current_buf();refresh(buf,false);local t=tracked[buf]
     vim.api.nvim_echo({{t and ((vim.b[buf].memo_sync_status or labels[t.phase] or t.phase) .. (t.reason and ': '..t.reason or '')) or 'memo-syncの対象外です。'}},true,{})
@@ -223,6 +261,7 @@ function M.setup(directory, executable)
   M.timer=uv.new_timer()
   M.timer:start(1000,1000,vim.schedule_wrap(function()
     for _,buf in ipairs(vim.api.nvim_list_bufs()) do refresh(buf,false) end
+    keep_alive()
     vim.cmd('redrawstatus')
   end))
   for _,buf in ipairs(vim.api.nvim_list_bufs()) do refresh(buf,false) end

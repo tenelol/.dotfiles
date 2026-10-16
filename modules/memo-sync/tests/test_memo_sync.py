@@ -997,6 +997,29 @@ class WatchLatencyTests(unittest.TestCase):
         self.assertEqual(self.source.list_ids(),before)
         self.assertEqual(path.read_text(),'Existing mirror\n')
 
+    def test_watch_runs_only_while_neovim_marks_memo_active(self):
+        MemoSyncTests.setUp(self)
+        self.workspace.discover_local()
+        command=[sys.executable,str(SCRIPT),'--root',str(self.root),'--fixture-dir',str(self.fixtures),'watch']
+        idle=subprocess.run(command+['--until-idle','30'],capture_output=True,text=True,timeout=5)
+        self.assertEqual(idle.returncode,0,idle.stderr)
+        self.assertIn('監視を終了',idle.stdout)
+        self.assertEqual(subprocess.run(command+['--until-idle','-1'],capture_output=True).returncode,1)
+        active=self.root/'.memo-sync/active';active.touch()
+        (self.root/'fresh.md').write_text('Fresh note\n')
+        worker=subprocess.Popen(command+['--until-idle','1'],stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,text=True)
+        try:
+            until=time.monotonic()+3
+            while time.monotonic()<until and not any(self.source.read(k).title=='Fresh note' for k in self.source.list_ids()):
+                active.touch();time.sleep(.05)
+            self.assertTrue(any(self.source.read(k).title=='Fresh note' for k in self.source.list_ids()),
+                            'An active watcher must keep syncing')
+            self.assertEqual(worker.wait(4),0,'The watcher must stop after Neovim stops refreshing the marker')
+            self.assertIn('監視を終了',worker.stdout.read())
+        finally:
+            if worker.poll() is None:worker.kill();worker.wait()
+            worker.stdout.close()
+
     def test_invalid_file_does_not_stop_other_notes(self):
         MemoSyncTests.setUp(self)
         self.workspace.discover_local()
