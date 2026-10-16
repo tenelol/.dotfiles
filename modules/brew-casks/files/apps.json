@@ -258,6 +258,31 @@
       ]
     },
     {
+      "name": "font-monaspace",
+      "fontFiles": [
+        "Static Fonts/Monaspace Neon/MonaspaceNeon-Regular.otf",
+        "Static Fonts/Monaspace Neon/MonaspaceNeon-Italic.otf",
+        "Static Fonts/Monaspace Neon/MonaspaceNeon-Light.otf",
+        "Static Fonts/Monaspace Neon/MonaspaceNeon-LightItalic.otf",
+        "Static Fonts/Monaspace Neon/MonaspaceNeon-Medium.otf",
+        "Static Fonts/Monaspace Neon/MonaspaceNeon-MediumItalic.otf",
+        "Static Fonts/Monaspace Neon/MonaspaceNeon-SemiBold.otf",
+        "Static Fonts/Monaspace Neon/MonaspaceNeon-SemiBoldItalic.otf",
+        "Static Fonts/Monaspace Neon/MonaspaceNeon-Bold.otf",
+        "Static Fonts/Monaspace Neon/MonaspaceNeon-BoldItalic.otf",
+        "Static Fonts/Monaspace Radon/MonaspaceRadon-Regular.otf",
+        "Static Fonts/Monaspace Radon/MonaspaceRadon-Italic.otf",
+        "Static Fonts/Monaspace Radon/MonaspaceRadon-Light.otf",
+        "Static Fonts/Monaspace Radon/MonaspaceRadon-LightItalic.otf",
+        "Static Fonts/Monaspace Radon/MonaspaceRadon-Medium.otf",
+        "Static Fonts/Monaspace Radon/MonaspaceRadon-MediumItalic.otf",
+        "Static Fonts/Monaspace Radon/MonaspaceRadon-SemiBold.otf",
+        "Static Fonts/Monaspace Radon/MonaspaceRadon-SemiBoldItalic.otf",
+        "Static Fonts/Monaspace Radon/MonaspaceRadon-Bold.otf",
+        "Static Fonts/Monaspace Radon/MonaspaceRadon-BoldItalic.otf"
+      ]
+    },
+    {
       "name": "font-noto-color-emoji",
       "fontFiles": [
         "NotoColorEmoji-Regular.ttf"

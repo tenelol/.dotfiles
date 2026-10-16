@@ -7,6 +7,6 @@ let
     fonts = spec.fontFiles or [ ];
   }) (manifest.fonts ++ manifest.binaries);
 in
-assert builtins.length manifest.fonts == 9;
+assert builtins.length manifest.fonts == 10;
 assert packages.codex.version == "0.160.0";
 metadata
