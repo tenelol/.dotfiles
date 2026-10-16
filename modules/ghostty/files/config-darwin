@@ -72,7 +72,7 @@ custom-shader = ~/.config/ghostty/shaders/cursor_smear.glsl
 custom-shader = ~/.config/ghostty/shaders/typing_ignite.glsl
 custom-shader = ~/.config/ghostty/shaders/typing_ripple.glsl
 custom-shader = ~/.config/ghostty/shaders/jump_lockon.glsl
-custom-shader-animation = always
+custom-shader-animation = true
 
 # Quick terminal
 # Ctrl+Enter toggles the quick terminal from any application.
