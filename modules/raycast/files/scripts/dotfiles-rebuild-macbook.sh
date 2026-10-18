@@ -99,6 +99,7 @@ log_file=$(printf '%q' "$log_file")
 latest_log=$(printf '%q' "$latest_log")
 target_configuration=$(printf '%q' "$target_configuration")
 rebuild_process_pattern=$(printf '%q' "$rebuild_process_pattern")
+job_label=$(printf '%q' "$job_label")
 
 askpass_script="\$(/usr/bin/mktemp "\${TMPDIR:-/tmp}/dotfiles-askpass.XXXXXX")"
 elevation_script="\$(/usr/bin/mktemp "\${TMPDIR:-/tmp}/dotfiles-sudo-wrapper.XXXXXX")"
@@ -107,6 +108,9 @@ cleanup() {
   /bin/rm -f "\$askpass_script" "\$elevation_script" "$runner_script"
   /bin/rm -f "\$pid_file"
   /bin/rmdir "\$lock_dir" 2>/dev/null || true
+  # launchctl submit jobs are KeepAlive; without removal launchd keeps
+  # retrying the deleted runner and leaves one stale job per rebuild.
+  /bin/launchctl remove "\$job_label" 2>/dev/null || true
 }
 
 notify() {
