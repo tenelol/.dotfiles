@@ -114,15 +114,15 @@ delib.module {
       };
     };
 
-    services.ollama = {
-      enable = true;
-      environmentVariables = {
-        OLLAMA_CONTEXT_LENGTH = "32768";
-        OLLAMA_KEEP_ALIVE = "30m";
-        OLLAMA_MAX_LOADED_MODELS = "1";
-        OLLAMA_NO_CLOUD = "1";
-        OLLAMA_NUM_PARALLEL = "1";
-      };
+    # Ollama is rarely used, so keep only the CLI and run `ollama serve` on demand
+    # instead of a resident launchd agent.
+    home.packages = [ pkgs.ollama ];
+    home.sessionVariables = {
+      OLLAMA_CONTEXT_LENGTH = "32768";
+      OLLAMA_KEEP_ALIVE = "30m";
+      OLLAMA_MAX_LOADED_MODELS = "1";
+      OLLAMA_NO_CLOUD = "1";
+      OLLAMA_NUM_PARALLEL = "1";
     };
   };
 }
