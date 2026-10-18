@@ -9,6 +9,25 @@ local function has_modified_buffer()
   return false
 end
 
+-- Edge windows: Edgy's bars plus side panels it does not manage, such as a
+-- right-hand Neo-tree, which would otherwise be left alone after :q.
+local function split_windows()
+  local wins = require("edgy.editor").list_wins()
+  local panels, main = {}, {}
+  for win in pairs(wins.edgy) do
+    panels[#panels + 1] = win
+  end
+  for win in pairs(wins.main) do
+    local ft = vim.bo[vim.api.nvim_win_get_buf(win)].filetype
+    if ft == "neo-tree" or ft == "toggleterm" then
+      panels[#panels + 1] = win
+    else
+      main[win] = true
+    end
+  end
+  return panels, main
+end
+
 local function setup_exit_when_only_edges_remain()
   local exit_scheduled = false
   local group = vim.api.nvim_create_augroup("edgy_exit_when_only_edges_remain", { clear = true })
@@ -20,16 +39,19 @@ local function setup_exit_when_only_edges_remain()
         return
       end
 
-      local wins = require("edgy.editor").list_wins()
+      local panels, main = split_windows()
       local current = vim.api.nvim_get_current_win()
-      if not wins.main[current] or vim.tbl_count(wins.main) ~= 1 or vim.tbl_isempty(wins.edgy) then
+      if not main[current] or vim.tbl_count(main) ~= 1 or #panels == 0 then
         return
       end
 
       if has_modified_buffer() then
-        vim.schedule(function()
-          vim.notify("Unsaved buffers remain; Neovim was kept open.", vim.log.levels.WARN, { title = "Exit" })
-        end)
+        -- Close the panels so :q sees its last window and refuses with Vim's own
+        -- E37/E162. Letting the window go would leave only panels, and Edgy and
+        -- Neo-tree would each try to quit or reopen a split for the buffer.
+        for _, win in ipairs(panels) do
+          pcall(vim.api.nvim_win_close, win, false)
+        end
         return
       end
 
@@ -76,7 +98,8 @@ return {
         -- core.panel-motion animates panels itself so it can hold Edgy off
         -- and keep terminals from re-flowing mid-animation.
         animate = { enabled = false },
-        exit_when_last = true,
+        -- QuitPre above owns quitting; Edgy's plain :qa fails on unsaved buffers.
+        exit_when_last = false,
         close_when_all_hidden = true,
         wo = {
           winbar = false,

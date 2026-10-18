@@ -125,7 +125,9 @@ return {
       end
 
       require("neo-tree").setup({
-        close_if_last_window = true,
+        -- Quitting is handled by the QuitPre hook in plugins/edgy.lua; Neo-tree's
+        -- own version opens a new split for every unsaved buffer instead.
+        close_if_last_window = false,
         popup_border_style = "rounded",
         enable_git_status = true,
         enable_diagnostics = true,
