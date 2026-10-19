@@ -103,12 +103,6 @@ delib.module {
     };
 
     system.activationScripts = {
-      configurePowerManagement.text = ''
-        # Keep the system and display awake while connected to AC power.
-        # Lid-close sleep is controlled separately by macOS and remains unchanged.
-        /usr/bin/pmset -c sleep 0 displaysleep 0
-      '';
-
       ensureScreenshotDirectory.text = ''
         mkdir -p /Users/${profile.username}/Pictures/Screenshots
         chown ${profile.username} /Users/${profile.username}/Pictures/Screenshots
@@ -117,8 +111,8 @@ delib.module {
       postActivation.text = lib.mkAfter ''
         uid="$(id -u ${profile.username})"
 
-        # Prevent the screen saver from triggering an automatic lock. Battery
-        # display sleep, lid-close sleep, and manual locking remain unchanged.
+        # Prevent the screen saver from triggering an automatic lock. Display
+        # sleep, lid-close sleep, and manual locking remain unchanged.
         launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/defaults -currentHost write \
           com.apple.screensaver idleTime -int 0
 
