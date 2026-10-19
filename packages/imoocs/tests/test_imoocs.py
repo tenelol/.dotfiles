@@ -1,6 +1,7 @@
 import ctypes
 import json
 import os
+import re
 import sys
 import tempfile
 import unittest
@@ -273,6 +274,63 @@ class ImoocsSlideCollectionTests(unittest.TestCase):
         drive = self.imoocs["drive_auth_required_payload"]("ls", "", "google_expired")
         self.assertTrue(any(hint in step for step in slide["data"]["next"]))
         self.assertTrue(any(hint in step for step in drive["data"]["next"]))
+
+    def test_slide_svg_gets_invisible_text_from_aria_labels_in_order(self):
+        svg = (
+            '<svg><g id="a" role="img" aria-label="課題4&#xa;Let&#39;s &lt;ls&gt;" tabindex="0"><path/></g>'
+            '<g id="b"><path/></g>'
+            "<g id='c' role='img' aria-label='Copyright © 2026'><path/></g></svg>"
+        )
+        result = self.imoocs["embed_svg_accessibility_text"](svg)
+        texts = re.findall(r"<text x='0' y='(\d+)'[^>]*>([^<]*)</text>", result)
+        self.assertEqual(texts, [
+            ("100", "課題4"),
+            ("200", "Let's &lt;ls&gt;"),
+            ("300", "Copyright © 2026"),
+        ])
+        self.assertIn('<g id="b"><path/></g>', result)
+
+    def test_pdf_title_uses_utf16_for_non_ascii(self):
+        to_pdf_string = self.imoocs["pdf_text_string"]
+        self.assertEqual(to_pdf_string("Slides (1)"), r"(Slides \(1\))")
+        self.assertEqual(to_pdf_string("課題"), "<FEFF8AB2984C>")
+
+    def convert_with_fake_tools(self, svgs):
+        commands = []
+        written_svgs = []
+
+        def fake_converter(command, _index, timeout=120):
+            name = Path(command[0]).name
+            commands.append(name if name != "qpdf" or "--overlay" not in command else "qpdf-overlay")
+            if name == "svg2pdf":
+                written_svgs.append(Path(command[1]).read_text(encoding="utf-8"))
+                Path(command[2]).write_bytes(b"%PDF-page")
+            elif name == "tesseract":
+                Path(f"{command[2]}.pdf").write_bytes(b"%PDF-ocr")
+            else:
+                Path(command[-1]).write_bytes(b"%PDF-merged")
+
+        self.imoocs["run_slide_converter"] = fake_converter
+        with patch.object(self.imoocs["shutil"], "which", side_effect=lambda name: f"/bin/{name}"):
+            body = self.imoocs["published_slides_pdf_from_svgs"](None, "https://docs.google.com/", svgs, "title")
+        return body, commands, written_svgs
+
+    def test_published_svgs_use_vector_pdf_when_svg2pdf_is_available(self):
+        svgs = [f'<svg><g role="img" aria-label="slide {index}"></g></svg>' for index in (1, 2)]
+        body, commands, written_svgs = self.convert_with_fake_tools(svgs)
+
+        self.assertEqual(body, b"%PDF-merged")
+        self.assertEqual(commands, ["svg2pdf", "svg2pdf", "qpdf"])
+        self.assertTrue(all("<text " in svg for svg in written_svgs))
+
+    def test_picture_only_slides_get_ocr_text_layer(self):
+        svgs = [
+            '<svg><g role="img" aria-label="text slide"></g></svg>',
+            '<svg><image href="data:image/png;base64,AA=="/></svg>',
+        ]
+        _body, commands, _written_svgs = self.convert_with_fake_tools(svgs)
+
+        self.assertEqual(commands, ["svg2pdf", "svg2pdf", "resvg", "tesseract", "qpdf-overlay", "qpdf"])
 
     def test_content_disposition_repairs_utf8_decoded_as_latin1(self):
         expected = "確率統計2.pdf"

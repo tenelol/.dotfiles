@@ -11,7 +11,7 @@ in
 
 pkgs.stdenvNoCC.mkDerivation {
   pname = "imoocs";
-  version = "0.3.10";
+  version = "0.3.11";
 
   src = ./imoocs/imoocs;
   dontUnpack = true;
@@ -30,7 +30,15 @@ pkgs.stdenvNoCC.mkDerivation {
           pkgs.coreutils
           pkgs.findutils
           pythonWithKeyring
+          pkgs.qpdf
           pkgs.resvg
+          pkgs.svg2pdf
+          (pkgs.tesseract.override {
+            enableLanguages = [
+              "eng"
+              "jpn"
+            ];
+          })
         ]
       }
 

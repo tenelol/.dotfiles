@@ -1423,6 +1423,13 @@ def pdf_escape(value):
     return value.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
 
 
+def pdf_text_string(value):
+    if value.isascii():
+        return f"({pdf_escape(value)})"
+    # Non-ASCII literal strings are read as PDFDocEncoding, so use UTF-16BE with a BOM.
+    return "<" + ("\ufeff" + value).encode("utf-16-be").hex().upper() + ">"
+
+
 def pdf_from_images(images, title="Google Slides"):
     if not images:
         raise ValueError("no slide images were found")
@@ -1473,7 +1480,7 @@ def pdf_from_images(images, title="Google Slides"):
         f"/Count {len(page_ids)} >>"
     ).encode()
 
-    info_id = add_object(f"<< /Title ({pdf_escape(title)}) /Producer (imoocs-native) >>".encode())
+    info_id = add_object(f"<< /Title {pdf_text_string(title)} /Producer (imoocs-native) >>".encode())
     output = bytearray(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
     offsets = [0]
     for obj_id, body in enumerate(objects, start=1):
@@ -1523,28 +1530,115 @@ def published_slides_pdf_from_html(jar, page_url, body):
     return pdf_from_images(images, title)
 
 
+def embed_svg_accessibility_text(svg):
+    # Google Slides draws glyphs as paths and keeps the text only in aria-label.
+    # Like moocs-collect, add invisible text so the PDF text can be extracted.
+    # All labels share the slide origin, so each line gets its own y offset to
+    # keep the reading order when extracted.
+    line_count = 0
+
+    def add_text(match):
+        nonlocal line_count
+        attrs = match.group(1)
+        if attrs.rstrip().endswith("/") or not re.search(r"""\brole\s*=\s*["']img["']""", attrs):
+            return match.group(0)
+        label = re.search(r"""\baria-label\s*=\s*(?:"([^"]*)"|'([^']*)')""", attrs)
+        if not label:
+            return match.group(0)
+        texts = []
+        for line in html.unescape(label.group(1) or label.group(2) or "").splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            line_count += 1
+            texts.append(
+                f"<text x='0' y='{line_count * 100}' stroke='none' fill='transparent' "
+                f"font-family='sans-serif' transform='scale(0.01)'>{html.escape(line, quote=False)}</text>"
+            )
+        return match.group(0) + "".join(texts)
+
+    return re.sub(r"""<g\b((?:[^>"']|"[^"]*"|'[^']*')*)>""", add_text, svg)
+
+
+def run_slide_converter(command, index, timeout=120):
+    result = subprocess.run(
+        command,
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        timeout=timeout,
+    )
+    if result.returncode != 0:
+        name = Path(command[0]).name
+        raise RuntimeError(f"{name} failed for slide {index}: {result.stderr.strip() or result.stdout.strip()}")
+
+
+# The jpn model reads digits in these slide fonts as circled numbers.
+OCR_CHAR_BLACKLIST = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳"
+
+
+def add_ocr_text_layer(tools, svg_path, pdf_path, index):
+    # Decks uploaded as pictures carry no text at all, so overlay an invisible OCR layer.
+    png_path = svg_path.with_suffix(".png")
+    ocr_base = svg_path.with_name(f"{svg_path.stem}-ocr")
+    output_path = svg_path.with_name(f"{svg_path.stem}-text.pdf")
+    try:
+        run_slide_converter([tools["resvg"], str(svg_path), str(png_path)], index)
+        run_slide_converter([
+            tools["tesseract"], str(png_path), str(ocr_base),
+            "-l", "jpn+eng", "--dpi", "72", "--psm", "3",
+            "-c", "preserve_interword_spaces=1",
+            "-c", f"tessedit_char_blacklist={OCR_CHAR_BLACKLIST}",
+            "-c", "textonly_pdf=1",
+            "pdf",
+        ], index, timeout=300)
+        run_slide_converter([
+            tools["qpdf"], str(pdf_path), "--overlay", f"{ocr_base}.pdf", "--", str(output_path),
+        ], index)
+    except (RuntimeError, subprocess.TimeoutExpired):
+        # OCR is best effort; the page itself is still complete without it.
+        return pdf_path
+    return output_path
+
+
 def published_slides_pdf_from_svgs(jar, page_url, svgs, title):
-    resvg = shutil.which("resvg")
-    if not resvg:
+    tools = {name: shutil.which(name) for name in ("svg2pdf", "qpdf", "resvg", "tesseract")}
+    svg2pdf = tools["svg2pdf"]
+    qpdf = tools["qpdf"]
+    resvg = tools["resvg"]
+    if not (svg2pdf and qpdf) and not resvg:
         return None
 
     images = []
     with tempfile.TemporaryDirectory(prefix="imoocs-slides-") as tmp:
         tmp_path = Path(tmp)
+        svg_paths = []
+        ocr_needed = []
         for index, svg in enumerate(svgs, start=1):
             svg_path = tmp_path / f"slide-{index:03d}.svg"
-            png_path = tmp_path / f"slide-{index:03d}.png"
-            svg_path.write_text(inline_svg_remote_images(jar, svg, page_url), encoding="utf-8")
-            result = subprocess.run(
-                [resvg, str(svg_path), str(png_path)],
-                check=False,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                timeout=120,
-            )
-            if result.returncode != 0:
-                raise RuntimeError(f"resvg failed for slide {index}: {result.stderr.strip() or result.stdout.strip()}")
+            inlined = inline_svg_remote_images(jar, svg, page_url)
+            with_text = embed_svg_accessibility_text(inlined)
+            svg_path.write_text(with_text, encoding="utf-8")
+            svg_paths.append(svg_path)
+            ocr_needed.append(with_text == inlined and "<image" in inlined)
+
+        if svg2pdf and qpdf:
+            # Vector pages keep the embedded text; the raster path below cannot.
+            pdf_paths = []
+            for index, svg_path in enumerate(svg_paths, start=1):
+                pdf_path = svg_path.with_suffix(".pdf")
+                run_slide_converter([svg2pdf, str(svg_path), str(pdf_path)], index)
+                if ocr_needed[index - 1] and resvg and tools["tesseract"]:
+                    pdf_path = add_ocr_text_layer(tools, svg_path, pdf_path, index)
+                pdf_paths.append(str(pdf_path))
+            merged_path = tmp_path / "slides.pdf"
+            run_slide_converter([qpdf, "--empty", "--pages", *pdf_paths, "--", str(merged_path)], "merge")
+            return merged_path.read_bytes()
+
+        for index, svg_path in enumerate(svg_paths, start=1):
+            png_path = svg_path.with_suffix(".png")
+            run_slide_converter([resvg, str(svg_path), str(png_path)], index)
             images.append(png_path.read_bytes())
     return pdf_from_images(images, title)
 
@@ -4480,7 +4574,7 @@ main() {
       usage
       ;;
     --version)
-      echo "imoocs 0.3.10 ($backend)"
+      echo "imoocs 0.3.11 ($backend)"
       ;;
     open)
       open_cmd "$@"

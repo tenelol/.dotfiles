@@ -12,6 +12,8 @@ imoocs slide collect --path /path/to/download-dir --year 2025
 
 This command uses stored `imoocs auth login` MOOCs and Google session cookies. It collects linked Google presentations as PDF, downloads linked Drive files directly, and recursively collects linked Drive folders. It never prompts for a password and never calls `collect-cli`. If no valid MOOCs session is stored, it returns an `auth_required` JSON envelope with `data.authScope: "moocs"`; recover with `imoocs auth login --keychain` in Codex desktop sessions, then retry only if auth succeeds. If it returns `data.authScope: "google_slides"` or `data.cookieStore: "google_expired"`, do not retry Keychain or `imoocs auth login` automatically because the MOOCs session is already usable and the blocker is Google Docs access. Instead, run `imoocs auth import-browser --browser auto`, then retry `slide collect`. To discard stale stored Google cookies and import the configured local browser profile in the same collection run, pass `--refresh-google`.
 
+Collected Google Slides PDFs carry a text layer, so read them with text extraction such as `pdftotext` first. Slide text comes from the deck itself; decks uploaded as pictures get Japanese/English OCR text instead, which can contain misread characters and extra spaces. For OCR pages, check exact commands, numbers, and file names against the page image before relying on them.
+
 In an interactive TTY, missing `--course`, `--lecture`, or `--page` selectors are prompted as numbered menus. In non-interactive shells, pass selectors or explicit `--all`:
 
 ```bash
