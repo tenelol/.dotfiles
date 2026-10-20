@@ -14,6 +14,8 @@ return {
             { "<leader>f/", desc = "Search current buffer" },
             { "<leader>fr", desc = "Recent files" },
             { "<leader>fR", desc = "Resume last picker" },
+            { "<leader>m", desc = "Search memos" },
+            { "<leader>M", desc = "Find memo files" },
         },
         config = function()
             local project = require("core.project")
@@ -77,6 +79,13 @@ return {
                 builtin.grep_string(project_opts())
             end, { desc = "Search word under cursor" })
             map("n", "<leader>fb", builtin.buffers, { desc = "Find buffers" })
+            -- Org notes live in ~/org whatever project is open.
+            map("n", "<leader>m", function()
+                builtin.live_grep(project_opts({ cwd = "~/org", glob_pattern = "*.org" }))
+            end, { desc = "Search memos" })
+            map("n", "<leader>M", function()
+                builtin.find_files(project_opts({ cwd = "~/org", follow = true }))
+            end, { desc = "Find memo files" })
             map("n", "<leader>f/", function()
                 builtin.current_buffer_fuzzy_find(themes.get_dropdown({
                     previewer = false,

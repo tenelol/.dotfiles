@@ -13,6 +13,33 @@ return {
         },
       })
 
+      -- The everyday actions on <Leader> + one key; the full set stays under <Leader>n.
+      local org = require("orgmode")
+      local function action(name)
+        return function()
+          org.action(name)
+        end
+      end
+      vim.keymap.set("n", "<Leader>a", action("agenda.prompt"), { desc = "Org agenda" })
+      vim.keymap.set("n", "<Leader>q", action("capture.prompt"), { desc = "New memo" })
+      vim.api.nvim_create_autocmd("FileType", {
+        group = vim.api.nvim_create_augroup("OrgShortKeys", { clear = true }),
+        pattern = "org",
+        callback = function(args)
+          -- nowait: these shadow the test, problems, session, debug and replace
+          -- groups, but only inside org buffers, where those are rarely wanted.
+          for lhs, spec in pairs({
+            ["<Leader>t"] = { "org_mappings.todo_next_state", "Next TODO state" },
+            ["<Leader>x"] = { "org_mappings.toggle_checkbox", "Toggle checkbox" },
+            ["<Leader>s"] = { "org_mappings.org_schedule", "Schedule" },
+            ["<Leader>d"] = { "org_mappings.org_deadline", "Deadline" },
+            ["<Leader>r"] = { "capture.refile_headline_to_destination", "Refile" },
+          }) do
+            vim.keymap.set("n", lhs, action(spec[1]), { buffer = args.buf, nowait = true, desc = spec[2] })
+          end
+        end,
+      })
+
       -- Quitting a modified capture makes orgmode ask about refiling from
       -- BufWipeout, where noice cannot open its confirm float, so Neovim waits
       -- on an invisible prompt. Treat :q! as discard by dropping orgmode's
