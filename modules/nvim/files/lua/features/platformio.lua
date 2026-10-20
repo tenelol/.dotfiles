@@ -161,30 +161,4 @@ vim.api.nvim_create_user_command("PioInit", M.init, {
     desc = "Initialize a PlatformIO project by board id",
 })
 
-vim.keymap.set("n", "<leader>pb", M.build, {
-    noremap = true,
-    silent = true,
-    desc = "Build PlatformIO project",
-})
-vim.keymap.set("n", "<leader>pu", M.upload, {
-    noremap = true,
-    silent = true,
-    desc = "Upload PlatformIO project",
-})
-vim.keymap.set("n", "<leader>pm", M.monitor, {
-    noremap = true,
-    silent = true,
-    desc = "Open PlatformIO monitor",
-})
-vim.keymap.set("n", "<leader>pc", M.compiledb, {
-    noremap = true,
-    silent = true,
-    desc = "Generate compile database",
-})
-vim.keymap.set("n", "<leader>pi", M.init, {
-    noremap = true,
-    silent = true,
-    desc = "Initialize PlatformIO project",
-})
-
 return M

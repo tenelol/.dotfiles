@@ -1,9 +1,5 @@
 local plugin = require("nix-plugin")
 
-local function molten_cmd(command)
-	return ("<cmd>%s<cr>"):format(command)
-end
-
 local function current_buffer_is_ipynb()
 	return vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ":e") == "ipynb"
 end
@@ -524,22 +520,6 @@ return {
 			setup_notebook_commands()
 			setup_ipynb_output_sync()
 		end,
-		keys = {
-			{ "<leader>ji", molten_cmd("MoltenInit"), desc = "Jupyter init kernel" },
-			{ "<leader>je", molten_cmd("MoltenEvaluateOperator"), desc = "Jupyter evaluate operator" },
-			{ "<leader>jl", molten_cmd("MoltenEvaluateLine"), desc = "Jupyter evaluate line" },
-			{ "<leader>jr", molten_cmd("MoltenReevaluateCell"), desc = "Jupyter re-evaluate cell" },
-			{ "<leader>jo", molten_cmd("MoltenShowOutput"), desc = "Jupyter show output" },
-			{ "<leader>jh", molten_cmd("MoltenHideOutput"), desc = "Jupyter hide output" },
-			{ "<leader>jd", molten_cmd("MoltenDelete"), desc = "Jupyter delete cell" },
-			{ "<leader>jp", "<cmd>JupyterPreview<cr>", desc = "Jupyter preview output" },
-			{
-				"<leader>jv",
-				":<C-u>MoltenEvaluateVisual<cr>gv",
-				mode = "v",
-				desc = "Jupyter evaluate selection",
-			},
-		},
 	}),
 
 	plugin.spec("jupytext-nvim", {
@@ -590,43 +570,5 @@ return {
 				end,
 			})
 		end,
-		keys = {
-			{
-				"<leader>jc",
-				function()
-					run_current_cell()
-				end,
-				desc = "Jupyter run cell",
-			},
-			{
-				"<leader>ja",
-				function()
-					require("quarto.runner").run_above()
-				end,
-				desc = "Jupyter run above",
-			},
-			{
-				"<leader>jA",
-				function()
-					require("quarto.runner").run_all()
-				end,
-				desc = "Jupyter run all",
-			},
-			{
-				"<leader>jL",
-				function()
-					require("quarto.runner").run_line()
-				end,
-				desc = "Jupyter run line",
-			},
-			{
-				"<leader>jV",
-				function()
-					require("quarto.runner").run_range()
-				end,
-				mode = "v",
-				desc = "Jupyter run selection",
-			},
-		},
 	}),
 }
