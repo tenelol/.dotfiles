@@ -24,6 +24,8 @@ return {
         stages = "fade_in_slide_out",
         fps = 60,
         timeout = 2000,
+        -- Errors still pop up, but from the bottom corner, clear of the code.
+        top_down = false,
         on_open = function(win)
           -- Notifications fade in where they rest, so lock onto that spot.
           require("core.motion").lock(require("core.motion").window_rect(win), { spread = 0.6 })
@@ -47,7 +49,11 @@ return {
             enabled = true,
           },
         },
+        -- Everyday messages ("written", plugin info) go to the one-line corner view
+        -- instead of popups over the code; only errors get a popup.
         messages = {
+          view = "mini",
+          view_warn = "mini",
           view_search = "virtualtext",
         },
         views = {
@@ -65,19 +71,20 @@ return {
           lsp_doc_border = true,
         },
         routes = {
-          {
-            filter = {
-              event = "notify",
-              kind = "info",
-            },
-            view = "notify",
-          },
+          -- First match wins, so the skip has to come before the catch-all below.
           {
             filter = {
               event = "notify",
               find = "No information available",
             },
             opts = { skip = true },
+          },
+          {
+            filter = {
+              event = "notify",
+              any = { { kind = "info" }, { kind = "debug" }, { kind = "trace" }, { kind = "warn" } },
+            },
+            view = "mini",
           },
         },
       })
