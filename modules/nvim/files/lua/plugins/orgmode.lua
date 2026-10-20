@@ -6,6 +6,12 @@ return {
       require("orgmode").setup({
         org_agenda_files = "~/org/**/*.org",
         org_default_notes_file = "~/org/refile.org",
+        -- A plain note by default, stamped like Orgnote's captures; a task is a
+        -- <Leader>t away. The default t entry is merged in, so it is redefined.
+        org_capture_templates = {
+          m = { description = "メモ", template = "* %?\n  %U" },
+          t = { description = "TODO", template = "* TODO %?\n  %U" },
+        },
         mappings = {
           prefix = "<Leader>n",
           -- The default <C-Space> is taken by the macOS IME toggle.
@@ -21,7 +27,10 @@ return {
         end
       end
       vim.keymap.set("n", "<Leader>a", action("agenda.prompt"), { desc = "Org agenda" })
-      vim.keymap.set("n", "<Leader>q", action("capture.prompt"), { desc = "New memo" })
+      -- Straight into a memo; <Leader>nc still offers the TODO template.
+      vim.keymap.set("n", "<Leader>q", function()
+        org.action("capture.open_template_by_shortcut", "m")
+      end, { desc = "New memo" })
       vim.api.nvim_create_autocmd("FileType", {
         group = vim.api.nvim_create_augroup("OrgShortKeys", { clear = true }),
         pattern = "org",

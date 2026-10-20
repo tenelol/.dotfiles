@@ -46,6 +46,18 @@ check(vim.api.nvim_buf_get_lines(0, checkbox - 1, checkbox, false)[1] == "- [X] 
 vim.cmd.enew()
 check(vim.fn.maparg(" t", "n", false, true).buffer ~= 1, "the short keys stay out of other buffers")
 
+-- Last, since the capture window takes over the layout. HOME is a scratch
+-- directory, so whatever orgmode writes on exit stays out of ~/org.
+-- <Leader>q opens a plain memo capture straight away, no template prompt.
+vim.fn.maparg(" q", "n", false, true).callback()
+-- The capture window opens on the next tick.
+vim.wait(2000, function()
+	return vim.b.org_capture ~= nil
+end)
+local capture = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+check(capture[1] == "* " and (capture[2] or ""):match("^  %[%d%d%d%d%-%d%d%-%d%d .+ %d%d:%d%d%]$") ~= nil,
+	"<Leader>q opens a plain memo with a creation stamp")
+
 if #failures > 0 then
 	io.stderr:write(table.concat(failures, "\n") .. "\n")
 	vim.cmd.cquit(1)
