@@ -163,14 +163,14 @@ return {
 
       map("n", "[b", "<Cmd>BufferLineCyclePrev<CR>", { silent = true, desc = "Previous buffer" })
       map("n", "]b", "<Cmd>BufferLineCycleNext<CR>", { silent = true, desc = "Next buffer" })
-      map("n", "<leader>bb", "<Cmd>BufferLinePick<CR>", { silent = true, desc = "Pick buffer" })
-      map("n", "<leader>bc", function()
+      map("n", "<leader>b", "<Cmd>BufferLinePick<CR>", { silent = true, desc = "Pick buffer" })
+      map("n", "<leader>c", function()
         close_buffer()
       end, { silent = true, desc = "Close buffer" })
-      map("n", "<leader>bo", "<Cmd>BufferLineCloseOthers<CR>", { silent = true, desc = "Close other buffers" })
-      map("n", "<leader>bp", "<Cmd>BufferLineTogglePin<CR>", { silent = true, desc = "Toggle pin" })
-      map("n", "<leader>bH", "<Cmd>BufferLineMovePrev<CR>", { silent = true, desc = "Move buffer left" })
-      map("n", "<leader>bL", "<Cmd>BufferLineMoveNext<CR>", { silent = true, desc = "Move buffer right" })
+      map("n", "<leader>o", "<Cmd>BufferLineCloseOthers<CR>", { silent = true, desc = "Close other buffers" })
+      map("n", "<leader>p", "<Cmd>BufferLineTogglePin<CR>", { silent = true, desc = "Toggle pin" })
+      map("n", "<leader>h", "<Cmd>BufferLineMovePrev<CR>", { silent = true, desc = "Move buffer left" })
+      map("n", "<leader>l", "<Cmd>BufferLineMoveNext<CR>", { silent = true, desc = "Move buffer right" })
 
       for i = 1, 9 do
         map("n", "<A-" .. i .. ">", "<Cmd>BufferLineGoToBuffer " .. i .. "<CR>", {

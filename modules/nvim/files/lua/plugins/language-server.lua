@@ -97,28 +97,6 @@ return {
                 map("n", "gK", vim.lsp.buf.signature_help, "Signature help")
                 map("n", "gr", telescope_picker("lsp_references"), "Go to references")
                 map("n", "<F2>", vim.lsp.buf.rename, "Rename symbol")
-                map("n", "<leader>la", vim.lsp.buf.code_action, "Code action")
-                map("n", "<leader>ld", function()
-                    vim.diagnostic.open_float(nil, {
-                        border = "rounded",
-                        focusable = false,
-                        header = "",
-                        max_height = math.min(16, math.floor(vim.o.lines * 0.45)),
-                        max_width = math.min(100, math.floor(vim.o.columns * 0.75)),
-                        prefix = "",
-                        scope = "cursor",
-                        source = "if_many",
-                    })
-                end, "Line diagnostics")
-                map("n", "<leader>lr", vim.lsp.buf.rename, "Rename symbol")
-                map("n", "<leader>ls", telescope_picker("lsp_document_symbols"), "Document symbols")
-                map("n", "<leader>lS", telescope_picker("lsp_dynamic_workspace_symbols"), "Workspace symbols")
-                map("n", "<leader>lf", function()
-                    require("conform").format({
-                        async = true,
-                        lsp_format = "fallback",
-                    })
-                end, "Format buffer")
                 map("n", "[d", function()
                     vim.diagnostic.goto_prev()
                     require("core.targets").diagnostic()
@@ -144,10 +122,6 @@ return {
 
                 if supports_inlay_hints(client) then
                     vim.lsp.inlay_hint.enable(false, { bufnr = bufnr })
-                    map("n", "<leader>lh", function()
-                        local enabled = vim.lsp.inlay_hint.is_enabled({ bufnr = bufnr })
-                        vim.lsp.inlay_hint.enable(not enabled, { bufnr = bufnr })
-                    end, "Toggle inlay hints")
                 end
             end
 

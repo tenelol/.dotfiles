@@ -8,10 +8,10 @@ return {
       keys = "etovxqpdygfblzhckisuran",
     })
 
-    -- leader leader w で単語ジャンプ
+    -- leader w で単語ジャンプ
     vim.api.nvim_set_keymap(
       "n",
-      "<leader><leader>w",
+      "<leader>w",
       "<cmd>HopWord<CR>",
       { noremap = true, silent = true, desc = "Hop to word" }
     )

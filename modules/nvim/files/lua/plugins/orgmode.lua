@@ -3,23 +3,35 @@ local plugin = require("nix-plugin")
 return {
   plugin.spec("orgmode", {
     config = function()
+      -- Only the short keys below; every <prefix> default mapping is turned off.
+      local mappings = {}
+      for group, defaults in pairs(require("orgmode.config.defaults").mappings) do
+        if type(defaults) == "table" then
+          for name, lhs in pairs(defaults) do
+            if type(lhs) == "string" and lhs:find("<prefix>", 1, true) then
+              mappings[group] = mappings[group] or {}
+              mappings[group][name] = false
+            end
+          end
+        end
+      end
+
       require("orgmode").setup({
         org_agenda_files = "~/org/**/*.org",
         org_default_notes_file = "~/org/refile.org",
-        -- A plain note by default, stamped like Orgnote's captures; a task is a
-        -- <Leader>t away. The default t entry is merged in, so it is redefined.
+        -- A plain note, stamped like Orgnote's captures; a task is a <Leader>t
+        -- away. The default t entry is merged in, so it is redefined.
         org_capture_templates = {
           m = { description = "メモ", template = "* %?\n  %U" },
           t = { description = "TODO", template = "* TODO %?\n  %U" },
         },
-        mappings = {
-          prefix = "<Leader>n",
-          -- The default <C-Space> is taken by the macOS IME toggle.
-          org = { org_toggle_checkbox = "<prefix><Space>" },
-        },
+        mappings = vim.tbl_deep_extend("force", mappings, {
+          -- The default <C-Space> is taken by the macOS IME toggle; <Leader>x below replaces it.
+          org = { org_toggle_checkbox = false },
+        }),
       })
 
-      -- The everyday actions on <Leader> + one key; the full set stays under <Leader>n.
+      -- The everyday actions on <Leader> + one key.
       local org = require("orgmode")
       local function action(name)
         return function()
@@ -27,7 +39,7 @@ return {
         end
       end
       vim.keymap.set("n", "<Leader>a", action("agenda.prompt"), { desc = "Org agenda" })
-      -- Straight into a memo; <Leader>nc still offers the TODO template.
+      -- Straight into a memo, no template prompt.
       vim.keymap.set("n", "<Leader>q", function()
         org.action("capture.open_template_by_shortcut", "m")
       end, { desc = "New memo" })
@@ -35,8 +47,7 @@ return {
         group = vim.api.nvim_create_augroup("OrgShortKeys", { clear = true }),
         pattern = "org",
         callback = function(args)
-          -- nowait: these shadow the test, problems, session, debug and replace
-          -- groups, but only inside org buffers, where those are rarely wanted.
+          -- Buffer-local: in other files these keys stay free.
           for lhs, spec in pairs({
             ["<Leader>t"] = { "org_mappings.todo_next_state", "Next TODO state" },
             ["<Leader>x"] = { "org_mappings.toggle_checkbox", "Toggle checkbox" },
@@ -44,7 +55,7 @@ return {
             ["<Leader>d"] = { "org_mappings.org_deadline", "Deadline" },
             ["<Leader>r"] = { "capture.refile_headline_to_destination", "Refile" },
           }) do
-            vim.keymap.set("n", lhs, action(spec[1]), { buffer = args.buf, nowait = true, desc = spec[2] })
+            vim.keymap.set("n", lhs, action(spec[1]), { buffer = args.buf, desc = spec[2] })
           end
         end,
       })

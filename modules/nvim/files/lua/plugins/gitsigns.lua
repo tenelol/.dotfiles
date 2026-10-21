@@ -30,18 +30,6 @@ return {
         end
       end, { silent = true, desc = "Previous hunk" })
 
-      map("n", "<leader>hs", gitsigns.stage_hunk, { silent = true, desc = "Stage hunk" })
-      map("n", "<leader>hr", gitsigns.reset_hunk, { silent = true, desc = "Reset hunk" })
-      map("n", "<leader>hS", gitsigns.stage_buffer, { silent = true, desc = "Stage buffer" })
-      map("n", "<leader>hu", gitsigns.undo_stage_hunk, { silent = true, desc = "Undo stage hunk" })
-      map("n", "<leader>hR", gitsigns.reset_buffer, { silent = true, desc = "Reset buffer" })
-      map("n", "<leader>hb", gitsigns.blame_line, { silent = true, desc = "Blame line" })
-      map("n", "<leader>hB", gitsigns.toggle_current_line_blame, { silent = true, desc = "Toggle line blame" })
-      map("n", "<leader>hp", gitsigns.preview_hunk, { silent = true, desc = "Preview hunk" })
-      map("n", "<leader>hd", gitsigns.diffthis, { silent = true, desc = "Diff this" })
-      map("n", "<leader>hD", function()
-        gitsigns.diffthis("~")
-      end, { silent = true, desc = "Diff against previous revision" })
       map({ "o", "x" }, "ih", ":<C-U>Gitsigns select_hunk<CR>", { silent = true, desc = "Select hunk" })
     end,
   }),

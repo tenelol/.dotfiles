@@ -6,14 +6,6 @@ return {
         cmd = "Telescope",
         keys = {
             { "<C-p>", desc = "Quick open" },
-            { "<leader>ff", desc = "Find files" },
-            { "<leader>fF", desc = "Find git files" },
-            { "<leader>fg", desc = "Search in files" },
-            { "<leader>fc", desc = "Search word under cursor" },
-            { "<leader>fb", desc = "Find buffers" },
-            { "<leader>f/", desc = "Search current buffer" },
-            { "<leader>fr", desc = "Recent files" },
-            { "<leader>fR", desc = "Resume last picker" },
             { "<leader>m", desc = "Search memos" },
             { "<leader>M", desc = "Find memo files" },
         },
@@ -21,7 +13,6 @@ return {
             local project = require("core.project")
             local telescope = require("telescope")
             local builtin = require("telescope.builtin")
-            local themes = require("telescope.themes")
             local animation = require("core.telescope-animation")
 
             local function project_opts(opts)
@@ -33,16 +24,6 @@ return {
 
             local function project_find_files()
                 builtin.find_files(project_opts())
-            end
-
-            local function project_git_files()
-                local ok = pcall(builtin.git_files, project_opts({
-                    show_untracked = true,
-                }))
-
-                if not ok then
-                    project_find_files()
-                end
             end
 
             telescope.setup({
@@ -70,15 +51,6 @@ return {
             local map = vim.keymap.set
 
             map("n", "<C-p>", project_find_files, { desc = "Quick open" })
-            map("n", "<leader>ff", project_find_files, { desc = "Find files" })
-            map("n", "<leader>fF", project_git_files, { desc = "Find git files" })
-            map("n", "<leader>fg", function()
-                builtin.live_grep(project_opts())
-            end, { desc = "Search in files" })
-            map("n", "<leader>fc", function()
-                builtin.grep_string(project_opts())
-            end, { desc = "Search word under cursor" })
-            map("n", "<leader>fb", builtin.buffers, { desc = "Find buffers" })
             -- Org notes live in ~/org whatever project is open.
             map("n", "<leader>m", function()
                 builtin.live_grep(project_opts({ cwd = "~/org", glob_pattern = "*.org" }))
@@ -86,14 +58,6 @@ return {
             map("n", "<leader>M", function()
                 builtin.find_files(project_opts({ cwd = "~/org", follow = true }))
             end, { desc = "Find memo files" })
-            map("n", "<leader>f/", function()
-                builtin.current_buffer_fuzzy_find(themes.get_dropdown({
-                    previewer = false,
-                    winblend = 10,
-                }))
-            end, { desc = "Search current buffer" })
-            map("n", "<leader>fr", builtin.oldfiles, { desc = "Recent files" })
-            map("n", "<leader>fR", builtin.resume, { desc = "Resume last picker" })
         end,
     }),
 }

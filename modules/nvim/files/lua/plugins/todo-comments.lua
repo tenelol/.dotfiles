@@ -17,8 +17,6 @@ return {
                 require("todo-comments").jump_prev()
             end, { silent = true, desc = "Previous todo comment" })
 
-            vim.keymap.set("n", "<leader>xt", "<cmd>TodoTrouble<CR>", { silent = true, desc = "Todo comments" })
-            vim.keymap.set("n", "<leader>ft", "<cmd>TodoTelescope<CR>", { silent = true, desc = "Find todo comments" })
         end,
     }),
 }

@@ -8,16 +8,8 @@ return {
     keys = {
       { "<C-\\>", mode = { "n", "t" }, desc = "Toggle terminal" },
       { "<C-t>", desc = "Toggle floating terminal" },
-      { "<leader>iC", desc = "Open Claude Code" },
-      { "<leader>ix", desc = "Open Codex CLI" },
-      { "<leader>ot", desc = "New terminal" },
-      { "<leader>oT", desc = "Select terminal" },
-      { "<leader>oa", desc = "Toggle all terminals" },
-      { "<leader>on", desc = "Next terminal" },
-      { "<leader>op", desc = "Previous terminal" },
       { "[T", desc = "Previous terminal" },
       { "]T", desc = "Next terminal" },
-      { "<leader>to", desc = "Toggle test output" },
     },
     config = function()
       local terminal = require("core.terminal")
@@ -97,37 +89,9 @@ return {
         terminal.toggle_float()
       end, { silent = true, desc = "Toggle floating terminal" })
 
-      map("n", "<leader>iC", function()
-        terminal.claude()
-      end, { silent = true, desc = "Open Claude Code" })
-
-      map("n", "<leader>ix", function()
-        terminal.codex()
-      end, { silent = true, desc = "Open Codex CLI" })
-
       map("t", "<C-t>", function()
         terminal.toggle_float()
       end, { silent = true, desc = "Toggle floating terminal" })
-
-      map("n", "<leader>ot", function()
-        terminal.new()
-      end, { silent = true, desc = "New terminal" })
-
-      map("n", "<leader>oT", function()
-        terminal.select()
-      end, { silent = true, desc = "Select terminal" })
-
-      map("n", "<leader>oa", function()
-        terminal.toggle_all()
-      end, { silent = true, desc = "Toggle all terminals" })
-
-      map("n", "<leader>on", function()
-        terminal.next()
-      end, { silent = true, desc = "Next terminal" })
-
-      map("n", "<leader>op", function()
-        terminal.previous()
-      end, { silent = true, desc = "Previous terminal" })
 
       map({ "n", "t" }, "]T", function()
         terminal.next()
@@ -136,10 +100,6 @@ return {
       map({ "n", "t" }, "[T", function()
         terminal.previous()
       end, { silent = true, desc = "Previous terminal" })
-
-      map("n", "<leader>to", function()
-        require("core.test-terminal").toggle()
-      end, { silent = true, desc = "Toggle test output" })
     end,
   }),
 }

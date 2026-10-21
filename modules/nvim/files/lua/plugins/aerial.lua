@@ -17,7 +17,6 @@ return {
                 show_guides = true,
             })
 
-            vim.keymap.set("n", "<leader>lo", "<cmd>AerialToggle right<CR>", { silent = true, desc = "Toggle outline" })
             vim.keymap.set("n", "[s", "<cmd>AerialPrev<CR>", { silent = true, desc = "Previous symbol" })
             vim.keymap.set("n", "]s", "<cmd>AerialNext<CR>", { silent = true, desc = "Next symbol" })
         end,

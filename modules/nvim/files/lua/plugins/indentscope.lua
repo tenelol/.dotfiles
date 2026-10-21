@@ -9,7 +9,6 @@ end
 return {
   plugin.spec("snacks-nvim", {
     event = { "BufReadPre", "BufNewFile" },
-    keys = { { "<leader>ud", desc = "Toggle focus dimming" } },
     config = function()
       apply_highlights()
       vim.api.nvim_create_autocmd("ColorScheme", {
@@ -60,7 +59,6 @@ return {
       })
       snacks.indent.enable()
       snacks.dim.enable()
-      snacks.toggle.dim():map("<leader>ud")
     end,
   }),
 }

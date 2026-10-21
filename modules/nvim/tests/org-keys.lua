@@ -29,7 +29,10 @@ check(vim.bo.filetype == "org", "test buffer is an org buffer")
 
 for _, lhs in ipairs({ " t", " x", " s", " d", " r" }) do
 	local map = vim.fn.maparg(lhs, "n", false, true)
-	check(map.buffer == 1 and map.nowait == 1, ("%q is buffer-local and nowait"):format(lhs))
+	check(map.buffer == 1, ("%q is buffer-local"):format(lhs))
+end
+for _, lhs in ipairs({ " nr", " nis", " n ", " nc" }) do
+	check(vim.fn.maparg(lhs, "n") == "", ("orgmode's prefixed %q is gone"):format(lhs))
 end
 
 local function press(lhs, line)

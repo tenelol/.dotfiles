@@ -6,12 +6,6 @@ return {
       plugin.dep("plenary-nvim"),
       plugin.dep("nvim-treesitter"),
     },
-    keys = {
-      { "<leader>ic", "<cmd>CodeCompanionChat Toggle<cr>", mode = { "n", "v" }, desc = "Toggle chat" },
-      { "<leader>ia", "<cmd>CodeCompanionActions<cr>",     mode = { "n", "v" }, desc = "Actions" },
-      { "<leader>ii", "<cmd>CodeCompanion<cr>",            mode = { "n", "v" }, desc = "Inline assist" },
-      { "<leader>is", "<cmd>CodeCompanionChat Add<cr>",    mode = "v",          desc = "Add selection to chat" },
-    },
     config = function()
       require("codecompanion").setup({
         adapters = {

@@ -78,7 +78,6 @@ return {
     cmd = { "Neotree", "GitTree" },
     keys = {
       { "<C-n>", desc = "Toggle file tree" },
-      { "<leader>gt", desc = "Git tree" },
     },
     config = function()
       local project = require("core.project")
@@ -245,7 +244,6 @@ return {
       local map = vim.keymap.set
 
       map("n", "<C-n>", open_filesystem_tree, { desc = "Toggle file tree" })
-      map("n", "<leader>gt", open_git_status_tree, { desc = "Git tree" })
     end,
   }),
 }
