@@ -214,11 +214,17 @@ assert(
 )
 local notify = require("notify")._config()
 assert(notify.fps() == 60 and notify.stages() == "fade_in_slide_out")
-local animated_info = false
+-- Routine notices stay in the corner mini view so they never cover the code;
+-- only errors keep the animated popup.
+local quiet_info = false
 for _, route in ipairs(require("noice.config").options.routes) do
-  if route.filter.event == "notify" and route.filter.kind == "info" then
-    animated_info = route.view == "notify"
+  if route.filter.event == "notify" then
+    for _, alternative in ipairs(route.filter.any or { route.filter }) do
+      if alternative.kind == "info" then
+        quiet_info = route.view == "mini"
+      end
+    end
   end
 end
-assert(animated_info, "Info notifications must use the animated view")
-io.write("Sidebar slide, terminal layout, animated notifications, and MiniAnimate coordination: OK\n")
+assert(quiet_info, "Info notifications must use the corner mini view")
+io.write("Sidebar slide, terminal layout, notifications, and MiniAnimate coordination: OK\n")
