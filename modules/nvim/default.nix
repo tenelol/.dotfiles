@@ -270,19 +270,6 @@ delib.module {
           };
         }
         {
-          mode = [
-            "n"
-            "i"
-            "v"
-          ];
-          key = "<leader>va";
-          action = "<Esc>ggVG";
-          options = {
-            silent = true;
-            desc = "Select all";
-          };
-        }
-        {
           mode = "n";
           key = "K";
           action.__raw = ''

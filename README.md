@@ -74,12 +74,6 @@ Karabiner/Kanata driver compatibility before changing their versions. Use the
 installer's read-only plan with `dotfiles-installers --plan` when diagnosing an
 activation failure.
 
-## Apple Notesのローカル編集
-
-[memo-syncモジュール](./modules/memo-sync)がdenix/Home ManagerでMac用CLI・登録用サービス・Neovimでmemoを使っている間だけ動く自動同期のlaunchd agentを配置する。保存を優先して同期し、原本と更新前のファイルを保持する。競合や対応外の書式では更新を停止。反映は通常のnhワークフローで行う。
-
-初回は`memo-sync import-all`で全件を取り込み、標準メモへのオートメーション許可を確認して許可する。Neovimでmemoのバッファを開くか`:MemoSync`を実行している間だけ同期する。
-
 ## Codex skills
 
 Keep provider files unchanged when refreshing a skill. Local integrations are limited to `imoocs`, `proxmox-pve`, `line-delivery`, `project-context-init`, `ask-claude`, and the personal `subagent-model-router` policy. Home Manager deploys them through the existing denix module.
