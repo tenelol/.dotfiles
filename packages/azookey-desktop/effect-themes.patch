@@ -1,3 +1,94 @@
+diff --git a/Core/Sources/ConverterServer/ConverterServer+KeyEvent.swift b/Core/Sources/ConverterServer/ConverterServer+KeyEvent.swift
+index b90ba16..d23773f 100644
+--- a/Core/Sources/ConverterServer/ConverterServer+KeyEvent.swift
++++ b/Core/Sources/ConverterServer/ConverterServer+KeyEvent.swift
+@@ -1,6 +1,7 @@
+ import Core
+ import Foundation
+ import KanaKanjiConverterModuleWithDefaultDictionary
++import os
+ 
+ extension ConverterServer {
+     @MainActor
+@@ -9,6 +10,23 @@ extension ConverterServer {
+         request: ConverterKeyEventRequest
+     ) throws -> ConverterServerResponse {
+         let session = try getSession(sessionID)
++        // 入力が止まる原因を切り分けるため、遅かった打鍵だけ変換（snapshot）とそれ以外の時間を残す
++        let clock = ContinuousClock()
++        let startedAt = clock.now
++        var snapshotDuration = Duration.zero
++        defer {
++            let total = clock.now - startedAt
++            if total > .milliseconds(300) {
++                Self.latencyLogger.notice(
++                    "slow server key event \(request.eventID, privacy: .public): total=\(Self.milliseconds(total), privacy: .public)ms snapshot=\(Self.milliseconds(snapshotDuration), privacy: .public)ms"
++                )
++            }
++        }
++        func timedSnapshot(_ inputState: InputState) -> ConverterSessionSnapshot {
++            let snapshotStartedAt = clock.now
++            defer { snapshotDuration += clock.now - snapshotStartedAt }
++            return snapshot(for: session, inputState: inputState)
++        }
+         if request.eventID == session.lastHandledKeyEventID,
+            let response = session.lastKeyEventResponse {
+             return response
+@@ -29,8 +47,13 @@ extension ConverterServer {
+             session.manager.activate()
+         }
+         session.setContext(request.context)
+-        Config.DebugPredictiveTyping().value = request.enablePredictiveTyping
+-        Config.DebugTypoCorrection().value = request.enableTypoCorrection
++        // サンドボックスで書き込めず、書くたびに Fault ログが出るため、値が変わるときだけ書く
++        if Config.DebugPredictiveTyping().value != request.enablePredictiveTyping {
++            Config.DebugPredictiveTyping().value = request.enablePredictiveTyping
++        }
++        if Config.DebugTypoCorrection().value != request.enableTypoCorrection {
++            Config.DebugTypoCorrection().value = request.enableTypoCorrection
++        }
+ 
+         if request.enableOptionDirectFullWidthInput,
+            let text = OptionDirectInputResolver.resolve(
+@@ -44,7 +67,7 @@ extension ConverterServer {
+                 effects: [.insertText(text)],
+                 inputState: ConverterInputState(session.inputState),
+                 inputLanguage: session.inputLanguage,
+-                snapshot: snapshot(for: session, inputState: session.inputState)
++                snapshot: timedSnapshot(session.inputState)
+             )
+             session.lastHandledKeyEventID = request.eventID
+             session.lastKeyEventResponse = response
+@@ -80,7 +103,7 @@ extension ConverterServer {
+                 effects: effects,
+                 inputState: ConverterInputState(session.inputState),
+                 inputLanguage: inputLanguage,
+-                snapshot: snapshot(for: session, inputState: session.inputState)
++                snapshot: timedSnapshot(session.inputState)
+             )
+             session.lastHandledKeyEventID = request.eventID
+             session.lastKeyEventResponse = response
+@@ -99,13 +122,19 @@ extension ConverterServer {
+             effects: effects,
+             inputState: ConverterInputState(nextInputState),
+             inputLanguage: inputLanguage,
+-            snapshot: snapshot(for: session, inputState: nextInputState)
++            snapshot: timedSnapshot(nextInputState)
+         )
+         session.lastHandledKeyEventID = request.eventID
+         session.lastKeyEventResponse = response
+         return response
+     }
+ 
++    private static let latencyLogger = Logger(subsystem: "dev.ensan.inputmethod.azooKeyMac", category: "latency")
++
++    private static func milliseconds(_ duration: Duration) -> Int {
++        Int(duration.components.seconds * 1000 + duration.components.attoseconds / 1_000_000_000_000_000)
++    }
++
+     @MainActor
+     // swiftlint:disable:next cyclomatic_complexity function_body_length
+     func perform(
 diff --git a/Core/Sources/Core/Configs/StringConfigItem.swift b/Core/Sources/Core/Configs/StringConfigItem.swift
 index 0da10cf..7155a38 100644
 --- a/Core/Sources/Core/Configs/StringConfigItem.swift
@@ -2148,7 +2239,7 @@ index 0000000..bd52ee5
 +    }
 +}
 diff --git a/azooKeyMac/InputController/azooKeyMacInputController.swift b/azooKeyMac/InputController/azooKeyMacInputController.swift
-index f10ba35..c4a1fd2 100644
+index f10ba35..39298bb 100644
 --- a/azooKeyMac/InputController/azooKeyMacInputController.swift
 +++ b/azooKeyMac/InputController/azooKeyMacInputController.swift
 @@ -1,6 +1,7 @@
@@ -2256,24 +2347,30 @@ index f10ba35..c4a1fd2 100644
                      return
                  }
                  if !response.handled {
-@@ -388,12 +425,67 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
+@@ -388,12 +425,76 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
                      // application へ後からイベントを戻せないため、ここでは漏らさない。
                      self.appendDebugMessage("Consumed delayed fallthrough event \(request.eventID)")
                  }
 +                let applyStart = CACurrentMediaTime()
                  self.apply(response)
 +                let effectStart = CACurrentMediaTime()
-+                if Self.isTypingKeystroke(event), let caret = self.effectCaretRect() {
++                let caret = Self.isTypingKeystroke(event) ? self.effectCaretRect() : nil
++                let drawStart = CACurrentMediaTime()
++                if let caret {
 +                    EffectThemes.current.keystroke(at: caret)
 +                }
++                let flushStart = CACurrentMediaTime()
 +                CATransaction.flush()
++                let end = CACurrentMediaTime()
 +                KeyEventTiming(
 +                    id: request.eventID,
 +                    pending: pendingAtSend,
 +                    prepare: sentAt - handleStart,
 +                    roundtrip: applyStart - sentAt,
 +                    apply: effectStart - applyStart,
-+                    effect: CACurrentMediaTime() - effectStart
++                    caret: drawStart - effectStart,
++                    draw: flushStart - drawStart,
++                    flush: end - flushStart
 +                ).reportIfSlow()
              }
          }
@@ -2308,15 +2405,18 @@ index f10ba35..c4a1fd2 100644
 +        var prepare: CFTimeInterval
 +        var roundtrip: CFTimeInterval
 +        var apply: CFTimeInterval
-+        var effect: CFTimeInterval
++        /// 演出の位置の問い合わせ・演出の描画・画面への反映
++        var caret: CFTimeInterval
++        var draw: CFTimeInterval
++        var flush: CFTimeInterval
 +
 +        func reportIfSlow() {
-+            guard self.prepare + self.roundtrip + self.apply + self.effect > 0.15 else {
++            guard self.prepare + self.roundtrip + self.apply + self.caret + self.draw + self.flush > 0.15 else {
 +                return
 +            }
 +            let ms = { (seconds: CFTimeInterval) in Int(seconds * 1000) }
 +            Self.logger.notice(
-+                "slow key event \(self.id, privacy: .public): prepare=\(ms(self.prepare), privacy: .public)ms roundtrip=\(ms(self.roundtrip), privacy: .public)ms apply=\(ms(self.apply), privacy: .public)ms effect=\(ms(self.effect), privacy: .public)ms pending=\(self.pending, privacy: .public)"
++                "slow key event \(self.id, privacy: .public): prepare=\(ms(self.prepare), privacy: .public)ms roundtrip=\(ms(self.roundtrip), privacy: .public)ms apply=\(ms(self.apply), privacy: .public)ms caret=\(ms(self.caret), privacy: .public)ms draw=\(ms(self.draw), privacy: .public)ms flush=\(ms(self.flush), privacy: .public)ms pending=\(self.pending, privacy: .public)"
 +            )
 +        }
 +    }
@@ -2324,7 +2424,7 @@ index f10ba35..c4a1fd2 100644
      @MainActor
      func requestPredictiveSuggestionWithConverterServer(client: IMKTextInput) -> Bool {
          self.handleKeyEventWithConverterServer(
-@@ -408,13 +500,15 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
+@@ -408,13 +509,15 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
      }
  
      @MainActor
@@ -2342,7 +2442,7 @@ index f10ba35..c4a1fd2 100644
              for effect in response.effects {
                  self.apply(effect, client: client)
              }
-@@ -423,6 +517,57 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
+@@ -423,6 +526,57 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
          self.refreshCandidateWindow()
          self.refreshPredictionWindow()
          self.refreshReplaceSuggestionWindow()
@@ -2400,7 +2500,7 @@ index f10ba35..c4a1fd2 100644
      }
  
      @MainActor
-@@ -431,6 +576,8 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
+@@ -431,6 +585,8 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
          switch effect {
          case .insertText(let text):
              client.insertText(text, replacementRange: NSRange(location: NSNotFound, length: 0))
@@ -2409,7 +2509,7 @@ index f10ba35..c4a1fd2 100644
          case .switchInputLanguage(let language):
              self.switchInputLanguage(language, client: client)
          case .requestPredictiveSuggestion:
-@@ -522,8 +669,8 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
+@@ -522,8 +678,8 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
      private func refreshCandidateWindow(_ candidateWindow: ConverterCandidateWindow) {
          switch candidateWindow {
          case .selecting(let candidates, let selectionIndex):
@@ -2420,7 +2520,7 @@ index f10ba35..c4a1fd2 100644
              self.candidatesViewController.showCandidateIndex = true
              self.candidatesViewController.updateCandidatePresentations(
                  candidates,
-@@ -532,8 +679,7 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
+@@ -532,8 +688,7 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
              )
              self.candidatesWindow.orderFront(nil)
          case .composing(let candidates, let selectionIndex):
@@ -2430,7 +2530,7 @@ index f10ba35..c4a1fd2 100644
              self.candidatesViewController.showCandidateIndex = false
              self.candidatesViewController.updateCandidatePresentations(
                  candidates,
-@@ -625,8 +771,7 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
+@@ -625,8 +780,7 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
          self.lastPredictionCandidates = predictions.map(\.displayText)
          self.lastPredictionUpdateTime = Date().timeIntervalSince1970
  
@@ -2440,7 +2540,7 @@ index f10ba35..c4a1fd2 100644
          self.predictionViewController.updateCandidatePresentations(
              candidates,
              selectionIndex: nil,
-@@ -668,8 +813,7 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
+@@ -668,8 +822,7 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
          guard !candidates.isEmpty else {
              return
          }
@@ -2450,7 +2550,7 @@ index f10ba35..c4a1fd2 100644
          self.predictionViewController.updateCandidatePresentations(
              candidates,
              selectionIndex: nil,
-@@ -728,6 +872,10 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
+@@ -728,6 +881,10 @@ class azooKeyMacInputController: IMKInputController, NSMenuItemValidation { // s
          ) as? [NSAttributedString.Key: Any]
          let text = NSMutableAttributedString(string: "")
          let currentMarkedText = self.currentMarkedText()
