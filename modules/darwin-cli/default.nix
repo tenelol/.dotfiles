@@ -76,6 +76,7 @@ delib.scopedModule {
       prettierd
       python314
       qrencode
+      R
       ripgrep
       rustc
       cargo
