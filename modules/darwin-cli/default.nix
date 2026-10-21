@@ -71,7 +71,6 @@ delib.scopedModule {
       pkgConfigAlias
       platformio
       pnpm
-      postgresql_15
       powershell
       prettier
       prettierd
