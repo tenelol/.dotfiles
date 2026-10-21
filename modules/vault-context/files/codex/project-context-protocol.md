@@ -42,7 +42,7 @@ v2以前のcanonicalや旧sourcesにはAIが整理した文章が含まれる。
 
 ## Legacyと障害時
 
-common-dir/project-local contextがなく過去情報が必要な場合、旧判断の確認、中央protocolが必要な場合に限り `/Users/tener/.codex/bin/vault-context route --cwd <cwd> --json` と中央検索を使う。NotionやpersonalDevRagは通常の保存先ではなく、明示された旧情報の調査・復旧時だけ参照する。
+common-dir/project-local contextがなく過去情報が必要な場合、旧判断の確認、中央protocolが必要な場合に限り `/Users/tener/.codex/bin/vault-context route --cwd <cwd> --json` と中央検索を使う。Notionは通常の保存先ではなく、明示された旧情報の調査・復旧時だけ参照する。
 
 旧記録を削除せず、検証なしにproject canonicalへ昇格させない。参照不能なら必要な過去文脈への影響を示し、現在の証拠で進められる作業は続ける。
 
