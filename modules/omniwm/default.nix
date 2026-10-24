@@ -39,7 +39,13 @@ delib.scopedModule {
       enable = true;
       config = {
         ProgramArguments = [ "/Applications/OmniWM.app/Contents/MacOS/OmniWM" ];
-        KeepAlive = true;
+        # Restart only after a crash. OmniWM exits cleanly when it finds another
+        # instance (or is quit), and an unconditional KeepAlive turned that into
+        # an endless "competing window manager" dialog loop.
+        KeepAlive = {
+          Crashed = true;
+          SuccessfulExit = false;
+        };
         RunAtLoad = true;
         ProcessType = "Interactive";
         StandardOutPath = "/tmp/omniwm.log";
