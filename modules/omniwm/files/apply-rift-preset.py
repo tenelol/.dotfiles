@@ -35,6 +35,14 @@ def configure(text, preset):
     if len(set(ids)) != len(ids) or not bindings.keys() <= set(ids):
         raise ValueError("missing or duplicate OmniWM hotkey actions")
 
+    # Per-app rule fields: workspace assignments plus layouts the heuristics get
+    # wrong (Ghostty's hidden title bar makes OmniWM float it).
+    app_fields = {}
+    for app, workspace in preset["appWorkspaces"].items():
+        app_fields.setdefault(app, {})["assignToWorkspace"] = workspace
+    for app, layout in preset.get("appLayouts", {}).items():
+        app_fields.setdefault(app, {})["layout"] = layout
+
     seen_apps = set()
     blocks = re.split(r"(?m)(?=^\[\[)", text)
     for i, block in enumerate(blocks):
@@ -49,21 +57,23 @@ def configure(text, preset):
         elif block.startswith("[[appRules]]"):
             rule = tomllib.loads(block)["appRules"][0]
             app = rule.get("bundleId")
-            if app in preset["appWorkspaces"]:
+            if app in app_fields:
                 if app in seen_apps:
                     raise ValueError(f"ambiguous app rules: {app}")
                 seen_apps.add(app)
-                blocks[i] = field(block, "assignToWorkspace", preset["appWorkspaces"][app])
+                for name, value in app_fields[app].items():
+                    block = field(block, name, value)
+                blocks[i] = block
 
     result = "".join(blocks)
     result, count = re.subn(r"(?m)^ipcEnabled\s*=\s*(true|false)\s*$", "ipcEnabled = true", result)
     if count != 1:
         raise ValueError("expected one IPC setting")
-    for app, workspace in preset["appWorkspaces"].items():
+    for app, fields in app_fields.items():
         if app not in seen_apps:
             rule_id = str(uuid.uuid5(uuid.NAMESPACE_URL, "omniwm-rift:" + app)).upper()
-            result += ("\n[[appRules]]\n" + f"id = {json.dumps(rule_id)}\n"
-                       + f"bundleId = {json.dumps(app)}\nassignToWorkspace = {json.dumps(workspace)}\n")
+            result += ("\n[[appRules]]\n" + f"id = {json.dumps(rule_id)}\n" + f"bundleId = {json.dumps(app)}\n"
+                       + "".join(f"{name} = {json.dumps(value)}\n" for name, value in fields.items()))
 
     applied = tomllib.loads(result)
     chords = set()

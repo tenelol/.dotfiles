@@ -42,6 +42,8 @@ class RiftPresetTests(unittest.TestCase):
         self.assertEqual(codex["assignToWorkspace"], "9")
         claude, = [r for r in data["appRules"] if r.get("bundleId") == "com.anthropic.claudefordesktop"]
         self.assertEqual(claude["assignToWorkspace"], "9")
+        ghostty, = [r for r in data["appRules"] if r.get("bundleId") == "com.mitchellh.ghostty"]
+        self.assertEqual((ghostty["assignToWorkspace"], ghostty["layout"]), ("1", "tile"))
         self.assertEqual(module.configure(changed, PRESET), changed)
 
     def test_conflicts_and_unknown_schema_leave_file_unchanged(self):

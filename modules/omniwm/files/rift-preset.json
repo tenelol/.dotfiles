@@ -28,5 +28,8 @@
     "company.thebrowser.dia": "1",
     "com.anthropic.claudefordesktop": "9",
     "com.openai.codex": "9"
+  },
+  "appLayouts": {
+    "com.mitchellh.ghostty": "tile"
   }
 }
