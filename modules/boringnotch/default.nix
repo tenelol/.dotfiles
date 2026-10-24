@@ -17,12 +17,14 @@ delib.module {
     launchd.user.agents.boringnotch = {
       serviceConfig = {
         Label = "theboringteam.boringnotch";
-        ProgramArguments = [
-          "/usr/bin/open"
-          "/Applications/boringNotch.app"
-        ];
+        # Run the binary itself so launchd supervises it; /usr/bin/open exits at
+        # once and left nothing to restart. Like OmniWM, relaunch only on crashes.
+        ProgramArguments = [ "/Applications/boringNotch.app/Contents/MacOS/boringNotch" ];
         RunAtLoad = true;
-        KeepAlive = false;
+        KeepAlive = {
+          Crashed = true;
+          SuccessfulExit = false;
+        };
         ProcessType = "Interactive";
       };
 

@@ -43,7 +43,7 @@ assert builtins.all (entry: !(entry ? choices)) (
 assert builtins.all (
   package: (package.pname or "") != "boringnotch"
 ) config.environment.systemPackages;
-assert builtins.elem "/Applications/boringNotch.app"
+assert builtins.elem "/Applications/boringNotch.app/Contents/MacOS/boringNotch"
   config.launchd.user.agents.boringnotch.serviceConfig.ProgramArguments;
 assert config.system.defaults.CustomSystemPreferences."com.apple.commerce".AutoUpdate;
 assert home.programs.vscode.profiles.default.userSettings."update.mode" == "default";
