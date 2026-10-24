@@ -169,20 +169,23 @@ let
     exec /bin/launchctl asuser "$uid" /usr/bin/sudo --user=${profile.username} \
       ${toggleInputSourceTool}/bin/azookey-toggle-ime-tool
   '';
-  enabledSymbolicHotKey = parameters: {
-    enabled = true;
+  symbolicHotKey = enabled: parameters: {
+    inherit enabled;
     value = {
       inherit parameters;
       type = "standard";
     };
   };
   inputSourceShortcutHotKeys = {
-    "60" = enabledSymbolicHotKey [
+    # Control+Space: previous input source.
+    "60" = symbolicHotKey true [
       32
       49
       262144
     ];
-    "61" = enabledSymbolicHotKey [
+    # Control+Option+Space: next source in the input menu. Kept off because
+    # OmniWM uses the same chord; writing it here stops switches re-enabling it.
+    "61" = symbolicHotKey false [
       32
       49
       786432
