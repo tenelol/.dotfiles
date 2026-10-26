@@ -18,7 +18,17 @@ Some INIAD MOOCs forms expose select/dropdown or radio-like answers only in `cur
 
 Submit only answers grounded in the specified primary materials, actual data, or a reproducible calculation from verified inputs. For each intended answer, establish the source and calculation before any server-side autosave, upload, or push. A previous AI answer or an AI-written Notebook's source label is not proof of the instructor's method or dataset provenance.
 
-For data-backed questions, identify the correct course/class folder and file from the instructor's links, check the actual contents, and run the analysis on that file. Use file IDs or hashes when needed to distinguish duplicate names or verify a local copy. Slides establish the questions and prescribed methods; packet counts, statistical values, and other observations must come from the actual capture/data. Mathematical derivations are valid when their stated inputs and assumptions are verified against the question.
+#### Fresh Assignment Data
+
+For each new request to solve or submit a data-backed assignment, freshly download its input data before analysis or submission:
+
+1. Resolve the target year, course/class, lesson, and assignment from the current MOOCs page. Follow the instructor's current links and verify the actual source folder's ancestry or its link from that course. A CLI default parent URL, matching filename, or AI-written provenance record does not establish the file's course/year.
+2. Download the currently assigned files into this task's directory, preserving prior copies. "Latest" means the version currently specified by that assignment; honor an explicitly pinned older dataset instead of substituting a newer public release. An older-year folder is valid only when the current course points to it. A previous local CSV or a hash match with another site's copy is not a substitute for this fresh acquisition.
+3. Read the downloaded contents and use that snapshot for the calculations. Record the source URL/file ID, verified course/folder path, acquisition date, and content hash with the task artifacts. When submitting previously generated work, compare its inputs with the fresh download and regenerate affected answers, notebooks, HTML, and archives if they differ.
+
+Reuse the verified snapshot within the same uninterrupted task; reacquire it if the source changes. If the assigned source or fresh download cannot be verified, report the exact blocker and leave the affected work unready and unsent while continuing independent problems.
+
+Slides establish the questions and prescribed methods; packet counts, statistical values, and other observations must come from the actual capture/data. Mathematical derivations are valid when their stated inputs and assumptions are verified against the question.
 
 When the required file, preprocessing method, question meaning, or personal fact remains unknown, leave that problem unsent and report the exact missing evidence. Do not fill attendance, seats, measurements, experiences, or unknown values by guessing. Continue independent problems whose evidence is complete.
 
