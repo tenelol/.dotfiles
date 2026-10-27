@@ -89,6 +89,8 @@ delib.scopedModule {
       tdf
       tre-command
       typst
+      # Browses Excel and CSV sheets in the terminal.
+      visidata
       wget
       xcodegen
       yazi
