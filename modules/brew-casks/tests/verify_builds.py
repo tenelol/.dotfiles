@@ -32,7 +32,6 @@ def main() -> None:
         "blender": ["--version"],
         "cursor": ["--version"],
         "ghostty": ["+version"],
-        "soffice": ["--version"],
         "zed": ["--version"],
         "zen": ["--version"],
         "code": ["--version"],

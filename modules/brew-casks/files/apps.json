@@ -14,15 +14,6 @@
   "fullDesktop": [
     {
       "name": "db-browser-for-sqlite"
-    },
-    {
-      "name": "libreoffice",
-      "sourceHash": "sha256-iFjYBY2k+GL0dVlIaBTmXvwnKU2mfF5LtWsAax7ln4k=",
-      "sourceUrl": "https://downloadarchive.documentfoundation.org/libreoffice/old/26.8.0.3/mac/aarch64/LibreOffice_26.8.0.3_MacOS_aarch64.dmg",
-      "cli": {
-        "soffice": "LibreOffice.app/Contents/MacOS/soffice"
-      },
-      "wrapCli": true
     }
   ],
   "fonts": [

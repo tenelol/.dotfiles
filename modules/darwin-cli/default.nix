@@ -17,18 +17,6 @@ let
     mkdir -p "$out/bin"
     ln -s ${pkgs.pkgconf}/bin/pkgconf "$out/bin/pkg-config"
   '';
-  # soffice comes from the LibreOffice Cask in brew-casks.
-  tdfOffice = pkgs.writeShellApplication {
-    name = "tdf-office";
-    runtimeInputs = [
-      pkgs.coreutils
-      pkgs.tdf
-    ];
-    text = ''
-      export TDF_OFFICE_FONTCONFIG=${./files/tdf-office-fonts.conf}
-      exec ${pkgs.bash}/bin/bash ${./files/tdf-office} "$@"
-    '';
-  };
 in
 delib.scopedModule {
   name = "darwin-cli";
@@ -99,7 +87,6 @@ delib.scopedModule {
       swiftlint
       # Renders PDFs inside Ghostty through the Kitty graphics protocol.
       tdf
-      tdfOffice
       tre-command
       typst
       wget
