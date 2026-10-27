@@ -88,6 +88,7 @@ delib.scopedModule {
       # Renders PDFs inside Ghostty through the Kitty graphics protocol.
       tdf
       tre-command
+      typst
       wget
       xcodegen
       yazi
