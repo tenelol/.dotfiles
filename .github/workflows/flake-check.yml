@@ -37,11 +37,8 @@ jobs:
       fail-fast: false
       matrix:
         check:
-          - build-adguard-home
           - build-surface
           - build-nvidia-desktop
-          - build-web-server
-          - build-nas
           - build-wsl
 
     steps:

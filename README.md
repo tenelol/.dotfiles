@@ -4,7 +4,7 @@
 
 - NixOS / nix-darwin / Home Manager
 - denix / nh / nixvim
-- sops-nix / Tailscale / systemd-resolved
+- Tailscale / systemd-resolved
 - nixbuild.net remote builders
 - brew-nix Cask metadata and Nix packages for macOS apps, fonts, installers and CLI tools
 - GitHub Actions / Determinate Nix / Magic Nix Cache
@@ -18,10 +18,10 @@
 | `surface` | x86_64 Linux | laptop |
 | `nvidia-desktop` | x86_64 Linux | desktop |
 | `macbook` | aarch64 Darwin | laptop |
-| `web-server` | x86_64 Linux | personal sites |
-| `adguard-home` | x86_64 Linux | DNS filter VM config |
-| `nas` | x86_64 Linux | storage VM config |
 | `wsl` | x86_64 Linux | NixOS-WSL |
+
+Home servers on Proxmox VE are managed separately in
+[`tenelol/server`](https://github.com/tenelol/server).
 
 ## Layout
 
@@ -34,7 +34,6 @@
 | [`packages`](./packages) | custom packages, runtime builders, package-owned sources, and their tests |
 | [`extensions`](./extensions) | repository-owned denix extensions, including configuration scoping |
 | [`.agents/skills`](./.agents/skills) | Provider-original Codex skills and local integrations, deployed by Home Manager |
-| [`secrets`](./secrets) | sops-nix encrypted secrets |
 
 ## Module policy
 

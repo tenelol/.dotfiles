@@ -11,11 +11,8 @@
 - Prefer `nh` commands over raw `nixos-rebuild` / `darwin-rebuild` unless the user explicitly asks otherwise.
 - Preferred validation command when explicitly requested: `nix flake check --all-systems --no-build`
 - Preferred Linux build commands:
-  - `nh os build . -H adguard-home`
   - `nh os build . -H surface`
   - `nh os build . -H nvidia-desktop`
-  - `nh os build . -H web-server`
-  - `nh os build . -H nas`
   - `nh os build . -H wsl`
 - Preferred Darwin build command:
   - `nh darwin build . -H macbook-rift`
@@ -39,13 +36,11 @@
 - Keep single-consumer feature behavior in its owning denix module. Put explicitly imported package and runtime value generation in `packages/`; `modules/` remains reserved for valid denix modules.
 
 ## Host inventory
-- `adguard-home`: x86_64-linux Proxmox guest config; VM stays stopped until router/DHCP integration is safe
 - `surface`: x86_64-linux laptop
 - `nvidia-desktop`: x86_64-linux desktop
-- `web-server`: x86_64-linux Proxmox guest for personal sites
-- `nas`: x86_64-linux Proxmox guest configuration; deployment waits for the data HDD
 - `wsl`: x86_64-linux NixOS-WSL environment
 - `macbook`: aarch64-darwin laptop
+- Proxmox VE home servers are managed in the separate `tenelol/server` repository, not here.
 
 ## Documentation expectations
 - README changes should describe the actual personal workflow used in this repo.

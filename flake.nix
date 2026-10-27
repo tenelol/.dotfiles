@@ -41,9 +41,6 @@
     herdr-bin.url = "github:herdrdev/herdr-nix";
     herdr-bin.inputs.nixpkgs.follows = "nixpkgs";
 
-    sops-nix.url = "github:Mic92/sops-nix";
-    sops-nix.inputs.nixpkgs.follows = "nixpkgs";
-
     gijiroku.url = "git+ssh://git@github.com/tenelol/gijiroku.git";
     gijiroku.flake = false;
 
@@ -67,12 +64,7 @@
           lib.optional (builtins.pathExists hardwareConfiguration) hardwareConfiguration
         ) hostDirectories
       );
-      linuxServerHostPaths = [
-        ./hosts/adguard-home
-        ./hosts/nas
-        ./hosts/web-server
-        ./hosts/wsl
-      ];
+      linuxServerHostPaths = [ ./hosts/wsl ];
       linuxDesktopHostPaths = [
         ./hosts/nvidia-desktop
         ./hosts/surface
@@ -160,11 +152,8 @@
         ricePaths = [ ./rices/darwin ];
       });
       linuxCheckTargets = [
-        "adguard-home"
         "surface"
         "nvidia-desktop"
-        "web-server"
-        "nas"
         "wsl"
       ];
       darwinCheckTargets = [
