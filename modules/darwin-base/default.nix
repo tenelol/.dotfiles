@@ -41,8 +41,15 @@ delib.module {
 
     nixpkgs.config.allowUnfree = true;
 
-    environment.variables.EDITOR = "nvim";
-    environment.variables.LANG = "en_US.UTF-8";
+    environment.variables = {
+      EDITOR = "nvim";
+      LANG = "en_US.UTF-8";
+      # Match NixOS: English messages with Japanese regional formats. macOS
+      # libc has no LC_ADDRESS, LC_PAPER or the other glibc-only categories.
+      LC_MONETARY = "ja_JP.UTF-8";
+      LC_NUMERIC = "ja_JP.UTF-8";
+      LC_TIME = "ja_JP.UTF-8";
+    };
     environment.shells = with pkgs; [
       fish
     ];
