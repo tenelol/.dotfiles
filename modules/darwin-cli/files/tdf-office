@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ $# -lt 1 ]]; then
+  echo "usage: tdf-office <file> [tdf options...]" >&2
+  exit 2
+fi
+
+input=$1
+shift
+
+if [[ ! -f $input ]]; then
+  echo "tdf-office: no such file: $input" >&2
+  exit 1
+fi
+
+case $input in
+  *.[pP][dD][fF]) exec tdf "$input" "$@" ;;
+esac
+
+if ! command -v soffice >/dev/null; then
+  echo "tdf-office: soffice (LibreOffice) is not on PATH" >&2
+  exit 1
+fi
+
+# Headless LibreOffice finds fonts only through its bundled fontconfig.
+if [[ -n ${TDF_OFFICE_FONTCONFIG:-} ]]; then
+  export FONTCONFIG_FILE=$TDF_OFFICE_FONTCONFIG
+fi
+
+workdir=$(mktemp -d "${TMPDIR:-/tmp}/tdf-office.XXXXXX")
+trap 'rm -rf "$workdir"' EXIT
+
+# A private profile lets conversion run while the LibreOffice app is open.
+soffice "-env:UserInstallation=file://$workdir/profile" --headless \
+  --convert-to pdf --outdir "$workdir" "$input" >/dev/null
+
+name=$(basename "$input")
+pdf="$workdir/${name%.*}.pdf"
+if [[ ! -f $pdf ]]; then
+  echo "tdf-office: LibreOffice did not produce a PDF for $input" >&2
+  exit 1
+fi
+
+# Keep the shell alive so the trap removes the converted PDF after tdf exits.
+tdf "$pdf" "$@"
