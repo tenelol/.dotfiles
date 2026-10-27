@@ -85,6 +85,8 @@ delib.scopedModule {
       sqlite
       supabase-cli
       swiftlint
+      # Renders PDFs inside Ghostty through the Kitty graphics protocol.
+      tdf
       tre-command
       wget
       xcodegen
