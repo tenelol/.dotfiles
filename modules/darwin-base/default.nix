@@ -42,6 +42,7 @@ delib.module {
     nixpkgs.config.allowUnfree = true;
 
     environment.variables.EDITOR = "nvim";
+    environment.variables.LANG = "en_US.UTF-8";
     environment.shells = with pkgs; [
       fish
     ];
