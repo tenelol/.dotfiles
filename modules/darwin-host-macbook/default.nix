@@ -16,6 +16,8 @@ delib.module {
     networking.localHostName = "macbook";
 
     system.defaults = {
+      ".GlobalPreferences"."com.apple.mouse.scaling" = 3.0;
+
       NSGlobalDomain = {
         AppleICUForce24HourTime = true;
         AppleKeyboardUIMode = 3;
