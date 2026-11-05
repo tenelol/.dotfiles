@@ -85,6 +85,7 @@ Use `$ask-claude` in Codex to ask Claude Code a question, request a review, or d
 | Engineering and productivity skills (25) | [mattpocock/skills](https://github.com/mattpocock/skills) |
 | `frontend-design` | [anthropics/skills](https://github.com/anthropics/skills) |
 | `find-skills` | [vercel-labs/skills](https://github.com/vercel-labs/skills) |
+| `security-audit` | [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill) |
 
 `hatch-pet` uses the v2 skill bundled in ChatGPT.app through `~/.agents/skills/hatch-pet`; it is not copied into this repository. Pi extension-owned skills are linked from their packaged extension directories rather than duplicated. Skill security checks use the upstream [Cisco AI Defense scanner](https://github.com/cisco-ai-defense/skill-scanner) CLI (`skill-scanner`).
 
