@@ -100,6 +100,7 @@ delib.module {
         "ghostty/shaders/typing_ignite.glsl".source = mkHudShader "typing_ignite.glsl";
         "ghostty/shaders/typing_ripple.glsl".source = mkHudShader "typing_ripple.glsl";
         "ghostty/shaders/jump_lockon.glsl".source = mkHudShader "jump_lockon.glsl";
+        "ghostty/shaders/font_zoom.glsl".source = mkHudShader "font_zoom.glsl";
       };
     };
 }

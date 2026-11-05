@@ -31,7 +31,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     vec4 base = texture(iChannel0, fragCoord / iResolution.xy);
     fragColor = base;
 
-    if (iFocus == 0 || iCursorVisible == 0) {
+    if (iFocus == 0 || iCursorVisible == 0 || hudCellResized()) {
         return;
     }
 

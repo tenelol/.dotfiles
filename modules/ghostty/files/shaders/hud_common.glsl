@@ -124,3 +124,21 @@ float hudGlyphGlow(vec2 p, vec2 center, vec2 halfSize, float radius) {
     }
     return hudSaturate(glow);
 }
+
+// Font zoom shows up only as the cursor glyph changing height: Ghostty moves
+// the old rect into iPreviousCursor and restarts iTimeCursorChange. Height is
+// the cell height for bar and block cursors, while a bar's width is a stroke
+// thickness that rounds unevenly, so only the height ratio is trusted. The
+// range drops underline-style switches, whose height is a few pixels.
+float hudZoomRatio() {
+    if (iPreviousCursor.w < 1.0 || iCurrentCursor.w < 1.0) {
+        return 1.0;
+    }
+    float ratio = iPreviousCursor.w / iCurrentCursor.w;
+    return abs(ratio - 1.0) > 0.01 && ratio > 0.4 && ratio < 2.5 ? ratio : 1.0;
+}
+
+// Cursor effects stand down after a zoom: the reflow moves the cursor far.
+bool hudCellResized() {
+    return hudZoomRatio() != 1.0;
+}
