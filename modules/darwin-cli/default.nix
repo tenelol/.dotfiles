@@ -57,6 +57,8 @@ delib.scopedModule {
       zathura
       ideviceinstaller
       ios-deploy
+      # COS204 logic simulation (Icarus Verilog: iverilog and vvp).
+      iverilog
       lazygit
       llvmPackages_22.llvm
       llvmPackages_22.clang
