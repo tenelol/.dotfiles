@@ -31,6 +31,7 @@ delib.scopedModule {
     assert herdrPackage.version == (lib.importTOML "${inputs.herdr}/Cargo.toml").package.version;
     with pkgs;
     [
+      asciidoctor
       awscli2
       bat
       cloudflared
