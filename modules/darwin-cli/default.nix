@@ -13,6 +13,16 @@ let
   peekaboo = pkgs.callPackage ../../packages/peekaboo.nix { };
   # Match the installed MySQL major version without touching its Homebrew datadir.
   mysql97 = pkgs.callPackage ../../packages/mysql97.nix { };
+  # Nix R cannot link CRAN source builds here (missing -lintl/-lz), so course packages come from nixpkgs.
+  rWithPackages = pkgs.rWrapper.override {
+    packages = with pkgs.rPackages; [
+      # HII209 lesson 6 text visualization.
+      RColorBrewer
+      SnowballC
+      tm
+      wordcloud
+    ];
+  };
   pkgConfigAlias = pkgs.runCommand "pkg-config-from-pkgconf" { } ''
     mkdir -p "$out/bin"
     ln -s ${pkgs.pkgconf}/bin/pkgconf "$out/bin/pkg-config"
@@ -79,7 +89,7 @@ delib.scopedModule {
       prettierd
       python314
       qrencode
-      R
+      rWithPackages
       ripgrep
       rustc
       cargo
