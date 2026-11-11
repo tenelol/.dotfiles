@@ -10,18 +10,18 @@
 ## Project router
 
 - 本人の経歴・活動・関心・価値観や個人的な判断が回答に影響するときは `~/Documents/personal-context/README.md` を読み、必要なmaster・雑多コンテキストと出典だけ参照する。キャリア・学習・生活の相談、本人に向けた提案や優先順位付け、本人名義・本人紹介の文章、日記の壁打ちが該当する。該当するか迷う場合も短いREADMEを入口にし、本人固有の事情で結論が変わるときだけ参照先へ進む。
-- 過去の判断・継続作業・現在の一次情報だけでは分からない制約が必要な場合にだけ、既存のproject contextを参照する。現在の証拠で完結する作業では検索しない。
-- 参照・保存・修復が必要になったときだけ `~/.codex/project-context-protocol.md` を読む。未反映時の管理元は `/Users/tener/.dotfiles/modules/vault-context/files/codex/project-context-protocol.md`。Git common-dirの`project-context/`または非Git projectの`context/`を正本とし、現在の一次証拠と照合する。
+- project contextは共同・業務repository向けのオプションで、運用の判定は正本（Git common-dirの`project-context/`または非Git projectの`context/`）に`INDEX.md`があるかどうかだけで行う。ある場合は作業開始時に`INDEX.md`だけを読み、本文は関係する記録だけ開いて現在の一次証拠と照合する。ない場合はproject contextを使わず、メモは`docs/`に書く。
+- 保存・docsへの移動・修復が必要になったとき、または`INDEX.md`のないrepositoryのoriginのownerが本人以外のときだけ `~/.codex/project-context-protocol.md` を読む。未反映時の管理元は `/Users/tener/.dotfiles/modules/vault-context/files/codex/project-context-protocol.md`。
 
 ## Capture
 
 - 最終回答前に一度、今後の判断に効く情報を確認する。本人が明示した汎用的な価値判断・選好・判断基準は、作業中のproject contextの有無にかかわらず `~/Documents/personal-context/README.md` に従って漏れなく保存・更新する。
-- プロジェクト固有の経緯・制約・判断理由は、再構成しにくく今後の判断に効くものだけ既存project contextへまとめる。プロトコルに従って重複確認・保存し、該当情報がなければ何もしない。記録を残すためだけに保存先を新規作成しない。
+- プロジェクト固有の経緯・制約・判断理由は、再構成しにくく今後の判断に効くものだけ残す。`INDEX.md`のある正本へはプロトコルに従って重複確認・保存し、それ以外は`docs/`へ書く。該当情報がなければ何もしない。記録を残すためだけに正本を新規作成しない。
 - secret・不要な個人情報・会話全文・raw tool output・routine logは保存しない。必要なユーザー原文とAIが加工した情報をプロトコルに従って分離し、検証・承認によって由来を変えない。
 
 ## Documentation
 
-- 残す文脈の既定先は既存contextとする。READMEは入口とし、`docs/`には公開や他者への共有のために必要な文書だけを置く。設計判断・手順・経緯・制約は確立したものも含めてcontextに残す。contextの保存条件と由来分離は既存プロトコルに従う。
+- READMEは入口とする。`INDEX.md`のないrepositoryでは、設計判断・手順・経緯・制約を`docs/`（既存の構成を優先し、なければ`docs/notes/`）に書いてユーザーがcommitし、区切りで整理する。`INDEX.md`のある正本では下書きをcontextに置き、確定したものだけを`$project-context-promote`で`docs/`等へ移す。
 - 一つの内容に正本を一つ置き、コード・設定から読める一覧や版、検証ログの説明を重複させない。文書整理では必要な情報を適切な正本へ残してから古い場所を削り、参照を確認する。
 
 ## Permission and safety

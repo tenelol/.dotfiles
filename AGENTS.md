@@ -45,8 +45,8 @@
 ## Documentation expectations
 - README changes should describe the actual personal workflow used in this repo.
 - Mention `denix` and `nh` explicitly when explaining structure or operational commands.
-- Keep README as the entry point. Put a document in `docs/` only when it must be published or handed to other people; keep design decisions and procedures, including established ones, in the project context.
-- Use existing project context as the default for investigation history, rationale, machine-specific constraints, migration decisions, and open questions, following the global context protocol. Keep only information useful for future decisions; discard routine logs and facts easily recovered from the repository.
+- Keep README as the entry point. This personal repository does not use the project context: write investigation history, rationale, machine-specific constraints, migration decisions, and open questions as notes in `docs/` (`docs/notes/` unless an existing layout fits better), for the owner to commit and consolidate at milestones. Keep only information useful for future decisions; discard routine logs and facts easily recovered from the repository.
+- The legacy store at `.git/project-context/` is read-only reference until its records are moved to `docs/` with `$project-context-promote`; add no new records there.
 - Give each topic one authoritative location. Link to code for package lists, versions, and validation commands instead of copying them into narrative reports.
 - When organizing documentation, prune obsolete and repeated text, preserve needed context before removing its old location, and check references. Preserve unrelated work in progress.
 - Do not rewrite the repo as a generic public template unless the user asks for that.

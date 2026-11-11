@@ -1,10 +1,10 @@
 # コンテキスト構造・引き継ぎ資料
 
-確認日: 2026-09-23
+確認日: 2026-11-11
 
-対象: このdotfilesで管理するCodex・Claude Code・Pi共通のプロジェクトコンテキスト（`project-context/v3`）
+対象: このdotfilesで管理するCodex・Claude Code・Pi共通のプロジェクトコンテキスト（`project-context/v4`）
 
-この環境では、**全体の運用ルールはdotfilesで管理し、過去の判断に必要な原文・資料・AIの整理結果は各プロジェクトのローカル領域に保存する**。現在のコードや実行結果で分かることは、そちらを先に確認する。コンテキストを毎回すべて読み込んだり、会話をすべて保存したりはしない。
+この環境では、**全体の運用ルールはdotfilesで管理し、共同・業務リポジトリの公開前の下書きだけを各プロジェクトのローカル領域に置く**。個人リポジトリではプロジェクトコンテキストを使わず、メモを `docs/` に書いてコミットする。共同リポジトリでも確定したものは `docs/` などへ移し、ローカルには下書きと共有しない原文・資料だけを残す。
 
 本書は構造を第三者に説明するための資料であり、個別プロジェクトの記録や会話内容のエクスポートではない。運用ルールの正本は後述の管理元ファイルにある。パスの `~` は利用者のホームディレクトリを表す。
 
@@ -16,7 +16,8 @@
 | 共有プロトコル | 正本の探し方、原文とAI出力の分離、検索・保存・旧記録の扱いを定める | 各エージェントの `project-context-protocol.md` |
 | プロジェクト固有ルール | そのリポジトリの構成・検証・コミット方針など | プロジェクトの `AGENTS.md` |
 | プロジェクトコンテキスト | タスクをまたいで残す原文・原資料・AIによる分析 | Git共通ディレクトリの `project-context/`、または非Gitプロジェクトの `context/` |
-| 初期化用スキル・コマンド | コンテキストの初期導入と構造修復 | `project-context-init` |
+| 初期化用スキル・コマンド | コンテキストの初期導入、構造修復、INDEX再生成、バックアップ設定 | `project-context-init` |
+| 移動用スキル | 確定したAI出力を `docs/` などへ移す。未確認の記録の照合も手伝う | `project-context-promote` |
 | 旧Vault連携 | 旧判断の確認・復旧など、必要な場合だけ使う補助経路 | Obsidian Vault、`vault-context` CLI・MCP |
 
 日常作業で確認する一次情報は、現在のリポジトリ、公式文書、Issue、PR、CI、実行結果など。保存された過去の記録も、必要に応じて現在の一次情報と照合する。
@@ -39,8 +40,10 @@ project/
 ├── context -> <common-dir>/project-context/
 └── ...                           ソースコードなど
 
-<common-dir>/project-context/      コンテキストの正本（Git管理外）
+<common-dir>/project-context/      コンテキストの正本（本体リポジトリのGit管理外）
+├── .git/                         任意。--git-backup で作る正本専用のリポジトリ
 ├── README.md                     この保存先の運用説明
+├── INDEX.md                      記録の一覧（生成物）。v4運用の目印
 ├── canonical/
 │   ├── README.md                 原文・原資料の保存ルール
 │   ├── user/                     ユーザーの発言・人間が記した原文
@@ -50,7 +53,7 @@ project/
 │       └── external/             公式文書・Web・書籍などの原資料・出典
 │           └── README.md
 └── ai_output/
-    ├── index.html                AI出力の保存ルール
+    ├── README.md                 AI出力の保存ルールとfrontmatterの書式
     ├── facts/                    AIが抽出・整理した事実
     ├── decisions/                AIが整理した判断・理由
     ├── workflows/                AIが整理した手順
@@ -60,7 +63,7 @@ project/
 
 `context` は人間向けの入口となるシンボリックリンク。正本ではない。初期化処理はGitのローカルexcludeへ `/context` を追加する。保存先はブランチ変更やlinked worktree間で共有され、コンテキスト全体がcommit・push・cloneの対象外となる。
 
-このdotfilesで確認した実体は `~/.dotfiles/.git/project-context/`。`~/.dotfiles/context` はそこを指し、上記のv3ディレクトリが存在する。
+運用の判定は正本に `INDEX.md` があるかどうかだけで行う。このdotfilesは個人リポジトリなので、`~/.dotfiles/.git/project-context/` にあるv3の正本は、`docs/` へ移すまで読み取り専用の旧記録として扱う。
 
 ### 非Gitプロジェクト
 
@@ -75,21 +78,21 @@ project/
 | `canonical/user/` | ユーザーの発言、人間が書いたコンテキストの必要な原文 | Markdown。言い換え・補足・誤字修正をしない |
 | `canonical/sources/internal/` | 本人・社内・チームから受け取った添付資料など | 必要な資料を元の形式で保持 |
 | `canonical/sources/external/` | 公式文書、Web、論文、書籍などの原資料・出典 | 保持が必要かつ許される範囲。著者の由来が不明なら人間の原文と断定しない |
-| `ai_output/<分類>/` | AIの抽出、要約、分析、提案、検証結果 | 外部アセットやスクリプトに依存しない、静的な自己完結HTML |
+| `ai_output/<分類>/` | AIの抽出、要約、分析、提案、検証結果 | frontmatter付きMarkdown。`title`・`summary`・`created`・`sources`・`status`・`promoted_to` を持つ |
 
 例えば「ユーザーが運用方針を決めた発言」は `canonical/user/` に原文で置き、「その決定の理由をAIが整理した文章」は `ai_output/decisions/` に置く。AIによる整理結果を人間が承認しても、その文章を `canonical` へ移さない。
 
-原文の出典、発言者、記録日、抜粋範囲などのメタデータは本文と分離する。抜粋は連続した範囲をそのまま残す。訂正や撤回は元の原文を上書きせず、別の原文として記録する。AI出力には原文・原資料への参照と確認状態を含める。
+原文の出典、発言者、記録日、抜粋範囲などのメタデータは本文と分離する。抜粋は連続した範囲をそのまま残す。訂正や撤回は元の原文を上書きせず、別の原文として記録する。AI出力のfrontmatterには、原文・原資料への参照（`sources`）、確認状態（`status`: `unverified`・`verified`・`approved`）、移動先（`promoted_to`）を書く。`INDEX.md` はこのfrontmatterとcanonicalの一覧から `project-context-init --reindex` で機械的に作り、手で編集しない。
 
 `canonical` 直下は運用文書だけにし、同じ原文を複数箇所に複製しない。READMEなどの運用文書は、人間の発言の記録とは区別する。
 
 ## 4. 普段の参照・保存の流れ
 
-1. 現在のコード・文書・実行結果で作業を進める。過去の判断や、現在の一次情報だけでは分からない制約が必要になった場合だけ、既存コンテキストを参照する。
-2. 必要になった時点で共有プロトコルを読み、正本を解決し、その保存先の `README.md` を確認する。保存先が未作成でも、参照のためだけには初期化しない。
-3. 短い非機密の作業語で `canonical/user/` を検索し、不足する原資料を `canonical/sources/internal/` と `external/` から別々に確認する。
-4. 過去の分析や手順が必要な場合は、`ai_output/` の該当分類も読む。AI出力だけを根拠にせず、原文・原資料と現在の一次情報で確認する。
-5. 導入済みプロジェクトでは、最終回答前に一度、後から再構成しにくく今後の判断に効く情報があるか確認する。該当する情報だけ、重複を確認して由来に応じた場所へ保存する。
+1. 正本を解決し、`INDEX.md` があるか確認する。なければプロジェクトコンテキストを使わず、メモは `docs/` に書く。originのownerが本人以外なら、導入を提案する。
+2. `INDEX.md` がある場合は、作業開始時にそれだけを読み、本文は関係する記録だけ開く。AI出力は `sources` の原文と現在の一次情報で確認する。
+3. INDEXで足りないときだけ、`canonical/` を短い非機密の作業語で検索する。
+4. 最終回答前に一度、後から再構成しにくく今後の判断に効く情報があるか確認する。該当する情報だけ、重複を確認して由来に応じた場所へ保存し、`--reindex` でINDEXを作り直す。正本に `.git` があれば正本のリポジトリだけでローカルコミットする。pushはユーザーが行う。
+5. 確定した記録は `project-context-promote` で `docs/` などへの差分を示し、ユーザーが承認したものだけ反映する。移した記録は本文を消して `promoted_to` だけを残す。本体リポジトリのコミット・pushはユーザーが行う。
 
 Gitの隠しディレクトリとignore対象も検索するため、検索範囲を解決済みの保存先に限定して `rg --hidden --no-ignore` を使う。次のパスと検索語は実際の対象に置き換える。
 
@@ -114,6 +117,7 @@ rg --hidden --no-ignore -n -i --glob '*.md' --glob '!README.md' \
 | `modules/pi-coding-agent/files/AGENTS.md` | `~/.pi/agent/AGENTS.md` |
 | `modules/vault-context/files/codex/project-context-protocol.md` | `~/.codex/project-context-protocol.md` と `~/.pi/agent/project-context-protocol.md` |
 | `.agents/skills/project-context-init/SKILL.md` | `~/.agents/skills/project-context-init/SKILL.md` |
+| `.agents/skills/project-context-promote/SKILL.md` | `~/.agents/skills/project-context-promote/SKILL.md` |
 | `modules/vault-context/files/project-context-init.py` | `~/.local/bin/project-context-init` の実装 |
 | `modules/vault-context/default.nix` | Codex向けファイル、初期化コマンド、旧Vaultランタイムの配布 |
 | `modules/codex-skills/default.nix` | リポジトリ管理スキルの配布 |
@@ -134,7 +138,10 @@ python3 ~/.dotfiles/modules/vault-context/files/project-context-init.py \
 
 管理元がない配布先環境では、同じ引数を `project-context-init` コマンドに渡す。上記は初期化・修復を行うコマンドであり、読み取り専用の確認コマンドではない。
 
-初期化処理は正本・入口の準備と既知のテンプレート更新を担当する。既存記録を自動生成したり、個々の内容を自動分類したりはしない。旧 `sources/` がある場合は内容を変えず `canonical/sources/` へ移し、移動先が既にある場合は統合・上書きせず停止する。保存先の衝突や不正なシンボリックリンクなども、削除して強行せず原因を確認する。
+- `--git-backup --remote <url>`: 正本を独立したGitリポジトリにし、リポジトリごとに指定したprivate remoteをoriginにする。コミット・pushはしない。originが別のURLなら停止する。Git共通ディレクトリ内に入れ子になっても、本体のstatus・worktree・cloneには影響しない。
+- `--reindex`: 既存の `INDEX.md` だけを再生成する。frontmatterが不正な記録があれば書き換えずに停止する。
+
+初期化処理は正本・入口の準備と既知のテンプレート更新を担当する。v3以前のHTML記録が残る正本はv4へ更新せず停止するので、ユーザーの承認を得て変換前の状態を正本のリポジトリにコミットしてから、Markdownへ変換する。既存記録を自動生成したり、個々の内容を自動分類したりはしない。旧 `sources/` がある場合は内容を変えず `canonical/sources/` へ移し、移動先が既にある場合は統合・上書きせず停止する。保存先の衝突や不正なシンボリックリンクなども、削除して強行せず原因を確認する。
 
 v2以前の `canonical` にはAIが整理した文章も含まれ得る。ディレクトリ名だけで人間の原文と判定しない。必要な旧記録は由来を確認し、AIによる文章は内容を保持して `ai_output/` の該当分類へ移す。原文が不明なら、その旨を明記して創作しない。
 
@@ -150,11 +157,11 @@ v2以前の `canonical` にはAIが整理した文章も含まれ得る。ディ
 
 旧MCPランタイムは `~/.codex/mcp/vault-context-mcp/` に置かれ、Home Managerのactivationから同期する。`vault-context` と `codex-context` は同じ旧CLIへの入口。これはプロジェクトコンテキストを中央へ同期する仕組みではない。
 
-管理文書では、旧「Vault朝次整理」「Vault週次統合」「Vault Git同期」は2026-09-13に廃止された。日常のコンテキスト管理は必要時の参照・保存で完結し、定期的なVault整理、検索インデックス保守、KPI収集、LINE通知を必要としない。残存する `vault-git-sync` は旧Vault用の手動ツールであり、Git共通ディレクトリ内のコンテキストのバックアップにはならない。
+管理文書では、旧「Vault朝次整理」「Vault週次統合」「Vault Git同期」は2026-09-13に廃止された。日常のコンテキスト管理は必要時の参照・保存で完結し、定期的なVault整理、検索インデックス保守、KPI収集、LINE通知を必要としない。残存する `vault-git-sync` は旧Vault用の手動ツールであり、プロジェクトコンテキストのバックアップには `project-context-init --git-backup` を使う。
 
 ## 8. 他の人・端末へ引き継ぐ場合
 
-**ルールとツールはGitから取得できるが、プロジェクトコンテキストの記録はcloneだけでは移らない。** ブランチを切り替えても正本は共有される一方、リポジトリの削除、再clone、別端末への移動では別途バックアップ・移送が必要になる。
+**ルールとツールはGitから取得できるが、プロジェクトコンテキストの記録は本体のcloneだけでは移らない。** `--git-backup` を設定した正本は、そのremoteから正本の位置へcloneすれば移せる。設定していない正本は、リポジトリの削除、再clone、別端末への移動で失われる。
 
 構造だけを説明する場合は本書を渡せばよい。実際の記録も引き継ぐ場合は、次を分けて扱う。
 
@@ -165,20 +172,9 @@ v2以前の `canonical` にはAIが整理した文章も含まれ得る。ディ
 
 このdotfilesの配布処理は所有者の環境向けで、一部に絶対パスがある。他人の端末へそのまま適用する汎用インストーラーではない。第三者が導入する場合は、ホームディレクトリと配布対象ホストを読み替える必要がある。
 
-## 9. 今回確認した状態と範囲
+## 9. 移行状況
 
-| 対象 | 2026-09-23の確認結果 |
-| --- | --- |
-| dotfilesのコンテキスト | Git共通ディレクトリ内に存在。READMEは `project-context/v3` |
-| `context` の入口 | 正本を指すシンボリックリンク |
-| Git除外 | `.git/info/exclude` に `/context` が存在 |
-| ディレクトリ | 原文・原資料の3保存先と、AI出力の5分類が存在 |
-| Codex共通ルール・プロトコル | 管理元と配布済みファイルの内容が一致 |
-| Pi共通ルール・プロトコル | 管理元と配布済みファイルの内容が一致 |
-| 初期化スキル | 管理元と配布済み `SKILL.md` の内容が一致 |
-| 旧Vault連携 | ローカル設定にMCPの登録があり、ランタイムディレクトリも存在 |
-
-確認対象は構造、管理元の実装、配布ファイル、ローカル設定。個々の保存記録の正しさ、全プロジェクトの導入状況、バックアップの実在、旧MCPサーバーの疎通、現時点の定期処理一覧までは検証していない。旧定期処理の廃止日は管理文書に基づく。
+v4の規則・初期化処理・スキルは管理元に実装済みで、配布先への反映はHome Managerのswitch後になる。2026-11-11時点で各プロジェクトの正本はv2・v3のままで、HTML記録のMarkdown変換、v4への更新、バックアップ設定は段階的に進める。個々の記録の正しさ、バックアップの実在、旧MCPサーバーの疎通は検証していない。
 
 ## 10. 一次資料
 
@@ -190,6 +186,7 @@ v2以前の `canonical` にはAIが整理した文章も含まれ得る。ディ
 - [Claude Code固有ルール](files/claude/CLAUDE.md)
 - [Pi共通ルール](../pi-coding-agent/files/AGENTS.md)
 - [初期化スキル](../../.agents/skills/project-context-init/SKILL.md)
+- [移動スキル](../../.agents/skills/project-context-promote/SKILL.md)
 - [初期化の実装](files/project-context-init.py)
 - [配布モジュール](default.nix)
 - [Pi配布モジュール](../pi-coding-agent/default.nix)
