@@ -75,7 +75,7 @@ activation failure.
 
 ## Codex skills
 
-Keep provider files unchanged when refreshing a skill. Local integrations are limited to `imoocs`, `proxmox-pve`, `line-delivery`, `project-context-init`, `ask-claude`, and the personal `subagent-model-router` policy. Home Manager deploys them through the existing denix module.
+Keep provider files unchanged when refreshing a skill. Local integrations are limited to `imoocs`, `proxmox-pve`, `line-delivery`, `project-context-init`, `project-context-promote`, `ask-claude`, and the personal `subagent-model-router` policy. Home Manager deploys them through the existing denix module.
 
 Use `$ask-claude` in Codex to ask Claude Code a question, request a review, or delegate explicitly authorized edits through the existing CLI login. Questions and reviews use read-only tools by default; see the [skill](./.agents/skills/ask-claude/SKILL.md).
 
