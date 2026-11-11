@@ -20,6 +20,27 @@ def run(*args: str, cwd: Path) -> subprocess.CompletedProcess[str]:
     return subprocess.run(args, cwd=cwd, check=True, capture_output=True, text=True)
 
 
+def record_text(
+    summary: str = "One-line summary",
+    sources: tuple[str, ...] = (),
+    status: str = "unverified",
+    promoted_to: str = "null",
+    body: str = "Body.\n",
+) -> str:
+    source_lines = "".join(f"  - {source}\n" for source in sources)
+    return (
+        "---\n"
+        "title: Example record\n"
+        f"summary: {summary}\n"
+        "created: 2026-11-11\n"
+        + (f"sources:\n{source_lines}" if sources else "sources: []\n")
+        + f"status: {status}\n"
+        f"promoted_to: {promoted_to}\n"
+        "---\n\n"
+        + body
+    )
+
+
 class ProjectContextInitTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temporary_directory = tempfile.TemporaryDirectory()
@@ -44,14 +65,12 @@ class ProjectContextInitTests(unittest.TestCase):
         self.assertFalse((self.root / "context/sources").exists())
         for responsibility in MODULE.RESPONSIBILITIES:
             self.assertTrue((self.root / "context/ai_output" / responsibility).is_dir())
-        self.assertFalse((self.root / "context/ai_output/README.md").exists())
-        ai_output_index = (self.root / "context/ai_output/index.html").read_text()
-        self.assertIn("<!doctype html>", ai_output_index)
-        self.assertIn("<code>.html</code>", ai_output_index)
-        self.assertIn(MODULE.TEMPLATE_VERSION, ai_output_index)
+        self.assertFalse((self.root / "context/ai_output/index.html").exists())
+        self.assertEqual((self.root / "context/ai_output/README.md").read_text(), MODULE.AI_OUTPUT_README)
+        self.assertIn(MODULE.INDEX_HEADER, (self.root / "context/INDEX.md").read_text())
         self.assertFalse((self.root / "context/.gitignore").exists())
         self.assertIn(MODULE.MARKER, (self.root / "AGENTS.md").read_text())
-        self.assertIn("自己完結HTML", (self.root / "AGENTS.md").read_text())
+        self.assertIn("context/INDEX.md", (self.root / "AGENTS.md").read_text())
         self.assertIn(MODULE.TEMPLATE_VERSION, (self.root / "AGENTS.md").read_text())
         self.assertEqual(MODULE.initialize(self.root, "Example"), [])
 
@@ -81,8 +100,9 @@ class ProjectContextInitTests(unittest.TestCase):
         self.assertFalse((target / "canonical/facts").exists())
         for responsibility in MODULE.RESPONSIBILITIES:
             self.assertTrue((target / "ai_output" / responsibility).is_dir())
-        self.assertTrue((target / "ai_output/index.html").is_file())
-        self.assertFalse((target / "ai_output/README.md").exists())
+        self.assertTrue((target / "ai_output/README.md").is_file())
+        self.assertFalse((target / "ai_output/index.html").exists())
+        self.assertTrue((target / "INDEX.md").is_file())
         self.assertFalse((target / ".gitignore").exists())
         self.assertFalse((self.root / "AGENTS.md").exists())
         self.assertIn("/context", (self.root / ".git/info/exclude").read_text())
@@ -118,36 +138,29 @@ class ProjectContextInitTests(unittest.TestCase):
 
         self.assertEqual(readme.read_text(encoding="utf-8"), "custom\n")
 
-    def test_previous_ai_output_readme_migrates_to_html_index(self) -> None:
+    def test_previous_ai_output_readme_migrates_to_markdown_policy(self) -> None:
         markdown = self.root / "context/ai_output/README.md"
         markdown.parent.mkdir(parents=True)
         markdown.write_text(MODULE.PREVIOUS_AI_OUTPUT_README, encoding="utf-8")
 
         MODULE.initialize(self.root, "Example")
 
-        self.assertFalse(markdown.exists())
-        html = self.root / "context/ai_output/index.html"
-        self.assertEqual(html.read_text(encoding="utf-8"), MODULE.AI_OUTPUT_INDEX)
+        self.assertEqual(markdown.read_text(encoding="utf-8"), MODULE.AI_OUTPUT_README)
+        self.assertFalse((self.root / "context/ai_output/index.html").exists())
 
-    def test_previous_flat_ai_output_index_upgrades_to_responsibility_template(self) -> None:
-        html = self.root / "context/ai_output/index.html"
-        html.parent.mkdir(parents=True)
-        html.write_text(MODULE.PREVIOUS_AI_OUTPUT_INDEX, encoding="utf-8")
+    def test_every_previous_html_index_is_replaced_by_markdown_policy(self) -> None:
+        for previous in MODULE.PREVIOUS_AI_OUTPUT_INDEXES:
+            with self.subTest(previous=previous[:80]):
+                html = self.root / "context/ai_output/index.html"
+                html.parent.mkdir(parents=True, exist_ok=True)
+                html.write_text(previous, encoding="utf-8")
 
-        MODULE.initialize(self.root, "Example")
+                MODULE.initialize(self.root, "Example")
 
-        self.assertEqual(html.read_text(encoding="utf-8"), MODULE.AI_OUTPUT_INDEX)
-        for responsibility in MODULE.RESPONSIBILITIES:
-            self.assertTrue((html.parent / responsibility).is_dir())
-
-    def test_previous_responsibility_index_upgrades_known_managed_copy(self) -> None:
-        html = self.root / "context/ai_output/index.html"
-        html.parent.mkdir(parents=True)
-        html.write_text(MODULE.PREVIOUS_RESPONSIBILITY_AI_OUTPUT_INDEX, encoding="utf-8")
-
-        MODULE.initialize(self.root, "Example")
-
-        self.assertEqual(html.read_text(encoding="utf-8"), MODULE.AI_OUTPUT_INDEX)
+                self.assertFalse(html.exists())
+                self.assertEqual((html.parent / "README.md").read_text(), MODULE.AI_OUTPUT_README)
+                for responsibility in MODULE.RESPONSIBILITIES:
+                    self.assertTrue((html.parent / responsibility).is_dir())
 
     def test_previous_html_context_and_agent_block_upgrade_to_current_template(self) -> None:
         context = self.root / "context"
@@ -238,7 +251,7 @@ class ProjectContextInitTests(unittest.TestCase):
         records = {
             "canonical/raw-user.md": "---\nsource_kind: user\n---\n\naiのautoputは、  別に。\n",
             "canonical/risks/legacy.md": "# AI analysis under v2\nPreserve for origin review.\n",
-            "ai_output/risks/current.html": "<!doctype html><title>Risk</title><p>Preserve.</p>\n",
+            "ai_output/risks/current.md": record_text(summary="Preserve."),
         }
         for name, content in records.items():
             (context / name).write_text(content, encoding="utf-8")
@@ -253,7 +266,8 @@ class ProjectContextInitTests(unittest.TestCase):
         self.assertEqual((context / "canonical/sources/external/README.md").read_text(), MODULE.EXTERNAL_README)
         self.assertEqual((context / "canonical/sources/internal/original.pdf").read_bytes(), b"%PDF-1.7\n\x00\xfforiginal bytes\n")
         self.assertFalse((context / "sources").exists())
-        self.assertEqual((context / "ai_output/index.html").read_text(), MODULE.AI_OUTPUT_INDEX)
+        self.assertEqual((context / "ai_output/README.md").read_text(), MODULE.AI_OUTPUT_README)
+        self.assertFalse((context / "ai_output/index.html").exists())
         self.assertEqual(agents.read_text(), "Custom before\n" + MODULE.AGENT_BLOCK + "Custom after\n")
         for name, content in records.items():
             self.assertEqual((context / name).read_text(), content)
@@ -332,16 +346,16 @@ class ProjectContextInitTests(unittest.TestCase):
         self.assertEqual(html.read_text(encoding="utf-8"), "<!doctype html><title>custom</title>\n")
         self.assertFalse((self.root / "AGENTS.md").exists())
 
-    def test_ai_output_markdown_artifact_requires_manual_conversion(self) -> None:
+    def test_ai_output_root_markdown_artifact_requires_manual_classification(self) -> None:
         artifact = self.root / "context/ai_output/report.md"
         artifact.parent.mkdir(parents=True)
         artifact.write_text("# Report\n", encoding="utf-8")
 
-        with self.assertRaisesRegex(ValueError, "requires manual HTML conversion"):
+        with self.assertRaisesRegex(ValueError, "requires manual classification"):
             MODULE.initialize(self.root, "Example")
 
         self.assertEqual(artifact.read_text(encoding="utf-8"), "# Report\n")
-        self.assertFalse((self.root / "context/ai_output/index.html").exists())
+        self.assertFalse((self.root / "context/ai_output/README.md").exists())
 
     def test_ai_output_root_html_artifact_requires_manual_classification(self) -> None:
         artifact = self.root / "context/ai_output/report.html"
@@ -364,12 +378,12 @@ class ProjectContextInitTests(unittest.TestCase):
         self.assertTrue(custom.is_dir())
         self.assertFalse((self.root / "AGENTS.md").exists())
 
-    def test_non_html_artifact_in_responsibility_directory_fails_closed(self) -> None:
+    def test_non_markdown_artifact_in_responsibility_directory_fails_closed(self) -> None:
         artifact = self.root / "context/ai_output/facts/report.txt"
         artifact.parent.mkdir(parents=True)
         artifact.write_text("report\n", encoding="utf-8")
 
-        with self.assertRaisesRegex(ValueError, "artifact must be HTML"):
+        with self.assertRaisesRegex(ValueError, "artifact must be Markdown"):
             MODULE.initialize(self.root, "Example")
 
         self.assertEqual(artifact.read_text(encoding="utf-8"), "report\n")
@@ -380,13 +394,13 @@ class ProjectContextInitTests(unittest.TestCase):
         ai_output.mkdir(parents=True)
         markdown = ai_output / "README.md"
         html = ai_output / "index.html"
-        markdown.write_text(MODULE.PREVIOUS_AI_OUTPUT_README, encoding="utf-8")
-        html.write_text(MODULE.AI_OUTPUT_INDEX, encoding="utf-8")
+        markdown.write_text(MODULE.AI_OUTPUT_README, encoding="utf-8")
+        html.write_text(MODULE.PREVIOUS_V3_AI_OUTPUT_INDEX, encoding="utf-8")
 
         MODULE.initialize(self.root, "Example")
 
-        self.assertFalse(markdown.exists())
-        self.assertEqual(html.read_text(encoding="utf-8"), MODULE.AI_OUTPUT_INDEX)
+        self.assertFalse(html.exists())
+        self.assertEqual(markdown.read_text(encoding="utf-8"), MODULE.AI_OUTPUT_README)
 
     def test_git_migration_fails_closed_on_target_collision(self) -> None:
         run("git", "init", "--initial-branch=main", cwd=self.root)
@@ -514,6 +528,143 @@ class ProjectContextInitTests(unittest.TestCase):
 
         self.assertFalse((self.root / "context").exists())
         self.assertEqual(agents.read_text(encoding="utf-8"), f"{MODULE.MARKER}\nedited\n")
+
+    def test_v3_store_with_html_artifact_fails_closed_until_converted(self) -> None:
+        context = self.root / "context"
+        MODULE.initialize(self.root, "Example")
+        readme = context / "README.md"
+        readme.write_text(MODULE.previous_v3_context_readme("Example", False))
+        (context / "INDEX.md").unlink()
+        artifact = context / "ai_output/decisions/choice.html"
+        artifact.write_text("<!doctype html><title>Choice</title>\n")
+
+        with self.assertRaisesRegex(ValueError, "requires Markdown conversion"):
+            MODULE.initialize(self.root, "Example")
+
+        self.assertEqual(readme.read_text(), MODULE.previous_v3_context_readme("Example", False))
+        self.assertTrue(artifact.is_file())
+        self.assertFalse((context / "INDEX.md").exists())
+
+    def test_v3_upgrade_indexes_markdown_records_without_changing_them(self) -> None:
+        run("git", "init", "--initial-branch=main", cwd=self.root)
+        MODULE.initialize(self.root, "Example")
+        context = self.root / ".git/project-context"
+        (context / "README.md").write_text(MODULE.previous_v3_context_readme("Example", True))
+        (context / "ai_output/README.md").unlink()
+        (context / "ai_output/index.html").write_text(MODULE.PREVIOUS_V3_AI_OUTPUT_INDEX)
+        (context / "INDEX.md").unlink()
+        original = context / "canonical/user/2026-11-11-request.md"
+        original.write_text("ユーザーの原文。\n")
+        unreferenced = context / "canonical/sources/external/spec.pdf"
+        unreferenced.write_bytes(b"%PDF\x00")
+        record = context / "ai_output/decisions/choice.md"
+        contents = record_text(
+            summary="Keep the store outside Git",
+            sources=("../../canonical/user/2026-11-11-request.md", "https://example.com/spec"),
+        )
+        record.write_text(contents)
+        promoted = context / "ai_output/workflows/release.md"
+        promoted.write_text(record_text(status="approved", promoted_to="docs/release.md", body=""))
+
+        MODULE.initialize(self.root, "Example")
+
+        self.assertEqual(record.read_text(), contents)
+        self.assertEqual((context / "README.md").read_text(), MODULE.context_readme("Example", True))
+        index = (context / "INDEX.md").read_text()
+        self.assertIn(
+            "- [Example record](ai_output/decisions/choice.md) — Keep the store outside Git `unverified`",
+            index,
+        )
+        self.assertIn("`approved` → `docs/release.md`", index)
+        self.assertIn(
+            "- [canonical/user/2026-11-11-request.md](canonical/user/2026-11-11-request.md)"
+            " ← ai_output/decisions/choice.md",
+            index,
+        )
+        self.assertIn("- [canonical/sources/external/spec.pdf](canonical/sources/external/spec.pdf)\n", index)
+        self.assertNotIn("README.md", index)
+        self.assertEqual(run("git", "status", "--short", cwd=self.root).stdout, "")
+        self.assertEqual(MODULE.initialize(self.root, "Example"), [])
+
+    def test_invalid_frontmatter_fails_closed(self) -> None:
+        MODULE.initialize(self.root, "Example")
+        context = self.root / "context"
+        index = (context / "INDEX.md").read_text()
+        cases = {
+            "missing summary": "---\ntitle: T\ncreated: 2026-11-11\nsources: []\nstatus: unverified\npromoted_to: null\n---\n",
+            "status must be": record_text(status="done"),
+            "source is not a file": record_text(sources=("../../canonical/user/missing.md",)),
+            "missing frontmatter": "# No frontmatter\n",
+            "unknown key": record_text().replace("status:", "owner: me\nstatus:"),
+            "repository-relative": record_text(promoted_to="/Users/me/docs/a.md"),
+        }
+        record = context / "ai_output/facts/bad.md"
+        for message, text in cases.items():
+            with self.subTest(message=message):
+                record.write_text(text)
+                with self.assertRaisesRegex(ValueError, message):
+                    MODULE.initialize(self.root, "Example")
+                with self.assertRaisesRegex(ValueError, message):
+                    MODULE.reindex(self.root)
+                self.assertEqual((context / "INDEX.md").read_text(), index)
+
+    def test_reindex_regenerates_only_existing_v4_index(self) -> None:
+        with self.assertRaisesRegex(ValueError, "INDEX.md not found"):
+            MODULE.reindex(self.root)
+        MODULE.initialize(self.root, "Example")
+        context = self.root / "context"
+        (context / "ai_output/risks/leak.md").write_text(record_text(summary="Token may leak"))
+
+        self.assertEqual(MODULE.reindex(self.root), [str(context / "INDEX.md")])
+        self.assertIn("Token may leak", (context / "INDEX.md").read_text())
+        self.assertEqual(MODULE.reindex(self.root), [])
+
+        (context / "INDEX.md").write_text("hand written\n")
+        with self.assertRaisesRegex(ValueError, "not generated by --reindex"):
+            MODULE.reindex(self.root)
+        self.assertEqual((context / "INDEX.md").read_text(), "hand written\n")
+
+    def test_git_backup_creates_nested_repository_without_touching_project(self) -> None:
+        run("git", "init", "--initial-branch=main", cwd=self.root)
+        (self.root / "seed").write_text("seed\n")
+        run("git", "add", "seed", cwd=self.root)
+        run("git", "-c", "user.name=T", "-c", "user.email=t@example.invalid", "commit", "-m", "seed", cwd=self.root)
+        remote = "git@example.invalid:me/context.git"
+
+        changes = MODULE.initialize(self.root, "Example", git_backup=True, remote=remote)
+
+        context = self.root / ".git/project-context"
+        self.assertIn((context / ".git").resolve(), [Path(change).resolve() for change in changes])
+        self.assertEqual(run("git", "remote", "get-url", "origin", cwd=context).stdout.strip(), remote)
+        self.assertEqual(
+            Path(run("git", "rev-parse", "--show-toplevel", cwd=self.root / "context/canonical").stdout.strip()).resolve(),
+            context.resolve(),
+        )
+        self.assertNotEqual(subprocess.run(["git", "rev-parse", "HEAD"], cwd=context, capture_output=True).returncode, 0)
+        self.assertEqual(run("git", "status", "--short", cwd=self.root).stdout, "")
+        self.assertEqual(
+            Path(run("git", "rev-parse", "--path-format=absolute", "--git-common-dir", cwd=self.root).stdout.strip()).resolve(),
+            (self.root / ".git").resolve(),
+        )
+        self.assertEqual(MODULE.initialize(self.root, "Example", git_backup=True, remote=remote), [])
+
+        with self.assertRaisesRegex(ValueError, "origin differs"):
+            MODULE.initialize(self.root, "Example", git_backup=True, remote="git@example.invalid:other.git")
+        self.assertEqual(run("git", "remote", "get-url", "origin", cwd=context).stdout.strip(), remote)
+
+    def test_git_backup_without_remote_and_remote_without_backup(self) -> None:
+        with self.assertRaisesRegex(ValueError, "--remote requires --git-backup"):
+            MODULE.initialize(self.root, "Example", remote="git@example.invalid:me/context.git")
+        self.assertFalse((self.root / "context").exists())
+
+        MODULE.initialize(self.root, "Example", git_backup=True)
+
+        context = self.root / "context"
+        self.assertTrue((context / ".git").is_dir())
+        self.assertNotEqual(
+            subprocess.run(["git", "remote", "get-url", "origin"], cwd=context, capture_output=True).returncode, 0
+        )
+        self.assertEqual(MODULE.initialize(self.root, "Example"), [])
 
 
 if __name__ == "__main__":

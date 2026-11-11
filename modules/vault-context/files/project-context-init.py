@@ -4,14 +4,20 @@
 from __future__ import annotations
 
 import argparse
+import json
+import os
+import re
 import subprocess
 from pathlib import Path
 
 
 MARKER = "<!-- project-context:v1 -->"
 LEGACY_TEMPLATE_VERSION = "project-context/v2"
-TEMPLATE_VERSION = "project-context/v3"
+V3_TEMPLATE_VERSION = "project-context/v3"
+TEMPLATE_VERSION = "project-context/v4"
 RESPONSIBILITIES = ("facts", "decisions", "workflows", "risks", "open_questions")
+STATUSES = ("unverified", "verified", "approved")
+INDEX_HEADER = "<!-- project-context-init --reindex が生成。手で編集しない。 -->"
 
 
 def legacy_context_readme(title: str) -> str:
@@ -195,7 +201,7 @@ def previous_provenance_context_readme(title: str, git_backed: bool) -> str:
 
 ## 保存と構造
 
-- version: `{TEMPLATE_VERSION}`。作成・修復は`project-context-init`を使います。初期化処理は既知の旧テンプレートだけ更新し、既存記録の分類・移動は行いません。
+- version: `{V3_TEMPLATE_VERSION}`。作成・修復は`project-context-init`を使います。初期化処理は既知の旧テンプレートだけ更新し、既存記録の分類・移動は行いません。
 - 将来の判断に効く再構成困難な情報だけを、重複を確認して保存します。会話全文の蓄積・secret・不要な個人情報・raw tool output・routine logは保存しません。
 - 原文の抜粋は連続した範囲をそのまま残し、範囲を明示します。訂正・撤回は元の原文を上書きせず別の原文として記録します。
 - 詳細な参照・保存・旧記録の整理は、必要時だけ`~/.codex/project-context-protocol.md`を読みます。
@@ -240,7 +246,7 @@ def previous_manual_capture_context_readme(title: str, git_backed: bool) -> str:
     )
 
 
-def context_readme(title: str, git_backed: bool) -> str:
+def previous_v3_context_readme(title: str, git_backed: bool) -> str:
     return (
         previous_nested_context_readme(title, git_backed)
         .replace(
@@ -252,6 +258,47 @@ def context_readme(title: str, git_backed: bool) -> str:
             "構造の初期導入・修復は`$project-context-init`スキルが担当します。",
         )
     )
+
+
+def context_readme(title: str, git_backed: bool) -> str:
+    location = (
+        "Git common directoryの`project-context/`が正本。project rootの`context`は人間向けsymlinkです。"
+        if git_backed
+        else "非Git projectのため、このproject rootの`context/`が正本です。"
+    )
+    return f"""# {title} context
+
+{location}
+
+## 位置づけ
+
+共同・業務repository向けの、公開前の下書き置き場です。`INDEX.md`があることがこの運用の目印です。確定したものだけを`$project-context-promote`でrepositoryの`docs/`等へ移します。version: `{TEMPLATE_VERSION}`。構造の初期導入・修復・backup設定は`$project-context-init`スキルが担当します。
+
+## 読み方
+
+1. 作業開始時に`INDEX.md`だけを読み、本文は作業に関係する記録だけ開きます。
+2. INDEXで足りないときだけ、解決済みの`canonical/`に限定して`rg --hidden --no-ignore`で検索します。
+3. AI出力は`sources`の原文・資料と現在の一次情報で確認し、一次情報そのものとして扱いません。
+
+## 由来による分離
+
+- `canonical/user/`: ユーザーの発言・人間が記したcontextの原文。転記しても言い換え・補足・誤字修正をしません。出典・発言者・記録日などのmetadataは原文本文と分離します。
+- `canonical/sources/internal/`、`canonical/sources/external/`: 添付資料等の原資料・出典。元の形式を保持し、同じ原文を複製しません。
+- `ai_output/{{facts,decisions,workflows,risks,open_questions}}/`: AIが抽出・要約・分析・提案した情報。frontmatter付きMarkdownで、形式は`ai_output/README.md`に従います。検証・承認してもcanonicalへ移しません。
+- canonical直下とREADME等は運用文書であり、原文の記録ではありません。
+
+## 保存
+
+- 将来の判断に効く再構成困難な情報だけを、重複を確認して保存します。その都度のユーザー指示は不要です。
+- 記録の追加・更新・promoteの後は`project-context-init <project root> --reindex`で`INDEX.md`を再生成します。`INDEX.md`は手で編集しません。
+- この正本の直下に`.git`があれば、保存後にこのrepositoryだけでローカルcommitします。pushはユーザーが行います。`.git`がなければcommitせず、`project-context-init --git-backup`での導入を提案します。
+- 会話全文・secret・credential・不要な個人情報・raw tool output・routine logは保存しません。
+- 詳細な参照・保存・旧記録の整理は、必要時だけ`~/.codex/project-context-protocol.md`を読みます。
+
+## 永続性
+
+本体repositoryのcommit・push・clone対象外です。`project-context-init --git-backup --remote <url>`でこの正本を独立したgit repositoryにし、repositoryごとのremoteへpushできます。
+"""
 
 
 LEGACY_CANONICAL_README = """# Canonical context
@@ -436,8 +483,8 @@ PREVIOUS_RESPONSIBILITY_AI_OUTPUT_INDEX = AI_OUTPUT_INDEX.replace(
 )
 
 PREVIOUS_V2_AI_OUTPUT_INDEX = AI_OUTPUT_INDEX
-AI_OUTPUT_INDEX = (
-    PREVIOUS_V2_AI_OUTPUT_INDEX.replace(LEGACY_TEMPLATE_VERSION, TEMPLATE_VERSION)
+PREVIOUS_V3_AI_OUTPUT_INDEX = (
+    PREVIOUS_V2_AI_OUTPUT_INDEX.replace(LEGACY_TEMPLATE_VERSION, V3_TEMPLATE_VERSION)
     .replace(
         "意図的に残すAIの下書き、生成report、仮説、一時的なsynthesisだけを置きます。通常検索から除外し、それ自体を根拠にしません。",
         "必要なAIの抽出・要約・分析・提案を置きます。検証済み・人間承認済みもここに残します。過去の分析が必要なときに参照し、出典の原文と現在の一次情報で確認します。",
@@ -451,6 +498,38 @@ AI_OUTPUT_INDEX = (
         "<p>原文への参照と検証・承認の状態を出力内に記録します。AIが作成した本文は、人間が承認しても<code>../canonical/</code>へ昇格させません。</p>",
     )
 )
+
+AI_OUTPUT_README = f"""# AI output
+
+<!-- project-context-template: {TEMPLATE_VERSION} -->
+
+AIの抽出・要約・分析・提案を、`facts/`、`decisions/`、`workflows/`、`risks/`、`open_questions/`へ一件一責務のMarkdownで置きます。直下はこのREADME専用です。
+
+## frontmatter
+
+```yaml
+---
+title: OmniWMを試すriceの判断
+summary: 署名済み0.7.6を使い、GUI設定はriceで管理しない
+created: 2026-10-14
+sources:
+  - ../../canonical/user/2026-10-14-omniwm-request.md
+  - https://example.com/release-notes
+status: unverified
+status_note: 元のユーザー発言との逐語照合は未実施
+promoted_to: null
+---
+```
+
+- `title`・`summary`: 一行。`summary`は`INDEX.md`の一行要約になります。
+- `created`: `YYYY-MM-DD`。不明なら`unknown`。
+- `sources`: 根拠にした原文・資料への、このfileからの相対パスか外部URL。なければ`[]`。
+- `status`: `unverified`（未確認）、`verified`（一次情報で確認済み）、`approved`（ユーザー承認済み）。確認の内容・日付は任意の`status_note`に書きます。
+- `promoted_to`: repositoryの`docs/`等へ移した先の、repository rootからの相対パス。移した記録は本文を消してfrontmatterだけを残します。未移動は`null`。
+- 値が`"`で始まる場合はJSON文字列として読みます。上記以外のkeyは使いません。
+
+記録を追加・更新したら`project-context-init <project root> --reindex`で`../INDEX.md`を再生成します。検証・承認してもcanonicalへ移しません。
+"""
 
 LEGACY_CONTEXT_GITIGNORE = """sources/internal/*
 !sources/internal/README.md
@@ -513,7 +592,7 @@ PREVIOUS_PROVENANCE_AGENT_BLOCK = f"""{MARKER}
 
 - 過去の判断・継続作業・現在の一次情報だけでは分からない制約が必要なときだけ`context/README.md`を読む。現在の証拠で完結する作業では検索・初期化しない。
 - 将来の判断に効く再構成困難な情報だけ、READMEと`~/.codex/project-context-protocol.md`に従って保存する。canonicalはユーザー等の原文、AIの抽出・要約・risk分析はai_outputの自己完結HTMLとし、検証・承認で由来を変えない。
-- 構造は`{TEMPLATE_VERSION}`を使い、作成・修復は`project-context-init`で行う。会話全文・secret・不要な個人情報・raw logは保存しない。
+- 構造は`{V3_TEMPLATE_VERSION}`を使い、作成・修復は`project-context-init`で行う。会話全文・secret・不要な個人情報・raw logは保存しない。
 """
 
 
@@ -523,12 +602,37 @@ PREVIOUS_MANUAL_CAPTURE_AGENT_BLOCK = PREVIOUS_PROVENANCE_AGENT_BLOCK.replace(
 )
 
 
-AGENT_BLOCK = PREVIOUS_PROVENANCE_AGENT_BLOCK.replace(
+PREVIOUS_V3_AGENT_BLOCK = PREVIOUS_PROVENANCE_AGENT_BLOCK.replace(
     "将来の判断に効く再構成困難な情報だけ、READMEと`~/.codex/project-context-protocol.md`に従って保存する。",
     "既存のproject contextへ将来の判断に効く再構成困難な情報だけ、READMEと`~/.codex/project-context-protocol.md`に従って必要時に保存する。その都度のユーザー指示は不要で、記録を残すためだけに保存先を新規作成しない。",
 ).replace(
     "作成・修復は`project-context-init`で行う。",
     "構造の初期導入・修復を依頼された場合は`$project-context-init`を使う。",
+)
+
+
+AGENT_BLOCK = f"""{MARKER}
+## Project context
+
+- 作業開始時に`context/INDEX.md`だけを読み、本文は関係する記録だけ開く。運用の詳細は`context/README.md`と、必要時だけ`~/.codex/project-context-protocol.md`に従う。
+- 将来の判断に効く再構成困難な情報だけ保存する。canonicalはユーザー等の原文、AIの抽出・要約・risk分析はai_outputのfrontmatter付きMarkdownとし、検証・承認で由来を変えない。保存後は`project-context-init <root> --reindex`でINDEXを再生成する。
+- 構造は`{TEMPLATE_VERSION}`を使い、構造の初期導入・修復は`$project-context-init`、docsへの移動は`$project-context-promote`で行う。会話全文・secret・不要な個人情報・raw logは保存しない。
+"""
+PREVIOUS_AGENT_BLOCKS = (
+    LEGACY_AGENT_BLOCK,
+    PREVIOUS_AGENT_BLOCK,
+    PREVIOUS_HTML_AGENT_BLOCK,
+    PREVIOUS_V2_AGENT_BLOCK,
+    PREVIOUS_ON_DEMAND_AGENT_BLOCK,
+    PREVIOUS_PROVENANCE_AGENT_BLOCK,
+    PREVIOUS_MANUAL_CAPTURE_AGENT_BLOCK,
+    PREVIOUS_V3_AGENT_BLOCK,
+)
+PREVIOUS_AI_OUTPUT_INDEXES = (
+    PREVIOUS_AI_OUTPUT_INDEX,
+    PREVIOUS_RESPONSIBILITY_AI_OUTPUT_INDEX,
+    PREVIOUS_V2_AI_OUTPUT_INDEX,
+    PREVIOUS_V3_AI_OUTPUT_INDEX,
 )
 
 
@@ -582,6 +686,7 @@ def managed_directories(context: Path) -> tuple[Path, ...]:
 def managed_files(context: Path) -> tuple[Path, ...]:
     return (
         context / "README.md",
+        context / "INDEX.md",
         context / "canonical" / "README.md",
         context / "canonical" / "sources" / "internal" / "README.md",
         context / "canonical" / "sources" / "external" / "README.md",
@@ -600,41 +705,182 @@ def validate_ai_output_policy(context: Path) -> None:
     if markdown.exists() and markdown.read_text(encoding="utf-8") not in (
         LEGACY_AI_OUTPUT_README,
         PREVIOUS_AI_OUTPUT_README,
+        AI_OUTPUT_README,
     ):
         raise ValueError(f"custom AI output Markdown exists; refusing migration: {markdown}")
-    if html.exists() and html.read_text(encoding="utf-8") not in (
-        PREVIOUS_AI_OUTPUT_INDEX,
-        PREVIOUS_RESPONSIBILITY_AI_OUTPUT_INDEX,
-        PREVIOUS_V2_AI_OUTPUT_INDEX,
-        AI_OUTPUT_INDEX,
-    ):
+    if html.exists() and html.read_text(encoding="utf-8") not in PREVIOUS_AI_OUTPUT_INDEXES:
         raise ValueError(f"custom AI output index exists; refusing overwrite: {html}")
     if ai_output.is_dir():
         allowed_root_names = {"README.md", "index.html", *RESPONSIBILITIES}
         for entry in ai_output.iterdir():
             if entry.name not in allowed_root_names:
-                if entry.suffix.lower() == ".md":
-                    raise ValueError(
-                        f"AI output Markdown artifact requires manual HTML conversion: {entry}"
-                    )
                 raise ValueError(
                     f"AI output root artifact or custom directory requires manual classification: {entry}"
                 )
-        for responsibility in RESPONSIBILITIES:
-            directory = ai_output / responsibility
-            if not directory.exists():
-                continue
-            for artifact in directory.iterdir():
-                if artifact.is_symlink():
-                    raise ValueError(f"AI output artifact must not be a symlink: {artifact}")
-                if not artifact.is_file():
-                    raise ValueError(f"nested AI output path is not allowed: {artifact}")
-                if artifact.suffix.lower() != ".html":
-                    if artifact.suffix.lower() == ".md":
-                        raise ValueError(
-                            f"AI output Markdown artifact requires manual HTML conversion: {artifact}"
-                        )
-                    raise ValueError(f"AI output artifact must be HTML: {artifact}")
+        for artifact in ai_output_records(context):
+            parse_record(context, artifact)
+
+
+def ai_output_records(context: Path) -> list[Path]:
+    records: list[Path] = []
+    for responsibility in RESPONSIBILITIES:
+        directory = context / "ai_output" / responsibility
+        if not directory.exists():
+            continue
+        for artifact in sorted(directory.iterdir()):
+            if artifact.is_symlink():
+                raise ValueError(f"AI output artifact must not be a symlink: {artifact}")
+            if not artifact.is_file():
+                raise ValueError(f"nested AI output path is not allowed: {artifact}")
+            if artifact.suffix.lower() == ".html":
+                raise ValueError(f"AI output HTML artifact requires Markdown conversion: {artifact}")
+            if artifact.suffix.lower() != ".md":
+                raise ValueError(f"AI output artifact must be Markdown: {artifact}")
+            records.append(artifact)
+    return records
+
+
+def parse_scalar(value: str) -> str | None:
+    value = value.strip()
+    if value in ("", "null"):
+        return None
+    if value.startswith('"'):
+        parsed = json.loads(value)
+        if not isinstance(parsed, str):
+            raise ValueError("quoted value must be a JSON string")
+        return parsed
+    return value
+
+
+def parse_frontmatter(text: str) -> dict[str, str | list[str] | None]:
+    lines = text.splitlines()
+    if not lines or lines[0] != "---" or "---" not in lines[1:]:
+        raise ValueError("missing frontmatter")
+    fields: dict[str, str | list[str] | None] = {}
+    current_list: list[str] | None = None
+    for line in lines[1 : lines.index("---", 1)]:
+        if line.startswith("  - ") and current_list is not None:
+            item = parse_scalar(line[4:])
+            if item is None:
+                raise ValueError("empty list item")
+            current_list.append(item)
+            continue
+        key, separator, value = line.partition(":")
+        if not separator or not re.fullmatch(r"[a-z_]+", key) or key in fields:
+            raise ValueError(f"invalid frontmatter line: {line!r}")
+        if value.strip() == "[]":
+            fields[key] = []
+            current_list = None
+        elif value.strip() == "":
+            current_list = []
+            fields[key] = current_list
+        else:
+            fields[key] = parse_scalar(value)
+            current_list = None
+    return fields
+
+
+def parse_record(context: Path, path: Path) -> dict[str, str | list[str] | None]:
+    try:
+        fields = parse_frontmatter(path.read_text(encoding="utf-8"))
+    except (ValueError, json.JSONDecodeError) as error:
+        raise ValueError(f"AI output frontmatter is invalid ({error}): {path}") from None
+    allowed = {"title", "summary", "created", "sources", "status", "status_note", "promoted_to"}
+    problems = [f"unknown key {key}" for key in fields if key not in allowed]
+    problems += [
+        f"missing {key}"
+        for key in ("title", "summary", "created", "sources", "status", "promoted_to")
+        if key not in fields
+    ]
+    for key in ("title", "summary"):
+        if key in fields and not isinstance(fields[key], str):
+            problems.append(f"{key} must be a one-line string")
+    created = fields.get("created")
+    if "created" in fields and not (
+        isinstance(created, str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}|unknown", created)
+    ):
+        problems.append("created must be YYYY-MM-DD or unknown")
+    if "status" in fields and fields["status"] not in STATUSES:
+        problems.append(f"status must be one of {', '.join(STATUSES)}")
+    promoted_to = fields.get("promoted_to")
+    if isinstance(promoted_to, list) or (isinstance(promoted_to, str) and Path(promoted_to).is_absolute()):
+        problems.append("promoted_to must be null or a repository-relative path")
+    sources = fields.get("sources")
+    if "sources" in fields and not isinstance(sources, list):
+        problems.append("sources must be a list or []")
+    for source in sources if isinstance(sources, list) else []:
+        if re.match(r"[a-z][a-z0-9+.-]*://", source):
+            continue
+        target = Path(os.path.normpath(path.parent / source))
+        if Path(source).is_absolute() or not target.is_relative_to(context) or not target.is_file():
+            problems.append(f"source is not a file inside the context: {source}")
+    if problems:
+        raise ValueError(f"AI output frontmatter is invalid ({'; '.join(problems)}): {path}")
+    return fields
+
+
+def canonical_records(context: Path) -> list[Path]:
+    managed = set(managed_files(context))
+    return sorted(
+        path
+        for path in (context / "canonical").rglob("*")
+        if path.is_file()
+        and path not in managed
+        and not any(part.startswith(".") for part in path.relative_to(context).parts)
+    )
+
+
+def render_index(context: Path) -> str:
+    lines: dict[str, list[str]] = {responsibility: [] for responsibility in RESPONSIBILITIES}
+    references: dict[Path, list[str]] = {}
+    for record in ai_output_records(context):
+        fields = parse_record(context, record)
+        relative = record.relative_to(context).as_posix()
+        line = f"- [{fields['title']}]({relative}) — {fields['summary']} `{fields['status']}`"
+        if fields["promoted_to"]:
+            line += f" → `{fields['promoted_to']}`"
+        lines[record.parent.name].append(line)
+        for source in fields["sources"] or []:
+            target = Path(os.path.normpath(record.parent / source))
+            if target.is_relative_to(context):
+                references.setdefault(target, []).append(relative)
+    sections = [
+        f"### {responsibility}\n\n" + ("\n".join(entries) if entries else "（なし）")
+        for responsibility, entries in lines.items()
+    ]
+    canonical_lines = []
+    for record in canonical_records(context):
+        relative = record.relative_to(context).as_posix()
+        line = f"- [{relative}]({relative})"
+        if record in references:
+            line += " ← " + ", ".join(sorted(references[record]))
+        canonical_lines.append(line)
+    return (
+        "# INDEX\n\n"
+        f"{INDEX_HEADER}\n\n"
+        "## ai_output\n\n"
+        + "\n\n".join(sections)
+        + "\n\n## canonical\n\n"
+        + ("\n".join(canonical_lines) if canonical_lines else "（なし）")
+        + "\n"
+    )
+
+
+def validate_index(context: Path) -> None:
+    index = context / "INDEX.md"
+    validate_text_file_or_missing(index, "INDEX.md")
+    if index.exists() and INDEX_HEADER not in index.read_text(encoding="utf-8"):
+        raise ValueError(f"INDEX.md was not generated by --reindex; refusing overwrite: {index}")
+
+
+def write_index(context: Path, changes: list[str]) -> None:
+    index = context / "INDEX.md"
+    validate_index(context)
+    content = render_index(context)
+    if index.exists() and index.read_text(encoding="utf-8") == content:
+        return
+    index.write_text(content, encoding="utf-8")
+    changes.append(str(index))
 
 
 def validate_context_tree(context: Path) -> None:
@@ -660,6 +906,7 @@ def validate_context_tree(context: Path) -> None:
     if (context / "sources").exists() and (context / "canonical/sources").exists():
         raise ValueError("both legacy sources and canonical/sources exist; refusing merge")
     validate_ai_output_policy(context)
+    validate_index(context)
 
 
 def ensure_directory(path: Path) -> None:
@@ -697,12 +944,12 @@ def migrate_ai_output_policy(context: Path, changes: list[str]) -> None:
     markdown = context / "ai_output" / "README.md"
     html = context / "ai_output" / "index.html"
     validate_ai_output_policy(context)
-    if not html.exists() or html.read_text(encoding="utf-8") != AI_OUTPUT_INDEX:
-        html.write_text(AI_OUTPUT_INDEX, encoding="utf-8")
-        changes.append(str(html))
-    if markdown.exists():
-        markdown.unlink()
+    if not markdown.exists() or markdown.read_text(encoding="utf-8") != AI_OUTPUT_README:
+        markdown.write_text(AI_OUTPUT_README, encoding="utf-8")
         changes.append(str(markdown))
+    if html.exists():
+        html.unlink()
+        changes.append(str(html))
 
 
 def validate_non_git_agent_entry(agents: Path) -> None:
@@ -710,17 +957,7 @@ def validate_non_git_agent_entry(agents: Path) -> None:
     if not agents.exists():
         return
     original = agents.read_text(encoding="utf-8")
-    known_blocks = (
-        LEGACY_AGENT_BLOCK,
-        PREVIOUS_AGENT_BLOCK,
-        PREVIOUS_HTML_AGENT_BLOCK,
-        PREVIOUS_V2_AGENT_BLOCK,
-        PREVIOUS_ON_DEMAND_AGENT_BLOCK,
-        PREVIOUS_PROVENANCE_AGENT_BLOCK,
-        PREVIOUS_MANUAL_CAPTURE_AGENT_BLOCK,
-        AGENT_BLOCK,
-    )
-    if any(block in original for block in known_blocks):
+    if any(block in original for block in (*PREVIOUS_AGENT_BLOCKS, AGENT_BLOCK)):
         if original.count(MARKER) != 1:
             raise ValueError(f"managed AGENTS block is ambiguous; refusing update: {agents}")
         return
@@ -736,7 +973,7 @@ def update_non_git_agents(root: Path, changes: list[str]) -> None:
         changes.append(str(agents))
         return
     original = agents.read_text(encoding="utf-8")
-    for previous in (LEGACY_AGENT_BLOCK, PREVIOUS_AGENT_BLOCK, PREVIOUS_HTML_AGENT_BLOCK, PREVIOUS_V2_AGENT_BLOCK, PREVIOUS_ON_DEMAND_AGENT_BLOCK, PREVIOUS_PROVENANCE_AGENT_BLOCK, PREVIOUS_MANUAL_CAPTURE_AGENT_BLOCK):
+    for previous in PREVIOUS_AGENT_BLOCKS:
         if previous in original:
             agents.write_text(original.replace(previous, AGENT_BLOCK), encoding="utf-8")
             changes.append(str(agents))
@@ -763,16 +1000,7 @@ def removable_git_agent_block(agents: Path) -> tuple[str, str] | None:
     block = next(
         (
             value
-            for value in (
-                LEGACY_AGENT_BLOCK,
-                PREVIOUS_AGENT_BLOCK,
-                PREVIOUS_HTML_AGENT_BLOCK,
-                PREVIOUS_V2_AGENT_BLOCK,
-                PREVIOUS_ON_DEMAND_AGENT_BLOCK,
-                PREVIOUS_PROVENANCE_AGENT_BLOCK,
-                PREVIOUS_MANUAL_CAPTURE_AGENT_BLOCK,
-                AGENT_BLOCK,
-            )
+            for value in (*PREVIOUS_AGENT_BLOCKS, AGENT_BLOCK)
             if value in original
         ),
         None,
@@ -879,15 +1107,67 @@ def migrate_sources(context: Path, changes: list[str]) -> None:
         changes.extend((str(source), str(target)))
 
 
-def initialize(root: Path, title: str) -> list[str]:
+def existing_store(root: Path, paths: tuple[Path, Path] | None) -> Path | None:
+    candidates = [root / "context"]
+    if paths:
+        candidates.insert(0, paths[0] / "project-context")
+    return next((path for path in candidates if path.is_dir() and not path.is_symlink()), None)
+
+
+def validate_backup(store: Path | None, remote: str | None) -> None:
+    if store is None or not (store / ".git").exists():
+        return
+    reject_symlink(store / ".git", "context backup repository")
+    toplevel = git_output(store, "rev-parse", "--show-toplevel")
+    if toplevel is None or Path(toplevel).resolve() != store.resolve():
+        raise ValueError(f"context .git is not a repository of the context itself: {store / '.git'}")
+    current = git_output(store, "remote", "get-url", "origin")
+    if remote and current is not None and current != remote:
+        raise ValueError(f"context backup origin differs ({current}); refusing to replace it: {store}")
+
+
+def ensure_backup(store: Path, remote: str | None, changes: list[str]) -> None:
+    # The context lives outside the project's work tree, so it gets its own repository and remote.
+    if not (store / ".git").exists():
+        subprocess.run(["git", "init", "--quiet", str(store)], check=True)
+        changes.append(str(store / ".git"))
+    if remote and git_output(store, "remote", "get-url", "origin") is None:
+        subprocess.run(["git", "-C", str(store), "remote", "add", "origin", remote], check=True)
+        changes.append(f"{store} (origin {remote})")
+
+
+def resolve_store(root: Path) -> Path:
+    paths = git_paths(root)
+    return paths[0] / "project-context" if paths else root / "context"
+
+
+def reindex(root: Path) -> list[str]:
+    context = resolve_store(root)
+    if not (context / "INDEX.md").is_file():
+        raise ValueError(f"INDEX.md not found; only project-context v4 stores can be reindexed: {context}")
+    changes: list[str] = []
+    write_index(context, changes)
+    return changes
+
+
+def initialize(
+    root: Path,
+    title: str,
+    git_backup: bool = False,
+    remote: str | None = None,
+) -> list[str]:
     if not root.is_dir():
         raise ValueError(f"project root is not a directory: {root}")
     if not title.strip() or "\n" in title or "\r" in title:
         raise ValueError("title must be a non-empty single line")
+    if remote and not git_backup:
+        raise ValueError("--remote requires --git-backup")
 
     changes: list[str] = []
     paths = git_paths(root)
     git_backed = paths is not None
+    if git_backup:
+        validate_backup(existing_store(root, paths), remote)
     if paths:
         common, exclude = paths
         validate_git_migration(root, common, exclude)
@@ -918,6 +1198,7 @@ def initialize(root: Path, title: str) -> list[str]:
             previous_provenance_context_readme(title.strip(), git_backed),
             previous_nested_context_readme(title.strip(), git_backed),
             previous_manual_capture_context_readme(title.strip(), git_backed),
+            previous_v3_context_readme(title.strip(), git_backed),
         ),
         changes,
     )
@@ -925,21 +1206,45 @@ def initialize(root: Path, title: str) -> list[str]:
     write_managed(context / "canonical/sources/internal/README.md", INTERNAL_README, (LEGACY_INTERNAL_README, PREVIOUS_INTERNAL_README, PREVIOUS_ROOT_INTERNAL_README), changes)
     write_managed(context / "canonical/sources/external/README.md", EXTERNAL_README, (LEGACY_EXTERNAL_README, PREVIOUS_EXTERNAL_README, PREVIOUS_ROOT_EXTERNAL_README), changes)
     remove_managed_gitignore(context, changes)
+    write_index(context, changes)
+    if git_backup:
+        ensure_backup(context, remote, changes)
     return changes
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("root", type=Path)
-    parser.add_argument("--title")
-    return parser.parse_args()
+    parser = argparse.ArgumentParser(
+        description="Create or upgrade a project-context store, or regenerate its INDEX.md."
+    )
+    parser.add_argument("root", type=Path, help="project root")
+    parser.add_argument("--title", help="display name for a new or upgraded store")
+    parser.add_argument(
+        "--git-backup",
+        action="store_true",
+        help="make the store its own git repository (never commits or pushes)",
+    )
+    parser.add_argument("--remote", help="origin URL for the store repository; requires --git-backup")
+    parser.add_argument(
+        "--reindex",
+        action="store_true",
+        help="only regenerate INDEX.md from ai_output frontmatter and canonical files",
+    )
+    args = parser.parse_args()
+    if args.reindex and (args.title or args.git_backup or args.remote):
+        parser.error("--reindex cannot be combined with other options")
+    if args.remote and not args.git_backup:
+        parser.error("--remote requires --git-backup")
+    return args
 
 
 def main() -> int:
     args = parse_args()
     root = args.root.expanduser().resolve()
-    title = args.title or root.name
-    for path in initialize(root, title):
+    if args.reindex:
+        changes = reindex(root)
+    else:
+        changes = initialize(root, args.title or root.name, args.git_backup, args.remote)
+    for path in changes:
         print(path)
     return 0
 
