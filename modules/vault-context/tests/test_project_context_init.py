@@ -614,9 +614,14 @@ class ProjectContextInitTests(unittest.TestCase):
         MODULE.initialize(self.root, "Example")
         context = self.root / "context"
         (context / "ai_output/risks/leak.md").write_text(record_text(summary="Token may leak"))
+        (context / "canonical/sources/internal/spec (1).docx").write_bytes(b"spec")
 
         self.assertEqual(MODULE.reindex(self.root), [str(context / "INDEX.md")])
         self.assertIn("Token may leak", (context / "INDEX.md").read_text())
+        self.assertIn(
+            "- [canonical/sources/internal/spec (1).docx](<canonical/sources/internal/spec (1).docx>)",
+            (context / "INDEX.md").read_text(),
+        )
         self.assertEqual(MODULE.reindex(self.root), [])
 
         (context / "INDEX.md").write_text("hand written\n")

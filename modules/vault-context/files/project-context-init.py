@@ -830,13 +830,18 @@ def canonical_records(context: Path) -> list[Path]:
     )
 
 
+def link(text: str, target: str) -> str:
+    # 空白・括弧を含むfile名（"資料 (1).docx"など）は<>で囲まないとMarkdownのlinkが切れる
+    return f"[{text}](<{target}>)" if re.search(r"[\s()]", target) else f"[{text}]({target})"
+
+
 def render_index(context: Path) -> str:
     lines: dict[str, list[str]] = {responsibility: [] for responsibility in RESPONSIBILITIES}
     references: dict[Path, list[str]] = {}
     for record in ai_output_records(context):
         fields = parse_record(context, record)
         relative = record.relative_to(context).as_posix()
-        line = f"- [{fields['title']}]({relative}) — {fields['summary']} `{fields['status']}`"
+        line = f"- {link(fields['title'], relative)} — {fields['summary']} `{fields['status']}`"
         if fields["promoted_to"]:
             line += f" → `{fields['promoted_to']}`"
         lines[record.parent.name].append(line)
@@ -851,7 +856,7 @@ def render_index(context: Path) -> str:
     canonical_lines = []
     for record in canonical_records(context):
         relative = record.relative_to(context).as_posix()
-        line = f"- [{relative}]({relative})"
+        line = f"- {link(relative, relative)}"
         if record in references:
             line += " ← " + ", ".join(sorted(references[record]))
         canonical_lines.append(line)
