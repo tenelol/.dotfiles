@@ -3,14 +3,10 @@ delib.module {
   name = "shell.fish";
 
   home.always = {
-    programs.fzf = {
-      enable = true;
-      enableFishIntegration = true;
-    };
+    programs.fzf.enable = true;
 
     programs.zoxide = {
       enable = true;
-      enableFishIntegration = true;
       options = [
         "--cmd"
         "cd"

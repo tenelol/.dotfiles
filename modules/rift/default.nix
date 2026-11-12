@@ -1,15 +1,14 @@
 {
   delib,
+  homeDir,
   desktopSelection,
   hostTraits,
   hm,
-  lib,
   pkgs,
   profile,
   ...
 }:
 let
-  homeDir = "/Users/${profile.username}";
 
   package = pkgs.callPackage ../../packages/rift.nix { };
 
@@ -118,15 +117,13 @@ let
 in
 delib.scopedModule {
   name = "rift";
-  scope = {
-    home = hostTraits.darwinDesktop;
-  };
+  scope = hostTraits.darwinDesktop;
 
   options = delib.moduleOptions {
     enable = delib.readOnly (delib.boolOption desktopSelection.rift);
   };
 
-  darwin.always = lib.mkIf hostTraits.darwinDesktop { environment.systemPackages = [ package ]; };
+  darwin.always.environment.systemPackages = [ package ];
 
   darwin.ifEnabled = {
     launchd.user.agents.rift = agent;

@@ -50,9 +50,8 @@ let
     '') extensionSkillTargets
   );
 in
-delib.scopedModule {
+delib.module {
   name = "codex-skills";
-  scope = hostTraits.macbook;
 
   options = delib.singleEnableOption hostTraits.macbook;
 

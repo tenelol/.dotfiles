@@ -1,29 +1,17 @@
-{
-  delib,
-  lib,
-  ...
-}:
+{ delib, ... }:
 delib.module {
-  name = "boot";
+  name = "boot.efiLimine";
 
-  options =
-    with delib;
-    moduleOptions {
-      efiLimine = boolOption false;
-    };
+  options = delib.singleEnableOption false;
 
-  nixos.always =
-    { cfg, ... }:
-    lib.mkIf cfg.efiLimine {
-      boot.loader = {
-        limine = {
-          enable = true;
-          style = {
-            wallpapers = [ ../../rices/wallpapers/rift.png ];
-            wallpaperStyle = "centered";
-          };
-        };
-        efi.canTouchEfiVariables = true;
+  nixos.ifEnabled.boot.loader = {
+    limine = {
+      enable = true;
+      style = {
+        wallpapers = [ ../../rices/wallpapers/rift.png ];
+        wallpaperStyle = "centered";
       };
     };
+    efi.canTouchEfiVariables = true;
+  };
 }

@@ -3,9 +3,8 @@
   hostTraits,
   ...
 }:
-delib.scopedModule {
+delib.module {
   name = "codex-cli";
-  scope = hostTraits.macbook;
 
   options = delib.singleEnableOption hostTraits.macbook;
 

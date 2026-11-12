@@ -9,7 +9,7 @@ let
   extensions = import ../../../packages/pi-extensions.nix { inherit pkgs lib; };
   module = import ../default.nix {
     inherit pkgs lib;
-    delib = { scopedModule = value: value; singleEnableOption = value: value; };
+    delib = { module = value: value; singleEnableOption = value: value; };
     hostTraits.macbook = true;
     inputs.herdr = "/fixture/herdr";
   };

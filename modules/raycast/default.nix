@@ -1,14 +1,12 @@
 {
   delib,
-  host,
+  hostTraits,
   ...
 }:
 delib.module {
   name = "raycast";
 
-  options = delib.singleEnableOption (
-    !host.isServer && builtins.match ".*-darwin" host.system != null
-  );
+  options = delib.singleEnableOption hostTraits.darwinDesktop;
 
   home.ifEnabled = {
     home.file = {

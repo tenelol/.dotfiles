@@ -5,8 +5,6 @@ delib.module {
   home.always = {
     programs.tmux = {
       enable = true;
-      package = pkgs.tmux;
-
       prefix = "F12";
       keyMode = "vi";
       mouse = true;

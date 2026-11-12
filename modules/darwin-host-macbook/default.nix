@@ -1,6 +1,7 @@
 {
   delib,
-  host,
+  homeDir,
+  hostTraits,
   lib,
   profile,
   ...
@@ -8,13 +9,9 @@
 delib.module {
   name = "darwin.host.macbook";
 
-  options = delib.singleEnableOption (host.name == "macbook");
+  options = delib.singleEnableOption hostTraits.macbook;
 
   darwin.ifEnabled = {
-    networking.computerName = "macbook";
-    networking.hostName = "macbook";
-    networking.localHostName = "macbook";
-
     system.defaults = {
       ".GlobalPreferences"."com.apple.mouse.scaling" = 5.0;
 
@@ -81,7 +78,7 @@ delib.module {
       screencapture = {
         disable-shadow = true;
         include-date = true;
-        location = "/Users/${profile.username}/Pictures/Screenshots";
+        location = "${homeDir}/Pictures/Screenshots";
         show-thumbnail = false;
         type = "png";
       };
@@ -106,8 +103,8 @@ delib.module {
 
     system.activationScripts = {
       ensureScreenshotDirectory.text = ''
-        mkdir -p /Users/${profile.username}/Pictures/Screenshots
-        chown ${profile.username} /Users/${profile.username}/Pictures/Screenshots
+        mkdir -p ${homeDir}/Pictures/Screenshots
+        chown ${profile.username} ${homeDir}/Pictures/Screenshots
       '';
 
       postActivation.text = lib.mkAfter ''

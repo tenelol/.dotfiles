@@ -1,5 +1,6 @@
 {
   delib,
+  homeDir,
   host,
   pkgs,
   profile,
@@ -8,15 +9,19 @@
 delib.module {
   name = "darwin.base";
 
-  options = delib.singleEnableOption (builtins.match ".*-darwin" host.system != null);
+  darwin.always = {
+    networking = {
+      computerName = host.name;
+      hostName = host.name;
+      localHostName = host.name;
+    };
 
-  darwin.ifEnabled = {
     system.primaryUser = profile.username;
     system.stateVersion = 6;
 
     users.users.${profile.username} = {
       name = profile.username;
-      home = "/Users/${profile.username}";
+      home = homeDir;
       shell = pkgs.fish;
     };
 
@@ -50,9 +55,7 @@ delib.module {
       LC_NUMERIC = "ja_JP.UTF-8";
       LC_TIME = "ja_JP.UTF-8";
     };
-    environment.shells = with pkgs; [
-      fish
-    ];
+    environment.shells = [ pkgs.fish ];
     # Keep system packages minimal; user-facing CLI tooling lives in denix home modules.
     environment.systemPackages = with pkgs; [
       fish
@@ -67,7 +70,7 @@ delib.module {
 
     system.activationScripts.setFishLoginShell.text = ''
       grep -qx '/run/current-system/sw/bin/fish' /etc/shells || printf '\n/run/current-system/sw/bin/fish\n' >> /etc/shells
-      dscl . -create /Users/${profile.username} UserShell /run/current-system/sw/bin/fish
+      dscl . -create ${homeDir} UserShell /run/current-system/sw/bin/fish
     '';
   };
 }

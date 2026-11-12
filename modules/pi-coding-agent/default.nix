@@ -6,9 +6,8 @@
   pkgs,
   ...
 }:
-delib.scopedModule {
+delib.module {
   name = "pi-coding-agent";
-  scope = hostTraits.macbook;
 
   options = delib.singleEnableOption hostTraits.macbook;
 

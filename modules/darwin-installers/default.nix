@@ -1,5 +1,6 @@
 {
   delib,
+  homeDir,
   host,
   hostTraits,
   lib,
@@ -205,9 +206,8 @@ let
     exec ${pkgs.python3}/bin/python3 ${./files/reconcile.py} "$@" ${manifest} ${pkgs.mas}/bin/mas
   '';
 in
-delib.scopedModule {
+delib.module {
   name = "darwin.installers";
-  scope = hostTraits.darwinDesktop;
 
   options = delib.singleEnableOption hostTraits.darwinDesktop;
 
@@ -216,7 +216,7 @@ delib.scopedModule {
     home.file = gui.cliFiles;
     home.activation.preserveZenProfile = hm.dag.entryAfter [ "writeBoundary" ] ''
       $DRY_RUN_CMD ${pkgs.python3}/bin/python3 ${./files/preserve-zen-profile.py} \
-        ${lib.escapeShellArg "/Users/${profile.username}"} \
+        ${lib.escapeShellArg homeDir} \
         /Applications/Zen.app ${installHash}/bin/firefox-install-hash --literal-install-path
     '';
   };

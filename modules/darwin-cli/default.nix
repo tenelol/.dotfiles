@@ -28,9 +28,8 @@ let
     ln -s ${pkgs.pkgconf}/bin/pkgconf "$out/bin/pkg-config"
   '';
 in
-delib.scopedModule {
+delib.module {
   name = "darwin-cli";
-  scope = hostTraits.darwinDesktop;
 
   options = delib.singleEnableOption hostTraits.darwinDesktop;
 

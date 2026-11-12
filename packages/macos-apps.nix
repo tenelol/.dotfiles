@@ -42,7 +42,7 @@ let
         bundle = "${spec.app}.app";
         package = extract {
           name = "${spec.name}-${cask.version}";
-          src = cask.src;
+          inherit (cask) src;
           artifacts = [ bundle ];
         };
       in

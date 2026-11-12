@@ -1,7 +1,8 @@
 {
   delib,
-  host,
+  hostTraits,
   inputs,
+  lib,
   pkgs,
   ...
 }:
@@ -12,14 +13,14 @@ in
 delib.module {
   name = "zen-browser";
 
-  options = delib.singleEnableOption (!host.isServer);
+  options = delib.singleEnableOption hostTraits.desktop;
 
   home.ifEnabled = {
-    home.packages = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux [
+    home.packages = lib.optionals pkgs.stdenv.hostPlatform.isLinux [
       zenPackages.default
     ];
 
-    xdg.mimeApps.defaultApplications = pkgs.lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
+    xdg.mimeApps.defaultApplications = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
       "text/html" = [ "zen-beta.desktop" ];
       "application/xhtml+xml" = [ "zen-beta.desktop" ];
       "x-scheme-handler/http" = [ "zen-beta.desktop" ];

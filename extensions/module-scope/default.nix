@@ -2,7 +2,7 @@
 delib.extension {
   name = "module-scope";
 
-  libExtension = _: final: prev: {
+  libExtension = _: _: prev: {
     # Keep options declared on every host; scope only gates configuration
     # contributions, including always and disabled cleanup.
     scopedModule =

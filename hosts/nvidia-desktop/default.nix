@@ -5,11 +5,15 @@ delib.host {
   system = "x86_64-linux";
   features = [ "fullDesktop" ];
 
-  myconfig.boot.efiLimine = true;
-  myconfig.nixbuild.enable = true;
   rice = "niri";
 
-  myconfig.nixos.desktop.networkBackend = "dhcpcd-resolved";
+  myconfig = {
+    boot.efiLimine.enable = true;
+    nixbuild.enable = true;
+    nixos.desktop.networkBackend = "dhcpcd-resolved";
+    nixos.steam.enable = true;
+    minecraft.enable = true;
+  };
 
   nixos.imports = [
     ./hardware-configuration.nix

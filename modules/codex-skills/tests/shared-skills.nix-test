@@ -7,7 +7,7 @@ let
   lib = import (nixpkgs.outPath + "/lib");
   module = import ../default.nix {
     inherit lib;
-    delib = { scopedModule = value: value; singleEnableOption = value: value; };
+    delib = { module = value: value; singleEnableOption = value: value; };
     hostTraits.macbook = true;
     hm.dag.entryAfter = after: text: { inherit after text; };
   };

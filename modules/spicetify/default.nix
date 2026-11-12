@@ -1,6 +1,6 @@
 {
   delib,
-  host,
+  hostTraits,
   inputs,
   pkgs,
   ...
@@ -19,9 +19,7 @@ in
 delib.module {
   name = "spicetify";
 
-  options = delib.singleEnableOption (
-    !host.isServer && builtins.match ".*-linux" host.system != null
-  );
+  options = delib.singleEnableOption hostTraits.linuxDesktop;
 
   home.ifEnabled = {
     programs.spicetify = {

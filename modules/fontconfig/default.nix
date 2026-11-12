@@ -1,8 +1,8 @@
-{ delib, host, ... }:
+{ delib, hostTraits, ... }:
 delib.module {
   name = "fontconfig";
 
-  options = delib.singleEnableOption (!(host.isServer or false));
+  options = delib.singleEnableOption hostTraits.desktop;
 
   home.ifEnabled.home.file.".config/fontconfig/fonts.conf".source = ./files/fonts.conf;
 }

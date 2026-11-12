@@ -1,13 +1,12 @@
 {
   delib,
-  host,
   pkgs,
   ...
 }:
 delib.module {
   name = "minecraft";
 
-  options = delib.singleEnableOption (host.name == "nvidia-desktop");
+  options = delib.singleEnableOption false;
 
   home.ifEnabled = {
     home.packages = [

@@ -3,17 +3,17 @@
   hostTraits,
   host,
   inputs,
+  lib,
   pkgs,
   ...
 }:
 let
   brewCask = pkgs.callPackage ../../packages/brew-cask.nix { };
   apps = builtins.fromJSON (builtins.readFile ./files/apps.json);
-  selected =
-    apps.base ++ pkgs.lib.optionals host.fullDesktopFeatured apps.fullDesktop ++ apps.binaries;
-  packages = pkgs.lib.listToAttrs (
+  selected = apps.base ++ lib.optionals host.fullDesktopFeatured apps.fullDesktop ++ apps.binaries;
+  packages = lib.listToAttrs (
     map (app: {
-      name = app.name;
+      inherit (app) name;
       value = brewCask (
         builtins.removeAttrs app [ "name" ]
         // {
@@ -26,9 +26,8 @@ let
     font: brewCask (builtins.removeAttrs font [ "name" ] // { cask = pkgs.brewCasks.${font.name}; })
   ) apps.fonts;
 in
-delib.scopedModule {
+delib.module {
   name = "brew-casks";
-  scope = hostTraits.darwinDesktop;
 
   options = delib.singleEnableOption hostTraits.darwinDesktop;
 
@@ -37,18 +36,18 @@ delib.scopedModule {
 
   home.ifEnabled = {
     home.packages =
-      pkgs.lib.attrValues packages
-      ++ pkgs.lib.concatMap (
-        package: pkgs.lib.optional (package ? completionPackage) package.completionPackage
-      ) (pkgs.lib.attrValues packages);
+      lib.attrValues packages
+      ++ lib.concatMap (package: lib.optional (package ? completionPackage) package.completionPackage) (
+        lib.attrValues packages
+      );
     # ~/.local/bin precedes Homebrew in this repository's session PATH.
-    home.file = pkgs.lib.listToAttrs (
-      pkgs.lib.concatMap (
+    home.file = lib.listToAttrs (
+      lib.concatMap (
         app:
         map (command: {
           name = ".local/bin/${command}";
           value.source = "${packages.${app.name}}/bin/${command}";
-        }) (pkgs.lib.attrNames (app.cli or { }))
+        }) (lib.attrNames (app.cli or { }))
       ) selected
     );
   };

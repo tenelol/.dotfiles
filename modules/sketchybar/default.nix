@@ -1,16 +1,14 @@
 {
   delib,
   hm,
-  host,
+  hostTraits,
   pkgs,
   ...
 }:
 delib.module {
   name = "sketchybar";
 
-  options = delib.singleEnableOption (
-    !host.isServer && builtins.match ".*-darwin" host.system != null
-  );
+  options = delib.singleEnableOption hostTraits.darwinDesktop;
 
   darwin.ifEnabled = {
     environment.systemPackages = [ pkgs.sketchybar ];

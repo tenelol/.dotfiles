@@ -1,19 +1,15 @@
 {
   delib,
+  homeDir,
   pkgs,
-  host,
+  hostTraits,
   profile,
   ...
 }:
-let
-  homeDir = "/Users/${profile.username}";
-in
 delib.module {
   name = "jankyborders";
 
-  options = delib.singleEnableOption (
-    !host.isServer && builtins.match ".*-darwin" host.system != null
-  );
+  options = delib.singleEnableOption hostTraits.darwinDesktop;
 
   darwin.ifEnabled =
     { myconfig, ... }:

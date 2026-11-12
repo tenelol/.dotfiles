@@ -112,15 +112,15 @@ delib.scopedModule {
     };
 
   home.always =
-    { myconfig, ... }:
+    { cfg, ... }:
     (lib.mkMerge [
       {
-        xdg.configFile."theme/sketchybar.env".text = sketchybarEnv myconfig.theme.sketchybar;
+        xdg.configFile."theme/sketchybar.env".text = sketchybarEnv cfg.sketchybar;
       }
 
       (lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
         xdg.configFile = {
-          "theme/wallpaper.png".source = ../../rices/wallpapers + "/${myconfig.theme.wallpaper}";
+          "theme/wallpaper.png".source = ../../rices/wallpapers + "/${cfg.wallpaper}";
           "wallpapers".source = ../../rices/wallpapers;
         };
 

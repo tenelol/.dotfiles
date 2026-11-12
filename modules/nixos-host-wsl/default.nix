@@ -19,8 +19,6 @@ delib.module {
   };
 
   nixos.ifEnabled = {
-    networking.hostName = "wsl";
-
     wsl = {
       enable = true;
       defaultUser = profile.username;
@@ -47,19 +45,12 @@ delib.module {
         network = {
           generateHosts = true;
           generateResolvConf = true;
-          hostname = "wsl";
+          hostname = host.name;
         };
       };
     };
 
-    # Windows owns keyboard remapping and IME state for WSL sessions.
-    i18n.inputMethod.enable = lib.mkForce false;
-    services.hazkey.enable = lib.mkForce false;
-    services.kanata.enable = lib.mkForce false;
-    services.keyd.enable = lib.mkForce false;
-
     zramSwap.enable = lib.mkForce false;
-    services.tailscale.enable = lib.mkForce false;
 
     security.sudo.extraRules = [
       {

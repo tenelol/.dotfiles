@@ -1,13 +1,12 @@
 {
   delib,
-  host,
   pkgs,
   ...
 }:
 delib.module {
   name = "nixos.steam";
 
-  options = delib.singleEnableOption (host.name == "nvidia-desktop");
+  options = delib.singleEnableOption false;
 
   nixos.ifEnabled = {
     programs.steam = {
@@ -19,8 +18,6 @@ delib.module {
     services.xserver.videoDrivers = [ "nvidia" ];
     hardware.nvidia.open = true;
     hardware.nvidia.modesetting.enable = true;
-
-    programs.xwayland.enable = true;
 
     environment.systemPackages = with pkgs; [
       xwayland-satellite

@@ -1,16 +1,14 @@
 {
   delib,
   hm,
-  host,
+  hostTraits,
   pkgs,
   ...
 }:
 delib.module {
   name = "waybar";
 
-  options = delib.singleEnableOption (
-    !host.isServer && builtins.match ".*-linux" host.system != null
-  );
+  options = delib.singleEnableOption hostTraits.linuxDesktop;
 
   home.ifEnabled = {
     home.activation.cleanupLegacyWaybarDir = hm.dag.entryBefore [ "checkLinkTargets" ] ''

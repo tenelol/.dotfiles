@@ -41,9 +41,6 @@
     herdr-bin.url = "github:herdrdev/herdr-nix";
     herdr-bin.inputs.nixpkgs.follows = "nixpkgs";
 
-    gijiroku.url = "git+ssh://git@github.com/tenelol/gijiroku.git";
-    gijiroku.flake = false;
-
     vault-context.url = "git+ssh://git@github.com/tenelol/vault-context.git";
     vault-context.inputs.nixpkgs.follows = "nixpkgs";
   };
@@ -51,9 +48,8 @@
   outputs =
     { denix, nixpkgs, ... }@inputs:
     let
-      lib = nixpkgs.lib;
+      inherit (nixpkgs) lib;
       isLinuxSystem = system: lib.hasSuffix "-linux" system;
-      isDarwinSystem = system: lib.hasSuffix "-darwin" system;
       hostDirectories = lib.filterAttrs (_: type: type == "directory") (builtins.readDir ./hosts);
       hardwareConfigurationExcludes = lib.concatLists (
         lib.mapAttrsToList (
@@ -102,20 +98,12 @@
           ];
 
           specialArgs = {
-            inherit inputs;
-            inherit profile;
+            inherit inputs profile;
           };
         };
 
-      filterConfigurations =
-        predicate: configurations:
-        lib.filterAttrs (
-          _: configuration: predicate configuration.pkgs.stdenv.hostPlatform.system
-        ) configurations;
-
       filterConfigurationsBySystem =
-        system: configurations:
-        filterConfigurations (configurationSystem: configurationSystem == system) configurations;
+        system: lib.filterAttrs (_: configuration: configuration.pkgs.stdenv.hostPlatform.system == system);
 
       mkEvalChecks =
         configurations:
@@ -143,14 +131,12 @@
         hostPaths = linuxDesktopHostPaths;
         ricePaths = [ ./rices/linux ];
       };
-      nixosConfigurations = filterConfigurations isLinuxSystem (
-        nixosServerConfigurations // nixosDesktopConfigurations
-      );
-      darwinConfigurations = filterConfigurations isDarwinSystem (mkConfigurations {
+      nixosConfigurations = nixosServerConfigurations // nixosDesktopConfigurations;
+      darwinConfigurations = mkConfigurations {
         moduleSystem = "darwin";
         hostPaths = darwinHostPaths;
         ricePaths = [ ./rices/darwin ];
-      });
+      };
       linuxCheckTargets = [
         "surface"
         "nvidia-desktop"

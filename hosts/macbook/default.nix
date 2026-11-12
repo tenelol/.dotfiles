@@ -5,8 +5,10 @@ delib.host {
   system = "aarch64-darwin";
   features = [ "fullDesktop" ];
 
-  myconfig.nixbuild.enable = true;
-  myconfig.codex-notion-token.enable = false;
-
   rice = "rift";
+
+  myconfig = {
+    nixbuild.enable = true;
+    codex-notion-token.enable = false;
+  };
 }

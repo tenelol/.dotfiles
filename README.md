@@ -37,10 +37,13 @@ Home servers on Proxmox VE are managed separately in
 
 ## Module policy
 
-The `host-policy` module supplies shared `hostTraits`. Features use
-`delib.scopedModule` to declare a host condition once while retaining denix's
-`always`, `ifEnabled` and `ifDisabled` behavior. A scope can apply to the whole
-module or selected outputs; options remain declared on all hosts.
+The `host-policy` module supplies shared `hostTraits`, and enable defaults are
+derived from them. A feature whose configuration lives only in `ifEnabled` is a
+plain `delib.module`. `delib.scopedModule` is for features that also need to gate
+`always` or `ifDisabled` blocks, or whose enable option is not the host
+condition itself. A scope can apply to the whole module or selected outputs;
+options remain declared on all hosts. Hosts declare what they enable beyond the
+defaults through `myconfig` in `hosts/<name>`.
 Direct Nix fixtures under feature `tests/` use `.nix-test` so denix does not
 discover them as configuration modules.
 

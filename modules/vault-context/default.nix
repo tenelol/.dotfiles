@@ -101,9 +101,8 @@ let
     '';
   };
 in
-delib.scopedModule {
+delib.module {
   name = "vault-context";
-  scope = hostTraits.macbook;
 
   options = delib.singleEnableOption hostTraits.macbook;
 

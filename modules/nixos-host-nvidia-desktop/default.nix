@@ -11,7 +11,6 @@ delib.module {
   options = delib.singleEnableOption (host.name == "nvidia-desktop");
 
   nixos.ifEnabled = {
-    networking.hostName = "nvidia-desktop";
     boot.kernelPackages = pkgs.linuxPackages_latest;
 
     users.users.${profile.username} = {

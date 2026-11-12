@@ -1,5 +1,6 @@
 {
   delib,
+  homeDir,
   pkgs,
   desktopSelection,
   hostTraits,
@@ -8,7 +9,6 @@
   ...
 }:
 let
-  homeDir = "/Users/${profile.username}";
   path = "/run/current-system/sw/bin:/usr/bin:/bin:/usr/sbin:/sbin";
 
   package = pkgs.aerospace;
