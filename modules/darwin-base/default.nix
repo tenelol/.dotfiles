@@ -1,6 +1,5 @@
 {
   delib,
-  host,
   pkgs,
   profile,
   ...
@@ -8,9 +7,7 @@
 delib.module {
   name = "darwin.base";
 
-  options = delib.singleEnableOption (builtins.match ".*-darwin" host.system != null);
-
-  darwin.ifEnabled = {
+  darwin.always = {
     system.primaryUser = profile.username;
     system.stateVersion = 6;
 
