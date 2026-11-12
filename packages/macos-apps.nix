@@ -19,6 +19,7 @@ let
     boringnotch = pkgs.callPackage ./boringnotch.nix { };
     moocs-collect = import ./moocs-collect.nix { inherit pkgs lib; };
     omniwm = pkgs.callPackage ./omniwm.nix { };
+    phi = pkgs.callPackage ./phi.nix { };
   };
 
   # These sources have an existing package or a vendor installer layout.
