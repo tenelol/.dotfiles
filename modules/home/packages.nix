@@ -91,7 +91,7 @@ let
     wl-clipboard
     xwayland-satellite
     zathura
-    antigravity-fhs
+    antigravity-ide-fhs
     noto-fonts
     noto-fonts-color-emoji
     nerd-fonts.caskaydia-cove
@@ -102,7 +102,7 @@ let
     sqlitebrowser
     obsidian
     slack
-    libreoffice-fresh
+    libreoffice-stable
   ];
 
   darwinCliPackages = with pkgs; [
