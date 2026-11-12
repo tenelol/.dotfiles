@@ -117,7 +117,9 @@ class Host:
         original = self.app(str(destination))
         original_inode = destination.lstat() if os.path.lexists(destination) else None
         stage = Path(tempfile.mkdtemp(prefix=".dotfiles-installer-", dir=destination.parent))
-        incoming = stage / "incoming.app"
+        # A bundle without CFBundleExecutable (Muse) takes its main executable
+        # from the directory name, so codesign rejects a renamed copy.
+        incoming = stage / destination.name
         backup = stage / "previous.app"
         try:
             self.run("/usr/bin/ditto", source, str(incoming))

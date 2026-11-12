@@ -348,6 +348,8 @@ class ReconcileTests(unittest.TestCase):
         class DiskHost(RECONCILE.Host):
             def run(self, *args, check=True):
                 self_test.assertEqual(args[0], "/usr/bin/ditto")
+                # The staged copy keeps the bundle name its signature depends on.
+                self_test.assertEqual(Path(args[2]).name, "Docker.app")
                 shutil.copytree(args[1], args[2])
 
             def app(self, path):
