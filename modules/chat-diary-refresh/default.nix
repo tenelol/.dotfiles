@@ -8,6 +8,17 @@
 let
   homeDir = "/Users/${profile.username}";
   log = "${homeDir}/Library/Logs/chat-diary-refresh.log";
+  # The iPhone's UDID stays out of this public repository: write it once per Mac
+  # into this untracked file (`xcrun devicectl list devices` shows it).
+  udidFile = "${homeDir}/.config/ios-refresh/device-udid";
+  refresh = pkgs.writeShellScript "chat-diary-refresh" ''
+    set -euo pipefail
+    if [ ! -s "${udidFile}" ]; then
+      echo "$(date '+%F %T') ${udidFile} is missing; write the iPhone UDID there" >&2
+      exit 1
+    fi
+    exec "${homeDir}/projects/chat-diary/scripts/refresh-device.sh" "$(tr -d '[:space:]' <"${udidFile}")" "$@"
+  '';
 in
 delib.scopedModule {
   name = "chat-diary-refresh";
@@ -21,9 +32,7 @@ delib.scopedModule {
     enable = true;
     config = {
       ProgramArguments = [
-        "${homeDir}/projects/chat-diary/scripts/refresh-device.sh"
-        # iPhone 17e "Tener"
-        "00008150-001D542E3E33401C"
+        "${refresh}"
         "dev.tenelol.diary"
         "7G85M3YH8D"
       ];
