@@ -7,7 +7,7 @@
   ...
 }:
 let
-  nix-hazkey = inputs.nix-hazkey;
+  inherit (inputs) nix-hazkey;
   inherit (pkgs.stdenv.hostPlatform) system;
 
   hosts = [

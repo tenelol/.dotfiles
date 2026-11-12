@@ -51,7 +51,7 @@
   outputs =
     { denix, nixpkgs, ... }@inputs:
     let
-      lib = nixpkgs.lib;
+      inherit (nixpkgs) lib;
       isLinuxSystem = system: lib.hasSuffix "-linux" system;
       isDarwinSystem = system: lib.hasSuffix "-darwin" system;
       hostDirectories = lib.filterAttrs (_: type: type == "directory") (builtins.readDir ./hosts);
@@ -102,8 +102,7 @@
           ];
 
           specialArgs = {
-            inherit inputs;
-            inherit profile;
+            inherit inputs profile;
           };
         };
 

@@ -166,7 +166,7 @@ let
     inherit winresizer;
   };
 
-  nixManagedPluginPaths = builtins.mapAttrs (_: plugin: toString plugin) nixManagedPlugins;
+  nixManagedPluginPaths = builtins.mapAttrs (_: toString) nixManagedPlugins;
   nixManagedPluginsLua =
     let
       renderEntry = name: "[${builtins.toJSON name}] = ${builtins.toJSON nixManagedPluginPaths.${name}}";

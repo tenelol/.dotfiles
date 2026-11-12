@@ -13,7 +13,7 @@ let
     apps.base ++ pkgs.lib.optionals host.fullDesktopFeatured apps.fullDesktop ++ apps.binaries;
   packages = pkgs.lib.listToAttrs (
     map (app: {
-      name = app.name;
+      inherit (app) name;
       value = brewCask (
         builtins.removeAttrs app [ "name" ]
         // {

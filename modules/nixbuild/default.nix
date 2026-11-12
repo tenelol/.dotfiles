@@ -48,7 +48,7 @@ let
 
       nix = {
         distributedBuilds = true;
-        buildMachines = buildMachines;
+        inherit buildMachines;
         settings = {
           builders-use-substitutes = true;
           max-jobs = lib.mkDefault cfg.localMaxJobs;

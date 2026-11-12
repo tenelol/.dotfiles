@@ -9,15 +9,13 @@ delib.scopedModule {
   name = "lazygit";
   scope = hostTraits.desktop;
 
-  home.always = (
-    {
-      home.packages = lib.optionals pkgs.stdenv.hostPlatform.isLinux [ pkgs.lazygit ];
-    }
-    // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
-      xdg.configFile."lazygit/config.yml".source = ./files/config.yml;
-    }
-    // lib.optionalAttrs pkgs.stdenv.hostPlatform.isDarwin {
-      home.file."Library/Application Support/lazygit/config.yml".source = ./files/config.yml;
-    }
-  );
+  home.always = {
+    home.packages = lib.optionals pkgs.stdenv.hostPlatform.isLinux [ pkgs.lazygit ];
+  }
+  // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+    xdg.configFile."lazygit/config.yml".source = ./files/config.yml;
+  }
+  // lib.optionalAttrs pkgs.stdenv.hostPlatform.isDarwin {
+    home.file."Library/Application Support/lazygit/config.yml".source = ./files/config.yml;
+  };
 }
