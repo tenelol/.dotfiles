@@ -1,5 +1,6 @@
 {
   delib,
+  homeDir,
   host,
   pkgs,
   profile,
@@ -20,7 +21,7 @@ delib.module {
 
     users.users.${profile.username} = {
       name = profile.username;
-      home = "/Users/${profile.username}";
+      home = homeDir;
       shell = pkgs.fish;
     };
 
@@ -69,7 +70,7 @@ delib.module {
 
     system.activationScripts.setFishLoginShell.text = ''
       grep -qx '/run/current-system/sw/bin/fish' /etc/shells || printf '\n/run/current-system/sw/bin/fish\n' >> /etc/shells
-      dscl . -create /Users/${profile.username} UserShell /run/current-system/sw/bin/fish
+      dscl . -create ${homeDir} UserShell /run/current-system/sw/bin/fish
     '';
   };
 }

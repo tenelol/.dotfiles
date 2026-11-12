@@ -1,12 +1,12 @@
 {
   delib,
+  homeDir,
   hostTraits,
   pkgs,
   profile,
   ...
 }:
 let
-  homeDir = "/Users/${profile.username}";
   log = "${homeDir}/Library/Logs/orgnote-refresh.log";
   # The iPhone's UDID stays out of this public repository: write it once per Mac
   # into this untracked file (`xcrun devicectl list devices` shows it).

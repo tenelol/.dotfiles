@@ -1,5 +1,6 @@
 {
   delib,
+  homeDir,
   desktopSelection,
   hostTraits,
   host,
@@ -8,7 +9,6 @@
   ...
 }:
 let
-  homeDir = "/Users/${profile.username}";
   autoraisePackage =
     if host.name == "macbook" then
       pkgs.autoraise.overrideAttrs (_: {

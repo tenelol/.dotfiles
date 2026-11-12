@@ -1,17 +1,18 @@
 {
   delib,
-  pkgs,
+  hostTraits,
   lib,
   profile,
   ...
 }:
 let
-  isLinux = pkgs.stdenv.hostPlatform.isLinux;
-  isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
-  homeDir = if isDarwin then "/Users/${profile.username}" else "/home/${profile.username}";
+  homeDir = (if hostTraits.darwin then "/Users/" else "/home/") + profile.username;
 in
 delib.module {
   name = "home";
+
+  # Other modules take the user's home directory as the homeDir argument.
+  myconfig.always.args.shared = { inherit homeDir; };
 
   home.always = {
     home.username = lib.mkDefault profile.username;
@@ -23,10 +24,10 @@ delib.module {
       "${homeDir}/.npm-global/bin"
       "${homeDir}/.local/bin"
     ]
-    ++ lib.optionals isLinux [
+    ++ lib.optionals hostTraits.linux [
       "/run/wrappers/bin"
     ]
-    ++ lib.optionals isDarwin [
+    ++ lib.optionals hostTraits.darwin [
       "/usr/local/bin"
       "/usr/local/sbin"
       "/usr/bin"

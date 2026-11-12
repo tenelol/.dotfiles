@@ -1,5 +1,6 @@
 {
   delib,
+  homeDir,
   hostTraits,
   lib,
   pkgs,
@@ -128,7 +129,7 @@ let
     /usr/bin/pkill -f '/Library/Application Support/org.pqrs/Karabiner-Elements/bin/karabiner_' >/dev/null 2>&1 || true
     /usr/bin/pkill -f '/Library/Application Support/org.pqrs/Karabiner-Elements/Karabiner-' >/dev/null 2>&1 || true
 
-    /bin/rm -f "/Users/${profile.username}/Library/LaunchAgents/org.nixos.kanata.plist"
+    /bin/rm -f "${homeDir}/Library/LaunchAgents/org.nixos.kanata.plist"
     # Clear launchd's stale crash/penalty state before starting Kanata.
     /bin/launchctl bootout system/org.nixos.kanata >/dev/null 2>&1 || true
     kanata_bootstrapped=0

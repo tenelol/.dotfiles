@@ -1,5 +1,6 @@
 {
   delib,
+  homeDir,
   desktopSelection,
   hostTraits,
   hm,
@@ -8,7 +9,6 @@
   ...
 }:
 let
-  homeDir = "/Users/${profile.username}";
 
   package = pkgs.callPackage ../../packages/rift.nix { };
 

@@ -1,13 +1,11 @@
 {
   delib,
+  homeDir,
   pkgs,
   hostTraits,
   profile,
   ...
 }:
-let
-  homeDir = "/Users/${profile.username}";
-in
 delib.module {
   name = "jankyborders";
 
