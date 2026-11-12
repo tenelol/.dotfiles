@@ -96,7 +96,7 @@ delib.module {
           vim.keymap.set("t", "<C-l>", "<Cmd>wincmd l<CR>", { noremap = true, silent = true })
         end
       ''
-      + pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isDarwin ''
+      + lib.optionalString pkgs.stdenv.hostPlatform.isDarwin ''
         vim.g.clipboard = {
           name = "pbcopy",
           copy = {
@@ -348,7 +348,7 @@ delib.module {
           };
         }
       ]
-      ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isDarwin [
+      ++ lib.optionals pkgs.stdenv.hostPlatform.isDarwin [
         {
           mode = [
             "n"

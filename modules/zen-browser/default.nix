@@ -2,6 +2,7 @@
   delib,
   host,
   inputs,
+  lib,
   pkgs,
   ...
 }:
@@ -15,11 +16,11 @@ delib.module {
   options = delib.singleEnableOption (!host.isServer);
 
   home.ifEnabled = {
-    home.packages = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux [
+    home.packages = lib.optionals pkgs.stdenv.hostPlatform.isLinux [
       zenPackages.default
     ];
 
-    xdg.mimeApps.defaultApplications = pkgs.lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
+    xdg.mimeApps.defaultApplications = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
       "text/html" = [ "zen-beta.desktop" ];
       "application/xhtml+xml" = [ "zen-beta.desktop" ];
       "x-scheme-handler/http" = [ "zen-beta.desktop" ];
