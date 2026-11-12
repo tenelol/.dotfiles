@@ -23,10 +23,10 @@ delib.module {
       acceptDns = boolOption (!host.isServer);
     };
 
-  nixos.ifEnabled = { myconfig, ... }: {
+  nixos.ifEnabled = { cfg, ... }: {
     assertions = [
       {
-        assertion = !myconfig.nixos.tailscale.acceptDns || config.services.resolved.enable;
+        assertion = !cfg.acceptDns || config.services.resolved.enable;
         message = "MagicDNS requires systemd-resolved; enable services.resolved or disable myconfig.nixos.tailscale.acceptDns.";
       }
     ];
@@ -34,7 +34,7 @@ delib.module {
     environment.systemPackages = [ pkgs.tailscale ];
     services.tailscale = {
       enable = true;
-      extraSetFlags = lib.optionals myconfig.nixos.tailscale.acceptDns [ "--accept-dns=true" ];
+      extraSetFlags = lib.optionals cfg.acceptDns [ "--accept-dns=true" ];
     };
   };
 }

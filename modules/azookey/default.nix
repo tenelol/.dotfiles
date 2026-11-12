@@ -211,9 +211,9 @@ delib.module {
   };
 
   darwin.ifEnabled =
-    { myconfig, ... }:
+    { cfg, ... }:
     lib.mkMerge [
-      (lib.mkIf myconfig.darwin.azookey.patched {
+      (lib.mkIf cfg.patched {
         # main 系の azooKey は変換処理を LaunchAgent の ConverterServer に分離している
         launchd.user.agents.azookey-converter-server = {
           serviceConfig = {
