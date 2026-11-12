@@ -13,8 +13,8 @@ let
       usesIwdNetworkd = networkBackend == "iwd-networkd";
       usesDhcpcdResolved = networkBackend == "dhcpcd-resolved";
       usesResolved = usesIwdNetworkd || usesDhcpcdResolved;
-      hyprlandEnabled = myconfig.hyprland.enable or false;
-      niriEnabled = myconfig.niri.enable or false;
+      hyprlandEnabled = myconfig.hyprland.enable;
+      niriEnabled = myconfig.niri.enable;
     in
     {
       assertions = [

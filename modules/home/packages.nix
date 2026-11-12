@@ -7,7 +7,7 @@
   ...
 }:
 let
-  isServer = host.isServer or false;
+  inherit (host) isServer;
   fullDesktop = host.fullDesktopFeatured;
   isLinux = pkgs.stdenv.hostPlatform.isLinux;
   isDarwin = pkgs.stdenv.hostPlatform.isDarwin;

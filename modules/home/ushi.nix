@@ -2,7 +2,7 @@
 delib.module {
   name = "ushi";
 
-  options = delib.singleEnableOption (!(host.isServer or false));
+  options = delib.singleEnableOption (!host.isServer);
 
   home.ifEnabled.home.file.".local/bin/ushi" = {
     source = ./files/ushi;
