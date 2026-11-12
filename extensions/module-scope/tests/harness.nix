@@ -25,7 +25,7 @@ let
   mkDelib =
     moduleSystem:
     (base.recursivelyExtend (
-      final: prev: {
+      final: _: {
         inherit
           (import (denixSource + "/lib/configurations/module.nix") {
             inherit lib;

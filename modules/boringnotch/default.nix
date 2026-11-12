@@ -1,6 +1,5 @@
 {
   delib,
-  pkgs,
   host,
   lib,
   profile,
