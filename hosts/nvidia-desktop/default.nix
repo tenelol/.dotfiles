@@ -8,7 +8,7 @@ delib.host {
   rice = "niri";
 
   myconfig = {
-    boot.efiLimine = true;
+    boot.efiLimine.enable = true;
     nixbuild.enable = true;
     nixos.desktop.networkBackend = "dhcpcd-resolved";
     nixos.steam.enable = true;
