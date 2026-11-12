@@ -53,7 +53,6 @@
     let
       inherit (nixpkgs) lib;
       isLinuxSystem = system: lib.hasSuffix "-linux" system;
-      isDarwinSystem = system: lib.hasSuffix "-darwin" system;
       hostDirectories = lib.filterAttrs (_: type: type == "directory") (builtins.readDir ./hosts);
       hardwareConfigurationExcludes = lib.concatLists (
         lib.mapAttrsToList (
@@ -106,15 +105,8 @@
           };
         };
 
-      filterConfigurations =
-        predicate: configurations:
-        lib.filterAttrs (
-          _: configuration: predicate configuration.pkgs.stdenv.hostPlatform.system
-        ) configurations;
-
       filterConfigurationsBySystem =
-        system: configurations:
-        filterConfigurations (configurationSystem: configurationSystem == system) configurations;
+        system: lib.filterAttrs (_: configuration: configuration.pkgs.stdenv.hostPlatform.system == system);
 
       mkEvalChecks =
         configurations:
@@ -142,14 +134,12 @@
         hostPaths = linuxDesktopHostPaths;
         ricePaths = [ ./rices/linux ];
       };
-      nixosConfigurations = filterConfigurations isLinuxSystem (
-        nixosServerConfigurations // nixosDesktopConfigurations
-      );
-      darwinConfigurations = filterConfigurations isDarwinSystem (mkConfigurations {
+      nixosConfigurations = nixosServerConfigurations // nixosDesktopConfigurations;
+      darwinConfigurations = mkConfigurations {
         moduleSystem = "darwin";
         hostPaths = darwinHostPaths;
         ricePaths = [ ./rices/darwin ];
-      });
+      };
       linuxCheckTargets = [
         "surface"
         "nvidia-desktop"
