@@ -41,9 +41,6 @@
     herdr-bin.url = "github:herdrdev/herdr-nix";
     herdr-bin.inputs.nixpkgs.follows = "nixpkgs";
 
-    gijiroku.url = "git+ssh://git@github.com/tenelol/gijiroku.git";
-    gijiroku.flake = false;
-
     vault-context.url = "git+ssh://git@github.com/tenelol/vault-context.git";
     vault-context.inputs.nixpkgs.follows = "nixpkgs";
   };
