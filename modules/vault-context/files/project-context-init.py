@@ -914,6 +914,15 @@ def validate_context_tree(context: Path) -> None:
     validate_index(context)
 
 
+def remove_empty_legacy_canonical(context: Path, changes: list[str]) -> None:
+    # v2は分類directoryをcanonical直下に置いていた。中身のあるものはAI作成文を含みうるため手作業で分類する
+    for responsibility in RESPONSIBILITIES:
+        directory = context / "canonical" / responsibility
+        if directory.is_dir() and not any(directory.iterdir()):
+            directory.rmdir()
+            changes.append(str(directory))
+
+
 def ensure_directory(path: Path) -> None:
     reject_symlink(path, "managed directory")
     if path.exists():
@@ -1187,6 +1196,7 @@ def initialize(
         update_non_git_agents(root, changes)
 
     migrate_sources(context, changes)
+    remove_empty_legacy_canonical(context, changes)
     for directory in managed_directories(context):
         ensure_directory(directory)
 

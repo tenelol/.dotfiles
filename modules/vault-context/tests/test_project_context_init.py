@@ -202,6 +202,24 @@ class ProjectContextInitTests(unittest.TestCase):
         )
         self.assertEqual(MODULE.initialize(self.root, "Example"), [])
 
+    def test_empty_v2_canonical_directories_are_removed_and_others_kept(self) -> None:
+        context = self.root / "context"
+        for name in ("facts", "risks", "workflows"):
+            (context / "canonical" / name).mkdir(parents=True)
+        record = context / "canonical/decisions/choice.md"
+        record.parent.mkdir(parents=True)
+        record.write_text("# Choice\n", encoding="utf-8")
+        (context / "canonical/open_questions/nested").mkdir(parents=True)
+
+        changes = MODULE.initialize(self.root, "Example")
+
+        for name in ("facts", "risks", "workflows"):
+            self.assertFalse((context / "canonical" / name).exists())
+            self.assertIn(str(context / "canonical" / name), changes)
+        self.assertEqual(record.read_text(), "# Choice\n")
+        self.assertTrue((context / "canonical/open_questions/nested").is_dir())
+        self.assertEqual(MODULE.initialize(self.root, "Example"), [])
+
     def test_customized_v2_readme_is_preserved(self) -> None:
         context = self.root / "context"
         context.mkdir()

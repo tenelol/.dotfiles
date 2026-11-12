@@ -61,7 +61,7 @@ v2以前のcanonicalや旧sourcesにはAIが整理した文章が含まれる。
 
 v3以前のai_outputは自己完結HTMLである。initはHTML記録が残る正本をv4へ更新せず停止する。Markdownへの変換はユーザーの承認を得てから、変換前の状態を正本のrepositoryにcommitしたうえで行う。
 
-初期化処理は旧sources directoryを内容を変えずcanonical/sourcesへ移す。両方にdirectoryがある場合は統合・上書きせず停止する。個々の記録の自動分類は行わない。配置変更時はAI出力からの参照も更新し、原資料内の相対参照は原文を改変せず出典の元の位置に基づいて解釈する。
+初期化処理は旧sources directoryを内容を変えずcanonical/sourcesへ移し、canonical直下に残るv2の分類directory（`facts/`など）は空のときだけ削除する。両方にdirectoryがある場合は統合・上書きせず停止する。個々の記録の自動分類は行わない。配置変更時はAI出力からの参照も更新し、原資料内の相対参照は原文を改変せず出典の元の位置に基づいて解釈する。
 
 ## Legacyと障害時
 
