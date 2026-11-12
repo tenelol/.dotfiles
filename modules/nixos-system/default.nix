@@ -5,31 +5,28 @@
   pkgs,
   ...
 }:
-let
-  mkConfig =
-    myconfig:
+delib.module {
+  name = "nixos.desktop";
+
+  options =
+    with delib;
+    moduleOptions {
+      enable = boolOption hostTraits.linuxDesktop;
+      # Both backends resolve names through systemd-resolved.
+      networkBackend = enumOption [ "iwd-networkd" "dhcpcd-resolved" ] "iwd-networkd";
+    };
+
+  nixos.ifEnabled =
+    { cfg, myconfig, ... }:
     let
-      networkBackend = myconfig.nixos.desktop.networkBackend;
-      usesIwdNetworkd = networkBackend == "iwd-networkd";
-      usesDhcpcdResolved = networkBackend == "dhcpcd-resolved";
-      usesResolved = usesIwdNetworkd || usesDhcpcdResolved;
+      usesIwdNetworkd = cfg.networkBackend == "iwd-networkd";
       hyprlandEnabled = myconfig.hyprland.enable;
       niriEnabled = myconfig.niri.enable;
     in
     {
-      assertions = [
-        {
-          assertion = builtins.elem networkBackend [
-            "iwd-networkd"
-            "dhcpcd-resolved"
-          ];
-          message = "myconfig.nixos.desktop.networkBackend must be one of iwd-networkd or dhcpcd-resolved.";
-        }
-      ];
-
       networking.networkmanager.enable = false;
       networking.useNetworkd = usesIwdNetworkd;
-      networking.resolvconf.enable = lib.mkForce (!usesResolved);
+      networking.resolvconf.enable = lib.mkForce false;
       networking.wireless.iwd.enable = true;
       networking.wireless.iwd.settings = {
         General = {
@@ -45,7 +42,7 @@ let
           NameResolvingService = "systemd";
         };
       };
-      services.resolved.enable = usesResolved;
+      services.resolved.enable = true;
 
       services.pulseaudio.enable = false;
 
@@ -144,16 +141,4 @@ let
         nodejs
       ];
     };
-in
-delib.module {
-  name = "nixos.desktop";
-
-  options =
-    with delib;
-    moduleOptions {
-      enable = boolOption hostTraits.linuxDesktop;
-      networkBackend = strOption "iwd-networkd";
-    };
-
-  nixos.ifEnabled = { myconfig, ... }: mkConfig myconfig;
 }
