@@ -143,6 +143,12 @@
     "teamId": "87DQ3HMK5G"
   },
   {
+    "name": "muse",
+    "app": "Muse",
+    "bundleId": "com.meta.endo",
+    "teamId": "V9WTTPBFK9"
+  },
+  {
     "name": "obsidian",
     "app": "Obsidian",
     "bundleId": "md.obsidian",

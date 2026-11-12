@@ -18,6 +18,7 @@ let
   packageSources = {
     boringnotch = pkgs.callPackage ./boringnotch.nix { };
     moocs-collect = import ./moocs-collect.nix { inherit pkgs lib; };
+    muse = pkgs.callPackage ./muse.nix { };
     omniwm = pkgs.callPackage ./omniwm.nix { };
     phi = pkgs.callPackage ./phi.nix { };
   };
