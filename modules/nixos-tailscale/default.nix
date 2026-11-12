@@ -1,7 +1,6 @@
 {
   config,
   delib,
-  host,
   hostTraits,
   lib,
   pkgs,
@@ -13,9 +12,7 @@ delib.module {
   options =
     with delib;
     moduleOptions {
-      # Keep the existing Linux coverage, while letting WSL use the Windows
-      # Tailscale client that owns its DNS configuration.
-      enable = boolOption (hostTraits.linux && host.name != "wsl");
+      enable = boolOption hostTraits.linux;
       # Desktop hosts use resolved, which lets Tailscale install MagicDNS as a
       # routing domain without competing to rewrite /etc/resolv.conf.
       acceptDns = boolOption hostTraits.desktop;

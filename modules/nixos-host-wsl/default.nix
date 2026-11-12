@@ -59,7 +59,6 @@ delib.module {
     services.keyd.enable = lib.mkForce false;
 
     zramSwap.enable = lib.mkForce false;
-    services.tailscale.enable = lib.mkForce false;
 
     security.sudo.extraRules = [
       {
