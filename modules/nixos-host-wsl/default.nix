@@ -19,8 +19,6 @@ delib.module {
   };
 
   nixos.ifEnabled = {
-    networking.hostName = "wsl";
-
     wsl = {
       enable = true;
       defaultUser = profile.username;
@@ -47,7 +45,7 @@ delib.module {
         network = {
           generateHosts = true;
           generateResolvConf = true;
-          hostname = "wsl";
+          hostname = host.name;
         };
       };
     };

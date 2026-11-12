@@ -1,5 +1,6 @@
 {
   delib,
+  host,
   pkgs,
   profile,
   ...
@@ -33,6 +34,7 @@ delib.module {
       "vm.page-cluster" = 0;
     };
 
+    networking.hostName = host.name;
     time.timeZone = "Asia/Tokyo";
 
     i18n.defaultLocale = "en_US.UTF-8";

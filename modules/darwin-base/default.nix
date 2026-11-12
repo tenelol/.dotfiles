@@ -1,5 +1,6 @@
 {
   delib,
+  host,
   pkgs,
   profile,
   ...
@@ -8,6 +9,12 @@ delib.module {
   name = "darwin.base";
 
   darwin.always = {
+    networking = {
+      computerName = host.name;
+      hostName = host.name;
+      localHostName = host.name;
+    };
+
     system.primaryUser = profile.username;
     system.stateVersion = 6;
 

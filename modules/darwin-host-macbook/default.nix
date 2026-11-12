@@ -11,10 +11,6 @@ delib.module {
   options = delib.singleEnableOption hostTraits.macbook;
 
   darwin.ifEnabled = {
-    networking.computerName = "macbook";
-    networking.hostName = "macbook";
-    networking.localHostName = "macbook";
-
     system.defaults = {
       ".GlobalPreferences"."com.apple.mouse.scaling" = 5.0;
 
