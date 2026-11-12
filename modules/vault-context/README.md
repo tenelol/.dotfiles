@@ -174,7 +174,7 @@ v2以前の `canonical` にはAIが整理した文章も含まれ得る。ディ
 
 ## 9. 移行状況
 
-v4の規則・初期化処理・スキルは2026-11-11にswitchで配布した。2026-11-12時点で、共同・業務用と確定した7つの正本（kia、tokiwa、overseassales-dev、Play-Motion、iniad_moocs_ios、オープンデータハッカソン、ict-e-source）をv4へ更新した。各正本のローカルrepositoryの最初のcommitに変換前の状態を残しており、remoteは未設定。非Gitの業務project 3つ（yadori、フォーム営業システム、エグゼクティブクラブ様）も同日にv4へ更新した。空のv2だった個人repositoryの正本6つは削除した。portfolioとdotfilesの正本は、残す情報をdocs/notesとpersonal-contextへ移してから削除する。clapboard・sukikijiは稼働していないため、v2のまま残している。個々の記録の正しさ、バックアップの実在、旧MCPサーバーの疎通は検証していない。
+v4の規則・初期化処理・スキルは2026-11-11にswitchで配布した。2026-11-12時点で、共同・業務用と確定した7つの正本（kia、tokiwa、overseassales-dev、Play-Motion、iniad_moocs_ios、オープンデータハッカソン、ict-e-source）をv4へ更新した。非Gitの業務project 3つ（yadori、フォーム営業システム、エグゼクティブクラブ様）も同日にv4へ更新した。各正本のローカルrepositoryの最初のcommitに変換前の状態を残している。バックアップ先は正本ごとのGitHub private repository（tenelol/<project>-context。日本語名のprojectは英字名）で、10個とも作成してoriginに設定した。pushの前に履歴全体をgitleaksで検査し、canonical/sources/internal/に資料がある正本は持ち主の確認を待ってからpushする。gitleaksはバイナリの中身を検査しない。空のv2だった個人repositoryの正本6つは削除した。portfolioとdotfilesの正本は、残す情報をdocs/notesとpersonal-contextへ移してから削除する。clapboard・sukikijiは稼働していないため、v2のまま残している。個々の記録の正しさ、バックアップの実在、旧MCPサーバーの疎通は検証していない。
 
 ## 10. 一次資料
 
