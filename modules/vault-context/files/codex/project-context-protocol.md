@@ -51,6 +51,17 @@ originのownerが本人以外のrepositoryで`INDEX.md`がない場合は、`doc
 
 secret、credential、不要な個人情報、非公開顧客データ、会話全文の蓄積、システム・開発者prompt、raw tool output、routine log、scratchは保存しない。ユーザーの原文に含まれる未検証の主張は原文として保持できるが、検証済みの事実とは扱わない。
 
+## internalの重要資料
+
+個人情報・顧客データ・契約書などの重要資料はGitHubへpushせず、Proxmoxへバックアップする。
+
+- `canonical/sources/internal/`へ新しい資料を保存するときは、重要資料かどうかをユーザーに確認する。判断はユーザーが行い、AIは中身の概要と判断案を示す。
+- 正本のrepositoryの`.gitignore`は、`canonical/sources/internal/*`を除外し、`README.md`・`MANIFEST.md`と、重要資料でないとユーザーが判断したfileだけを`!`で許可する。重要資料のfile名は`.gitignore`にもcommit messageにも書かない。
+- 重要資料は`canonical/sources/internal/MANIFEST.md`の表に、ID・sha256・Proxmox上の保存先を書く。元のfile名は書かない。IDとfile名の対応表はProxmox側に置く。実fileはローカルの正本にも残す。
+- Proxmoxへの同期はrsync over sshで行い、同期後にProxmox側のsha256をMANIFEST.mdと照合する。接続先のhostと保存先のpathはユーザーに確認する。
+- 重要資料が過去のcommitに入っている場合は、push前に`git filter-repo`等でローカルの履歴から取り除く。ai_outputの`sources`や本文にfile名がある場合も同様に扱いを確認する。
+- pushの前に`project-context-init <project root> --preflight`を実行する。gitleaksによるsecret検査、MANIFEST.mdのsha256と一致するblobが履歴に無いこと、除外中のfile名が履歴とMANIFEST.mdに無いこと、除外中のfileがすべてMANIFEST.mdにあることを確認する。gitleaksはbinaryの中身を検査しないため、PDF・Office等は中身を確認したうえで分類する。
+
 ## docsへの移動
 
 確定した記録は`$project-context-promote`でrepositoryの`docs/`等へ移す。差分の提示とユーザー承認を経て反映し、移した記録は本文を消して`promoted_to`だけを残す。commit・pushはユーザーが行う。
@@ -73,4 +84,4 @@ common-dir/project-local contextがなく過去情報が必要な場合、旧判
 
 正本はGit projectではcommon directory、非Git projectではproject rootに置き、本体repositoryのcommit・push・clone対象外である。branch変更・linked worktree間では共有されるが、repository削除・再clone・別端末への移動では失われる。
 
-`project-context-init <root> --git-backup --remote <url>` で正本を独立したgit repositoryにし、repositoryごとに指定したprivate remoteへpushできる。Git projectでは正本の`.git`が本体repositoryの`.git`配下にあるため、本体のstatus・worktree・cloneに影響しない。正本の中でgitを実行すると正本のrepositoryが対象になる。
+`project-context-init <root> --git-backup --remote <url>` で正本を独立したgit repositoryにし、GitHubのprivate repository（tenelolの`<project>-context`。日本語名のprojectは英字名）へpushできる。repositoryの作成後に`gh repo view --json visibility`でprivateを確認し、上の`--preflight`を通してからpushする。Git projectでは正本の`.git`が本体repositoryの`.git`配下にあるため、本体のstatus・worktree・cloneに影響しない。正本の中でgitを実行すると正本のrepositoryが対象になる。

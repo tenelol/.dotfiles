@@ -17,6 +17,6 @@ python3 /Users/tener/.dotfiles/modules/vault-context/files/project-context-init.
 
 - Git projectではGit common directoryの`project-context/`を使い、project rootの`context`をそこへのsymlinkにする。非Gitではrootの`context/`を使う。
 - 作成先は`INDEX.md`、`canonical/user/`、`canonical/sources/{internal,external}/`、`ai_output/{facts,decisions,workflows,risks,open_questions}/`。context全体は本体repositoryのGit管理外にする。
-- `--git-backup`は正本を独立したgit repositoryにしてoriginを設定するだけで、commit・pushはしない。originが別URLなら停止する。
+- `--git-backup`は正本を独立したgit repositoryにしてoriginを設定するだけで、commit・pushはしない。originが別URLなら停止する。pushの前は`--preflight`を通し、`canonical/sources/internal/`の資料は`~/.codex/project-context-protocol.md`の「internalの重要資料」に従ってユーザーに分類を確認する。
 - コマンドは既知の旧テンプレートだけ更新し、既存記録・独自編集を保持する。HTML記録の残るv3以前の正本、frontmatterの不備、移動先の衝突、symlinkで停止したら、対象を確認して原因を報告し、削除・上書きで通さない。HTML記録の変換はユーザーの承認を得てから行う。
 - 完了後は保存先・directory構造・`INDEX.md`・Gitの場合のsymlink・backupのoriginを確認する。記録は勝手に移行・生成せず、以後の参照・保存は生成されたREADMEと`~/.codex/project-context-protocol.md`に従う。
