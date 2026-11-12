@@ -91,7 +91,11 @@ let
   };
   projectContextInit = pkgs.writeShellApplication {
     name = "project-context-init";
-    runtimeInputs = [ pkgs.python3 ];
+    runtimeInputs = [
+      pkgs.git
+      pkgs.gitleaks
+      pkgs.python3
+    ];
     text = ''
       exec python3 ${./files/project-context-init.py} "$@"
     '';

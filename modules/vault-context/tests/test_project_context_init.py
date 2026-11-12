@@ -1,3 +1,4 @@
+import hashlib
 import importlib.util
 import os
 import subprocess
@@ -6,6 +7,7 @@ import tempfile
 import unicodedata
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 REPOSITORY = Path(
@@ -701,6 +703,105 @@ class ProjectContextInitTests(unittest.TestCase):
             subprocess.run(["git", "remote", "get-url", "origin"], cwd=context, capture_output=True).returncode, 0
         )
         self.assertEqual(MODULE.initialize(self.root, "Example"), [])
+
+
+    def make_backed_store(self, gitleaks_exit: int = 0) -> Path:
+        MODULE.initialize(self.root, "Example", git_backup=True)
+        context = self.root / "context"
+        stub = Path(self.temporary_directory.name) / "bin"
+        stub.mkdir(exist_ok=True)
+        (stub / "gitleaks").write_text(f"#!/bin/sh\nexit {gitleaks_exit}\n")
+        (stub / "gitleaks").chmod(0o755)
+        patcher = mock.patch.dict(os.environ, {"PATH": f"{stub}{os.pathsep}{os.environ['PATH']}"})
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        return context
+
+    def commit(self, context: Path, message: str) -> None:
+        run("git", "add", "-A", cwd=context)
+        run("git", "-c", "user.name=T", "-c", "user.email=t@example.invalid", "commit", "-qm", message, cwd=context)
+
+    def restrict_internal(self, context: Path, secret: Path, public: "Path | None" = None) -> None:
+        allow = ["canonical/sources/internal/*", "!canonical/sources/internal/README.md", f"!canonical/sources/internal/{MODULE.MANIFEST}"]
+        if public:
+            allow.append(f"!canonical/sources/internal/{public.name}")
+        (context / ".gitignore").write_text("\n".join(allow) + "\n")
+        digest = hashlib.sha256(secret.read_bytes()).hexdigest()
+        (secret.parent / MODULE.MANIFEST).write_text(f"| ID | sha256 | backup |\n|---|---|---|\n| R001 | {digest} | backup:/R001 |\n")
+
+    def test_internal_readme_upgrades_from_previous_v4_template(self) -> None:
+        MODULE.initialize(self.root, "Example")
+        readme = self.root / "context/canonical/sources/internal/README.md"
+        readme.write_text(MODULE.PREVIOUS_V4_INTERNAL_README)
+
+        MODULE.initialize(self.root, "Example")
+
+        self.assertEqual(readme.read_text(), MODULE.INTERNAL_README)
+        self.assertIn("--preflight", readme.read_text())
+
+    def test_index_hides_ignored_internal_files(self) -> None:
+        context = self.make_backed_store()
+        secret = context / "canonical/sources/internal/customer contract.pdf"
+        secret.write_bytes(b"contract")
+        public = context / "canonical/sources/internal/public-note.md"
+        public.write_text("note\n")
+        self.restrict_internal(context, secret, public)
+
+        MODULE.reindex(self.root)
+
+        index = (context / "INDEX.md").read_text()
+        self.assertNotIn("customer contract", index)
+        self.assertIn("public-note.md", index)
+        self.assertNotIn(MODULE.MANIFEST + "](", index)
+        self.assertIn("除外している資料1件", index)
+
+    def test_preflight_passes_when_restricted_files_never_entered_history(self) -> None:
+        context = self.make_backed_store()
+        secret = context / "canonical/sources/internal/customer.xlsx"
+        secret.write_bytes(b"customer data")
+        self.restrict_internal(context, secret)
+        MODULE.reindex(self.root)
+        self.commit(context, "store")
+
+        self.assertIn("preflight ok", MODULE.preflight(self.root)[0])
+        self.assertNotIn("customer.xlsx", run("git", "log", "--all", "--name-only", cwd=context).stdout)
+
+    def test_preflight_rejects_restricted_file_left_in_history(self) -> None:
+        context = self.make_backed_store()
+        secret = context / "canonical/sources/internal/customer.xlsx"
+        secret.write_bytes(b"customer data")
+        self.commit(context, "before classification")
+        self.restrict_internal(context, secret)
+        run("git", "rm", "-q", "--cached", str(secret.relative_to(context)), cwd=context)
+        MODULE.reindex(self.root)
+        self.commit(context, "restrict")
+
+        with self.assertRaisesRegex(ValueError, "remain in the store history"):
+            MODULE.preflight(self.root)
+
+    def test_preflight_rejects_unlisted_ignored_file_and_dirty_or_unbacked_store(self) -> None:
+        with self.assertRaisesRegex(ValueError, "run --git-backup first"):
+            MODULE.initialize(self.root, "Example")
+            MODULE.preflight(self.root)
+        context = self.make_backed_store()
+        secret = context / "canonical/sources/internal/customer.xlsx"
+        secret.write_bytes(b"customer data")
+        self.restrict_internal(context, secret)
+        (context / "canonical/sources/internal/new.pdf").write_bytes(b"unclassified")
+        with self.assertRaisesRegex(ValueError, "uncommitted changes"):
+            MODULE.preflight(self.root)
+        MODULE.reindex(self.root)
+        self.commit(context, "store")
+
+        with self.assertRaisesRegex(ValueError, "not listed in MANIFEST.md"):
+            MODULE.preflight(self.root)
+
+    def test_preflight_stops_on_gitleaks_findings(self) -> None:
+        context = self.make_backed_store(gitleaks_exit=1)
+        self.commit(context, "store")
+
+        with self.assertRaisesRegex(ValueError, "gitleaks found secrets"):
+            MODULE.preflight(self.root)
 
 
 if __name__ == "__main__":

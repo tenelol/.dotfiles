@@ -4,9 +4,11 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -16,6 +18,7 @@ LEGACY_TEMPLATE_VERSION = "project-context/v2"
 V3_TEMPLATE_VERSION = "project-context/v3"
 TEMPLATE_VERSION = "project-context/v4"
 RESPONSIBILITIES = ("facts", "decisions", "workflows", "risks", "open_questions")
+MANIFEST = "MANIFEST.md"
 STATUSES = ("unverified", "verified", "approved")
 INDEX_HEADER = "<!-- project-context-init --reindex が生成。手で編集しない。 -->"
 
@@ -396,6 +399,16 @@ AIが作る要約・注釈・結論は出典を参照して`../../ai_output/`へ
 PREVIOUS_ROOT_INTERNAL_README = INTERNAL_README
 PREVIOUS_ROOT_EXTERNAL_README = EXTERNAL_README
 INTERNAL_README = INTERNAL_README.replace("canonicalと同じ原文", "同じ原文").replace("../../ai_output/", "../../../ai_output/")
+PREVIOUS_V4_INTERNAL_README = INTERNAL_README
+INTERNAL_README += """
+## 重要資料
+
+個人情報・顧客データ・契約書などの重要資料はremoteへpushしません。新しい資料を置くときは重要資料かどうかをユーザーに確認します。
+
+- 正本のrepositoryの`.gitignore`は、このdirectoryを既定で除外し、README.md・MANIFEST.mdと、重要資料でないと確認したfileだけを`!`で許可します。重要資料のfile名は`.gitignore`に書きません。
+- 重要資料は`MANIFEST.md`にID・sha256・バックアップ先を記録します。元のfile名は書かず、IDとfile名の対応表はバックアップ先に置きます。実fileはこの正本にも残します。
+- pushの前に`project-context-init <project root> --preflight`で、secretと、MANIFEST.mdにある資料の実体・除外中のfile名が履歴に無いことを確認します。
+"""
 EXTERNAL_README = EXTERNAL_README.replace("../../ai_output/", "../../../ai_output/")
 
 
@@ -820,7 +833,7 @@ def parse_record(context: Path, path: Path) -> dict[str, str | list[str] | None]
 
 
 def canonical_records(context: Path) -> list[Path]:
-    managed = set(managed_files(context))
+    managed = {*managed_files(context), context / "canonical" / "sources" / "internal" / MANIFEST}
     return sorted(
         path
         for path in (context / "canonical").rglob("*")
@@ -828,6 +841,22 @@ def canonical_records(context: Path) -> list[Path]:
         and path not in managed
         and not any(part.startswith(".") for part in path.relative_to(context).parts)
     )
+
+
+def ignored_records(context: Path, records: list[Path]) -> set[Path]:
+    # INDEX.mdはpushされるので、正本のrepositoryで除外しているfileの名前は載せない
+    if not (context / ".git").exists() or not records:
+        return set()
+    result = subprocess.run(
+        ["git", "-C", str(context), "check-ignore", "--no-index", "--stdin", "-z"],
+        input="\0".join(path.relative_to(context).as_posix() for path in records),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode not in (0, 1):
+        raise ValueError(f"git check-ignore failed in {context}: {result.stderr.strip()}")
+    return {context / name for name in result.stdout.split("\0") if name}
 
 
 def link(text: str, target: str) -> str:
@@ -854,12 +883,18 @@ def render_index(context: Path) -> str:
         for responsibility, entries in lines.items()
     ]
     canonical_lines = []
-    for record in canonical_records(context):
+    records = canonical_records(context)
+    hidden = ignored_records(context, records)
+    for record in records:
+        if record in hidden:
+            continue
         relative = record.relative_to(context).as_posix()
         line = f"- {link(relative, relative)}"
         if record in references:
             line += " ← " + ", ".join(sorted(references[record]))
         canonical_lines.append(line)
+    if hidden:
+        canonical_lines.append(f"- Gitで除外している資料{len(hidden)}件（`canonical/sources/internal/MANIFEST.md`を参照）")
     return (
         "# INDEX\n\n"
         f"{INDEX_HEADER}\n\n"
@@ -1156,6 +1191,80 @@ def resolve_store(root: Path) -> Path:
     return paths[0] / "project-context" if paths else root / "context"
 
 
+def manifest_hashes(context: Path) -> set[str]:
+    manifest = context / "canonical" / "sources" / "internal" / MANIFEST
+    if not manifest.is_file():
+        return set()
+    return set(re.findall(r"\b[0-9a-f]{64}\b", manifest.read_text(encoding="utf-8")))
+
+
+def history_blob_hashes(context: Path) -> set[str]:
+    objects = subprocess.run(
+        ["git", "-C", str(context), "rev-list", "--all", "--objects"],
+        capture_output=True, text=True, check=True,
+    ).stdout.split()
+    ids = [line for line in objects if re.fullmatch(r"[0-9a-f]{40,64}", line)]
+    batch = subprocess.run(
+        ["git", "-C", str(context), "cat-file", "--batch"],
+        input=("\n".join(ids) + "\n").encode(), capture_output=True, check=True,
+    ).stdout
+    hashes, offset = set(), 0
+    while offset < len(batch):
+        header_end = batch.index(b"\n", offset)
+        _, kind, size = batch[offset:header_end].decode().split()
+        start = header_end + 1
+        end = start + int(size)
+        if kind == "blob":
+            hashes.add(hashlib.sha256(batch[start:end]).hexdigest())
+        offset = end + 1
+    return hashes
+
+
+def preflight(root: Path) -> list[str]:
+    """Check a store repository before pushing it to a remote."""
+    context = resolve_store(root)
+    toplevel = git_output(context, "rev-parse", "--show-toplevel") if (context / ".git").exists() else None
+    if toplevel is None or not os.path.samefile(toplevel, context):
+        raise ValueError(f"store is not its own git repository; run --git-backup first: {context}")
+    if git_output(context, "status", "--porcelain"):
+        raise ValueError(f"store has uncommitted changes; commit them before --preflight: {context}")
+    if git_output(context, "rev-parse", "--verify", "HEAD") is None:
+        raise ValueError(f"store has no commits: {context}")
+    gitleaks = shutil.which("gitleaks")
+    if gitleaks is None:
+        raise ValueError("gitleaks not found; install it or run through the project-context-init wrapper")
+    scan = subprocess.run(
+        [gitleaks, "git", str(context), "--no-banner", "--redact", "--exit-code", "1"],
+        capture_output=True, text=True, check=False,
+    )
+    if scan.returncode == 1:
+        raise ValueError(f"gitleaks found secrets in the store history: {context}")
+    if scan.returncode != 0:
+        raise ValueError(f"gitleaks failed ({scan.returncode}): {scan.stderr.strip()}")
+    hidden = ignored_records(context, canonical_records(context))
+    manifest_text = ""
+    manifest = context / "canonical" / "sources" / "internal" / MANIFEST
+    if manifest.is_file():
+        manifest_text = manifest.read_text(encoding="utf-8")
+    listed = manifest_hashes(context)
+    problems = []
+    for path in sorted(hidden):
+        if hashlib.sha256(path.read_bytes()).hexdigest() not in listed:
+            problems.append(f"ignored file is not listed in {MANIFEST} by sha256")
+        if path.name in manifest_text:
+            problems.append(f"{MANIFEST} contains the name of an ignored file")
+    in_history = listed & history_blob_hashes(context)
+    if in_history:
+        problems.append(f"{len(in_history)} file(s) listed in {MANIFEST} remain in the store history")
+    names = set(git_output(context, "log", "--all", "--format=", "--name-only").splitlines())
+    leaked_names = [path for path in hidden if path.relative_to(context).as_posix() in names]
+    if leaked_names:
+        problems.append(f"{len(leaked_names)} ignored file name(s) remain in the store history")
+    if problems:
+        raise ValueError("preflight failed: " + "; ".join(sorted(set(problems))) + f": {context}")
+    return [f"preflight ok: {context} (gitleaks clean, {len(listed)} manifest entries absent from history)"]
+
+
 def reindex(root: Path) -> list[str]:
     context = resolve_store(root)
     if not (context / "INDEX.md").is_file():
@@ -1219,7 +1328,7 @@ def initialize(
         changes,
     )
     write_managed(context / "canonical/README.md", CANONICAL_README, (LEGACY_CANONICAL_README, PREVIOUS_CANONICAL_README, PREVIOUS_PROVENANCE_CANONICAL_README), changes)
-    write_managed(context / "canonical/sources/internal/README.md", INTERNAL_README, (LEGACY_INTERNAL_README, PREVIOUS_INTERNAL_README, PREVIOUS_ROOT_INTERNAL_README), changes)
+    write_managed(context / "canonical/sources/internal/README.md", INTERNAL_README, (LEGACY_INTERNAL_README, PREVIOUS_INTERNAL_README, PREVIOUS_ROOT_INTERNAL_README, PREVIOUS_V4_INTERNAL_README), changes)
     write_managed(context / "canonical/sources/external/README.md", EXTERNAL_README, (LEGACY_EXTERNAL_README, PREVIOUS_EXTERNAL_README, PREVIOUS_ROOT_EXTERNAL_README), changes)
     remove_managed_gitignore(context, changes)
     write_index(context, changes)
@@ -1241,13 +1350,20 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--remote", help="origin URL for the store repository; requires --git-backup")
     parser.add_argument(
+        "--preflight",
+        action="store_true",
+        help="check the store repository before pushing it (secrets, MANIFEST.md entries, ignored file names)",
+    )
+    parser.add_argument(
         "--reindex",
         action="store_true",
         help="only regenerate INDEX.md from ai_output frontmatter and canonical files",
     )
     args = parser.parse_args()
-    if args.reindex and (args.title or args.git_backup or args.remote):
+    if args.reindex and (args.title or args.git_backup or args.remote or args.preflight):
         parser.error("--reindex cannot be combined with other options")
+    if args.preflight and (args.title or args.git_backup or args.remote):
+        parser.error("--preflight cannot be combined with other options")
     if args.remote and not args.git_backup:
         parser.error("--remote requires --git-backup")
     return args
@@ -1258,6 +1374,8 @@ def main() -> int:
     root = args.root.expanduser().resolve()
     if args.reindex:
         changes = reindex(root)
+    elif args.preflight:
+        changes = preflight(root)
     else:
         changes = initialize(root, args.title or root.name, args.git_backup, args.remote)
     for path in changes:
