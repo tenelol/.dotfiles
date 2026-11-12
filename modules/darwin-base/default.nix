@@ -50,9 +50,7 @@ delib.module {
       LC_NUMERIC = "ja_JP.UTF-8";
       LC_TIME = "ja_JP.UTF-8";
     };
-    environment.shells = with pkgs; [
-      fish
-    ];
+    environment.shells = [ pkgs.fish ];
     # Keep system packages minimal; user-facing CLI tooling lives in denix home modules.
     environment.systemPackages = with pkgs; [
       fish

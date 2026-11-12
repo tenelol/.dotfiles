@@ -97,8 +97,8 @@ let
     antigravity-fhs
     noto-fonts
     noto-fonts-color-emoji
-    pkgs.nerd-fonts.caskaydia-cove
-    pkgs.material-symbols
+    nerd-fonts.caskaydia-cove
+    material-symbols
   ];
 
   linuxFullDesktopPackages = with pkgs; [
