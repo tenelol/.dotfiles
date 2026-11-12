@@ -1,13 +1,12 @@
 {
   delib,
-  host,
   pkgs,
   ...
 }:
 delib.module {
   name = "nixos.steam";
 
-  options = delib.singleEnableOption (host.name == "nvidia-desktop");
+  options = delib.singleEnableOption false;
 
   nixos.ifEnabled = {
     programs.steam = {

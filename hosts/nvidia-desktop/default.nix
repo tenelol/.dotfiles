@@ -11,6 +11,8 @@ delib.host {
     boot.efiLimine = true;
     nixbuild.enable = true;
     nixos.desktop.networkBackend = "dhcpcd-resolved";
+    nixos.steam.enable = true;
+    minecraft.enable = true;
   };
 
   nixos.imports = [
