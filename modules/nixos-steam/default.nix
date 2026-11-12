@@ -19,8 +19,6 @@ delib.module {
     hardware.nvidia.open = true;
     hardware.nvidia.modesetting.enable = true;
 
-    programs.xwayland.enable = true;
-
     environment.systemPackages = with pkgs; [
       xwayland-satellite
     ];

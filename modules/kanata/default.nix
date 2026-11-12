@@ -161,10 +161,6 @@ delib.scopedModule {
     system.activationScripts.postActivation.text = lib.mkAfter disabledPostActivation;
   };
 
-  nixos.ifDisabled = {
-    services.kanata.enable = false;
-  };
-
   nixos.ifEnabled = {
     services.keyd.enable = lib.mkForce false;
 

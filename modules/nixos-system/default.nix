@@ -24,7 +24,6 @@ delib.module {
       niriEnabled = myconfig.niri.enable;
     in
     {
-      networking.networkmanager.enable = false;
       networking.useNetworkd = usesIwdNetworkd;
       networking.resolvconf.enable = lib.mkForce false;
       networking.wireless.iwd.enable = true;
@@ -44,8 +43,6 @@ delib.module {
       };
       services.resolved.enable = true;
 
-      services.pulseaudio.enable = false;
-
       services.pipewire = {
         enable = true;
         alsa.enable = true;
@@ -54,10 +51,7 @@ delib.module {
         jack.enable = true;
       };
 
-      hardware.bluetooth = {
-        enable = true;
-        powerOnBoot = true;
-      };
+      hardware.bluetooth.enable = true;
       services.blueman.enable = true;
 
       services.upower.enable = true;
@@ -80,11 +74,6 @@ delib.module {
           nerd-fonts.jetbrains-mono
           nerd-fonts.fira-code
         ];
-      };
-
-      services.xserver.xkb = {
-        layout = "us";
-        variant = "";
       };
 
       programs.xwayland.enable = true;
