@@ -1,16 +1,13 @@
 {
   delib,
   host,
+  hostTraits,
   inputs,
   lib,
   pkgs,
   ...
 }:
 let
-  inherit (host) isServer;
-  fullDesktop = host.fullDesktopFeatured;
-  isLinux = pkgs.stdenv.hostPlatform.isLinux;
-  isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
   system = pkgs.stdenv.hostPlatform.system;
   herdrPackage =
     let
@@ -124,13 +121,13 @@ delib.module {
   name = "home-packages";
 
   home.always.home.packages =
-    lib.optionals (!isServer) commonPackages
-    ++ lib.optionals (isLinux && !isServer) linuxCommonPackages
-    ++ lib.optionals isLinux linuxBasePackages
-    ++ lib.optionals (!isServer) nonServerPackages
-    ++ lib.optionals (!isServer && isLinux) linuxNonServerPackages
-    ++ lib.optionals (!isServer && isLinux) linuxDesktopPackages
-    ++ lib.optionals (!isServer && isLinux && fullDesktop) linuxFullDesktopPackages
-    ++ lib.optionals (!isServer && isDarwin) darwinCliPackages
-    ++ lib.optionals (isServer && isLinux) linuxServerPackages;
+    # The list order is part of the profile derivation; keep it when regrouping.
+    lib.optionals hostTraits.desktop commonPackages
+    ++ lib.optionals hostTraits.linuxDesktop linuxCommonPackages
+    ++ lib.optionals hostTraits.linux linuxBasePackages
+    ++ lib.optionals hostTraits.desktop nonServerPackages
+    ++ lib.optionals hostTraits.linuxDesktop (linuxNonServerPackages ++ linuxDesktopPackages)
+    ++ lib.optionals (hostTraits.linuxDesktop && host.fullDesktopFeatured) linuxFullDesktopPackages
+    ++ lib.optionals hostTraits.darwinDesktop darwinCliPackages
+    ++ lib.optionals (hostTraits.linux && host.isServer) linuxServerPackages;
 }
