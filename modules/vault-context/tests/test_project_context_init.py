@@ -1,7 +1,9 @@
 import importlib.util
 import os
 import subprocess
+import sys
 import tempfile
+import unicodedata
 import unittest
 from pathlib import Path
 
@@ -674,6 +676,17 @@ class ProjectContextInitTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "origin differs"):
             MODULE.initialize(self.root, "Example", git_backup=True, remote="git@example.invalid:other.git")
         self.assertEqual(run("git", "remote", "get-url", "origin", cwd=context).stdout.strip(), remote)
+
+    @unittest.skipUnless(sys.platform == "darwin", "APFS treats NFC and NFD names as the same path")
+    def test_git_backup_accepts_nfd_directory_given_as_nfc(self) -> None:
+        name = "エグゼクティブ"
+        (self.root / unicodedata.normalize("NFD", name)).mkdir()
+        root = self.root / unicodedata.normalize("NFC", name)
+
+        MODULE.initialize(root, "Example", git_backup=True)
+
+        self.assertTrue((root / "context/.git").is_dir())
+        self.assertEqual(MODULE.initialize(root, "Example", git_backup=True), [])
 
     def test_git_backup_without_remote_and_remote_without_backup(self) -> None:
         with self.assertRaisesRegex(ValueError, "--remote requires --git-backup"):

@@ -1133,7 +1133,8 @@ def validate_backup(store: Path | None, remote: str | None) -> None:
         return
     reject_symlink(store / ".git", "context backup repository")
     toplevel = git_output(store, "rev-parse", "--show-toplevel")
-    if toplevel is None or Path(toplevel).resolve() != store.resolve():
+    # macOSはNFDで作られたdirectory名をそのまま返すため、文字列ではなく実体で比べる
+    if toplevel is None or not os.path.samefile(toplevel, store):
         raise ValueError(f"context .git is not a repository of the context itself: {store / '.git'}")
     current = git_output(store, "remote", "get-url", "origin")
     if remote and current is not None and current != remote:
