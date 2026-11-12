@@ -1,6 +1,6 @@
 {
   delib,
-  host,
+  hostTraits,
   lib,
   profile,
   ...
@@ -8,9 +8,7 @@
 delib.module {
   name = "boringnotch";
 
-  options = delib.singleEnableOption (
-    !host.isServer && builtins.match ".*-darwin" host.system != null
-  );
+  options = delib.singleEnableOption hostTraits.darwinDesktop;
 
   darwin.ifEnabled = {
     launchd.user.agents.boringnotch = {

@@ -2,13 +2,11 @@
   config,
   delib,
   host,
+  hostTraits,
   lib,
   pkgs,
   ...
 }:
-let
-  isLinux = builtins.match ".*-linux" host.system != null;
-in
 delib.module {
   name = "nixos.tailscale";
 
@@ -17,10 +15,10 @@ delib.module {
     moduleOptions {
       # Keep the existing Linux coverage, while letting WSL use the Windows
       # Tailscale client that owns its DNS configuration.
-      enable = boolOption (isLinux && host.name != "wsl");
+      enable = boolOption (hostTraits.linux && host.name != "wsl");
       # Desktop hosts use resolved, which lets Tailscale install MagicDNS as a
       # routing domain without competing to rewrite /etc/resolv.conf.
-      acceptDns = boolOption (!host.isServer);
+      acceptDns = boolOption hostTraits.desktop;
     };
 
   nixos.ifEnabled = { cfg, ... }: {

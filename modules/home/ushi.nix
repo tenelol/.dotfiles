@@ -1,8 +1,8 @@
-{ delib, host, ... }:
+{ delib, hostTraits, ... }:
 delib.module {
   name = "ushi";
 
-  options = delib.singleEnableOption (!host.isServer);
+  options = delib.singleEnableOption hostTraits.desktop;
 
   home.ifEnabled.home.file.".local/bin/ushi" = {
     source = ./files/ushi;

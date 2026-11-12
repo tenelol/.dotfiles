@@ -1,6 +1,6 @@
 {
   delib,
-  host,
+  hostTraits,
   lib,
   pkgs,
   ...
@@ -8,7 +8,7 @@
 delib.module {
   name = "nvim-web";
 
-  options = delib.singleEnableOption (!host.isServer);
+  options = delib.singleEnableOption hostTraits.desktop;
 
   home.ifEnabled = {
     # Keep base tools first even if denix's file discovery order changes.

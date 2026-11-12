@@ -1,6 +1,6 @@
 {
   delib,
-  host,
+  hostTraits,
   lib,
   pkgs,
   ...
@@ -120,7 +120,7 @@ in
 delib.module {
   name = "qutebrowser";
 
-  options = delib.singleEnableOption (!host.isServer);
+  options = delib.singleEnableOption hostTraits.desktop;
 
   home.ifEnabled = {
     programs.qutebrowser = program;

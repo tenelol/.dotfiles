@@ -1,7 +1,7 @@
 {
   delib,
   pkgs,
-  host,
+  hostTraits,
   profile,
   ...
 }:
@@ -11,9 +11,7 @@ in
 delib.module {
   name = "jankyborders";
 
-  options = delib.singleEnableOption (
-    !host.isServer && builtins.match ".*-darwin" host.system != null
-  );
+  options = delib.singleEnableOption hostTraits.darwinDesktop;
 
   darwin.ifEnabled =
     { myconfig, ... }:

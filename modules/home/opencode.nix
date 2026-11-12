@@ -1,15 +1,13 @@
 {
   delib,
+  hostTraits,
   pkgs,
   ...
 }:
-let
-  isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
-in
 delib.module {
   name = "opencode";
 
-  options = delib.singleEnableOption isDarwin;
+  options = delib.singleEnableOption hostTraits.darwin;
 
   home.ifEnabled = {
     programs.opencode = {

@@ -1,8 +1,8 @@
-{ delib, host, ... }:
+{ delib, hostTraits, ... }:
 delib.module {
   name = "herdr";
 
-  options = delib.singleEnableOption (!host.isServer);
+  options = delib.singleEnableOption hostTraits.desktop;
 
   home.ifEnabled = {
     xdg.configFile."herdr/config.toml" = {

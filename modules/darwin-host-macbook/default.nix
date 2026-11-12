@@ -1,6 +1,6 @@
 {
   delib,
-  host,
+  hostTraits,
   lib,
   profile,
   ...
@@ -8,7 +8,7 @@
 delib.module {
   name = "darwin.host.macbook";
 
-  options = delib.singleEnableOption (host.name == "macbook");
+  options = delib.singleEnableOption hostTraits.macbook;
 
   darwin.ifEnabled = {
     networking.computerName = "macbook";

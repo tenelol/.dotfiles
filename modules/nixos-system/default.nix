@@ -1,6 +1,6 @@
 {
   delib,
-  host,
+  hostTraits,
   lib,
   pkgs,
   ...
@@ -151,7 +151,7 @@ delib.module {
   options =
     with delib;
     moduleOptions {
-      enable = boolOption (!host.isServer && builtins.match ".*-linux" host.system != null);
+      enable = boolOption hostTraits.linuxDesktop;
       networkBackend = strOption "iwd-networkd";
     };
 

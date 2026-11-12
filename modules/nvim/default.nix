@@ -1,7 +1,7 @@
 {
   delib,
   hm,
-  host,
+  hostTraits,
   lib,
   pkgs,
   ...
@@ -12,7 +12,7 @@ in
 delib.module {
   name = "nvim";
 
-  options = delib.singleEnableOption (!host.isServer);
+  options = delib.singleEnableOption hostTraits.desktop;
 
   home.ifEnabled = {
     programs.nixvim = {

@@ -1,13 +1,13 @@
 {
   delib,
-  host,
+  hostTraits,
   pkgs,
   ...
 }:
 delib.module {
   name = "nixos.opengl";
 
-  options = delib.singleEnableOption (!host.isServer);
+  options = delib.singleEnableOption hostTraits.desktop;
 
   nixos.ifEnabled = {
     hardware.graphics = {

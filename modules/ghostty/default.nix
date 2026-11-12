@@ -1,6 +1,6 @@
 {
   delib,
-  host,
+  hostTraits,
   pkgs,
   ...
 }:
@@ -86,7 +86,7 @@ in
 delib.module {
   name = "ghostty";
 
-  options = delib.singleEnableOption (!host.isServer);
+  options = delib.singleEnableOption hostTraits.desktop;
 
   home.ifEnabled =
     { myconfig, ... }:
