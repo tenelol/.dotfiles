@@ -205,9 +205,8 @@ let
     exec ${pkgs.python3}/bin/python3 ${./files/reconcile.py} "$@" ${manifest} ${pkgs.mas}/bin/mas
   '';
 in
-delib.scopedModule {
+delib.module {
   name = "darwin.installers";
-  scope = hostTraits.darwinDesktop;
 
   options = delib.singleEnableOption hostTraits.darwinDesktop;
 

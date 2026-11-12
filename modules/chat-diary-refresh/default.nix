@@ -20,9 +20,8 @@ let
     exec "${homeDir}/projects/chat-diary/scripts/refresh-device.sh" "$(tr -d '[:space:]' <"${udidFile}")" "$@"
   '';
 in
-delib.scopedModule {
+delib.module {
   name = "chat-diary-refresh";
-  scope = hostTraits.macbook;
 
   options = delib.singleEnableOption hostTraits.macbook;
 

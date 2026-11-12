@@ -26,9 +26,8 @@ let
     font: brewCask (builtins.removeAttrs font [ "name" ] // { cask = pkgs.brewCasks.${font.name}; })
   ) apps.fonts;
 in
-delib.scopedModule {
+delib.module {
   name = "brew-casks";
-  scope = hostTraits.darwinDesktop;
 
   options = delib.singleEnableOption hostTraits.darwinDesktop;
 

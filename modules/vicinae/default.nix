@@ -27,9 +27,8 @@ let
     )
   );
 in
-delib.scopedModule {
+delib.module {
   name = "vicinae";
-  scope = hostTraits.desktop;
 
   options = delib.singleEnableOption hostTraits.desktop;
 

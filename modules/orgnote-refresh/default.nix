@@ -20,9 +20,8 @@ let
     exec "${homeDir}/projects/orgnote/scripts/refresh-device.sh" "$(tr -d '[:space:]' <"${udidFile}")"
   '';
 in
-delib.scopedModule {
+delib.module {
   name = "orgnote-refresh";
-  scope = hostTraits.macbook;
 
   options = delib.singleEnableOption hostTraits.macbook;
 

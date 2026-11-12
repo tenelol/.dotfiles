@@ -103,9 +103,8 @@ let
     '';
   };
 in
-delib.scopedModule {
+delib.module {
   name = "codex-notion-token";
-  scope = hostTraits.darwinDesktop;
 
   options = delib.singleEnableOption hostTraits.darwinDesktop;
 

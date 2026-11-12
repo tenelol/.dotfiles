@@ -21,7 +21,7 @@ let
   herdrPackage = pkgs.callPackage (source "herdr-bin" + "/package.nix") { };
   module = import ../default.nix {
     delib = {
-      scopedModule = value: value;
+      module = value: value;
       singleEnableOption = value: value;
     };
     hostTraits.darwinDesktop = true;
