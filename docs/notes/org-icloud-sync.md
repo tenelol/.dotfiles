@@ -11,7 +11,7 @@
 ## 現状
 
 - Neovim: `modules/nvim/files/lua/plugins/orgmode.lua` の `org_agenda_files` と `org_default_notes_file` が symlink 越しのパスを使う。
-- iPhone: Orgnote は別の repository。無料の Personal Team の署名は7日で切れるため、`modules/orgnote-refresh` の launchd agent が定期的に再署名して再インストールする。
+- iPhone: Orgnote は別の repository。無料の Personal Team の署名は7日で切れるため、`modules/ios-refresh` の launchd agent が定期的に再署名して再インストールする。
 
 ## 再開時の手がかり
 
