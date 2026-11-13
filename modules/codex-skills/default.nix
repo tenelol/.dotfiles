@@ -44,6 +44,19 @@ let
       "ponytail-help"
       "ponytail-review"
     ] (name: ".agents/skills/ponytail-bundle/${name}");
+  # App-bundled skills ship and update with their app, so link each agent's
+  # skill directory into the installed bundle instead of copying the files.
+  # Phi's skill drives Phi over CDP and must match the installed Phi version.
+  appBundledSkills = {
+    phi-browser = {
+      source = "/Applications/Phi.app/Contents/Resources/phi-browser-skill";
+      targets = [
+        ".claude/skills"
+        ".codex/skills"
+        ".pi/agent/skills"
+      ];
+    };
+  };
   linkExtensionSkills = lib.concatStringsSep "\n" (
     lib.mapAttrsToList (name: target: ''
       $DRY_RUN_CMD ln -sfn "$HOME/${target}" "$HOME/.agents/skills/${name}"
@@ -62,13 +75,26 @@ delib.module {
       (
         { config, ... }:
         {
-          home.file = lib.mapAttrs' (
-            name: target:
-            lib.nameValuePair ".claude/skills/${name}" {
-              source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/${target}";
-              force = true;
-            }
-          ) claudeSkillTargets;
+          home.file =
+            lib.mapAttrs' (
+              name: target:
+              lib.nameValuePair ".claude/skills/${name}" {
+                source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/${target}";
+                force = true;
+              }
+            ) claudeSkillTargets
+            // lib.concatMapAttrs (
+              name: skill:
+              lib.listToAttrs (
+                map (
+                  dir:
+                  lib.nameValuePair "${dir}/${name}" {
+                    source = config.lib.file.mkOutOfStoreSymlink skill.source;
+                    force = true;
+                  }
+                ) skill.targets
+              )
+            ) appBundledSkills;
         }
       )
     ];

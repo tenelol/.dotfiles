@@ -91,7 +91,7 @@ Use `$ask-claude` in Codex to ask Claude Code a question, request a review, or d
 | `security-audit` | [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill) |
 | `yomiyasu` | [nanaism/yomiyasu](https://github.com/nanaism/yomiyasu) |
 
-`hatch-pet` uses the v2 skill bundled in ChatGPT.app through `~/.agents/skills/hatch-pet`; it is not copied into this repository. Pi extension-owned skills are linked from their packaged extension directories rather than duplicated. Skill security checks use the upstream [Cisco AI Defense scanner](https://github.com/cisco-ai-defense/skill-scanner) CLI (`skill-scanner`).
+`hatch-pet` uses the v2 skill bundled in ChatGPT.app through `~/.agents/skills/hatch-pet`; it is not copied into this repository. `phi-browser` is bundled in Phi.app and must match the installed Phi, so the [skills module](./modules/codex-skills) links `~/.claude/skills`, `~/.codex/skills`, and `~/.pi/agent/skills` to the bundle instead of copying it. Pi extension-owned skills are linked from their packaged extension directories rather than duplicated. Skill security checks use the upstream [Cisco AI Defense scanner](https://github.com/cisco-ai-defense/skill-scanner) CLI (`skill-scanner`).
 
 ## Claude Code
 

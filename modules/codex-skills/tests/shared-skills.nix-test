@@ -31,6 +31,9 @@ assert files.".claude/skills/playwright-cli".source == "/fixture/home/.agents/sk
 assert files.".claude/skills/ponytail-help".source == "/fixture/home/.agents/skills/ponytail-bundle/ponytail-help";
 assert !(files ? ".claude/skills/ponytail-bundle");
 assert !(files ? ".claude/skills/synced");
+assert builtins.all (dir:
+  files."${dir}/phi-browser".source == "/Applications/Phi.app/Contents/Resources/phi-browser-skill"
+) [ ".claude/skills" ".codex/skills" ".pi/agent/skills" ];
 assert builtins.all (name: files.${name}.force) (builtins.attrNames files);
 {
   sharedSkills = builtins.attrNames files;
