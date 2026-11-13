@@ -19,7 +19,9 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     vec4 base = texture(iChannel0, uv);
     fragColor = base;
 
-    if (iFocus == 0 || iCursorVisible == 0 || hudCellResized()) {
+    // Only Neovim's block cursor moves at the user's command; shell output
+    // (build logs, TUIs) drags the bar across lines on every redraw.
+    if (iFocus == 0 || iCursorVisible == 0 || hudCellResized() || iCurrentCursorStyle != CURSORSTYLE_BLOCK) {
         return;
     }
 
