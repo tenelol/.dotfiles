@@ -96,7 +96,7 @@ delib.module {
     programs.starship = {
       enable = true;
       enableFishIntegration = true;
-      # Past prompts collapse to the prompt character; see
+      # Hide the prompt on submitted command lines; see
       # starship_transient_prompt_func.fish.
       enableTransience = true;
     };

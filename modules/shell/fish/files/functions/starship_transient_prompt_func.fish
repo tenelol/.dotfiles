@@ -1,5 +1,3 @@
-# Starship calls this to redraw earlier prompts once a command has run:
-# past lines shrink to the prompt character alone.
+# An empty transient prompt keeps only the submitted command on its line.
 function starship_transient_prompt_func
-    starship module character
 end
