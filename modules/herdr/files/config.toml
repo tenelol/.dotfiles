@@ -28,6 +28,14 @@ next_workspace = "prefix+i"
 previous_agent = "prefix+shift+u"
 next_agent = "prefix+shift+i"
 
+[ui]
+# Keep the chrome out of the way until it is wanted. The sidebar starts closed
+# and takes no width while closed; prefix+b brings it back. Herdr has no toggle
+# for the tab row, so it only appears once a workspace has a second tab.
+sidebar_start_collapsed = true
+sidebar_collapsed_mode = "hidden"
+hide_tab_bar_when_single_tab = true
+
 [ui.sidebar.agents]
 rows = [
   ["state_icon", "agent", "state_text"],
