@@ -16,6 +16,17 @@ delib.module {
     programs.fish = {
       enable = true;
 
+      # Let Starship install its prompt after Conda's fish hook.
+      shellInit = ''
+        if status is-interactive
+          if test -f ~/miniconda3/etc/fish/conf.d/conda.fish
+            source ~/miniconda3/etc/fish/conf.d/conda.fish
+          else if test -x ~/miniconda3/bin/conda
+            eval (~/miniconda3/bin/conda shell.fish hook)
+          end
+        end
+      '';
+
       interactiveShellInit = ''
         # Match the low-saturation Graphite Frost hierarchy used by Neovim.
         set -g fish_color_normal b3bbc7
@@ -61,12 +72,6 @@ delib.module {
 
         fish_add_path ~/.opencode/bin
 
-        if test -f ~/miniconda3/etc/fish/conf.d/conda.fish
-          source ~/miniconda3/etc/fish/conf.d/conda.fish
-        else if test -x ~/miniconda3/bin/conda
-          eval (~/miniconda3/bin/conda shell.fish hook)
-        end
-
         if test -f ~/.config/fish/secrets.fish
           source ~/.config/fish/secrets.fish
         end
@@ -96,7 +101,7 @@ delib.module {
     programs.starship = {
       enable = true;
       enableFishIntegration = true;
-      # Hide the prompt on submitted command lines; see
+      # Keep only the prompt character on submitted command lines; see
       # starship_transient_prompt_func.fish.
       enableTransience = true;
     };

@@ -12,6 +12,12 @@ add_newline = false
 format = """
 $cmd_duration $directory$git_branch
   $character"""
+right_format = "$conda"
+
+[conda]
+format = '[(\($environment\) )]($style)'
+style = 'bold green'
+ignore_base = false
 
 [fill]
 symbol = '-'
