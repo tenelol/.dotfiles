@@ -91,12 +91,22 @@ delib.module {
       };
     };
 
-    xdg.configFile."fish/functions/fish_prompt.fish".source = ./files/functions/fish_prompt.fish;
+    # The prompt is Starship. Its config stays a plain TOML file so the Nerd Font
+    # glyphs and comments in it survive untouched.
+    programs.starship = {
+      enable = true;
+      enableFishIntegration = true;
+      # Past prompts collapse to the prompt character; see
+      # starship_transient_prompt_func.fish.
+      enableTransience = true;
+    };
+
+    xdg.configFile."starship.toml".source = ./files/starship.toml;
+
+    xdg.configFile."fish/functions/starship_transient_prompt_func.fish".source =
+      ./files/functions/starship_transient_prompt_func.fish;
 
     xdg.configFile."fish/functions/fish_greeting.fish".source =
       ./files/functions/fish_greeting.fish;
-
-    xdg.configFile."fish/functions/fish_right_prompt.fish".source =
-      ./files/functions/fish_right_prompt.fish;
   };
 }
