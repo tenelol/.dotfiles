@@ -28,4 +28,10 @@ local theme = {
 
 theme.indent_scope = "#6f8fbf"
 
+-- On the OmniWM rice, OmniWM's palette replaces these colors when it has
+-- rendered one.
+for key, value in pairs(require("core.wallpaper-palette").colors() or {}) do
+  theme[key] = value
+end
+
 return theme

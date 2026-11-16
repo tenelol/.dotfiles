@@ -35,6 +35,9 @@ delib.scopedModule {
   '';
 
   home.ifEnabled = {
+    # Template for OmniWM App Theming; registering it is a one-time GUI step
+    # (docs/notes/macos-wallpaper-theming.md).
+    xdg.configFile."omniwm/app-themes/nvim-palette".source = ./files/app-themes/nvim-palette;
     launchd.agents.omniwm = {
       enable = true;
       config = {

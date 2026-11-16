@@ -1,0 +1,17 @@
+# OmniWM App Theming template, read by modules/nvim/files/lua/core/wallpaper-palette.lua.
+# Output: ~/.config/theme/omniwm-palette (After writing: Do Nothing; Neovim watches the file).
+mode={{mode}}
+background={{colors.background.default.hex}}
+surface={{colors.surface.default.hex}}
+accentContainer={{colors.accentContainer.default.hex}}
+foreground={{colors.foreground.default.hex}}
+secondaryForeground={{colors.secondaryForeground.default.hex}}
+mutedForeground={{colors.mutedForeground.default.hex}}
+ansi1={{colors.ansi1.default.hex}}
+ansi2={{colors.ansi2.default.hex}}
+ansi3={{colors.ansi3.default.hex}}
+ansi4={{colors.ansi4.default.hex}}
+ansi5={{colors.ansi5.default.hex}}
+ansi6={{colors.ansi6.default.hex}}
+ansi12={{colors.ansi12.default.hex}}
+base09={{colors.base09.default.hex}}
