@@ -5,7 +5,10 @@
 )
 
 (defalias
-  capctl (tap-hold 200 180 (tap-dance-eager 200 (esc f12)) lctl)
+  ;; Not tap-dance-eager: eager sends Esc on the first tap of a double tap, which
+  ;; interrupts Claude Code before F12 (the herdr prefix) arrives. A single tap
+  ;; therefore sends Esc after the 200ms double-tap window.
+  capctl (tap-hold 200 180 (tap-dance 200 (esc f12)) lctl)
   fsyms (tap-hold-tap-keys 200 150 f (layer-while-held symbols) (a e i o u))
   vnav (tap-hold-tap-keys 200 150 v (layer-while-held navigation) (a e i o u))
   scru (mwheel-up 50 120)
