@@ -25,7 +25,7 @@ OmniWM の rice では、Ghostty・Neovim・herdr の色を OmniWM のパレッ�
 
 ## 一度だけ行う設定
 
-1. OmniWM を App Theming 入りの版にする（Settings に App Theming のページがあれば入っている）。
+1. OmniWM を App Theming 入りの版にする（Settings に App Theming のページがあれば入っている）。版は `packages/omniwm.nix` で固定しているので、対応版が出たらそこの版とハッシュを上げる。
 2. パレットを壁紙にする: `omniwmctl shell theme wallpaper`（配色の作り方は `tonalSpot` が既定。`vibrant` などを後ろに付けられる）。
 3. `nh darwin switch . -H macbook-omniwm` で下準備（シード、テンプレート、herdr の通常ファイル化）を入れる。
 4. Settings → App Theming で次を有効にする。
@@ -36,7 +36,11 @@ OmniWM の rice では、Ghostty・Neovim・herdr の色を OmniWM のパレッ�
 
 ## 未確認・注意
 
-- App Theming が未リリースの時点で用意したので、実機では確かめていない。確かめたのは、生成される Ghostty 設定、herdr の表の保持（`modules/herdr/tests/test_sync_config.py`）、パレットの読み取りと割り当て（`modules/nvim/tests/wallpaper-palette.lua`）まで。フォルダ監視による Neovim の再適用は実機で見る。
+- App Theming が未リリースの時点（2026-11-16、実機は OmniWM 0.7.6）で用意したので、OmniWM からの書き込みと再読み込みは確かめていない。確かめたのは次の範囲。
+  - switch 後の下準備: Ghostty のテーマ参照とシード、herdr の通常ファイル化、テンプレートの配置。見た目は Glacier のまま。
+  - herdr の表の保持（`modules/herdr/tests/test_sync_config.py`）と、パレットの読み取りと割り当て（`modules/nvim/tests/wallpaper-palette.lua`）。
+  - フォルダ監視による Neovim の再適用。パレットファイルを手で差し替え、実機の Neovim で colorscheme が1回ずつ引き直されるのを見た。
+- 残りは、OmniWM が書いたテーマでの Ghostty の再読み込み、OmniWM が書いた herdr の表の保持、rift へ戻したときの復帰、ライト時の見え方。
 - macOS がライトのときは OmniWM がライト用の色を書く。常にダークにしたいなら Ghostty の参照を `theme = omniwm-dark` に変える。
-- lualine と bufferline は読み込み時の色を持ち続けるので、Neovim を開き直すと揃う。
+- lualine と bufferline、ロックオンとヤンクのハイライト（`core/motion.lua` の `accent` / `flash`）は読み込み時の色を持ち続けるので、Neovim を開き直すと揃う。
 - rift など他の rice へ戻すと、Ghostty・herdr・Neovim は固定の Glacier に戻る。`~/.config/ghostty/themes/omniwm-*` と `~/.config/theme/omniwm-palette` は残るが参照されない（Neovim はテンプレート `~/.config/omniwm/app-themes/nvim-palette` が配置されている rice でだけ読む）。
