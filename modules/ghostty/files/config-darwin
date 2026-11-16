@@ -16,7 +16,9 @@ window-title-font-family = "SF Pro Text"
 
 # Visual style: Glacier (matches modules/nvim/files/lua/core/theme.lua)
 # The foreground, background, cursor and selection lines are placeholders that
-# modules/ghostty swaps for myconfig.theme.ghostty values.
+# modules/ghostty swaps for myconfig.theme.ghostty values. When
+# myconfig.theme.colors is "omniwm", it replaces every color line with a
+# reference to the themes OmniWM writes, and these colors only seed them.
 foreground = c0caf5
 background = 24283b
 cursor-color = 7aa2f7
