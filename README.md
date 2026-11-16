@@ -143,6 +143,9 @@ OmniWM creates its initial settings, the next switch seeds the
 once. Later rice switches preserve GUI changes, including shortcuts and app
 assignments, as well as workspace IDs and monitor routing.
 Unsupported Rift layouts and command-launch bindings are not emulated.
+On this rice, Ghostty, Neovim and herdr take their colors from OmniWM's App
+Theming, which can follow the wallpaper; the one-time setup is in
+[docs/notes/macos-wallpaper-theming.md](./docs/notes/macos-wallpaper-theming.md).
 
 macOS wallpapers are managed in System Settings. denix/Home Manager does not set them during `nh darwin switch`.
 
