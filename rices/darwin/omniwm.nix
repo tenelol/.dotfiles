@@ -6,5 +6,6 @@ delib.rice {
     desktop.darwin.windowManager = "omniwm";
     sketchybar.enable = false;
     jankyborders.enable = false;
+    theme.colors = "omniwm";
   };
 }
