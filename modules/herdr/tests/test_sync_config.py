@@ -1,4 +1,9 @@
-"""Run from the repository root: python3 -m unittest modules/herdr/tests/test_sync_config.py"""
+"""Run from the repository root with Python 3.11 or newer (tomllib):
+
+    /etc/profiles/per-user/$USER/bin/python3 -m unittest modules/herdr/tests/test_sync_config.py
+
+macOS's own /usr/bin/python3 is older and comes first on PATH.
+"""
 
 import importlib.util
 from pathlib import Path
