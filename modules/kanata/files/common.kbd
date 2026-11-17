@@ -5,7 +5,10 @@
 )
 
 (defalias
-  capctl (tap-hold 160 130 (tap-dance-eager 160 (esc C-b)) lctl)
+  ;; Not tap-dance-eager: eager sends Esc on the first tap of a double tap, so
+  ;; Esc reaches the terminal before C-b (the herdr prefix). A single tap
+  ;; therefore sends Esc after the 160ms double-tap window.
+  capctl (tap-hold 160 130 (tap-dance 160 (esc C-b)) lctl)
   fsyms (tap-hold-tap-keys 200 150 f (layer-while-held symbols) (a e i o u))
   vnav (tap-hold-tap-keys 200 150 v (layer-while-held navigation) (a e i o u))
   scru (mwheel-up 50 120)
