@@ -16,6 +16,9 @@ let
   # Nix R cannot link CRAN source builds here (missing -lintl/-lz), so course packages come from nixpkgs.
   rWithPackages = pkgs.rWrapper.override {
     packages = with pkgs.rPackages; [
+      # HII209 lesson 5 multivariate visualization (faces, ggparcoord).
+      GGally
+      aplpack
       # HII209 lesson 6 text visualization.
       RColorBrewer
       SnowballC
