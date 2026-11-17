@@ -29,6 +29,7 @@ App Theming 入りの OmniWM が配布されるまで（2026-11-17 時点で最�
 
 - `ghostty-wallpaper-theme`（`modules/ghostty/files/wallpaper-theme.py`）が matugen で壁紙から Material 3 の色を取り、OmniWM と同じ `omniwm-light` / `omniwm-dark` を書いて Ghostty に `SIGUSR2` を送る。引数に画像を渡せば、その画像で作る。
 - 今の壁紙は `~/Library/Application Support/com.apple.wallpaper/Store/Index.plist` から、最後に表示されたデスクトップの画像として読む。Apple の非公開の形式なので、macOS の更新で読めなくなったら引数で渡す。画像ファイル以外の壁紙（単色、動く壁紙）では何もしない。
+- 壁紙の画像は `~/Pictures/Wallpapers` に置いてから設定する。元ファイルを消すと macOS は自分の控え（`~/Library/Containers/com.apple.wallpaper.extension.image/` の中）で表示を続けるが、そこは他アプリのデータとして保護されていて読めないので、色は前のまま残る。
 - launchd の `ghostty-wallpaper-theme` がそのフォルダを監視して実行する。ログは `/tmp/ghostty-wallpaper-theme.log`。
 - 端末の16色は OmniWM の Follow Palette と同じ対応（赤は `error`、緑は `primary`、黄は `secondary`、青は `tertiary`）で、背景に対して 4.5:1 に満たない色は前景に寄せる。OmniWM の実装とは別物なので、切り替えると色は少し変わる。
 - herdr と Neovim は対象外で、固定の Glacier のまま。
