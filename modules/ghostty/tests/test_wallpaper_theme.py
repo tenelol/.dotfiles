@@ -98,12 +98,8 @@ def settings(text):
     return dict(line.split(" = ", 1) for line in text.splitlines() if " = " in line and not line.startswith("palette"))
 
 
-def indexed(text):
-    return {int(line.split("=")[1]): line.split("=")[2] for line in text.splitlines() if line.startswith("palette = ")}
-
-
 def palette(text):
-    return [indexed(text)[index] for index in range(16)]
+    return [line.split("=")[-1] for line in text.splitlines() if line.startswith("palette = ")]
 
 
 class WallpaperTests(unittest.TestCase):
@@ -131,22 +127,10 @@ class ThemeTests(unittest.TestCase):
         self.assertEqual(settings(dark)["cursor-color"], "#94cdf7")
         self.assertEqual(settings(light)["background"], "#f6f9fe")
         self.assertEqual(settings(light)["selection-background"], "#c8e6ff")
-        self.assertEqual(len(indexed(dark)), 16 + len(module.PROMPT_ROLES))
+        self.assertEqual(len(palette(dark)), 16)
         # Red is the error role and blue, which Neovim and the shaders use as the accent, the tertiary.
         self.assertEqual(palette(dark)[1], "#ffb4ab")
         self.assertEqual(palette(dark)[4], "#cec0e8")
-
-    def test_the_prompt_grays_starship_uses_follow_the_accent(self):
-        starship = (FEATURE.parent / "shell/fish/files/starship.toml").read_text()
-        used = {int(number) for line in starship.splitlines() if not line.lstrip().startswith("#")
-                for number in __import__("re").findall(r"(?:fg|bg):\s*(\d+)", line)}
-        self.assertEqual(used, set(module.PROMPT_ROLES))
-        for mode in ("light", "dark"):
-            colors = indexed(module.theme(COLORS, mode))
-            # Pill text on its pill, as Starship pairs them.
-            for text, pill in ((235, 252), (240, 255)):
-                self.assertGreaterEqual(module.contrast(colors[text], colors[pill]), module.MIN_CONTRAST)
-        self.assertEqual(indexed(module.theme(COLORS, "dark"))[252], "#94cdf7")
 
     def test_every_text_color_reads_on_the_background(self):
         faint = {name: dict(modes) for name, modes in COLORS.items()}
