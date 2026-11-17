@@ -1,6 +1,11 @@
 // Spring-driven cursor smear. The head snaps toward the new cell on a fast
 // critically damped spring while the tail follows on a slower one, so the
 // shape stretches and collapses into the cursor.
+//
+// Program output moves the cursor too, so the shell's bar cursor only smears
+// for line edits: moves along one row that start and end beside text (the
+// prompt or the command). Output line breaks land in the empty first column.
+// Neovim's block cursor smears for any move.
 
 const float DURATION = 0.24;
 // Shorter moves belong to typing_ignite.glsl.
@@ -13,6 +18,9 @@ const float FILL_OPACITY = 0.42;
 const float RIM_OPACITY = 0.36;
 const float GLOW_OPACITY = 0.24;
 const float GLOW_RADIUS = 9.0;
+// How far left of a bar cursor to look for text, in cell heights (~3 columns).
+const float INK_REACH = 1.5;
+const int INK_STEPS = 24;
 
 // Position of a critically damped spring released from 0 toward 1.
 float spring(float t, float rate) {
@@ -20,13 +28,30 @@ float spring(float t, float rate) {
     return 1.0 - (1.0 + x) * exp(-x);
 }
 
+// Whether text sits just left of a cursor on its row. Glyphs are opaque while
+// the translucent background is not, and the contrast test covers opaque
+// backgrounds.
+bool inkToLeft(vec4 cursor) {
+    float cellHeight = max(cursor.w, 1.0);
+    vec3 weights = vec3(0.2126, 0.7152, 0.0722);
+    float background = dot(iBackgroundColor, weights);
+    for (int i = 1; i <= INK_STEPS; ++i) {
+        float x = cursor.x - float(i) * cellHeight * INK_REACH / float(INK_STEPS);
+        for (int j = -1; j <= 1; ++j) {
+            vec4 ink = texture(iChannel0, vec2(x, cursor.y - cellHeight * (0.5 + 0.2 * float(j))) / iResolution.xy);
+            if (ink.a > 0.8 && abs(dot(ink.rgb, weights) - background) > 0.12) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     vec4 base = texture(iChannel0, fragCoord / iResolution.xy);
     fragColor = base;
 
-    // Only Neovim's block cursor moves at the user's command; shell output
-    // (build logs, TUIs) drags the bar across lines on every redraw.
-    if (iFocus == 0 || iCursorVisible == 0 || hudCellResized() || iCurrentCursorStyle != CURSORSTYLE_BLOCK) {
+    if (iFocus == 0 || iCursorVisible == 0 || hudCellResized()) {
         return;
     }
 
@@ -39,7 +64,8 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     vec2 from = hudCellCenter(iPreviousCursor);
     vec2 to = hudCellCenter(iCurrentCursor);
     float distanceCells = length(to - from) / cellHeight;
-    if (distanceCells < MIN_DISTANCE_CELLS) {
+    bool bar = iCurrentCursorStyle != CURSORSTYLE_BLOCK;
+    if (distanceCells < MIN_DISTANCE_CELLS || (bar && abs(to.y - from.y) > cellHeight * 0.5)) {
         return;
     }
 
@@ -59,6 +85,11 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     float dist = hudRoundBox(fragCoord - mix(tail, head, along), halfSize, min(halfSize.x, halfSize.y) * 0.65);
 
     if (dist < GLOW_RADIUS * 3.0) {
+        // Sampled only near the trail, where the result is needed.
+        if (bar && !(inkToLeft(iPreviousCursor) && inkToLeft(iCurrentCursor))) {
+            return;
+        }
+
         float fade = 1.0 - smoothstep(0.45, 1.0, elapsed / DURATION);
         float fill = 1.0 - smoothstep(-1.0, 1.0, dist);
         float rim = exp(-dist * dist * 0.35);
