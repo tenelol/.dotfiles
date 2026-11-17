@@ -155,6 +155,9 @@ def main():
         image = current_wallpaper(plistlib.loads(WALLPAPER_INDEX.read_bytes()))
         if image is None:
             sys.exit("The current wallpaper is not an image file; pass one as an argument.")
+    if not image.is_file():
+        # macOS keeps showing its own copy, which sits in a folder this script may not read.
+        sys.exit(f"{image} is gone; set the wallpaper from a file that stays, such as one in ~/Pictures/Wallpapers.")
     result = subprocess.run(
         [arguments.matugen, "image", str(image), "--prefer", "saturation", "--json", "hex", "--dry-run", "--quiet"],
         capture_output=True,
