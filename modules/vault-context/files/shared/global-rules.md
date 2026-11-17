@@ -11,7 +11,7 @@
 
 - 本人の経歴・活動・関心・価値観や個人的な判断が回答に影響するときは `~/Documents/personal-context/README.md` を読み、必要なmaster・雑多コンテキストと出典だけ参照する。キャリア・学習・生活の相談、本人に向けた提案や優先順位付け、本人名義・本人紹介の文章、日記の壁打ちが該当する。該当するか迷う場合も短いREADMEを入口にし、本人固有の事情で結論が変わるときだけ参照先へ進む。
 - project contextは共同・業務repository向けのオプションで、運用の判定は正本（Git common-dirの`project-context/`または非Git projectの`context/`）に`INDEX.md`があるかどうかだけで行う。ある場合は作業開始時に`INDEX.md`だけを読み、本文は関係する記録だけ開いて現在の一次証拠と照合する。ない場合はproject contextを使わず、メモは`docs/`に書く。
-- 保存・docsへの移動・修復が必要になったとき、または`INDEX.md`のないrepositoryのoriginのownerが本人以外のときだけ `~/.codex/project-context-protocol.md` を読む。未反映時の管理元は `/Users/tener/.dotfiles/modules/vault-context/files/codex/project-context-protocol.md`。
+- 保存・docsへの移動・修復・正本のバックアップのpushが必要になったとき、または`INDEX.md`のないrepositoryのoriginのownerが本人以外のときだけ `~/.codex/project-context-protocol.md` を読む。未反映時の管理元は `/Users/tener/.dotfiles/modules/vault-context/files/codex/project-context-protocol.md`。
 
 ## Capture
 
