@@ -12,7 +12,7 @@ local animate = require("mini.animate")
 for _, action in ipairs({ "scroll", "resize" }) do
   assert(animate.config[action].enable, action .. " animation is disabled")
 end
--- Window open/close is handled by the lock-on in core.targets.
+-- Window open/close stays unanimated.
 assert(not animate.config.open.enable and not animate.config.close.enable, "Window wipes should stay off")
 assert(animate.config.cursor.timing(1, 30) < animate.config.cursor.timing(30, 30), "Cursor should ease out")
 assert(#animate.config.cursor.path({ 100, 100 }) <= 30, "Long cursor jumps need a bounded path")

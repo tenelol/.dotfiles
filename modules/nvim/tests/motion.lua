@@ -15,34 +15,6 @@ local function floats()
   return list
 end
 
--- Lock-on: brackets start outside the target, close in, and clean up.
-local rect = { row = 10, col = 20, height = 3, width = 12 }
-local locked = false
-motion.lock(rect, { on_lock = function() locked = true end })
-vim.wait(20)
-local first = {}
-for _, win in ipairs(floats()) do
-  local config = vim.api.nvim_win_get_config(win)
-  first[#first + 1] = { config.row, config.col }
-end
-assert(#first == 4, "Lock-on should draw four corner brackets")
-assert(vim.wait(400, function() return locked end, 5), "Brackets never locked")
-local landed = {}
-for _, win in ipairs(floats()) do
-  local config = vim.api.nvim_win_get_config(win)
-  landed[#landed + 1] = config.row .. ":" .. config.col
-end
-table.sort(landed)
-local expected = { "13:19", "13:31", "9:19", "9:31" }
-table.sort(expected)
-assert(table.concat(landed, " ") == table.concat(expected, " "), "Brackets landed off target: " .. table.concat(landed, " "))
-local top, left = math.huge, math.huge
-for _, pos in ipairs(first) do
-  top, left = math.min(top, pos[1]), math.min(left, pos[2])
-end
-assert(top < 9 and left < 19, "Brackets should home in from outside")
-assert(vim.wait(800, function() return #floats() == 0 end, 5), "Lock-on brackets leaked")
-
 -- Terminal splits keep their pty at full size while the window animates.
 vim.cmd("botright 10split | enew")
 local win = vim.api.nvim_get_current_win()
@@ -98,4 +70,4 @@ panel.close(win, { axis = "width", on_done = function(completed) closed = comple
 assert(vim.wait(1000, function() return closed ~= nil end, 10), "Close never finished")
 assert(closed == true and vim.api.nvim_win_get_width(win) <= 2, "Close did not collapse the panel")
 assert(vim.wait(800, function() return #floats() == 0 end, 5), "Floats leaked")
-print("Lock-on landing, pinned pty, reversal, wrap clipping, and cleanup: OK")
+print("Pinned pty, reversal, wrap clipping, and cleanup: OK")

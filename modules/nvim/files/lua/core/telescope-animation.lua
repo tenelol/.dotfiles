@@ -2,7 +2,6 @@ local motion = require("core.motion")
 
 local M = {}
 local closing = {}
-local locks = {}
 
 local function capture(picker)
   local windows = {}
@@ -53,17 +52,6 @@ function M.open(prompt_bufnr)
       end
     end
   end
-
-  local top, left, bottom_edge, right = math.huge, math.huge, 0, 0
-  for _, state in ipairs(windows) do
-    top, left = math.min(top, state.row), math.min(left, state.col)
-    bottom_edge, right = math.max(bottom_edge, state.row + state.height), math.max(right, state.col + state.width)
-  end
-  -- Land the brackets on the whole picker as its slide settles.
-  locks[prompt_bufnr] = motion.lock(
-    { row = top, col = left, height = bottom_edge - top, width = right - left },
-    { delay = motion.open.duration.total - motion.APPROACH_MS }
-  )
 
   for _, state in ipairs(windows) do
     state.current_row = state.row + slide
@@ -120,8 +108,6 @@ function M.close(prompt_bufnr, action)
   end
 
   require("snacks").animate.del("telescope_open_" .. prompt_bufnr)
-  motion.unlock(locks[prompt_bufnr])
-  locks[prompt_bufnr] = nil
   local usable_bottom = vim.o.lines - vim.o.cmdheight - (vim.o.laststatus ~= 0 and 1 or 0)
   local slide = math.min(2, math.max(0, usable_bottom - bottom))
   closing[prompt_bufnr] = true

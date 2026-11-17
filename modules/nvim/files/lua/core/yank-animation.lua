@@ -1,6 +1,5 @@
--- Yank lock-on: brackets home in on the yanked text, and at contact the text
--- flashes and cools through the accent back into the background, the same beat
--- as the Ghostty jump reticle.
+-- Yank flash: the yanked text flashes and cools through the accent back into
+-- the background.
 local motion = require("core.motion")
 local theme = require("core.theme")
 
@@ -13,7 +12,7 @@ local LEVELS = 8
 local active
 
 -- Level 1 is the flash; higher levels cool through the accent toward the
--- background. The last level doubles as the faint tint shown while aiming.
+-- background.
 local function apply_highlights()
   for level = 1, LEVELS do
     local t = (level - 1) / (LEVELS - 1)
@@ -107,21 +106,8 @@ function M.play(buf, regtype)
     end)
   end
 
-  local rect = motion.text_rect(vim.api.nvim_get_current_win(), ranges)
-  if not rect then
-    paint(state, 1)
-    cool()
-    return
-  end
-  paint(state, LEVELS)
-  motion.lock(rect, {
-    on_lock = function()
-      if active == state then
-        paint(state, 1)
-        cool()
-      end
-    end,
-  })
+  paint(state, 1)
+  cool()
 end
 
 function M.setup()
@@ -134,7 +120,7 @@ function M.setup()
       if vim.v.event.operator == "y" then
         -- Blockwise regtype carries the width ("\22{width}"); getregionpos wants the bare type.
         local regtype = vim.v.event.regtype:sub(1, 1)
-        -- TextYankPost holds textlock, which forbids opening the bracket windows.
+        -- TextYankPost holds textlock; paint once the yank has settled.
         vim.schedule(function()
           M.play(event.buf, regtype)
         end)

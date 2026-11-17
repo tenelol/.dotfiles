@@ -26,10 +26,6 @@ return {
         timeout = 2000,
         -- Errors still pop up, but from the bottom corner, clear of the code.
         top_down = false,
-        on_open = function(win)
-          -- Notifications fade in where they rest, so lock onto that spot.
-          require("core.motion").lock(require("core.motion").window_rect(win), { spread = 0.6 })
-        end,
       })
 
       vim.notify = notify

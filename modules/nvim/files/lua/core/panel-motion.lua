@@ -1,5 +1,5 @@
--- Panels grow and shrink along one axis with the shared easing, then the
--- lock-on brackets land on them. Nothing underneath re-lays out per frame:
+-- Panels grow and shrink along one axis with the shared easing. Nothing
+-- underneath re-lays out per frame:
 -- Edgy is held off, and a terminal's pty is pinned to its final size by a
 -- hidden float showing the same buffer (Neovim sizes a pty to the largest
 -- window displaying it), so the shell never re-flows mid-animation.
@@ -53,28 +53,9 @@ local function pin_terminal(win, width, height)
   })
 end
 
--- Where the window will sit once it reaches `size`: a panel anchored to the far
--- edge moves its origin as it grows, which shows up between two samples.
-local function final_rect(first, now, axis, size)
-  local rect = vim.deepcopy(now)
-  if axis == "width" then
-    if now.col ~= first.col then
-      rect.col = now.col + now.width - size
-    end
-    rect.width = size
-  else
-    if now.row ~= first.row then
-      rect.row = now.row + now.height - size
-    end
-    rect.height = size
-  end
-  return rect
-end
-
 local function animate(win, opts)
   local previous = release(win)
   if previous then
-    motion.unlock(previous.lock)
     if previous.on_done then
       previous.on_done(false)
     end
@@ -107,10 +88,6 @@ local function animate(win, opts)
   end
 
   vim.api["nvim_win_set_" .. axis](win, from)
-  local first = motion.window_rect(win)
-  local start = vim.uv.hrtime()
-  local duration = preset.duration.total
-  local locking = not (opening and opts.lock)
 
   motion.tween(state.id, preset, function(progress, done)
     if active[win] ~= state then
@@ -121,11 +98,6 @@ local function animate(win, opts)
       return
     end
     vim.api["nvim_win_set_" .. axis](win, math.floor(from + (to - from) * progress + 0.5))
-    -- Launch the brackets early enough that they land as the panel settles.
-    if not locking and (vim.uv.hrtime() - start) / 1e6 >= duration - motion.APPROACH_MS then
-      locking = true
-      state.lock = motion.lock(final_rect(first, motion.window_rect(win), axis, to))
-    end
     if done then
       release(win)
       -- Let Edgy adopt the settled window again.
@@ -146,7 +118,6 @@ function M.open(win, opts)
     size = opts.size,
     mode = "open",
     from = continuing and size_of(win, opts.axis) or 1,
-    lock = opts.lock ~= false,
     on_done = opts.on_done,
   })
 end
@@ -173,11 +144,10 @@ local function float_state(win, mode, on_done)
   return state
 end
 
---- Floats slide up two rows while fading in, then lock on.
+--- Floats slide up two rows while fading in.
 function M.float_open(win)
   local state = float_state(win, "open")
   vim.w[win].dotfiles_panel_animation = true
-  state.lock = motion.lock(motion.window_rect(win), { delay = motion.open.duration.total - motion.APPROACH_MS })
   motion.tween(state.id, motion.open, function(progress, done)
     if active[win] ~= state or not vim.api.nvim_win_is_valid(win) then
       return
@@ -208,7 +178,6 @@ end
 function M.cancel(win)
   local state = release(win)
   if state then
-    motion.unlock(state.lock)
     if state.on_done then
       state.on_done(false)
     end

@@ -97,14 +97,8 @@ return {
                 map("n", "gK", vim.lsp.buf.signature_help, "Signature help")
                 map("n", "gr", telescope_picker("lsp_references"), "Go to references")
                 map("n", "<F2>", vim.lsp.buf.rename, "Rename symbol")
-                map("n", "[d", function()
-                    vim.diagnostic.goto_prev()
-                    require("core.targets").diagnostic()
-                end, "Previous diagnostic")
-                map("n", "]d", function()
-                    vim.diagnostic.goto_next()
-                    require("core.targets").diagnostic()
-                end, "Next diagnostic")
+                map("n", "[d", vim.diagnostic.goto_prev, "Previous diagnostic")
+                map("n", "]d", vim.diagnostic.goto_next, "Next diagnostic")
 
                 if client:supports_method("textDocument/documentHighlight") then
                     vim.api.nvim_create_autocmd({ "CursorHold", "CursorHoldI" }, {

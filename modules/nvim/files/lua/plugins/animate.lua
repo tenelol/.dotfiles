@@ -41,7 +41,7 @@ return {
             end,
           }),
         },
-        -- New windows land a lock-on from core.targets instead of a wipe.
+        -- New windows appear without a wipe.
         open = { enable = false },
         close = { enable = false },
       })

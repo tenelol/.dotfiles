@@ -122,7 +122,6 @@ delib.module {
       extraConfigLua = ''
         require("core.plugin-loader")
         require("core.yank-animation").setup()
-        require("core.targets").setup()
         require("core.wallpaper-palette").watch()
       '';
       extraPlugins = builtins.attrValues nvim.nixManagedPlugins;
