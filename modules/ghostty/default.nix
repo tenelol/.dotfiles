@@ -2,6 +2,7 @@
   delib,
   hostTraits,
   hm,
+  homeDir,
   lib,
   pkgs,
   ...
@@ -110,6 +111,14 @@ let
       lib.concatStringsSep "\n" (lib.filter isColorLine (configLines myconfig)) + "\n"
     );
 
+  # Stand-in for OmniWM App Theming until the pinned OmniWM has it: writes the
+  # same two themes from the macOS wallpaper. Remove it together with the agent
+  # below once App Theming is on (docs/notes/macos-wallpaper-theming.md).
+  wallpaperTheme = pkgs.writeShellScriptBin "ghostty-wallpaper-theme" ''
+    exec ${pkgs.python3}/bin/python3 ${./files/wallpaper-theme.py} \
+      --matugen ${pkgs.matugen}/bin/matugen "$@"
+  '';
+
   auroraShader =
     pkgs.runCommand "ghostty-aurora-tokyo-night.glsl"
       {
@@ -158,5 +167,19 @@ delib.module {
           done
         ''
       );
+
+      home.packages = lib.mkIf (myconfig.theme.colors == "omniwm") [ wallpaperTheme ];
+
+      # macOS rewrites its wallpaper store when the wallpaper changes.
+      launchd.agents.ghostty-wallpaper-theme = lib.mkIf (myconfig.theme.colors == "omniwm") {
+        enable = true;
+        config = {
+          ProgramArguments = [ "${wallpaperTheme}/bin/ghostty-wallpaper-theme" ];
+          WatchPaths = [ "${homeDir}/Library/Application Support/com.apple.wallpaper/Store" ];
+          RunAtLoad = true;
+          StandardOutPath = "/tmp/ghostty-wallpaper-theme.log";
+          StandardErrorPath = "/tmp/ghostty-wallpaper-theme.log";
+        };
+      };
     };
 }
