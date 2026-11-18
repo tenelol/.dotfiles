@@ -51,6 +51,27 @@ local function keep_dashboard_in_place()
     })
 end
 
+-- The menu is hidden, but its shortcuts still work on the dashboard.
+local function map_shortcuts()
+    local shortcuts = {
+        { "f", "Telescope find_files", "Find file" },
+        { "r", "Telescope oldfiles", "Recent files" },
+        { "s", function() require("persistence").load() end, "Restore session" },
+        { "q", "qa", "Quit" },
+    }
+    vim.api.nvim_create_autocmd("FileType", {
+        group = vim.api.nvim_create_augroup("DashboardShortcuts", { clear = true }),
+        pattern = "dashboard",
+        callback = function(event)
+            for _, shortcut in ipairs(shortcuts) do
+                local key, action, desc = unpack(shortcut)
+                vim.keymap.set("n", key, type(action) == "string" and "<Cmd>" .. action .. "<CR>" or action,
+                    { buffer = event.buf, nowait = true, silent = true, desc = desc })
+            end
+        end,
+    })
+end
+
 -- Header art above the logo. header_girl is the previous art, kept as a backup:
 -- point `art` below at it to restore.
 local header_girl = {
@@ -130,13 +151,15 @@ return {
         event = 'VimEnter',
         config = function()
             keep_dashboard_in_place()
+            map_shortcuts()
             require('dashboard').setup {
                 theme = 'doom',
                 config = {
                     header = vim.list_extend(vim.list_extend({}, art), logo),
-                    -- Just the art: no menu and no footer text. The doom theme
-                    -- parks its cursor on the first line after the header, so one
-                    -- blank footer line keeps that line in the buffer.
+                    -- Just the art: no menu and no footer text; map_shortcuts
+                    -- keeps the keys. The doom theme parks its cursor on the first
+                    -- line after the header, so one blank footer line keeps that
+                    -- line in the buffer.
                     center = {},
                     footer = { "" },
                 }
