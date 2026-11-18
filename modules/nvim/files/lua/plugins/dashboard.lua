@@ -98,33 +98,11 @@ return {
                         "        ╚═╝  ╚═══╝╚══════╝ ╚═════╝   ╚═══╝  ╚═╝╚═╝     ╚═╝       ",
                         "                                                                 "
                     },
-                    center = {
-                        {
-                            icon = '󰱼  ',
-                            desc = 'Find File',
-                            key = 'f',
-                            action = 'Telescope find_files'
-                        },
-                        {
-                            icon = '󰈚  ',
-                            desc = 'Recent Files',
-                            key = 'r',
-                            action = 'Telescope oldfiles'
-                        },
-                        {
-                            icon = '󰁯  ',
-                            desc = 'Restore Session',
-                            key = 's',
-                            action = 'lua require("persistence").load()'
-                        },
-                        {
-                            icon = '󰗼  ',
-                            desc = 'Quit',
-                            key = 'q',
-                            action = 'qa'
-                        }
-                    },
-                    footer = { "Snort! Snort! Snort!" }
+                    -- Just the art: no menu and no footer text. The doom theme
+                    -- parks its cursor on the first line after the header, so one
+                    -- blank footer line keeps that line in the buffer.
+                    center = {},
+                    footer = { "" },
                 }
             }
         end,
