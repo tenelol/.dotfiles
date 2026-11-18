@@ -24,6 +24,10 @@
 - READMEは入口とする。`INDEX.md`のないrepositoryでは、設計判断・手順・経緯・制約を`docs/`（既存の構成を優先し、なければ`docs/notes/`）に書いてユーザーがcommitし、区切りで整理する。`INDEX.md`のある正本では下書きをcontextに置き、確定したものだけを`$project-context-promote`で`docs/`等へ移す。
 - 一つの内容に正本を一つ置き、コード・設定から読める一覧や版、検証ログの説明を重複させない。文書整理では必要な情報を適切な正本へ残してから古い場所を削り、参照を確認する。
 
+## Browser
+
+- ページの閲覧・操作・フォーム入力・スクリーンショット・抽出・Webアプリ確認などブラウザーを使う作業は、`phi-browser`スキルでPhi Browserを使う。組み込みブラウザー・Claude in Chrome・Playwright等は、ユーザーが名指ししたときか、Phiに接続できずユーザーが代替を了承したときだけ使う。
+
 ## Permission and safety
 
 - 単一責務でscopeが明確な小規模repository変更は、直接artifact testとdiff確認後に明示許可なしでcommitしてよい。大規模変更・複数責務を跨ぐ変更・履歴変更のcommitは明示許可を待つ。
