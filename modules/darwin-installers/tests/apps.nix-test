@@ -35,10 +35,10 @@ let
     package: builtins.any (actual: actual.drvPath == package.drvPath) home.home.packages
   ) full.packages;
 in
-assert lib.length full.installers == 25;
-assert lib.length base.installers == 16;
-assert lib.length withNotch.installers == 17;
-assert lib.length withoutNotch.installers == 24;
+assert lib.length full.installers == 26;
+assert lib.length base.installers == 17;
+assert lib.length withNotch.installers == 18;
+assert lib.length withoutNotch.installers == 25;
 assert !(builtins.elem "docker-desktop" (names base));
 assert !(builtins.elem "moocs-collect" (names base));
 assert builtins.elem "boringnotch" (names withNotch);
