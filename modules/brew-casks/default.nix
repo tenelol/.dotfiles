@@ -22,15 +22,6 @@ let
       );
     }) selected
   );
-  # Homebrew links this Cask binary as agy. The Nix store copy cannot replace
-  # itself, so its background updater stays off; update through the pin.
-  antigravityCli =
-    let
-      cask = pkgs.brewCasks.antigravity-cli;
-    in
-    pkgs.runCommand "agy-${cask.version}" { nativeBuildInputs = [ pkgs.makeWrapper ]; } ''
-      makeWrapper ${cask}/bin/antigravity "$out/bin/agy" --set AGY_CLI_DISABLE_AUTO_UPDATE 1
-    '';
   fontPackages = map (
     font: brewCask (builtins.removeAttrs font [ "name" ] // { cask = pkgs.brewCasks.${font.name}; })
   ) apps.fonts;
@@ -48,8 +39,7 @@ delib.module {
       lib.attrValues packages
       ++ lib.concatMap (package: lib.optional (package ? completionPackage) package.completionPackage) (
         lib.attrValues packages
-      )
-      ++ [ antigravityCli ];
+      );
     # ~/.local/bin precedes Homebrew in this repository's session PATH.
     home.file = lib.listToAttrs (
       lib.concatMap (
