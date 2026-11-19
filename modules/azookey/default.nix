@@ -8,31 +8,6 @@
 }:
 let
   azooKeyBundleID = "dev.ensan.inputmethod.azooKeyMac";
-  azooKeyApp = "/Library/Input Methods/azooKeyMac.app";
-  converterServerLabel = "${azooKeyBundleID}.ConverterServer";
-  patchedAzooKey = pkgs.callPackage ../../packages/azookey-desktop.nix { };
-  # CDHash は verbose 3 以上でないと出力されない
-  cdHash =
-    app: ''$(/usr/bin/codesign -d --verbose=3 "${app}" 2>&1 | /usr/bin/grep '^CDHash=' || true)'';
-  # 公式 pkg の代わりに patch 版を配置する。署名の CDHash が変わったときだけ入れ替える
-  installPatchedAzooKey = ''
-    wanted="${cdHash "${patchedAzooKey}/azooKeyMac.app"}"
-    if [ -z "$wanted" ]; then
-      echo "azookey: cannot read the CDHash of ${patchedAzooKey}/azooKeyMac.app" >&2
-      exit 1
-    fi
-    if [ "$wanted" != "${cdHash azooKeyApp}" ]; then
-      stage="$(mktemp -d "/Library/Input Methods/.azookey.XXXXXX")"
-      /usr/bin/ditto "${patchedAzooKey}/azooKeyMac.app" "$stage/azooKeyMac.app"
-      if [ -e ${lib.escapeShellArg azooKeyApp} ]; then
-        mv ${lib.escapeShellArg azooKeyApp} "$stage/previous.app"
-      fi
-      mv "$stage/azooKeyMac.app" ${lib.escapeShellArg azooKeyApp}
-      rm -rf "$stage"
-      # 起動中の IME は次の入力で新しい bundle から起動し直される
-      /usr/bin/pkill -x azooKeyMac || true
-    fi
-  '';
   abcInputSource = {
     InputSourceKind = "Keyboard Layout";
     "KeyboardLayout ID" = 252;
@@ -203,55 +178,27 @@ in
 delib.module {
   name = "darwin.azookey";
 
-  options = delib.moduleOptions {
-    enable = delib.boolOption hostTraits.macbook;
-    # 演出テーマの patch を当てたソースビルドを使う。false で公式署名の pkg に戻すときは、
-    # darwin-installers が ad-hoc 署名の bundle を拒否するため先に azooKeyMac.app を削除する
-    patched = delib.boolOption true;
+  options = delib.singleEnableOption hostTraits.macbook;
+
+  darwin.ifEnabled = {
+    environment.systemPackages = [ toggleInputSource ];
+
+    system.defaults.CustomUserPreferences."com.apple.HIToolbox" = {
+      AppleEnabledInputSources = enabledInputSources;
+      AppleSelectedInputSources = selectedInputSources;
+    };
+
+    system.activationScripts.postActivation.text = lib.mkAfter ''
+      uid="$(id -u ${profile.username})"
+
+      launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/defaults write \
+        com.apple.HIToolbox AppleEnabledInputSources ${lib.escapeShellArg enabledInputSourcesPlist}
+      launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/defaults write \
+        com.apple.HIToolbox AppleSelectedInputSources ${lib.escapeShellArg selectedInputSourcesPlist}
+      launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/swift \
+        ${selectInputSourceScript}
+
+      ${inputSourceShortcutCommands}
+    '';
   };
-
-  darwin.ifEnabled =
-    { cfg, ... }:
-    lib.mkMerge [
-      (lib.mkIf cfg.patched {
-        # main 系の azooKey は変換処理を LaunchAgent の ConverterServer に分離している
-        launchd.user.agents.azookey-converter-server = {
-          serviceConfig = {
-            Label = converterServerLabel;
-            ProgramArguments = [ "${patchedAzooKey}/${patchedAzooKey.converterServer}" ];
-            MachServices.${converterServerLabel} = true;
-            RunAtLoad = true;
-            KeepAlive = true;
-            StandardOutPath = "/tmp/${converterServerLabel}.stdout.log";
-            StandardErrorPath = "/tmp/${converterServerLabel}.stderr.log";
-          };
-
-          managedBy = "azookey";
-        };
-
-        # darwin-installers の reconcile（mkBefore）より後、入力ソースの選択（mkAfter）より前に入れ替える
-        system.activationScripts.postActivation.text = lib.mkOrder 1400 installPatchedAzooKey;
-      })
-      {
-        environment.systemPackages = [ toggleInputSource ];
-
-        system.defaults.CustomUserPreferences."com.apple.HIToolbox" = {
-          AppleEnabledInputSources = enabledInputSources;
-          AppleSelectedInputSources = selectedInputSources;
-        };
-
-        system.activationScripts.postActivation.text = lib.mkAfter ''
-          uid="$(id -u ${profile.username})"
-
-          launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/defaults write \
-            com.apple.HIToolbox AppleEnabledInputSources ${lib.escapeShellArg enabledInputSourcesPlist}
-          launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/defaults write \
-            com.apple.HIToolbox AppleSelectedInputSources ${lib.escapeShellArg selectedInputSourcesPlist}
-          launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/swift \
-            ${selectInputSourceScript}
-
-          ${inputSourceShortcutCommands}
-        '';
-      }
-    ];
 }

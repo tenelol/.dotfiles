@@ -6,7 +6,6 @@
   lib,
   pkgs,
   profile,
-  config,
   hm,
   ...
 }:
@@ -18,8 +17,6 @@ let
     fullDesktop = host.fullDesktopFeatured;
   };
   installHash = pkgs.callPackage ../../packages/firefox-install-hash.nix { };
-  # patch 版は azookey モジュールが自前のビルドで置き換えるため、公式 pkg は入れない
-  azookeyPatched = config.myconfig.darwin.azookey.enable && config.myconfig.darwin.azookey.patched;
   versionPrefix = version: lib.concatStringsSep "." (lib.take 2 (lib.splitString "." version)) + ".";
   karabinerDmg = pkgs.fetchurl {
     url = "https://github.com/pqrs-org/Karabiner-Elements/releases/download/v16.0.0/Karabiner-Elements-16.0.0.dmg";
@@ -64,7 +61,7 @@ let
       consoleUser = profile.username;
       packages =
         gui.installers
-        ++ lib.optionals (!azookeyPatched) [
+        ++ [
           {
             name = "azookey";
             kind = "pkg";
@@ -81,8 +78,6 @@ let
             legacySha256 = "d389315c928c28da732c4eb2ade8ed0c19c896fdf06f8353ac617d95dcf2b39c";
             running = [ "azooKeyMac" ];
           }
-        ]
-        ++ [
           {
             name = "karabiner-elements";
             kind = "pkg";
