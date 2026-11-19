@@ -19,19 +19,27 @@ spec.loader.exec_module(module)
 
 # matugen's roles for one wallpaper, light and dark (--json hex).
 ROLES = {
+    "background": ("#f6f9fe", "#101417"),
     "surface": ("#f6f9fe", "#101417"),
     "on_surface": ("#181c20", "#dfe3e8"),
     "on_surface_variant": ("#41474d", "#c1c7ce"),
     "outline": ("#71787e", "#8b9198"),
     "surface_container": ("#ebeef3", "#1c2024"),
+    "surface_container_high": ("#e5e8ed", "#262a2e"),
     "surface_container_highest": ("#dfe3e8", "#313539"),
+    "outline_variant": ("#c1c7ce", "#41474d"),
     "primary": ("#246488", "#94cdf7"),
     "on_primary": ("#ffffff", "#00344d"),
     "primary_container": ("#c8e6ff", "#004c6e"),
     "on_primary_container": ("#001e2f", "#c8e6ff"),
     "secondary": ("#4f606e", "#b7c9d9"),
+    "secondary_container": ("#d2e5f5", "#384956"),
+    "on_secondary_container": ("#0b1d29", "#d2e5f5"),
     "tertiary": ("#64597c", "#cec0e8"),
+    "tertiary_container": ("#eaddff", "#4c4263"),
+    "on_tertiary_container": ("#201635", "#eaddff"),
     "error": ("#ba1a1a", "#ffb4ab"),
+    "shadow": ("#000000", "#000000"),
 }
 COLORS = {name: {"light": {"color": light}, "dark": {"color": dark}} for name, (light, dark) in ROLES.items()}
 
@@ -186,6 +194,28 @@ class ThemeTests(unittest.TestCase):
         self.assertIsNone(module.with_border_colors(OMNIWM_SETTINGS.replace("[borders.gradient.end]", "[borders.gradient.stop]"), COLORS, "dark"))
         self.assertIsNone(module.with_border_colors(OMNIWM_SETTINGS.replace("green = 0.49260300397872925\n", ""), COLORS, "dark"))
 
+    def test_the_bar_theme_has_both_modes_of_omniwms_wallpaper_roles(self):
+        theme = tomllib.loads(module.shell_theme(COLORS))
+        self.assertEqual(sorted(theme), ["dark", "light"])
+        for mode in ("light", "dark"):
+            self.assertEqual(sorted(theme[mode]), sorted(module.SHELL_ROLES))
+            for color in theme[mode].values():
+                self.assertRegex(color, r"^#[0-9A-F]{6}$")
+        self.assertEqual(theme["dark"]["accent"], "#94CDF7")
+        self.assertEqual(theme["dark"]["background"], "#101417")
+        self.assertEqual(theme["light"]["foreground"], "#181C20")
+        self.assertEqual(theme["dark"]["focus"], theme["dark"]["accent"])
+        # Every role is one OmniWM's theme loader knows (ShellRole in OmniWM 0.8.0).
+        known = {
+            "background", "surface", "elevatedSurface", "foreground", "secondaryForeground", "mutedForeground",
+            "border", "accent", "accentForeground", "success", "warning", "error", "focus", "shadow", "scrim",
+            "badge", "red", "orange", "yellow", "green", "mint", "teal", "cyan", "blue", "indigo", "purple",
+            "pink", "brown", "gray", "highestSurface", "accentContainer", "accentContainerForeground",
+            "secondaryAccent", "secondaryContainer", "secondaryContainerForeground", "tertiaryAccent",
+            "tertiaryContainer", "tertiaryContainerForeground",
+        }
+        self.assertLessEqual(set(module.SHELL_ROLES), known)
+
     def test_omniwm_settings_keep_a_first_backup(self):
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / "settings.toml"
@@ -203,8 +233,10 @@ class ThemeTests(unittest.TestCase):
             rendered = Path(temporary) / "theme/omniwm-palette"
             herdr = Path(temporary) / "herdr/config.toml"
             settings_file = Path(temporary) / "omniwm/settings.toml"
-            write = lambda: module.write_themes(COLORS, themes, rendered, herdr, settings_file, "dark")
-            self.assertEqual(write(), {"ghostty"})
+            shell = Path(temporary) / "omniwm/shell/themes/matugen.toml"
+            write = lambda: module.write_themes(COLORS, themes, rendered, herdr, settings_file, shell, "dark")
+            self.assertEqual(write(), {"ghostty", "bar"})
+            self.assertEqual(shell.read_text(), module.shell_theme(COLORS))
             self.assertEqual(rendered.read_text(), module.nvim_palette(COLORS, "dark"))
             dark = themes / "omniwm-dark"
             self.assertEqual(dark.read_text(), module.theme(COLORS, "dark"))
