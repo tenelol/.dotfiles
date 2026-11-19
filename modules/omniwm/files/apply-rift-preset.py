@@ -22,8 +22,8 @@ def field(block, name, value):
 
 def configure(text, preset):
     config = tomllib.loads(text)
-    if config.get("schemaVersion") != 4:
-        raise ValueError("expected OmniWM settings schema 4")
+    if config.get("schemaVersion") != 5:
+        raise ValueError("expected OmniWM settings schema 5")
     names = {str(i) for i in range(1, 10)}
     if {w["name"] for w in config["workspaces"]} != names:
         raise ValueError("expected the existing workspaces 1 through 9")

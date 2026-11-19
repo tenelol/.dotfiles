@@ -14,7 +14,7 @@ PRESET = json.loads((FEATURE / "files/rift-preset.json").read_text())
 
 
 def fixture():
-    text = 'schemaVersion = 4\n[general]\nipcEnabled = false\ncustomPreference = "keep me"\n'
+    text = 'schemaVersion = 5\n[general]\nipcEnabled = false\ncustomPreference = "keep me"\n'
     text += '\n[[appRules]]\nid = "existing-rule"\nbundleId = "com.openai.codex"\nminWidth = 800.0\n'
     actions = set(PRESET["hotkeys"])
     actions.update(f"{kind}.{i}" for kind in ("switchWorkspace", "moveToWorkspace") for i in range(9))
@@ -48,7 +48,7 @@ class RiftPresetTests(unittest.TestCase):
 
     def test_conflicts_and_unknown_schema_leave_file_unchanged(self):
         for text in (
-            fixture().replace("schemaVersion = 4", "schemaVersion = 5"),
+            fixture().replace("schemaVersion = 5", "schemaVersion = 4"),
             fixture() + '\n[[hotkeys]]\nid = "toggleOverview"\nbinding = "Option+H"\n',
         ):
             with tempfile.TemporaryDirectory() as directory:

@@ -12,8 +12,9 @@ Rift は三本指の workspace 切替のため公式配布の 0.6.4 を使う。
 ## OmniWM
 
 - 他の window manager とは同時に動かない。rice を切り替えるときは、旧 launchd agent を bootout してから残ったプロセスを止める（`modules/omniwm/default.nix`）。
-- Home Manager の settings では設定を管理しない。force 付きのテンプレートが次の switch で GUI の変更を上書きし、OmniWM は完全な schema を要求するので部分的な TOML も置けない。代わりに、OmniWM が作った schema 4 の設定を入力にして、Rift 風の操作とアプリの割当だけを1回、バックアップ付きで適用する（`modules/omniwm/files/apply-rift-preset.py`、`modules/omniwm/files/rift-preset.json`）。適用済みの印は、設定ファイルの隣の `.rift-preset-applied`。
+- Home Manager の settings では設定を管理しない。force 付きのテンプレートが次の switch で GUI の変更を上書きし、OmniWM は完全な schema を要求するので部分的な TOML も置けない。代わりに、OmniWM が作った schema 5 の設定を入力にして、Rift 風の操作とアプリの割当だけを1回、バックアップ付きで適用する（`modules/omniwm/files/apply-rift-preset.py`、`modules/omniwm/files/rift-preset.json`）。適用済みの印は、設定ファイルの隣の `.rift-preset-applied`。
+- 0.8.0 は初回起動時に設定を schema 4 から 5 へ一方向に書き換え、`settings.toml.pre-v5` を残す。0.7.6 は schema 5 を読めないので、版を戻すときはこのバックアップを戻す。版を上げるときは、プリセットの action ID と schema 判定を新しい版の `SettingsTOMLMigration.swift` に合わせる。
 - 画面収録の権限と Raycast からの発見のため、Nix store への symlink ではなく `/Applications/OmniWM.app` に通常配置する（`modules/darwin-installers/files/apps.json`、`packages/omniwm.nix`）。
-- OmniWM の rice では SketchyBar と JankyBorders を無効にし、内蔵の workspace bar と枠線を使う（`rices/darwin/omniwm.nix`）。
+- OmniWM の rice では SketchyBar と JankyBorders を無効にし、内蔵の workspace bar と枠線を使う（`rices/darwin/omniwm.nix`）。0.8.0 からバーは OmniShell のスタイルが描き、スタイルの値が `[workspaceBar]` より優先される。既定のスタイルは幅いっぱいでメニューバーに重なり、macOS のメニューバー自動非表示を「常に」にするので、見た目は Settings > Styles & Widgets で整える。
 - 配色は OmniWM の App Theming に任せる。経緯と一度だけの設定は [macos-wallpaper-theming.md](./macos-wallpaper-theming.md)。
 - Rift 固有のレイアウトや任意コマンドの起動は、別のキーボード daemon で真似しない。
