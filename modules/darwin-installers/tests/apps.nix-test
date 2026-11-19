@@ -8,22 +8,10 @@ let
   full = render {
     owner = "fixture-owner";
     fullDesktop = true;
-    boringNotchEnabled = true;
   };
   base = render {
     owner = "fixture-owner";
     fullDesktop = false;
-    boringNotchEnabled = false;
-  };
-  withNotch = render {
-    owner = "fixture-owner";
-    fullDesktop = false;
-    boringNotchEnabled = true;
-  };
-  withoutNotch = render {
-    owner = "fixture-owner";
-    fullDesktop = true;
-    boringNotchEnabled = false;
   };
   names = result: map (entry: entry.name) result.installers;
   expectedCommands = lib.concatMap (app: builtins.attrNames (app.cli or { })) catalog;
@@ -35,13 +23,10 @@ let
     package: builtins.any (actual: actual.drvPath == package.drvPath) home.home.packages
   ) full.packages;
 in
-assert lib.length full.installers == 25;
+assert lib.length full.installers == 24;
 assert lib.length base.installers == 16;
-assert lib.length withNotch.installers == 17;
-assert lib.length withoutNotch.installers == 24;
 assert !(builtins.elem "docker-desktop" (names base));
 assert !(builtins.elem "moocs-collect" (names base));
-assert builtins.elem "boringnotch" (names withNotch);
 assert lib.all (entry: entry.owner == "fixture-owner") full.installers;
 assert
   builtins.attrNames full.cliFiles
@@ -49,7 +34,7 @@ assert
 assert packagesMatch && sourcesMatch;
 assert builtins.all (package: !(package ? sourceRoot)) full.packages;
 {
-  configurations = 4;
+  configurations = 2;
   apps = lib.length full.installers;
   commands = expectedCommands;
   packages = map (package: { inherit (package) name drvPath; }) full.packages;

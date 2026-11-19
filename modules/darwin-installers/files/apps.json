@@ -185,13 +185,6 @@
     "fullDesktop": true
   },
   {
-    "name": "boringnotch",
-    "app": "boringNotch",
-    "bundleId": "theboringteam.boringnotch",
-    "teamId": "JPWMG84CH8",
-    "feature": "boringnotch"
-  },
-  {
     "name": "discord",
     "app": "Discord",
     "bundleId": "com.hnc.Discord",

@@ -2,21 +2,15 @@
 {
   owner,
   fullDesktop,
-  boringNotchEnabled,
 }:
 let
   catalog = builtins.fromJSON (builtins.readFile ../modules/darwin-installers/files/apps.json);
-  selected = builtins.filter (
-    app:
-    (!(app.fullDesktop or false) || fullDesktop)
-    && (!(app ? feature) || (app.feature == "boringnotch" && boringNotchEnabled))
-  ) catalog;
+  selected = builtins.filter (app: !(app.fullDesktop or false) || fullDesktop) catalog;
   brewCask = pkgs.callPackage ./brew-cask.nix { };
   appSupport = pkgs.callPackage ./macos-app-support.nix { };
   extract = pkgs.callPackage ./macos-installer-source.nix { };
   shortVersion = version: lib.head (lib.splitString "," version);
   packageSources = {
-    boringnotch = pkgs.callPackage ./boringnotch.nix { };
     moocs-collect = import ./moocs-collect.nix { inherit pkgs lib; };
     muse = pkgs.callPackage ./muse.nix { };
     omniwm = pkgs.callPackage ./omniwm.nix { };
@@ -122,7 +116,6 @@ let
 in
 assert lib.length (lib.unique (map (app: app.name) catalog)) == lib.length catalog;
 assert lib.length (lib.unique commands) == lib.length commands;
-assert lib.all (app: !(app ? feature) || app.feature == "boringnotch") catalog;
 {
   installers = map (app: app.installer) apps;
   packages = lib.concatMap (app: app.packages) apps;

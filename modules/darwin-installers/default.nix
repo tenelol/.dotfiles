@@ -16,7 +16,6 @@ let
   gui = pkgs.callPackage ../../packages/macos-apps.nix { } {
     owner = profile.username;
     fullDesktop = host.fullDesktopFeatured;
-    boringNotchEnabled = config.myconfig.boringnotch.enable;
   };
   installHash = pkgs.callPackage ../../packages/firefox-install-hash.nix { };
   # patch 版は azookey モジュールが自前のビルドで置き換えるため、公式 pkg は入れない
