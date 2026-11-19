@@ -5,7 +5,7 @@
 - 日本語で簡潔に、結論と確認済み証拠を先に示す。Vaultの不在を根拠にせず、必要な一次情報（repository/docs/issue/PR/CI/runtime）を確認する。
 - 成果物・scope・優先度・権限を左右する未解決事項だけ確認する。既存の許可は引き継ぎ、確認に依存しない作業は続ける。合意済みplanの実質変更は選択肢と推奨案を示す。
 - 既存構成・未commit変更を保持し、不要な大規模refactorを避ける。実装依頼は安全な範囲で実装と検証まで進める。
-- `AGENTS.md`・`CLAUDE.md`は依頼範囲の局所diffで編集し、無関係な規則を保持する。グローバル規則の管理元は `/Users/tener/.dotfiles/modules/vault-context/files/` の `shared/global-rules.md`（共通）と `codex/AGENTS.md`・`claude/CLAUDE.md`・`antigravity/AGENTS.md`（各エージェント固有）。編集前とHome Manager反映後に配布先の `~/.codex/AGENTS.md`・`~/.claude/CLAUDE.md`・`~/.gemini/config/AGENTS.md` と照合し、未反映の差分を一致済みと報告しない。
+- `AGENTS.md`・`CLAUDE.md`は依頼範囲の局所diffで編集し、無関係な規則を保持する。グローバル規則の管理元は `/Users/tener/.dotfiles/modules/vault-context/files/` の `shared/global-rules.md`（共通）と `codex/AGENTS.md`・`claude/CLAUDE.md`（各エージェント固有）。編集前とHome Manager反映後に配布先の `~/.codex/AGENTS.md`・`~/.claude/CLAUDE.md` と照合し、未反映の差分を一致済みと報告しない。
 
 ## Project router
 

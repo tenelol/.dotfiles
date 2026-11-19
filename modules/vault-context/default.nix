@@ -117,11 +117,6 @@ delib.module {
         text = sharedRules + builtins.readFile ./files/claude/CLAUDE.md;
         force = true;
       };
-      # Antigravity and its CLI share this global customization root.
-      ".gemini/config/AGENTS.md" = {
-        text = sharedRules + builtins.readFile ./files/antigravity/AGENTS.md;
-        force = true;
-      };
       ".codex/project-context-protocol.md" = {
         source = ./files/codex/project-context-protocol.md;
         force = true;
