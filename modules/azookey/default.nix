@@ -26,8 +26,9 @@ let
     "Bundle ID" = "com.apple.CharacterPaletteIM";
     InputSourceKind = "Non Keyboard Input Method";
   };
-  azooKeyJapaneseInputSource = azooKeyInputSource "dev.ensan.inputmethod.azooKeyMac.Japanese";
-  azooKeyRomanInputSource = azooKeyInputSource "dev.ensan.inputmethod.azooKeyMac.Roman";
+  # 公式版の Info.plist は入力モード ID に Apple 標準の名前を使う（TIS の入力ソース ID は dev.ensan.*）
+  azooKeyJapaneseInputSource = azooKeyInputSource "com.apple.inputmethod.Japanese";
+  azooKeyRomanInputSource = azooKeyInputSource "com.apple.inputmethod.Roman";
   azooKeyInputSources = [
     azooKeyJapaneseInputSource
     azooKeyRomanInputSource
