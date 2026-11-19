@@ -28,10 +28,9 @@ let
   };
   # 公式版の Info.plist は入力モード ID に Apple 標準の名前を使う（TIS の入力ソース ID は dev.ensan.*）
   azooKeyJapaneseInputSource = azooKeyInputSource "com.apple.inputmethod.Japanese";
-  azooKeyRomanInputSource = azooKeyInputSource "com.apple.inputmethod.Roman";
+  # 英字モードは有効にしない。Control+Space の切替先を ABC と日本語の2つに保つ
   azooKeyInputSources = [
     azooKeyJapaneseInputSource
-    azooKeyRomanInputSource
   ];
   enabledInputSources = [
     abcInputSource
