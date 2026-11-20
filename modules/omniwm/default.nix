@@ -49,8 +49,17 @@ delib.scopedModule {
       # The signed app lives in /Applications via darwin-installers; a second
       # copy linked into Home Manager Apps would compete as a window manager.
       package = pkgs.emptyDirectory;
-      # Leave settings.toml unmanaged so GUI changes survive switches.
-      settings = null;
+      # Only the values that differ from omniwm.nix's defaults; settings made in
+      # the GUI are reverted on the next switch unless added here.
+      settings = ./files/settings.toml;
+      preserveSettings = [
+        # Recolored from the wallpaper by modules/ghostty/files/wallpaper-theme.py.
+        "borders.color"
+        "borders.gradient"
+        # Per-display layout, keyed by this machine's display UUIDs.
+        "monitors"
+        "routing"
+      ];
       # Restart only after a crash. OmniWM exits cleanly when it finds another
       # instance (or is quit), and an unconditional KeepAlive turned that into
       # an endless "competing window manager" dialog loop.
@@ -63,12 +72,6 @@ delib.scopedModule {
       Program = lib.mkForce "/Applications/OmniWM.app/Contents/MacOS/OmniWM";
       ProcessType = "Interactive";
     };
-    home.activation.configureOmniwm =
-      hm.dag.entryBetween [ "setupLaunchAgents" ] [ "linkGeneration" ]
-        ''
-          $DRY_RUN_CMD ${pkgs.python3}/bin/python3 ${./files/apply-rift-preset.py} \
-            "$HOME/.config/omniwm/settings.toml" ${./files/rift-preset.json}
-        '';
     home.activation.registerOmniwm = hm.dag.entryAfter [ "setupLaunchAgents" ] ''
       $DRY_RUN_CMD /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister \
         -f /Applications/OmniWM.app

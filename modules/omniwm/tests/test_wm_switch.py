@@ -21,6 +21,7 @@ let
     desktopSelection.omniwm = true;
     hostTraits.darwinDesktop = true;
     hm = {};
+    inputs = {};
     lib.mkAfter = value: value;
     pkgs = {};
     profile.username = "fixture";
