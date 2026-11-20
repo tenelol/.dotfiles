@@ -49,8 +49,10 @@ delib.scopedModule {
       # The signed app lives in /Applications via darwin-installers; a second
       # copy linked into Home Manager Apps would compete as a window manager.
       package = pkgs.emptyDirectory;
-      # Only the values that differ from omniwm.nix's defaults; settings made in
-      # the GUI are reverted on the next switch unless added here.
+      # Values that differ from omniwm.nix's defaults. Lists other than hotkeys
+      # replace the defaults whole, so appRules and workspaces are complete.
+      # Settings made in the GUI are reverted on the next switch unless added
+      # here.
       settings = ./files/settings.toml;
       preserveSettings = [
         # Recolored from the wallpaper by modules/ghostty/files/wallpaper-theme.py.

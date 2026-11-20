@@ -1,6 +1,6 @@
 # macOS の window manager（Rift・OmniWM）
 
-Rift は三本指の workspace 切替のため公式配布の 0.6.4 を使う。OmniWM は rice で試せるようにし、設定は初回だけ Rift 風に整えて、以後は GUI での変更を保つ。
+Rift は三本指の workspace 切替のため公式配布の 0.6.4 を使う。OmniWM は rice で試せるようにし、設定は omniwm.nix で宣言する（GUI で変えた値は次の switch で戻る）。
 
 ## Rift
 
@@ -12,7 +12,7 @@ Rift は三本指の workspace 切替のため公式配布の 0.6.4 を使う。
 ## OmniWM
 
 - 他の window manager とは同時に動かない。rice を切り替えるときは、旧 launchd agent を bootout してから残ったプロセスを止める（`modules/omniwm/default.nix`）。
-- 設定は [omniwm.nix](https://github.com/mst-mkt/omniwm.nix) の `programs.omniwm` で管理する。同梱の既定 `settings.toml` に、既定と異なる値だけを書いた `modules/omniwm/files/settings.toml` を重ねて毎 switch で書き出すので、GUI で変えた値は次の switch で戻る。残したい変更はこのファイルへ移す。2026-11-20 に当時の実機設定から差分を書き出して移行し、旧ファイルは `settings.toml.pre-omniwm-nix` に残した。
+- 設定は [omniwm.nix](https://github.com/mst-mkt/omniwm.nix) の `programs.omniwm` で管理する。同梱の既定 `settings.toml` に、既定と異なる値を書いた `modules/omniwm/files/settings.toml` を重ねて毎 switch で書き出すので、GUI で変えた値は次の switch で戻る。残したい変更はこのファイルへ移す。`hotkeys` 以外のリストは既定を丸ごと置き換えるので、`appRules` と `workspaces` は既定と同じ項目も含めて全体を書いている。2026-11-20 に当時の実機設定から差分を書き出して移行し、旧ファイルは `settings.toml.pre-omniwm-nix` に残した。
 - 壁紙から枠線を塗り直す `borders.color`・`borders.gradient` と、ディスプレイ UUID に結びつく `monitors`・`routing` は `preserveSettings` で実機の値を保つ。
 - 0.8.0 は初回起動時に設定を schema 4 から 5 へ一方向に書き換え、`settings.toml.pre-v5` を残す。このファイルがある間は Settings に移行の通知が出続けるので、このMacでは `settings.toml.before-v5-20261119` に改名して残した。0.7.6 は schema 5 を読めないので、版を戻すときはこのバックアップを戻す。版を上げるときは omniwm.nix の入力を更新する。未知のホットキー ID は評価時に失敗する。
 - darwin-installers は起動中のアプリを上書きしないので、版を上げる switch の前に OmniWM を正常終了する。正常終了では launchd が再起動しないため、switch 後に `launchctl kickstart gui/$(id -u)/org.nix-community.home.omniwm` で起動する。

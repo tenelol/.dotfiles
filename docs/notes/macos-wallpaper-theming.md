@@ -7,7 +7,7 @@ OmniWM の rice では、Ghostty・Neovim・herdr の色を OmniWM のパレッ�
 - OmniWM には壁紙パレット（v0.8.0 以降、`theme = "wallpaper"`）と、そのパレットを他アプリへ書き出して再読み込みさせる App Theming がある。App Theming は 2026-11-13 に `main` へ入った（OmniNull/OmniWM PR #1207）。v0.8.0 と `canary-20261113-0413` には含まれないので、それより新しい canary か次のリリースが要る。
 - 自作すると壁紙変更の検知・ライト/ダークの切替・各アプリの再読み込みを自分で保守することになり、内蔵機能と役割が重なるので見送った。
 - OmniWM は書き込み先を home の中に限り、Nix store への symlink には書かない。そこで `myconfig.theme.colors = "omniwm"`（`rices/darwin/omniwm.nix`）のときだけ、該当ファイルを通常ファイルにしている。
-- App Theming の有効化は `~/.config/omniwm/settings.toml` に入る。このファイルは GUI の変更を保つ方針（[macos-window-managers.md](./macos-window-managers.md)）なので、Nix からは書かず、下の手順を一度だけ GUI で行う。
+- App Theming の有効化は `~/.config/omniwm/settings.toml` に入る。このファイルは omniwm.nix が毎 switch で書き出し、GUI で変えた値は戻る（[macos-window-managers.md](./macos-window-managers.md)）。下の手順で GUI から有効にしたら、その値を `modules/omniwm/files/settings.toml` に移す。
 
 ## 現状
 
@@ -41,7 +41,7 @@ App Theming 入りの OmniWM が配布されるまで（2026-11-17 時点で最�
 
 ## 一度だけ行う設定
 
-1. OmniWM を App Theming 入りの版にする（Settings に App Theming のページがあれば入っている）。版は `packages/omniwm.nix` で固定しているので、対応版が出たらそこの版とハッシュを上げる。
+1. OmniWM を App Theming 入りの版にする（Settings に App Theming のページがあれば入っている）。版は flake 入力 `omniwm`（omniwm.nix）で固定していて、omniwm.nix は正式リリースの zip を取る（2026-11-20 時点で v0.8.0）。App Theming 入りのリリースに omniwm.nix が上がったら `nix flake update omniwm` で上げる。
 2. パレットを壁紙にする: `omniwmctl shell theme wallpaper`（配色の作り方は `tonalSpot` が既定。`vibrant` などを後ろに付けられる）。
 3. `nh darwin switch . -H macbook-omniwm` で下準備（シード、テンプレート、herdr の通常ファイル化）を入れる。
 4. Settings → App Theming で次を有効にする。

@@ -136,9 +136,10 @@ Select OmniWM with `nh darwin switch . -H macbook-omniwm`; return with
 `nh darwin switch . -H macbook-rift`. The denix rice stops the previous window
 manager before activation. OmniWM needs Accessibility and Input Monitoring
 permissions on first launch. Its settings are declared through
-[omniwm.nix](https://github.com/mst-mkt/omniwm.nix): only the values that differ
+[omniwm.nix](https://github.com/mst-mkt/omniwm.nix): the values that differ
 from the defaults live in
-[`modules/omniwm/files/settings.toml`](./modules/omniwm/files/settings.toml),
+[`modules/omniwm/files/settings.toml`](./modules/omniwm/files/settings.toml)
+(lists other than hotkeys replace the defaults whole),
 so a change made in the app is reverted by the next switch unless it is copied
 there. Monitor routing and the wallpaper-driven border colors are kept from the
 machine.
