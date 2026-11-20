@@ -394,6 +394,26 @@
         "type": "github"
       }
     },
+    "omniwm": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1794252450,
+        "narHash": "sha256-bAp50eEYuf2kR/BeH57jhgByj0NIUB76n0WWgsR1G2I=",
+        "owner": "mst-mkt",
+        "repo": "omniwm.nix",
+        "rev": "80e609061cc09d6df1724dacafe606f0070c4ee2",
+        "type": "github"
+      },
+      "original": {
+        "owner": "mst-mkt",
+        "repo": "omniwm.nix",
+        "type": "github"
+      }
+    },
     "pre-commit-hooks": {
       "inputs": {
         "flake-compat": "flake-compat",
@@ -427,6 +447,7 @@
         "nixos-wsl": "nixos-wsl",
         "nixpkgs": "nixpkgs_2",
         "nixvim": "nixvim",
+        "omniwm": "omniwm",
         "spicetify-nix": "spicetify-nix",
         "vault-context": "vault-context",
         "zen-browser": "zen-browser"

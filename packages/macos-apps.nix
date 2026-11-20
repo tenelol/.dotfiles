@@ -13,7 +13,7 @@ let
   packageSources = {
     moocs-collect = import ./moocs-collect.nix { inherit pkgs lib; };
     muse = pkgs.callPackage ./muse.nix { };
-    omniwm = pkgs.callPackage ./omniwm.nix { };
+    omniwm = pkgs.omniwm;
     phi = pkgs.callPackage ./phi.nix { };
   };
 

@@ -3,6 +3,7 @@
   desktopSelection,
   hostTraits,
   hm,
+  inputs,
   lib,
   pkgs,
   profile,
@@ -15,6 +16,11 @@ delib.scopedModule {
   options = delib.moduleOptions {
     enable = delib.readOnly (delib.boolOption desktopSelection.omniwm);
   };
+
+  # darwin-installers copies pkgs.omniwm into /Applications.
+  darwin.always.nixpkgs.overlays = [ inputs.omniwm.overlays.default ];
+
+  darwin.ifEnabled.home-manager.sharedModules = [ inputs.omniwm.homeManagerModules.default ];
 
   darwin.ifEnabled.system.activationScripts.preActivation.text = lib.mkAfter ''
     uid="$(/usr/bin/id -u ${profile.username})"
@@ -38,27 +44,31 @@ delib.scopedModule {
     # Template for OmniWM App Theming; registering it is a one-time GUI step
     # (docs/notes/macos-wallpaper-theming.md).
     xdg.configFile."omniwm/app-themes/nvim-palette".source = ./files/app-themes/nvim-palette;
-    launchd.agents.omniwm = {
+    programs.omniwm = {
       enable = true;
-      config = {
-        ProgramArguments = [ "/Applications/OmniWM.app/Contents/MacOS/OmniWM" ];
-        # Restart only after a crash. OmniWM exits cleanly when it finds another
-        # instance (or is quit), and an unconditional KeepAlive turned that into
-        # an endless "competing window manager" dialog loop.
-        KeepAlive = {
-          Crashed = true;
-          SuccessfulExit = false;
-        };
-        RunAtLoad = true;
-        ProcessType = "Interactive";
-        StandardOutPath = "/tmp/omniwm.log";
-        StandardErrorPath = "/tmp/omniwm.err.log";
+      # The signed app lives in /Applications via darwin-installers; a second
+      # copy linked into Home Manager Apps would compete as a window manager.
+      package = pkgs.emptyDirectory;
+      # Leave settings.toml unmanaged so GUI changes survive switches.
+      settings = null;
+      # Restart only after a crash. OmniWM exits cleanly when it finds another
+      # instance (or is quit), and an unconditional KeepAlive turned that into
+      # an endless "competing window manager" dialog loop.
+      launchd.keepAlive = {
+        Crashed = true;
+        SuccessfulExit = false;
       };
     };
-    home.activation.configureOmniwm = hm.dag.entryBetween [ "setupLaunchAgents" ] [ "linkGeneration" ] ''
-      $DRY_RUN_CMD ${pkgs.python3}/bin/python3 ${./files/apply-rift-preset.py} \
-        "$HOME/.config/omniwm/settings.toml" ${./files/rift-preset.json}
-    '';
+    launchd.agents.omniwm.config = {
+      Program = lib.mkForce "/Applications/OmniWM.app/Contents/MacOS/OmniWM";
+      ProcessType = "Interactive";
+    };
+    home.activation.configureOmniwm =
+      hm.dag.entryBetween [ "setupLaunchAgents" ] [ "linkGeneration" ]
+        ''
+          $DRY_RUN_CMD ${pkgs.python3}/bin/python3 ${./files/apply-rift-preset.py} \
+            "$HOME/.config/omniwm/settings.toml" ${./files/rift-preset.json}
+        '';
     home.activation.registerOmniwm = hm.dag.entryAfter [ "setupLaunchAgents" ] ''
       $DRY_RUN_CMD /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister \
         -f /Applications/OmniWM.app
