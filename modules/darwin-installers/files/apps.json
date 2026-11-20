@@ -134,7 +134,7 @@
     "app": "Google Chrome",
     "bundleId": "com.google.Chrome",
     "teamId": "EQHXZ8M8AV",
-    "sourceHash": "sha256-frZZHhawFIyFBBFkLtL54c+MXfdy2y4eA4+c46/I0W4="
+    "sourceHash": "sha256-dbn9t1c6q4qJ8bADGWkqH3hftOb9B+l5FqE7ALPTS64="
   },
   {
     "name": "phi",
@@ -181,7 +181,7 @@
     "app": "Spotify",
     "bundleId": "com.spotify.client",
     "teamId": "2FNC3A47ZF",
-    "sourceHash": "sha256-V5R7WMMoIYY3nu+BOC3uoO/sxOPrds6BPqm0U3vBWaM=",
+    "sourceHash": "sha256-g0TTMH5Tc22ANkK+T7N/bAJThQtSW57l+PPiu/jDLZM=",
     "fullDesktop": true
   },
   {
