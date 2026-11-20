@@ -1010,18 +1010,6 @@ def extract_google_material_links(page_html, page_url):
     return materials
 
 
-def extract_slide_embeds(page_html, page_url):
-    embeds = []
-    for match in re.finditer(r"(?is)<iframe\b([^>]*)>", page_html):
-        src = attr("src", match.group(1))
-        if not src:
-            continue
-        src = urllib.parse.urljoin(page_url, html.unescape(src))
-        if is_google_presentation_url(src):
-            embeds.append({"url": src, "index": len(embeds)})
-    return embeds
-
-
 def google_pdf_candidates(embed_url):
     parsed = urllib.parse.urlparse(html.unescape(embed_url))
     parts = [urllib.parse.unquote(part) for part in parsed.path.split("/") if part]

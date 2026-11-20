@@ -29,34 +29,6 @@ delib.module {
       withRuby = false;
       env.NVIM_SYSTEM_RPLUGIN_MANIFEST = "${nvim.moltenRemotePluginManifest}";
       extraConfigLuaPre = ''
-        if vim.fn.has("wsl") == 1 and vim.fn.executable("clip.exe") == 1 and vim.fn.executable("powershell.exe") == 1 then
-          vim.g.clipboard = {
-            name = "wsl-clipboard",
-            copy = {
-              ["+"] = { "clip.exe" },
-              ["*"] = { "clip.exe" },
-            },
-            paste = {
-              ["+"] = {
-                "powershell.exe",
-                "-NoLogo",
-                "-NoProfile",
-                "-Command",
-                "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; Get-Clipboard -Raw",
-              },
-              ["*"] = {
-                "powershell.exe",
-                "-NoLogo",
-                "-NoProfile",
-                "-Command",
-                "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; Get-Clipboard -Raw",
-              },
-            },
-            cache_enabled = 0,
-          }
-        end
-
-        local is_wsl = vim.fn.has("wsl") == 1
         local function duplicate_current_or_visual_lines()
           local first_line = vim.fn.line(".")
           local last_line = first_line
@@ -80,21 +52,14 @@ delib.module {
           desc = "Duplicate line(s) below",
         })
 
-        if is_wsl then
-          vim.keymap.set({ "n", "i", "v" }, "<C-h>", "<Left>", { noremap = true, silent = true, desc = "Move left" })
-          vim.keymap.set({ "n", "i", "v" }, "<C-j>", "<Down>", { noremap = true, silent = true, desc = "Move down" })
-          vim.keymap.set({ "n", "i", "v" }, "<C-k>", "<Up>", { noremap = true, silent = true, desc = "Move up" })
-          vim.keymap.set({ "n", "i", "v" }, "<C-l>", "<Right>", { noremap = true, silent = true, desc = "Move right" })
-        else
-          vim.keymap.set("n", "<C-h>", "<C-w>h", { noremap = true, silent = true })
-          vim.keymap.set("n", "<C-j>", "<C-w>j", { noremap = true, silent = true })
-          vim.keymap.set("n", "<C-k>", "<C-w>k", { noremap = true, silent = true })
-          vim.keymap.set("n", "<C-l>", "<C-w>l", { noremap = true, silent = true })
-          vim.keymap.set("t", "<C-h>", "<Cmd>wincmd h<CR>", { noremap = true, silent = true })
-          vim.keymap.set("t", "<C-j>", "<Cmd>wincmd j<CR>", { noremap = true, silent = true })
-          vim.keymap.set("t", "<C-k>", "<Cmd>wincmd k<CR>", { noremap = true, silent = true })
-          vim.keymap.set("t", "<C-l>", "<Cmd>wincmd l<CR>", { noremap = true, silent = true })
-        end
+        vim.keymap.set("n", "<C-h>", "<C-w>h", { noremap = true, silent = true })
+        vim.keymap.set("n", "<C-j>", "<C-w>j", { noremap = true, silent = true })
+        vim.keymap.set("n", "<C-k>", "<C-w>k", { noremap = true, silent = true })
+        vim.keymap.set("n", "<C-l>", "<C-w>l", { noremap = true, silent = true })
+        vim.keymap.set("t", "<C-h>", "<Cmd>wincmd h<CR>", { noremap = true, silent = true })
+        vim.keymap.set("t", "<C-j>", "<Cmd>wincmd j<CR>", { noremap = true, silent = true })
+        vim.keymap.set("t", "<C-k>", "<Cmd>wincmd k<CR>", { noremap = true, silent = true })
+        vim.keymap.set("t", "<C-l>", "<Cmd>wincmd l<CR>", { noremap = true, silent = true })
       ''
       + lib.optionalString pkgs.stdenv.hostPlatform.isDarwin ''
         vim.g.clipboard = {
@@ -131,7 +96,6 @@ delib.module {
         maplocalleader = " ";
       };
       opts = {
-        autoindent = true;
         clipboard = "unnamedplus";
         completeopt = [
           "menu"
@@ -140,7 +104,6 @@ delib.module {
         ];
         cursorline = true;
         expandtab = true;
-        hidden = true;
         ignorecase = true;
         number = true;
         pumblend = 12;
@@ -176,14 +139,8 @@ delib.module {
           source = "if_many";
         };
       };
-      filetype.extension = {
-        js = "javascript";
-        mjs = "javascript";
-        cjs = "javascript";
-        jsx = "javascriptreact";
-        tsx = "typescriptreact";
-        ino = "cpp";
-      };
+      # Neovim detects the other web extensions itself; .ino would be arduino.
+      filetype.extension.ino = "cpp";
       userCommands.SelectAll = {
         command = "normal! ggVG";
         desc = "Select the entire buffer";

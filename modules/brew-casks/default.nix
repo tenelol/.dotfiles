@@ -11,20 +11,15 @@ let
   brewCask = pkgs.callPackage ../../packages/brew-cask.nix { };
   apps = builtins.fromJSON (builtins.readFile ./files/apps.json);
   selected = apps.base ++ lib.optionals host.fullDesktopFeatured apps.fullDesktop ++ apps.binaries;
+  mkCask =
+    entry: brewCask (builtins.removeAttrs entry [ "name" ] // { cask = pkgs.brewCasks.${entry.name}; });
   packages = lib.listToAttrs (
     map (app: {
       inherit (app) name;
-      value = brewCask (
-        builtins.removeAttrs app [ "name" ]
-        // {
-          cask = pkgs.brewCasks.${app.name};
-        }
-      );
+      value = mkCask app;
     }) selected
   );
-  fontPackages = map (
-    font: brewCask (builtins.removeAttrs font [ "name" ] // { cask = pkgs.brewCasks.${font.name}; })
-  ) apps.fonts;
+  fontPackages = map mkCask apps.fonts;
 in
 delib.module {
   name = "brew-casks";
@@ -36,10 +31,10 @@ delib.module {
 
   home.ifEnabled = {
     home.packages =
-      lib.attrValues packages
-      ++ lib.concatMap (package: lib.optional (package ? completionPackage) package.completionPackage) (
-        lib.attrValues packages
-      );
+      let
+        packageList = lib.attrValues packages;
+      in
+      packageList ++ lib.catAttrs "completionPackage" packageList;
     # ~/.local/bin precedes Homebrew in this repository's session PATH.
     home.file = lib.listToAttrs (
       lib.concatMap (

@@ -294,14 +294,19 @@ def replace_settings(path, colors, mode):
     if not backup.exists():
         backup.write_text(original)
         backup.chmod(0o600)
+    # OmniWM saves this file itself; never overwrite a save that landed meanwhile.
+    return atomic_write(path, changed, path.stat().st_mode & 0o777, expected=original)
+
+
+def atomic_write(path, text, mode, expected=None):
+    """Write text to path in one step. With expected, only while the file still holds it."""
     staged = None
     try:
         with tempfile.NamedTemporaryFile("w", dir=path.parent, delete=False) as output:
             staged = Path(output.name)
-            output.write(changed)
-        staged.chmod(path.stat().st_mode & 0o777)
-        # OmniWM saves this file itself; never overwrite a save that landed meanwhile.
-        if path.read_text() != original:
+            output.write(text)
+        staged.chmod(mode)
+        if expected is not None and path.read_text() != expected:
             return False
         os.replace(staged, path)
     finally:
@@ -315,17 +320,7 @@ def replace(path, text):
     if path.exists() and path.read_text() == text:
         return False
     path.parent.mkdir(parents=True, exist_ok=True)
-    staged = None
-    try:
-        with tempfile.NamedTemporaryFile("w", dir=path.parent, delete=False) as output:
-            staged = Path(output.name)
-            output.write(text)
-        staged.chmod(0o644)
-        os.replace(staged, path)
-    finally:
-        if staged is not None:
-            staged.unlink(missing_ok=True)
-    return True
+    return atomic_write(path, text, 0o644)
 
 
 def write_themes(colors, themes, palette, herdr, settings, shell, mode):

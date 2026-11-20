@@ -143,13 +143,11 @@ check_tools() {
   done
 
   if [ "$uname_s" = "Darwin" ]; then
-    for tool in brew darwin-rebuild; do
-      if has "$tool"; then
-        status ok "$tool" "$(command -v "$tool")"
-      else
-        status warn "$tool" "not found in PATH"
-      fi
-    done
+    if has darwin-rebuild; then
+      status ok "darwin-rebuild" "$(command -v darwin-rebuild)"
+    else
+      status warn "darwin-rebuild" "not found in PATH"
+    fi
   elif [ "$uname_s" = "Linux" ]; then
     if has nixos-rebuild; then
       status ok "nixos-rebuild" "$(command -v nixos-rebuild)"
@@ -299,7 +297,7 @@ check_darwin_desktop() {
     status info "desktop bar" "OmniWM rice uses its built-in workspace bar"
   elif has pgrep && pgrep -qx sketchybar >/dev/null 2>&1; then
     status ok "sketchybar" "running"
-  elif [ -x /opt/homebrew/bin/sketchybar ]; then
+  elif has sketchybar; then
     status warn "sketchybar" "installed but not running"
   else
     status warn "sketchybar" "not found"

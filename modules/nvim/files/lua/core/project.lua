@@ -62,17 +62,9 @@ function M.buffer_path(bufnr)
     return normalize(name)
 end
 
+-- M.root falls back to the cwd for buffers without a name.
 function M.buffer_root(bufnr)
-    local path = M.buffer_path(bufnr)
-    if path == nil then
-        return M.root(vim.fn.getcwd())
-    end
-
-    return M.root(path)
-end
-
-function M.cwd_root()
-    return M.root(vim.fn.getcwd())
+    return M.root(M.buffer_path(bufnr))
 end
 
 return M

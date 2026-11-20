@@ -8,8 +8,7 @@
   ...
 }:
 let
-  baseConfig =
-    if pkgs.stdenv.hostPlatform.isDarwin then ./files/config-darwin else ./files/config;
+  baseConfig = if pkgs.stdenv.hostPlatform.isDarwin then ./files/config-darwin else ./files/config;
 
   # Cursor and focus effects share hud_common.glsl; Ghostty has no includes.
   mkHudShader =
@@ -146,15 +145,19 @@ delib.module {
       xdg.configFile = {
         "ghostty/config".source = mkConfig myconfig;
         "ghostty/shaders/aurora.glsl".source = auroraShader;
-        "ghostty/shaders/focus_ripple.glsl".source = mkHudShader "focus_ripple.glsl";
         "ghostty/shaders/readability_scrim.glsl".source = mkReadabilityShader myconfig;
-        "ghostty/shaders/cursor_smear.glsl".source = mkHudShader "cursor_smear.glsl";
-        "ghostty/shaders/typing_ignite.glsl".source = mkHudShader "typing_ignite.glsl";
-        "ghostty/shaders/typing_ripple.glsl".source = mkHudShader "typing_ripple.glsl";
-        "ghostty/shaders/typing_sparkle.glsl".source = mkHudShader "typing_sparkle.glsl";
-        "ghostty/shaders/jump_lockon.glsl".source = mkHudShader "jump_lockon.glsl";
-        "ghostty/shaders/font_zoom.glsl".source = mkHudShader "font_zoom.glsl";
-      };
+      }
+      // lib.listToAttrs (
+        map (name: lib.nameValuePair "ghostty/shaders/${name}" { source = mkHudShader name; }) [
+          "focus_ripple.glsl"
+          "cursor_smear.glsl"
+          "typing_ignite.glsl"
+          "typing_ripple.glsl"
+          "typing_sparkle.glsl"
+          "jump_lockon.glsl"
+          "font_zoom.glsl"
+        ]
+      );
 
       # Regular files, not store links: OmniWM replaces them once App Theming is
       # on, and only writes inside the home folder.

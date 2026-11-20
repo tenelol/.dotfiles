@@ -69,18 +69,9 @@ let
     ];
     text = builtins.readFile ./files/vault-git-sync;
   };
+  # Both `.codex/bin/vault-context` and `.codex/bin/codex-context` use this wrapper.
   vaultContextCli = pkgs.writeShellApplication {
     name = "vault-context";
-    runtimeInputs = [
-      pkgs.nodejs
-      pkgs.sqlite
-    ];
-    text = ''
-      exec /Users/tener/.codex/mcp/vault-context-mcp/bin/vault-context "$@"
-    '';
-  };
-  codexContextCli = pkgs.writeShellApplication {
-    name = "codex-context";
     runtimeInputs = [
       pkgs.nodejs
       pkgs.sqlite
@@ -126,7 +117,7 @@ delib.module {
         executable = true;
       };
       ".codex/bin/codex-context" = {
-        source = "${codexContextCli}/bin/codex-context";
+        source = "${vaultContextCli}/bin/vault-context";
         executable = true;
       };
       ".local/bin/sync-vault-context-runtime" = {

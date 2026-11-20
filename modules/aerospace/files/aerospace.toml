@@ -59,7 +59,7 @@ exec-on-workspace-change = [
 inherit-env-vars = true
 
 [exec.env-vars]
-PATH = '/run/current-system/sw/bin:/run/current-system/sw/bin:/usr/bin:/bin:/usr/sbin:/sbin'
+PATH = '/run/current-system/sw/bin:/usr/bin:/bin:/usr/sbin:/sbin'
 
 [gaps]
 inner.horizontal = 6

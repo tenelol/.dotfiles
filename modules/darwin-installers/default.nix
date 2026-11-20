@@ -17,7 +17,8 @@ let
     fullDesktop = host.fullDesktopFeatured;
   };
   installHash = pkgs.callPackage ../../packages/firefox-install-hash.nix { };
-  versionPrefix = version: lib.concatStringsSep "." (lib.take 2 (lib.splitString "." version)) + ".";
+  majorMinor = version: lib.concatStringsSep "." (lib.take 2 (lib.splitString "." version));
+  versionPrefix = version: majorMinor version + ".";
   karabinerDmg = pkgs.fetchurl {
     url = "https://github.com/pqrs-org/Karabiner-Elements/releases/download/v16.0.0/Karabiner-Elements-16.0.0.dmg";
     hash = "sha256-uWD3MYkKdCMcIp5UU8TucQnvsyjE+2Ou2JdONH/R+cA=";
@@ -27,23 +28,25 @@ let
     src = karabinerDmg;
     artifacts = [ "Karabiner-Elements.pkg" ];
   };
-  wireshark = extract {
-    name = "wireshark-${casks.wireshark-app.version}";
-    src = casks.wireshark-app.src;
-    artifacts = [
-      "Wireshark.app"
-      "Install ChmodBPF.pkg"
-      "Add Wireshark to the system path.pkg"
-    ];
-    sourcePaths = {
-      "Wireshark.app" = "Wireshark ${casks.wireshark-app.version}/Wireshark.app";
-      "Install ChmodBPF.pkg" = "Wireshark ${casks.wireshark-app.version}/Install ChmodBPF.pkg";
-      "Add Wireshark to the system path.pkg" =
-        "Wireshark ${casks.wireshark-app.version}/Add Wireshark to the system path.pkg";
+  wireshark =
+    let
+      artifacts = [
+        "Wireshark.app"
+        "Install ChmodBPF.pkg"
+        "Add Wireshark to the system path.pkg"
+      ];
+    in
+    extract {
+      name = "wireshark-${casks.wireshark-app.version}";
+      src = casks.wireshark-app.src;
+      inherit artifacts;
+      sourcePaths = lib.genAttrs artifacts (
+        artifact: "Wireshark ${casks.wireshark-app.version}/${artifact}"
+      );
     };
-  };
   officeEntry = name: app: receipt: {
-    inherit name app;
+    inherit name;
+    app = "/Applications/Microsoft ${app}.app";
     kind = "pkg";
     version = casks.${name}.version;
     appVersionPrefix = versionPrefix casks.${name}.version;
@@ -147,9 +150,7 @@ let
             kind = "pkg";
             version = casks.microsoft-auto-update.version;
             app = "/Library/Application Support/Microsoft/MAU2.0/Microsoft AutoUpdate.app";
-            appVersion = lib.concatStringsSep "." (
-              lib.take 2 (lib.splitString "." casks.microsoft-auto-update.version)
-            );
+            appVersion = majorMinor casks.microsoft-auto-update.version;
             bundleId = "com.microsoft.autoupdate2";
             teamId = "UBF8T346G9";
             receipts = {
@@ -161,27 +162,19 @@ let
           (
             officeEntry "microsoft-excel" "Excel" "Excel"
             // {
-              app = "/Applications/Microsoft Excel.app";
               requiredReceipts = [ "com.microsoft.pkg.licensing" ];
             }
           )
-          (
-            officeEntry "microsoft-onenote" "OneNote" "onenote.mac"
-            // {
-              app = "/Applications/Microsoft OneNote.app";
-            }
-          )
+          (officeEntry "microsoft-onenote" "OneNote" "onenote.mac")
           (
             officeEntry "microsoft-powerpoint" "PowerPoint" "Powerpoint"
             // {
-              app = "/Applications/Microsoft PowerPoint.app";
               requiredReceipts = [ "com.microsoft.pkg.licensing" ];
             }
           )
           (
             officeEntry "microsoft-word" "Word" "Word"
             // {
-              app = "/Applications/Microsoft Word.app";
               requiredReceipts = [ "com.microsoft.pkg.licensing" ];
             }
           )

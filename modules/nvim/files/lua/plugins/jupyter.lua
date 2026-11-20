@@ -31,7 +31,7 @@ local function has_value(values, needle)
 	return false
 end
 
-local function notebook_kernel_name(path)
+local function read_notebook(path)
 	local file = io.open(path, "r")
 	if not file then
 		return nil
@@ -39,7 +39,15 @@ local function notebook_kernel_name(path)
 
 	local ok, notebook = pcall(vim.json.decode, file:read("*a"))
 	file:close()
-	if not ok then
+	if not ok or type(notebook) ~= "table" then
+		return nil
+	end
+	return notebook
+end
+
+local function notebook_kernel_name(path)
+	local notebook = read_notebook(path)
+	if not notebook then
 		return nil
 	end
 
@@ -328,14 +336,8 @@ local function setup_jupytext_metadata_fallback()
 	}
 
 	utils.get_ipynb_metadata = function(filename)
-		local file = io.open(filename, "r")
-		if not file then
-			return { language = "python", extension = "py" }
-		end
-
-		local ok_decode, notebook = pcall(vim.json.decode, file:read("*a"))
-		file:close()
-		if not ok_decode or type(notebook) ~= "table" then
+		local notebook = read_notebook(filename)
+		if not notebook then
 			return { language = "python", extension = "py" }
 		end
 
