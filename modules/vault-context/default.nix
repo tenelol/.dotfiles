@@ -11,11 +11,16 @@
 let
   sharedRules = builtins.readFile ./files/shared/global-rules.md;
   vaultContextMcp = inputs.vault-context.packages.${pkgs.stdenv.hostPlatform.system}.default;
-  # The tests only read scripts under files/. Keep the rest of the repository
-  # out of the check's inputs so unrelated commits do not re-run them.
+  # The tests only read these scripts. Keep the rest of the repository,
+  # including the agent rule files, out of the check's inputs so unrelated
+  # commits do not re-run them.
   testRepository = lib.fileset.toSource {
     root = ../..;
-    fileset = ./files;
+    fileset = lib.fileset.unions [
+      ./files/sync-vault-context-runtime
+      ./files/vault-git-sync
+      ./files/project-context-init.py
+    ];
   };
   vaultContextIntegrationCheck =
     pkgs.runCommand "vault-context-dotfiles-integration-check"
