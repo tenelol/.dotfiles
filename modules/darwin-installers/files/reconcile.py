@@ -123,8 +123,9 @@ class Host:
         backup = stage / "previous.app"
         try:
             self.run("/usr/bin/ditto", source, str(incoming))
-            verify_identity(self.app(str(incoming)), expected, str(incoming))
-            verify_version(self.app(str(incoming)), expected, str(incoming))
+            staged = self.app(str(incoming))
+            verify_identity(staged, expected, str(incoming))
+            verify_version(staged, expected, str(incoming))
             if expected.get("owner"):
                 account = pwd.getpwnam(expected["owner"])
                 for directory, dirs, files in os.walk(incoming, followlinks=False):

@@ -297,15 +297,21 @@ local function export_current_notebook_html(opts)
 		vim.list_extend(cmd, { "--output-dir", output_dir })
 	end
 
-	local result = vim.system(cmd):wait()
-	if result.code == 0 then
-		remove_remote_html_scripts(output_path)
-		vim.notify(("Exported notebook HTML: %s"):format(output_path), vim.log.levels.INFO)
-		return
-	end
+	-- nbconvert with embedded images takes seconds; keep the editor responsive.
+	vim.system(
+		cmd,
+		{},
+		vim.schedule_wrap(function(result)
+			if result.code == 0 then
+				remove_remote_html_scripts(output_path)
+				vim.notify(("Exported notebook HTML: %s"):format(output_path), vim.log.levels.INFO)
+				return
+			end
 
-	local message = result.stderr ~= "" and result.stderr or "Notebook HTML export failed"
-	vim.notify(message, vim.log.levels.ERROR)
+			local message = result.stderr ~= "" and result.stderr or "Notebook HTML export failed"
+			vim.notify(message, vim.log.levels.ERROR)
+		end)
+	)
 end
 
 local function setup_jupytext_metadata_fallback()

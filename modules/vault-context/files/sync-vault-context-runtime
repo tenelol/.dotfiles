@@ -39,6 +39,23 @@ if [[ "${1:-}" == "--check" ]]; then
   exit 0
 fi
 
+# Compare before staging so an unchanged runtime skips copying node_modules
+# and the self-test. The comparison ignores permissions, so the read-only
+# bundle compares the same as its writable stage.
+if [[ -d "${destination}" ]]; then
+  if runtime_differs "${bundle}" "${destination}"; then
+    :
+  else
+    comparison_status=$?
+    if [[ "${comparison_status}" == "1" ]]; then
+      echo "vault-context runtime is already current"
+      exit 0
+    fi
+    echo "vault-context runtime comparison failed" >&2
+    exit 1
+  fi
+fi
+
 stage="$(mktemp -d "${runtime_parent}/.vault-context-mcp-stage.XXXXXX")"
 previous="${runtime_parent}/.vault-context-mcp-previous"
 
@@ -52,20 +69,6 @@ trap cleanup_stage EXIT
 rsync -a --delete "${bundle}/" "${stage}/"
 chmod -R u+w "${stage}"
 node "${stage}/dist/src/server.js" --self-test >/dev/null
-
-if [[ -d "${destination}" ]]; then
-  if runtime_differs "${stage}" "${destination}"; then
-    :
-  else
-    comparison_status=$?
-    if [[ "${comparison_status}" == "1" ]]; then
-      echo "vault-context runtime is already current"
-      exit 0
-    fi
-    echo "vault-context runtime comparison failed" >&2
-    exit 1
-  fi
-fi
 
 if [[ -e "${previous}" ]]; then
   rm -rf -- "${previous}"

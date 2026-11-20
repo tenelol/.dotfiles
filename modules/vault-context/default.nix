@@ -10,6 +10,12 @@
 let
   sharedRules = builtins.readFile ./files/shared/global-rules.md;
   vaultContextMcp = inputs.vault-context.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  # The tests only read scripts under files/. Keep the rest of the repository
+  # out of the check's inputs so unrelated commits do not re-run them.
+  testRepository = lib.fileset.toSource {
+    root = ../..;
+    fileset = ./files;
+  };
   vaultContextIntegrationCheck =
     pkgs.runCommand "vault-context-dotfiles-integration-check"
       {
@@ -30,11 +36,11 @@ let
         test -L ${vaultContextMcp}/share/vault-context-mcp/scripts/migrate-v2.mjs
         test -x ${vaultContextMcp}/share/vault-context-mcp/bin/vault-context
         test -x ${vaultContextMcp}/share/vault-context-mcp/bin/vault-context-server
-        DOTFILES_REPOSITORY=${../../.} PYTHONDONTWRITEBYTECODE=1 python3 \
+        DOTFILES_REPOSITORY=${testRepository} PYTHONDONTWRITEBYTECODE=1 python3 \
           ${./tests}/test_sync_vault_context_runtime.py -v
-        DOTFILES_REPOSITORY=${../../.} PYTHONDONTWRITEBYTECODE=1 python3 \
+        DOTFILES_REPOSITORY=${testRepository} PYTHONDONTWRITEBYTECODE=1 python3 \
           ${./tests}/test_vault_git_sync.py -v
-        DOTFILES_REPOSITORY=${../../.} PYTHONDONTWRITEBYTECODE=1 python3 \
+        DOTFILES_REPOSITORY=${testRepository} PYTHONDONTWRITEBYTECODE=1 python3 \
           ${./tests}/test_project_context_init.py -v
         touch "$out"
       '';

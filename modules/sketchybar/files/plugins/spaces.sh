@@ -13,67 +13,42 @@ theme_file="${XDG_CONFIG_HOME:-$HOME/.config}/theme/sketchybar.env"
 WORKSPACE_ACTIVE="${WORKSPACE_ACTIVE:-0xcff5f7fa}"
 WORKSPACE_INACTIVE="${WORKSPACE_INACTIVE:-0x78f5f7fa}"
 
-aerospace_running() {
-  /usr/bin/pgrep -qx AeroSpace >/dev/null 2>&1 && [ -x /run/current-system/sw/bin/aerospace ]
-}
-
-managed_workspaces() {
-  if aerospace_running; then
-    printf '%s\n' "1 2 3 4 5 6 7 8 9"
-  else
-    printf '%s\n' "$rift_workspaces" | "$JQ" -r '.[] | .index + 1'
-  fi
-}
-
-space_item_name() {
-  workspace_id="$1"
-  if aerospace_running; then
-    local_workspace=$(( (workspace_id - 1) % 9 + 1 ))
-  else
-    local_workspace="$workspace_id"
-  fi
-
-  printf 'space.%s.%s\n' "$workspace_id" "$local_workspace"
-}
-
-query_focused_workspace() {
-  if aerospace_running; then
-    /run/current-system/sw/bin/aerospace list-workspaces --focused 2>/dev/null | head -n 1
-    return
-  fi
-
-  printf '%s\n' "$rift_workspaces" \
-    | "$JQ" -r '[.[] | select(.is_active) | .index + 1][0] // empty'
-}
+# Resolve the backend and its workspace list once; this runs on every
+# workspace change.
+if /usr/bin/pgrep -qx AeroSpace >/dev/null 2>&1 && [ -x /run/current-system/sw/bin/aerospace ]; then
+  aerospace=1
+  managed_workspaces="1 2 3 4 5 6 7 8 9"
+  focused_workspace="${FOCUSED:-}"
+  [ -n "$focused_workspace" ] \
+    || focused_workspace="$(/run/current-system/sw/bin/aerospace list-workspaces --focused 2>/dev/null | head -n 1)"
+else
+  aerospace=0
+  rift_workspaces="$("$RIFT_CLI" query workspaces 2>/dev/null)" || exit 0
+  managed_workspaces="$(printf '%s\n' "$rift_workspaces" | "$JQ" -r '.[] | .index + 1')"
+  focused_workspace="$(printf '%s\n' "$rift_workspaces" \
+    | "$JQ" -r '[.[] | select(.is_active) | .index + 1][0] // empty')"
+fi
+[ -n "$focused_workspace" ] || exit 0
 
 is_managed_workspace() {
-  for workspace_id in $(managed_workspaces); do
+  for workspace_id in $managed_workspaces; do
     [ "$1" = "$workspace_id" ] && return 0
   done
 
   return 1
 }
 
-set_active() {
+set_color() {
   is_managed_workspace "$1" || return 0
 
-  "$SKETCHYBAR_BIN" --set "$(space_item_name "$1")" label.color="$WORKSPACE_ACTIVE"
+  if [ "$aerospace" = 1 ]; then
+    local_workspace=$(( ($1 - 1) % 9 + 1 ))
+  else
+    local_workspace="$1"
+  fi
+
+  "$SKETCHYBAR_BIN" --set "space.$1.$local_workspace" label.color="$2"
 }
-
-set_inactive() {
-  is_managed_workspace "$1" || return 0
-
-  "$SKETCHYBAR_BIN" --set "$(space_item_name "$1")" label.color="$WORKSPACE_INACTIVE"
-}
-
-if aerospace_running; then
-  focused_workspace="${FOCUSED:-}"
-else
-  rift_workspaces="$("$RIFT_CLI" query workspaces 2>/dev/null)" || exit 0
-  focused_workspace=""
-fi
-[ -n "$focused_workspace" ] || focused_workspace="$(query_focused_workspace)"
-[ -n "$focused_workspace" ] || exit 0
 
 previous_workspace="$PREVIOUS"
 if [ -z "$previous_workspace" ] && [ -r "$FOCUSED_STATE_FILE" ]; then
@@ -87,11 +62,11 @@ fi
 printf '%s\n' "$focused_workspace" > "$FOCUSED_STATE_FILE"
 
 if [ "$REFRESH" = "all" ] || [ -z "$previous_workspace" ]; then
-  for sid in $(managed_workspaces); do
+  for sid in $managed_workspaces; do
     if [ "$sid" = "$focused_workspace" ]; then
-      set_active "$sid"
+      set_color "$sid" "$WORKSPACE_ACTIVE"
     else
-      set_inactive "$sid"
+      set_color "$sid" "$WORKSPACE_INACTIVE"
     fi
   done
   exit 0
@@ -101,5 +76,5 @@ if [ "$previous_workspace" = "$focused_workspace" ]; then
   exit 0
 fi
 
-set_inactive "$previous_workspace"
-set_active "$focused_workspace"
+set_color "$previous_workspace" "$WORKSPACE_INACTIVE"
+set_color "$focused_workspace" "$WORKSPACE_ACTIVE"

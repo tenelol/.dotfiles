@@ -102,9 +102,6 @@
           };
         };
 
-      filterConfigurationsBySystem =
-        system: lib.filterAttrs (_: configuration: configuration.pkgs.stdenv.hostPlatform.system == system);
-
       mkEvalChecks =
         configurations:
         lib.mapAttrs (
@@ -149,28 +146,24 @@
       ];
       # Evaluate the default host configurations in CI. Rice variants remain
       # available as explicit switch targets without multiplying build checks.
-      checkedNixosConfigurations = lib.getAttrs linuxCheckTargets nixosConfigurations;
-      checkedConfigurations =
-        checkedNixosConfigurations // lib.getAttrs darwinCheckTargets darwinConfigurations;
-      supportedSystems = lib.unique (
-        map (configuration: configuration.pkgs.stdenv.hostPlatform.system) (
-          builtins.attrValues checkedConfigurations
-        )
-      );
+      # Keyed by system directly, so `nix fmt` and a single system's checks do
+      # not evaluate the other hosts.
+      checkedConfigurationsBySystem = {
+        x86_64-linux = lib.getAttrs linuxCheckTargets nixosConfigurations;
+        aarch64-darwin = lib.getAttrs darwinCheckTargets darwinConfigurations;
+      };
     in
     {
       inherit nixosConfigurations darwinConfigurations;
 
-      checks = lib.genAttrs supportedSystems (
-        system:
-        let
-          systemConfigurations = filterConfigurationsBySystem system checkedConfigurations;
-          linuxSystemConfigurations = filterConfigurationsBySystem system checkedNixosConfigurations;
-        in
-        mkEvalChecks systemConfigurations
-        // lib.optionalAttrs (isLinuxSystem system) (mkLinuxBuildChecks linuxSystemConfigurations)
-      );
+      checks = lib.mapAttrs (
+        system: configurations:
+        mkEvalChecks configurations
+        // lib.optionalAttrs (isLinuxSystem system) (mkLinuxBuildChecks configurations)
+      ) checkedConfigurationsBySystem;
 
-      formatter = lib.genAttrs supportedSystems (system: nixpkgs.legacyPackages.${system}.nixfmt-tree);
+      formatter = lib.mapAttrs (
+        system: _: nixpkgs.legacyPackages.${system}.nixfmt-tree
+      ) checkedConfigurationsBySystem;
     };
 }
