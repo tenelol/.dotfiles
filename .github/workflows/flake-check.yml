@@ -37,7 +37,6 @@ jobs:
       fail-fast: false
       matrix:
         check:
-          - build-surface
           - build-nvidia-desktop
           - build-wsl
 

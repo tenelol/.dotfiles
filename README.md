@@ -15,7 +15,6 @@
 
 | Host | Platform | Role |
 | --- | --- | --- |
-| `surface` | x86_64 Linux | laptop |
 | `nvidia-desktop` | x86_64 Linux | desktop |
 | `macbook` | aarch64 Darwin | laptop |
 | `wsl` | x86_64 Linux | NixOS-WSL |

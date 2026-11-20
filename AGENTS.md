@@ -11,7 +11,6 @@
 - Prefer `nh` commands over raw `nixos-rebuild` / `darwin-rebuild` unless the user explicitly asks otherwise.
 - Preferred validation command when explicitly requested: `nix flake check --all-systems --no-build`
 - Preferred Linux build commands:
-  - `nh os build . -H surface`
   - `nh os build . -H nvidia-desktop`
   - `nh os build . -H wsl`
 - Preferred Darwin build command:
@@ -36,7 +35,6 @@
 - Keep single-consumer feature behavior in its owning denix module. Put explicitly imported package and runtime value generation in `packages/`; `modules/` remains reserved for valid denix modules.
 
 ## Host inventory
-- `surface`: x86_64-linux laptop
 - `nvidia-desktop`: x86_64-linux desktop
 - `wsl`: x86_64-linux NixOS-WSL environment
 - `macbook`: aarch64-darwin laptop

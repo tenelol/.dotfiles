@@ -61,10 +61,7 @@
         ) hostDirectories
       );
       linuxServerHostPaths = [ ./hosts/wsl ];
-      linuxDesktopHostPaths = [
-        ./hosts/nvidia-desktop
-        ./hosts/surface
-      ];
+      linuxDesktopHostPaths = [ ./hosts/nvidia-desktop ];
       darwinHostPaths = [ ./hosts/macbook ];
       profile = {
         username = "tener";
@@ -138,7 +135,6 @@
         ricePaths = [ ./rices/darwin ];
       };
       linuxCheckTargets = [
-        "surface"
         "nvidia-desktop"
         "wsl"
       ];
