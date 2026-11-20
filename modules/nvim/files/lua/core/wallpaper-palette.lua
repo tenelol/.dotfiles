@@ -7,17 +7,9 @@ local M = {}
 
 local config_home = vim.env.XDG_CONFIG_HOME or (vim.env.HOME .. "/.config")
 
-local function exists(path)
-  local file = io.open(path, "r")
-  if file then
-    file:close()
-  end
-  return file ~= nil
-end
-
 -- modules/omniwm deploys the template on the OmniWM rice only, so a rendered
 -- file left behind by an earlier rice is not picked up.
-M.enabled = exists(config_home .. "/omniwm/app-themes/nvim-palette")
+M.enabled = vim.uv.fs_stat(config_home .. "/omniwm/app-themes/nvim-palette") ~= nil
 M.path = config_home .. "/theme/omniwm-palette"
 
 local ROLES = {
@@ -37,7 +29,9 @@ local ROLES = {
   "base09",
 }
 
-local function blend(from, to, t)
+-- Also used by core.motion. core.theme loads this module, so it must not
+-- require core.motion or core.theme itself.
+function M.blend(from, to, t)
   local out = "#"
   for i = 2, 6, 2 do
     local a, b = tonumber(from:sub(i, i + 1), 16), tonumber(to:sub(i, i + 1), 16)
@@ -77,16 +71,16 @@ function M.colors(path)
   end
   return {
     bg = p.background,
-    bg_dark = blend(p.background, "#000000", 0.3),
+    bg_dark = M.blend(p.background, "#000000", 0.3),
     bg_highlight = p.surface,
     bg_selection = p.accentContainer,
     -- OmniWM gives Ghostty this foreground; body text sits a step below it so
     -- function names still stand out.
     fg_bright = p.foreground,
-    fg = blend(p.foreground, p.secondaryForeground, 0.5),
+    fg = M.blend(p.foreground, p.secondaryForeground, 0.5),
     fg_dark = p.secondaryForeground,
     -- mutedForeground is ANSI 8, which OmniWM keeps readable on the background.
-    fg_gutter = blend(p.mutedForeground, p.background, 0.4),
+    fg_gutter = M.blend(p.mutedForeground, p.background, 0.4),
     comment = p.mutedForeground,
     -- The accent stays ANSI blue, the color Ghostty's lock-on shaders draw with.
     blue = p.ansi4,
@@ -97,8 +91,8 @@ function M.colors(path)
     orange = p.base09,
     red = p.ansi1,
     magenta = p.ansi5,
-    purple = blend(p.ansi4, p.foreground, 0.6),
-    indent_scope = blend(p.ansi4, p.background, 0.3),
+    purple = M.blend(p.ansi4, p.foreground, 0.6),
+    indent_scope = M.blend(p.ansi4, p.background, 0.3),
   }
 end
 

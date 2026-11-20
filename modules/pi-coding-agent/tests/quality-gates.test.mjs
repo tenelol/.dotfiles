@@ -1,4 +1,4 @@
-import { extensionPath } from "./extension-path.mjs";
+import { extensionPath, piPackageRoot } from "./extension-path.mjs";
 // Run: node modules/pi-coding-agent/tests/quality-gates.test.mjs
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -6,7 +6,7 @@ import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSy
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-const root = process.env.PI_PACKAGE_DIR || '/opt/homebrew/opt/pi-coding-agent/libexec/lib/node_modules/@earendil-works/pi-coding-agent';
+const root = piPackageRoot();
 const { createJiti } = createRequire(join(root,'package.json'))('jiti');
 const temporary = mkdtempSync(join(tmpdir(),'pi-quality-gates-'));
 const previousAgentDir = process.env.PI_CODING_AGENT_DIR;

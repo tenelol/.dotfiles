@@ -59,11 +59,7 @@ local function current_file_path()
 end
 
 local function path_is_within(root, filepath)
-    local normalized_root = vim.fs.normalize(root)
-    local normalized_path = vim.fs.normalize(filepath)
-    local root_with_sep = normalized_root:sub(-1) == "/" and normalized_root or (normalized_root .. "/")
-
-    return normalized_path == normalized_root or normalized_path:sub(1, #root_with_sep) == root_with_sep
+    return vim.fs.relpath(root, filepath) ~= nil
 end
 
 local function path_exists(path)
@@ -122,13 +118,7 @@ local function find_typescript_config(filepath)
 end
 
 local function shell_join(parts)
-    local escaped = {}
-
-    for _, part in ipairs(parts) do
-        table.insert(escaped, vim.fn.shellescape(part))
-    end
-
-    return table.concat(escaped, " ")
+    return table.concat(vim.tbl_map(vim.fn.shellescape, parts), " ")
 end
 
 local function scss_compiler()

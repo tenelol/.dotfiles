@@ -1,9 +1,9 @@
-import { extensionPath } from "./extension-path.mjs";
+import { extensionPath, piPackageRoot } from "./extension-path.mjs";
 // Run: node modules/pi-coding-agent/tests/codex-compact.test.mjs
 import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-const root = process.env.PI_PACKAGE_DIR || '/opt/homebrew/opt/pi-coding-agent/libexec/lib/node_modules/@earendil-works/pi-coding-agent';
+const root = piPackageRoot();
 const { loadExtensions } = await import(pathToFileURL(join(root, 'dist/core/extensions/loader.js')));
 const entry = extensionPath('pi-codex-compact/dist/index.ts');
 const result = await loadExtensions([entry], process.cwd());

@@ -8,9 +8,10 @@ import { join } from "node:path";
 import { setTimeout } from "node:timers/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { chromium } from "../files/tools/playwright-cli/node_modules/playwright/index.mjs";
+import { piPackageRoot } from "./extension-path.mjs";
 
 assert.equal(process.platform, "darwin");
-const root = process.env.PI_PACKAGE_DIR || "/opt/homebrew/opt/pi-coding-agent/libexec/lib/node_modules/@earendil-works/pi-coding-agent";
+const root = piPackageRoot();
 const { loadExtensions } = await import(pathToFileURL(join(root, "dist/core/extensions/loader.js")));
 const loaded = await loadExtensions([fileURLToPath(new URL("../files/tools/computer-use/index.ts", import.meta.url))], process.cwd());
 assert.deepEqual(loaded.errors, []);

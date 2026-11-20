@@ -4,8 +4,9 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { stripVTControlCharacters } from "node:util";
+import { piPackageRoot } from "./extension-path.mjs";
 
-const root = process.env.PI_PACKAGE_DIR || "/opt/homebrew/opt/pi-coding-agent/libexec/lib/node_modules/@earendil-works/pi-coding-agent";
+const root = piPackageRoot();
 const { loadExtensions } = await import(pathToFileURL(join(root, "dist/core/extensions/loader.js")));
 const path = fileURLToPath(new URL("../files/hooks/dashboard/index.ts", import.meta.url));
 const { extensions, errors } = await loadExtensions([path], process.cwd());

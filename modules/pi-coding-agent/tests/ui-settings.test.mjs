@@ -1,4 +1,4 @@
-import { extensionPath } from "./extension-path.mjs";
+import { extensionPath, piPackageRoot } from "./extension-path.mjs";
 // Run: node modules/pi-coding-agent/tests/ui-settings.test.mjs
 import assert from "node:assert/strict";
 import { copyFileSync, existsSync, mkdtempSync, rmSync } from "node:fs";
@@ -8,7 +8,7 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { stripVTControlCharacters } from "node:util";
 
-const root = process.env.PI_PACKAGE_DIR || "/opt/homebrew/opt/pi-coding-agent/libexec/lib/node_modules/@earendil-works/pi-coding-agent";
+const root = piPackageRoot();
 const require = createRequire(join(root, "package.json"));
 const { createJiti } = require("jiti");
 const temporary = mkdtempSync(join(tmpdir(), "pi-ui-settings-"));

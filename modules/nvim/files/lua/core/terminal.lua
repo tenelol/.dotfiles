@@ -49,17 +49,8 @@ local function terminal_index(terms, terminal_id)
 end
 
 local function terminal_by_id(terms, terminal_id)
-    if terminal_id == nil then
-        return nil
-    end
-
-    for _, term in ipairs(terms) do
-        if term.id == terminal_id then
-            return term
-        end
-    end
-
-    return nil
+    local index = terminal_index(terms, terminal_id)
+    return index and terms[index]
 end
 
 local function terminal_label(term)

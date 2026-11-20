@@ -1,4 +1,4 @@
-import { extensionPath } from "./extension-path.mjs";
+import { extensionPath, piPackageRoot } from "./extension-path.mjs";
 // Run: node modules/pi-coding-agent/tests/subagent-defaults.test.mjs
 import assert from "node:assert/strict";
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, rmSync, symlinkSync } from "node:fs";
@@ -7,7 +7,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-const root = process.env.PI_PACKAGE_DIR || "/opt/homebrew/opt/pi-coding-agent/libexec/lib/node_modules/@earendil-works/pi-coding-agent";
+const root = piPackageRoot();
 const require = createRequire(join(root, "package.json"));
 const { createJiti } = require("jiti");
 const temporary = mkdtempSync(join(tmpdir(), "pi-subagent-defaults-"));

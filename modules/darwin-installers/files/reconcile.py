@@ -185,10 +185,8 @@ class Host:
         path = Path(entry["legacyPackage"])
         if not path.is_file():
             return False
-        digest = hashlib.sha256()
         with path.open("rb") as stream:
-            for block in iter(lambda: stream.read(1024 * 1024), b""):
-                digest.update(block)
+            digest = hashlib.file_digest(stream, "sha256")
         return digest.hexdigest() == entry["legacySha256"]
 
     def mas_list(self, user, mas):

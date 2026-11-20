@@ -1,4 +1,4 @@
-import { extensionPath } from "./extension-path.mjs";
+import { extensionPath, piPackageRoot } from "./extension-path.mjs";
 // Run: node modules/pi-coding-agent/tests/skill-catalog.test.mjs
 import assert from "node:assert/strict";
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-const root = process.env.PI_PACKAGE_DIR || "/opt/homebrew/opt/pi-coding-agent/libexec/lib/node_modules/@earendil-works/pi-coding-agent";
+const root = piPackageRoot();
 const { DefaultResourceLoader } = await import(pathToFileURL(join(root, "dist/core/resource-loader.js")));
 const { AgentSession } = await import(pathToFileURL(join(root, "dist/core/agent-session.js")));
 const { formatSkillsForPrompt } = await import(pathToFileURL(join(root, "dist/core/skills.js")));

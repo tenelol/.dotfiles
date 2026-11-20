@@ -4,15 +4,7 @@ local theme = require("core.theme")
 
 local M = {}
 
-function M.blend(from, to, t)
-  local out = 0
-  for _, shift in ipairs({ 16, 8, 0 }) do
-    local a = bit.band(bit.rshift(tonumber(from:sub(2), 16), shift), 0xff)
-    local b = bit.band(bit.rshift(tonumber(to:sub(2), 16), shift), 0xff)
-    out = out + bit.lshift(math.floor(a + (b - a) * t + 0.5), shift)
-  end
-  return ("#%06x"):format(out)
-end
+M.blend = require("core.wallpaper-palette").blend
 
 M.accent = theme.blue
 M.flash = M.blend(theme.blue, theme.fg_bright, 0.7)

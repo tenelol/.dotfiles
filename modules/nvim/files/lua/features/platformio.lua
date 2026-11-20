@@ -12,13 +12,7 @@ local function path_exists(path)
 end
 
 local function shell_join(parts)
-    local escaped = {}
-
-    for _, part in ipairs(parts) do
-        table.insert(escaped, vim.fn.shellescape(part))
-    end
-
-    return table.concat(escaped, " ")
+    return table.concat(vim.tbl_map(vim.fn.shellescape, parts), " ")
 end
 
 local function platformio_root(opts)

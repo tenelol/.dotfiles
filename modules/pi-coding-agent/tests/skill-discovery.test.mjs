@@ -4,8 +4,9 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { piPackageRoot } from "./extension-path.mjs";
 
-const piRoot = process.env.PI_PACKAGE_DIR || "/opt/homebrew/opt/pi-coding-agent/libexec/lib/node_modules/@earendil-works/pi-coding-agent";
+const piRoot = piPackageRoot();
 const { DefaultResourceLoader } = await import(pathToFileURL(join(piRoot, "dist/core/resource-loader.js")));
 const temporary = mkdtempSync(join(tmpdir(), "pi-skill-discovery-"));
 const project = join(temporary, ".dotfiles");

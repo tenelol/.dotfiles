@@ -2,8 +2,9 @@
 import assert from "node:assert/strict";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { piPackageRoot } from "./extension-path.mjs";
 
-const root = process.env.PI_PACKAGE_DIR || "/opt/homebrew/opt/pi-coding-agent/libexec/lib/node_modules/@earendil-works/pi-coding-agent";
+const root = piPackageRoot();
 const { KeybindingsManager } = await import(pathToFileURL(join(root, "dist/core/keybindings.js")));
 const { CustomEditor } = await import(pathToFileURL(join(root, "dist/modes/interactive/components/custom-editor.js")));
 const { InteractiveMode } = await import(pathToFileURL(join(root, "dist/modes/interactive/interactive-mode.js")));

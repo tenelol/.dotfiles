@@ -22,15 +22,6 @@ local function running_buffer_kernel_ids()
 	return kernels
 end
 
-local function has_value(values, needle)
-	for _, value in ipairs(values) do
-		if value == needle then
-			return true
-		end
-	end
-	return false
-end
-
 local function read_notebook(path)
 	local file = io.open(path, "r")
 	if not file then
@@ -60,10 +51,10 @@ local function preferred_kernel_name()
 	local path = vim.api.nvim_buf_get_name(0)
 	local kernel = notebook_kernel_name(path)
 
-	if kernel and has_value(available, kernel) then
+	if kernel and vim.tbl_contains(available, kernel) then
 		return kernel
 	end
-	if has_value(available, "python3") then
+	if vim.tbl_contains(available, "python3") then
 		return "python3"
 	end
 
@@ -204,7 +195,7 @@ local function run_current_ipynb_cell()
 
 			local kernel_id = event.data and event.data.kernel_id
 			local matched = with_notebook_buffer(function()
-				return not kernel_id or has_value(running_buffer_kernel_ids(), kernel_id)
+				return not kernel_id or vim.tbl_contains(running_buffer_kernel_ids(), kernel_id)
 			end)
 			if matched then
 				evaluate_when_ready()
