@@ -13,6 +13,11 @@ delib.module {
   nixos.ifEnabled = {
     boot.kernelPackages = pkgs.linuxPackages_latest;
 
+    # The GPU driver belongs to the machine; ollama-cuda and Steam both use it.
+    services.xserver.videoDrivers = [ "nvidia" ];
+    hardware.nvidia.open = true;
+    hardware.nvidia.modesetting.enable = true;
+
     users.users.${profile.username} = {
       openssh.authorizedKeys.keys = [ profile.sshPublicKey ];
     };

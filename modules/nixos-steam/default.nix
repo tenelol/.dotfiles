@@ -15,10 +15,6 @@ delib.module {
       dedicatedServer.openFirewall = true;
     };
 
-    services.xserver.videoDrivers = [ "nvidia" ];
-    hardware.nvidia.open = true;
-    hardware.nvidia.modesetting.enable = true;
-
     environment.systemPackages = with pkgs; [
       xwayland-satellite
     ];

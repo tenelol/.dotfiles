@@ -11,7 +11,7 @@
 
 set -euo pipefail
 
-repo_root="/Users/tener/.dotfiles"
+repo_root="${DOTFILES_REPO:-$HOME/.dotfiles}"
 state_dir="${HOME}/Library/Application Support/dotfiles/raycast"
 log_dir="${HOME}/Library/Logs/dotfiles"
 lock_dir="${state_dir}/macbook-switch.lock"

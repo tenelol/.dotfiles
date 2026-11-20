@@ -1,5 +1,6 @@
 {
   delib,
+  homeDir,
   hostTraits,
   hm,
   inputs,
@@ -83,7 +84,7 @@ let
       pkgs.sqlite
     ];
     text = ''
-      exec /Users/tener/.codex/mcp/vault-context-mcp/bin/vault-context "$@"
+      exec ${homeDir}/.codex/mcp/vault-context-mcp/bin/vault-context "$@"
     '';
   };
   projectContextInit = pkgs.writeShellApplication {
