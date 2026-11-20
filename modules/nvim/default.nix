@@ -8,6 +8,29 @@
 }:
 let
   nvim = import ../../packages/nvim-runtime.nix { inherit pkgs; };
+  # Ctrl+h/j/k/l moves between windows, from terminals too.
+  windowKeymaps =
+    lib.concatMap
+      (direction: [
+        {
+          mode = "n";
+          key = "<C-${direction}>";
+          action = "<C-w>${direction}";
+          options.silent = true;
+        }
+        {
+          mode = "t";
+          key = "<C-${direction}>";
+          action = "<Cmd>wincmd ${direction}<CR>";
+          options.silent = true;
+        }
+      ])
+      [
+        "h"
+        "j"
+        "k"
+        "l"
+      ];
 in
 delib.module {
   name = "nvim";
@@ -51,15 +74,6 @@ delib.module {
           silent = true,
           desc = "Duplicate line(s) below",
         })
-
-        vim.keymap.set("n", "<C-h>", "<C-w>h", { noremap = true, silent = true })
-        vim.keymap.set("n", "<C-j>", "<C-w>j", { noremap = true, silent = true })
-        vim.keymap.set("n", "<C-k>", "<C-w>k", { noremap = true, silent = true })
-        vim.keymap.set("n", "<C-l>", "<C-w>l", { noremap = true, silent = true })
-        vim.keymap.set("t", "<C-h>", "<Cmd>wincmd h<CR>", { noremap = true, silent = true })
-        vim.keymap.set("t", "<C-j>", "<Cmd>wincmd j<CR>", { noremap = true, silent = true })
-        vim.keymap.set("t", "<C-k>", "<Cmd>wincmd k<CR>", { noremap = true, silent = true })
-        vim.keymap.set("t", "<C-l>", "<Cmd>wincmd l<CR>", { noremap = true, silent = true })
       ''
       + lib.optionalString pkgs.stdenv.hostPlatform.isDarwin ''
         vim.g.clipboard = {
@@ -319,7 +333,8 @@ delib.module {
             desc = "Select all";
           };
         }
-      ];
+      ]
+      ++ windowKeymaps;
       extraPython3Packages = nvim.jupyterPythonPackages;
       extraLuaPackages = ps: [
         ps.magick

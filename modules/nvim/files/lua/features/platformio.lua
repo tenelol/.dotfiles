@@ -5,21 +5,12 @@ local M = {}
 
 local pio_terminal
 local pio_monitor_terminal
-local uv = vim.uv or vim.loop
-
-local function path_exists(path)
-    return uv.fs_stat(path) ~= nil
-end
-
-local function shell_join(parts)
-    return table.concat(vim.tbl_map(vim.fn.shellescape, parts), " ")
-end
 
 local function platformio_root(opts)
     opts = opts or {}
     local root = project.buffer_root(0)
 
-    if path_exists(vim.fs.joinpath(root, "platformio.ini")) or opts.allow_missing then
+    if project.exists(vim.fs.joinpath(root, "platformio.ini")) or opts.allow_missing then
         return root
     end
 
@@ -95,7 +86,7 @@ local function run_pio(args, opts)
     end
 
     local term = get_terminal(opts.terminal or "run")
-    local cmd = shell_join(vim.list_extend({ "pio" }, args))
+    local cmd = terminal.shell_join(vim.list_extend({ "pio" }, args))
 
     term.dir = root
     terminal.show(term, { size = 10, direction = "horizontal" })

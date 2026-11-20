@@ -53,6 +53,10 @@ function M.root(path)
     return start
 end
 
+function M.exists(path)
+    return stat(path) ~= nil
+end
+
 function M.buffer_path(bufnr)
     local name = vim.api.nvim_buf_get_name(bufnr or 0)
     if name == "" then

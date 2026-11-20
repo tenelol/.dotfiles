@@ -80,6 +80,10 @@ local function close_other_terminals(excluded_id)
     end
 end
 
+function M.shell_join(parts)
+    return table.concat(vim.tbl_map(vim.fn.shellescape, parts), " ")
+end
+
 function M.show(term, opts)
     opts = opts or {}
     local direction = opts.direction or term.direction or "horizontal"

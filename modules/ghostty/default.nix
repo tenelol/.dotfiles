@@ -147,17 +147,15 @@ delib.module {
         "ghostty/shaders/aurora.glsl".source = auroraShader;
         "ghostty/shaders/readability_scrim.glsl".source = mkReadabilityShader myconfig;
       }
-      // lib.listToAttrs (
-        map (name: lib.nameValuePair "ghostty/shaders/${name}" { source = mkHudShader name; }) [
-          "focus_ripple.glsl"
-          "cursor_smear.glsl"
-          "typing_ignite.glsl"
-          "typing_ripple.glsl"
-          "typing_sparkle.glsl"
-          "jump_lockon.glsl"
-          "font_zoom.glsl"
-        ]
-      );
+      // lib.genAttrs' [
+        "focus_ripple.glsl"
+        "cursor_smear.glsl"
+        "typing_ignite.glsl"
+        "typing_ripple.glsl"
+        "typing_sparkle.glsl"
+        "jump_lockon.glsl"
+        "font_zoom.glsl"
+      ] (name: lib.nameValuePair "ghostty/shaders/${name}" { source = mkHudShader name; });
 
       # Regular files, not store links: OmniWM replaces them once App Theming is
       # on, and only writes inside the home folder.

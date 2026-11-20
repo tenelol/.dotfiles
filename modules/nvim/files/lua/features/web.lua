@@ -62,10 +62,6 @@ local function path_is_within(root, filepath)
     return vim.fs.relpath(root, filepath) ~= nil
 end
 
-local function path_exists(path)
-    return uv.fs_stat(vim.fs.normalize(path)) ~= nil
-end
-
 local function find_typescript_config(filepath)
     local search_dir = filepath and vim.fs.dirname(vim.fs.normalize(filepath)) or project.buffer_root(0)
     local root_limit = project.root(search_dir)
@@ -77,7 +73,7 @@ local function find_typescript_config(filepath)
     while search_dir ~= nil do
         for _, candidate in ipairs(preferred) do
             local candidate_path = vim.fs.joinpath(search_dir, candidate)
-            if path_exists(candidate_path) then
+            if project.exists(candidate_path) then
                 return vim.fs.normalize(candidate_path)
             end
         end
@@ -115,10 +111,6 @@ local function find_typescript_config(filepath)
     end
 
     return nil
-end
-
-local function shell_join(parts)
-    return table.concat(vim.tbl_map(vim.fn.shellescape, parts), " ")
 end
 
 local function scss_compiler()
@@ -345,16 +337,16 @@ local function tsc_watch_command(root, config_path)
         vim.list_extend(command_suffix, { "-p", config_path })
     end
 
-    if path_exists(vim.fs.joinpath(root, "package.json")) then
-        if path_exists(vim.fs.joinpath(root, "pnpm-lock.yaml")) and vim.fn.executable("pnpm") == 1 then
+    if project.exists(vim.fs.joinpath(root, "package.json")) then
+        if project.exists(vim.fs.joinpath(root, "pnpm-lock.yaml")) and vim.fn.executable("pnpm") == 1 then
             return vim.list_extend({ "pnpm", "exec", "tsc" }, command_suffix)
         end
 
-        if path_exists(vim.fs.joinpath(root, "yarn.lock")) and vim.fn.executable("yarn") == 1 then
+        if project.exists(vim.fs.joinpath(root, "yarn.lock")) and vim.fn.executable("yarn") == 1 then
             return vim.list_extend({ "yarn", "exec", "tsc" }, command_suffix)
         end
 
-        if path_exists(vim.fs.joinpath(root, "package-lock.json")) and vim.fn.executable("npm") == 1 then
+        if project.exists(vim.fs.joinpath(root, "package-lock.json")) and vim.fn.executable("npm") == 1 then
             return vim.list_extend({ "npm", "exec", "tsc", "--" }, command_suffix)
         end
     end
@@ -439,7 +431,7 @@ local function start_tsc_watch()
     term:send({
         "cd " .. vim.fn.shellescape(root),
         "clear",
-        shell_join(cmd),
+        terminal.shell_join(cmd),
     }, true)
 
     local target = config_path or root

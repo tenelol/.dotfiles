@@ -142,18 +142,15 @@ check_tools() {
     fi
   done
 
-  if [ "$uname_s" = "Darwin" ]; then
-    if has darwin-rebuild; then
-      status ok "darwin-rebuild" "$(command -v darwin-rebuild)"
-    else
-      status warn "darwin-rebuild" "not found in PATH"
-    fi
-  elif [ "$uname_s" = "Linux" ]; then
-    if has nixos-rebuild; then
-      status ok "nixos-rebuild" "$(command -v nixos-rebuild)"
-    else
-      status warn "nixos-rebuild" "not found in PATH"
-    fi
+  case "$uname_s" in
+    Darwin) tool=darwin-rebuild ;;
+    Linux) tool=nixos-rebuild ;;
+    *) return ;;
+  esac
+  if has "$tool"; then
+    status ok "$tool" "$(command -v "$tool")"
+  else
+    status warn "$tool" "not found in PATH"
   fi
 }
 

@@ -13,12 +13,7 @@ let
   selected = apps.base ++ lib.optionals host.fullDesktopFeatured apps.fullDesktop ++ apps.binaries;
   mkCask =
     entry: brewCask (builtins.removeAttrs entry [ "name" ] // { cask = pkgs.brewCasks.${entry.name}; });
-  packages = lib.listToAttrs (
-    map (app: {
-      inherit (app) name;
-      value = mkCask app;
-    }) selected
-  );
+  packages = lib.genAttrs' selected (app: lib.nameValuePair app.name (mkCask app));
   fontPackages = map mkCask apps.fonts;
 in
 delib.module {
