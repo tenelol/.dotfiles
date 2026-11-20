@@ -103,6 +103,13 @@ class ReconcileTests(unittest.TestCase):
         }
         self.host.receipts.update(self.item["receipts"])
 
+    def test_version_prefix_accepts_bare_major_minor(self):
+        entry = {"appVersionPrefix": "16.115."}
+        RECONCILE.verify_version({"version": "16.115"}, entry, "/Applications/Microsoft Excel.app")
+        RECONCILE.verify_version({"version": "16.115.1"}, entry, "/Applications/Microsoft Excel.app")
+        with self.assertRaises(RuntimeError):
+            RECONCILE.verify_version({"version": "16.1150"}, entry, "/Applications/Microsoft Excel.app")
+
     def test_matching_driver_and_app_adopt_without_installer(self):
         status = RECONCILE.preflight_entry(self.host, self.item, self.temp.name)
         RECONCILE.reconcile_entry(self.host, self.item, self.temp.name, status)

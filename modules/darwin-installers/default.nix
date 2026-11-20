@@ -53,7 +53,9 @@ let
       "com.microsoft.package.Microsoft_${app}.app" = casks.${name}.version;
     };
     packages = [ "${casks.${name}.src}" ];
-    running = [ "Microsoft ${app}" ];
+    # Match only the main executable: widget extensions inside the bundle
+    # (e.g. ExcelWidget_mac.appex) stay resident after the app quits.
+    running = [ "Microsoft ${app}.app/Contents/MacOS/" ];
   };
   manifest = pkgs.writeText "darwin-installers.json" (
     builtins.toJSON {
@@ -110,10 +112,10 @@ let
               "com.tailscale.ipn.macsys" = casks.tailscale-app.version;
             };
             packages = [ "${casks.tailscale-app.src}" ];
-            running = [
-              "Tailscale.app"
-              "io.tailscale.ipn.macsys"
-            ];
+            # Match only the GUI app: the root network extension
+            # (io.tailscale.ipn.macsys.network-extension) stays resident and is
+            # relaunched by macOS, so it can never be closed before updating.
+            running = [ "Tailscale.app" ];
           }
           {
             name = "wireshark-app";
