@@ -16,13 +16,11 @@ WORKSPACE_INACTIVE="${WORKSPACE_INACTIVE:-0x78f5f7fa}"
 # Resolve the backend and its workspace list once; this runs on every
 # workspace change.
 if /usr/bin/pgrep -qx AeroSpace >/dev/null 2>&1 && [ -x /run/current-system/sw/bin/aerospace ]; then
-  aerospace=1
   managed_workspaces="1 2 3 4 5 6 7 8 9"
   focused_workspace="${FOCUSED:-}"
   [ -n "$focused_workspace" ] \
     || focused_workspace="$(/run/current-system/sw/bin/aerospace list-workspaces --focused 2>/dev/null | head -n 1)"
 else
-  aerospace=0
   rift_workspaces="$("$RIFT_CLI" query workspaces 2>/dev/null)" || exit 0
   managed_workspaces="$(printf '%s\n' "$rift_workspaces" | "$JQ" -r '.[] | .index + 1')"
   focused_workspace="$(printf '%s\n' "$rift_workspaces" \
@@ -38,16 +36,12 @@ is_managed_workspace() {
   return 1
 }
 
+# Managed workspaces are 1-9 on AeroSpace, so the item's local number always
+# equals its id on both backends.
 set_color() {
   is_managed_workspace "$1" || return 0
 
-  if [ "$aerospace" = 1 ]; then
-    local_workspace=$(( ($1 - 1) % 9 + 1 ))
-  else
-    local_workspace="$1"
-  fi
-
-  "$SKETCHYBAR_BIN" --set "space.$1.$local_workspace" label.color="$2"
+  "$SKETCHYBAR_BIN" --set "space.$1.$1" label.color="$2"
 }
 
 previous_workspace="$PREVIOUS"

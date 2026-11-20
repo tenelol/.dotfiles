@@ -104,7 +104,7 @@ class ReconcileTests(unittest.TestCase):
         self.host.receipts.update(self.item["receipts"])
 
     def test_version_prefix_accepts_bare_major_minor(self):
-        entry = {"appVersionPrefix": "16.115."}
+        entry = {"appVersionPrefix": "16.115"}
         RECONCILE.verify_version({"version": "16.115"}, entry, "/Applications/Microsoft Excel.app")
         RECONCILE.verify_version({"version": "16.115.1"}, entry, "/Applications/Microsoft Excel.app")
         with self.assertRaises(RuntimeError):
@@ -173,7 +173,7 @@ class ReconcileTests(unittest.TestCase):
             version="16.113.26092714",
             app="/Applications/Microsoft Word.app",
             appVersion=None,
-            appVersionPrefix="16.113.",
+            appVersionPrefix="16.113",
             bundleId="com.microsoft.Word",
             teamId="UBF8T346G9",
             receipts={"com.microsoft.package.Microsoft_Word.app": "16.113.26092714"},
@@ -193,7 +193,7 @@ class ReconcileTests(unittest.TestCase):
             version="16.113.26092714",
             app="/Applications/Microsoft Word.app",
             appVersion=None,
-            appVersionPrefix="16.113.",
+            appVersionPrefix="16.113",
             bundleId="com.microsoft.Word",
             teamId="UBF8T346G9",
             receipts={"com.microsoft.package.Microsoft_Word.app": "16.113.26092714"},
@@ -214,7 +214,7 @@ class ReconcileTests(unittest.TestCase):
             version="16.113.26092714",
             app="/Applications/Microsoft Word.app",
             appVersion=None,
-            appVersionPrefix="16.113.",
+            appVersionPrefix="16.113",
             bundleId="com.microsoft.Word",
             teamId="UBF8T346G9",
             receipts={"com.microsoft.package.Microsoft_Word.app": "16.113.26092714"},
@@ -234,7 +234,7 @@ class ReconcileTests(unittest.TestCase):
             version="16.113.26092714",
             app="/Applications/Microsoft Word.app",
             appVersion=None,
-            appVersionPrefix="16.113.",
+            appVersionPrefix="16.113",
             bundleId="com.microsoft.Word",
             teamId="UBF8T346G9",
             receipts={"com.microsoft.package.Microsoft_Word.app": "16.113.26092714"},

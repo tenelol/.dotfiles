@@ -18,7 +18,6 @@ let
   };
   installHash = pkgs.callPackage ../../packages/firefox-install-hash.nix { };
   majorMinor = version: lib.concatStringsSep "." (lib.take 2 (lib.splitString "." version));
-  versionPrefix = version: majorMinor version + ".";
   karabinerDmg = pkgs.fetchurl {
     url = "https://github.com/pqrs-org/Karabiner-Elements/releases/download/v16.0.0/Karabiner-Elements-16.0.0.dmg";
     hash = "sha256-uWD3MYkKdCMcIp5UU8TucQnvsyjE+2Ou2JdONH/R+cA=";
@@ -49,7 +48,7 @@ let
     app = "/Applications/Microsoft ${app}.app";
     kind = "pkg";
     version = casks.${name}.version;
-    appVersionPrefix = versionPrefix casks.${name}.version;
+    appVersionPrefix = majorMinor casks.${name}.version;
     bundleId = "com.microsoft.${receipt}";
     teamId = "UBF8T346G9";
     receipts = {
@@ -60,6 +59,9 @@ let
     # (e.g. ExcelWidget_mac.appex) stay resident after the app quits.
     running = [ "Microsoft ${app}.app/Contents/MacOS/" ];
   };
+  licensedOfficeEntry =
+    name: app: receipt:
+    officeEntry name app receipt // { requiredReceipts = [ "com.microsoft.pkg.licensing" ]; };
   manifest = pkgs.writeText "darwin-installers.json" (
     builtins.toJSON {
       stateDir = "/var/db/dotfiles-installers";
@@ -159,25 +161,10 @@ let
             packages = [ "${casks.microsoft-auto-update.src}" ];
             running = [ "/Microsoft AutoUpdate\\.app/" ];
           }
-          (
-            officeEntry "microsoft-excel" "Excel" "Excel"
-            // {
-              requiredReceipts = [ "com.microsoft.pkg.licensing" ];
-            }
-          )
+          (licensedOfficeEntry "microsoft-excel" "Excel" "Excel")
           (officeEntry "microsoft-onenote" "OneNote" "onenote.mac")
-          (
-            officeEntry "microsoft-powerpoint" "PowerPoint" "Powerpoint"
-            // {
-              requiredReceipts = [ "com.microsoft.pkg.licensing" ];
-            }
-          )
-          (
-            officeEntry "microsoft-word" "Word" "Word"
-            // {
-              requiredReceipts = [ "com.microsoft.pkg.licensing" ];
-            }
-          )
+          (licensedOfficeEntry "microsoft-powerpoint" "PowerPoint" "Powerpoint")
+          (licensedOfficeEntry "microsoft-word" "Word" "Word")
         ];
       masApps = {
         "Apple Configurator" = 1037126344;

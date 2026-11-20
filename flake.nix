@@ -52,7 +52,6 @@
     { denix, nixpkgs, ... }@inputs:
     let
       inherit (nixpkgs) lib;
-      isLinuxSystem = system: lib.hasSuffix "-linux" system;
       hostDirectories = lib.filterAttrs (_: type: type == "directory") (builtins.readDir ./hosts);
       hardwareConfigurationExcludes = lib.concatLists (
         lib.mapAttrsToList (
@@ -146,24 +145,21 @@
       ];
       # Evaluate the default host configurations in CI. Rice variants remain
       # available as explicit switch targets without multiplying build checks.
-      # Keyed by system directly, so `nix fmt` and a single system's checks do
-      # not evaluate the other hosts.
-      checkedConfigurationsBySystem = {
-        x86_64-linux = lib.getAttrs linuxCheckTargets nixosConfigurations;
-        aarch64-darwin = lib.getAttrs darwinCheckTargets darwinConfigurations;
-      };
+      linuxCheckConfigurations = lib.getAttrs linuxCheckTargets nixosConfigurations;
     in
     {
       inherit nixosConfigurations darwinConfigurations;
 
-      checks = lib.mapAttrs (
-        system: configurations:
-        mkEvalChecks configurations
-        // lib.optionalAttrs (isLinuxSystem system) (mkLinuxBuildChecks configurations)
-      ) checkedConfigurationsBySystem;
+      # Keyed by system directly, so `nix fmt` and a single system's checks do
+      # not evaluate the other hosts.
+      checks = {
+        x86_64-linux = mkEvalChecks linuxCheckConfigurations // mkLinuxBuildChecks linuxCheckConfigurations;
+        aarch64-darwin = mkEvalChecks (lib.getAttrs darwinCheckTargets darwinConfigurations);
+      };
 
-      formatter = lib.mapAttrs (
-        system: _: nixpkgs.legacyPackages.${system}.nixfmt-tree
-      ) checkedConfigurationsBySystem;
+      formatter = lib.genAttrs [
+        "x86_64-linux"
+        "aarch64-darwin"
+      ] (system: nixpkgs.legacyPackages.${system}.nixfmt-tree);
     };
 }

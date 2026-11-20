@@ -216,8 +216,9 @@ def verify_version(actual, entry, path):
     wanted = entry.get("appVersion")
     prefix = entry.get("appVersionPrefix")
     version = actual["version"] if actual else None
-    # Office reports a bare "16.115" when the build has no patch component.
-    prefix_ok = not prefix or version.startswith(prefix) or version == prefix.rstrip(".") if version else False
+    # Compare components, so a bare "16.115" (no patch component) matches the
+    # prefix "16.115" while "16.1150" does not.
+    prefix_ok = not prefix or (version and version_parts(version)[: len(version_parts(prefix))] == version_parts(prefix))
     if not version or (wanted and version != wanted) or not prefix_ok:
         raise RuntimeError(f"unexpected app version at {path}: {version!r}")
 

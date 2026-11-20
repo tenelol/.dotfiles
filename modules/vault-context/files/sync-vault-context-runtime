@@ -13,7 +13,8 @@ fi
 runtime_differs() {
   local comparison
   if ! comparison="$(rsync -rlcni --delete "${1}/" "${2}/")"; then
-    return 2
+    echo "vault-context runtime comparison failed" >&2
+    exit 1
   fi
   [[ -n "${comparison}" ]]
 }
@@ -28,12 +29,6 @@ if [[ "${1:-}" == "--check" ]]; then
   if runtime_differs "${bundle}" "${destination}"; then
     echo "vault-context runtime differs from the declarative bundle" >&2
     exit 1
-  else
-    comparison_status=$?
-    if [[ "${comparison_status}" != "1" ]]; then
-      echo "vault-context runtime comparison failed" >&2
-      exit 1
-    fi
   fi
   echo "vault-context runtime is current"
   exit 0
@@ -42,18 +37,9 @@ fi
 # Compare before staging so an unchanged runtime skips copying node_modules
 # and the self-test. The comparison ignores permissions, so the read-only
 # bundle compares the same as its writable stage.
-if [[ -d "${destination}" ]]; then
-  if runtime_differs "${bundle}" "${destination}"; then
-    :
-  else
-    comparison_status=$?
-    if [[ "${comparison_status}" == "1" ]]; then
-      echo "vault-context runtime is already current"
-      exit 0
-    fi
-    echo "vault-context runtime comparison failed" >&2
-    exit 1
-  fi
+if [[ -d "${destination}" ]] && ! runtime_differs "${bundle}" "${destination}"; then
+  echo "vault-context runtime is already current"
+  exit 0
 fi
 
 stage="$(mktemp -d "${runtime_parent}/.vault-context-mcp-stage.XXXXXX")"
