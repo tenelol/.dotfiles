@@ -1,4 +1,10 @@
-{ delib, hostTraits, ... }:
+{
+  delib,
+  hostTraits,
+  lib,
+  profile,
+  ...
+}:
 delib.module {
   name = "desktop";
 
@@ -22,5 +28,19 @@ delib.module {
       niri = hostTraits.linuxDesktop && cfg.linux.windowManager == "niri";
       hyprland = hostTraits.linuxDesktop && cfg.linux.windowManager == "hyprland";
     };
+    # Each macOS window manager stops itself from `darwin.ifDisabled` so a
+    # rice switch hands over without one module knowing the others. Apps
+    # started with `open` outlive bootout, hence the pkill.
+    args.shared.stopDarwinWindowManager =
+      { labels, processes }:
+      lib.mkAfter ''
+        uid="$(/usr/bin/id -u ${profile.username})"
+        for label in ${lib.escapeShellArgs labels}; do
+          /bin/launchctl bootout "gui/$uid/$label" >/dev/null 2>&1 || true
+        done
+        for process in ${lib.escapeShellArgs processes}; do
+          /usr/bin/pkill -u ${profile.username} -x "$process" >/dev/null 2>&1 || true
+        done
+      '';
   };
 }

@@ -6,6 +6,7 @@
   hm,
   pkgs,
   profile,
+  stopDarwinWindowManager,
   ...
 }:
 let
@@ -31,35 +32,6 @@ let
     managedBy = "rift";
   };
 
-  cleanupLegacyYabai = ''
-    uid="$(/usr/bin/id -u ${profile.username})"
-
-    for label in org.nixos.rift homebrew.mxcl.rift org.nixos.aerospace org.nixos.autoraise org.nixos.yabai org.nixos.skhd homebrew.mxcl.yabai homebrew.mxcl.skhd; do
-      /bin/launchctl bootout "gui/$uid/$label" >/dev/null 2>&1 || true
-    done
-
-    /usr/bin/pkill -u ${profile.username} -x AeroSpace >/dev/null 2>&1 || true
-    /usr/bin/pkill -u ${profile.username} -x aerospace >/dev/null 2>&1 || true
-    /usr/bin/pkill -u ${profile.username} -x autoraise >/dev/null 2>&1 || true
-    /usr/bin/pkill -u ${profile.username} -x AutoRaise >/dev/null 2>&1 || true
-    /usr/bin/pkill -u ${profile.username} -f '[A]pplications/AeroSpace.app/Contents/MacOS/AeroSpace' >/dev/null 2>&1 || true
-    /usr/bin/pkill -u ${profile.username} -f '[a]utoraise.*/bin/autoraise' >/dev/null 2>&1 || true
-    /usr/bin/pkill -u ${profile.username} -x yabai >/dev/null 2>&1 || true
-    /usr/bin/pkill -u ${profile.username} -x skhd >/dev/null 2>&1 || true
-
-    for plist in \
-      /Library/LaunchAgents/org.nixos.yabai.plist \
-      /Library/LaunchAgents/org.nixos.skhd.plist \
-      "${homeDir}/Library/LaunchAgents/org.nixos.yabai.plist" \
-      "${homeDir}/Library/LaunchAgents/org.nixos.skhd.plist" \
-      "${homeDir}/Library/LaunchAgents/org.nixos.rift.plist" \
-      "${homeDir}/Library/LaunchAgents/homebrew.mxcl.rift.plist" \
-      "${homeDir}/Library/LaunchAgents/homebrew.mxcl.yabai.plist" \
-      "${homeDir}/Library/LaunchAgents/homebrew.mxcl.skhd.plist"; do
-      /bin/rm -f "$plist"
-    done
-  '';
-
   cleanupLegacyYabaiConfig = ''
     legacy_yabai="$HOME/.config/yabai"
 
@@ -74,17 +46,8 @@ let
     fi
   '';
 
-  syncSketchybarSubscription = ''
+  reloadRift = ''
     uid="$(/usr/bin/id -u ${profile.username})"
-
-    $DRY_RUN_CMD /bin/launchctl bootout "gui/$uid/org.nixos.aerospace" >/dev/null 2>&1 || true
-    $DRY_RUN_CMD /bin/launchctl bootout "gui/$uid/org.nixos.autoraise" >/dev/null 2>&1 || true
-    $DRY_RUN_CMD /usr/bin/pkill -u ${profile.username} -x AeroSpace >/dev/null 2>&1 || true
-    $DRY_RUN_CMD /usr/bin/pkill -u ${profile.username} -x aerospace >/dev/null 2>&1 || true
-    $DRY_RUN_CMD /usr/bin/pkill -u ${profile.username} -x autoraise >/dev/null 2>&1 || true
-    $DRY_RUN_CMD /usr/bin/pkill -u ${profile.username} -x AutoRaise >/dev/null 2>&1 || true
-    $DRY_RUN_CMD /usr/bin/pkill -u ${profile.username} -f '[A]pplications/AeroSpace.app/Contents/MacOS/AeroSpace' >/dev/null 2>&1 || true
-    $DRY_RUN_CMD /usr/bin/pkill -u ${profile.username} -f '[a]utoraise.*/bin/autoraise' >/dev/null 2>&1 || true
 
     if [ -x /run/current-system/sw/bin/rift-cli ] && /run/current-system/sw/bin/rift-cli query metrics >/dev/null 2>&1; then
       $DRY_RUN_CMD /run/current-system/sw/bin/rift-cli execute config reload >/dev/null 2>&1 \
@@ -125,9 +88,19 @@ delib.scopedModule {
 
   darwin.always.environment.systemPackages = [ package ];
 
-  darwin.ifEnabled = {
-    launchd.user.agents.rift = agent;
-    system.activationScripts.cleanupLegacyYabai.text = cleanupLegacyYabai;
+  darwin.ifEnabled.launchd.user.agents.rift = agent;
+
+  darwin.ifDisabled.system.activationScripts.preActivation.text = stopDarwinWindowManager {
+    # org.nixos.rift and homebrew.mxcl.rift are labels of earlier installs.
+    labels = [
+      "git.acsandmann.rift"
+      "org.nixos.rift"
+      "homebrew.mxcl.rift"
+    ];
+    processes = [
+      "rift"
+      "Rift"
+    ];
   };
 
   home.ifEnabled = {
@@ -135,9 +108,7 @@ delib.scopedModule {
       "checkLinkTargets"
     ] cleanupLegacyYabaiConfig;
 
-    home.activation.syncRiftSketchybarSubscription = hm.dag.entryAfter [
-      "linkGeneration"
-    ] syncSketchybarSubscription;
+    home.activation.reloadRift = hm.dag.entryAfter [ "linkGeneration" ] reloadRift;
 
     xdg.configFile = configFiles;
   };

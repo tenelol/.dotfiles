@@ -5,6 +5,7 @@
   hostTraits,
   pkgs,
   profile,
+  stopDarwinWindowManager,
   ...
 }:
 let
@@ -35,6 +36,14 @@ delib.scopedModule {
 
   options = delib.moduleOptions {
     enable = delib.readOnly (delib.boolOption desktopSelection.autoraise);
+  };
+
+  darwin.ifDisabled.system.activationScripts.preActivation.text = stopDarwinWindowManager {
+    labels = [ "org.nixos.autoraise" ];
+    processes = [
+      "AutoRaise"
+      "autoraise"
+    ];
   };
 
   darwin.ifEnabled = {

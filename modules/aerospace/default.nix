@@ -7,6 +7,7 @@
   hostTraits,
   hm,
   profile,
+  stopDarwinWindowManager,
   ...
 }:
 let
@@ -45,16 +46,6 @@ let
 
     managedBy = "aerospace";
   };
-
-  stopRift = ''
-    uid="$(/usr/bin/id -u ${profile.username})"
-
-    for label in git.acsandmann.rift org.nixos.rift homebrew.mxcl.rift; do
-      /bin/launchctl bootout "gui/$uid/$label" >/dev/null 2>&1 || true
-    done
-
-    /usr/bin/pkill -u ${profile.username} -x rift >/dev/null 2>&1 || true
-  '';
 
   prepareApp = ''
     if [ -d "${appPath}" ]; then
@@ -97,9 +88,14 @@ delib.scopedModule {
 
   darwin.always.environment.systemPackages = [ package ];
 
-  darwin.ifEnabled = {
-    launchd.user.agents.aerospace = agent;
-    system.activationScripts.stopRiftForAerospace.text = stopRift;
+  darwin.ifEnabled.launchd.user.agents.aerospace = agent;
+
+  darwin.ifDisabled.system.activationScripts.preActivation.text = stopDarwinWindowManager {
+    labels = [ "org.nixos.aerospace" ];
+    processes = [
+      "AeroSpace"
+      "aerospace"
+    ];
   };
 
   home.ifEnabled = {

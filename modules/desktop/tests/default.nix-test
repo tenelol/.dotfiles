@@ -13,8 +13,23 @@ let
     default = { };
   };
   schema.options =
-    lib.genAttrs [ "system" "launchd" "homebrew" "programs" "environment" ] (_: opaque)
+    lib.genAttrs [ "launchd" "homebrew" "programs" "environment" "nixpkgs" ] (_: opaque)
     // {
+      # Several providers append to preActivation, which an opaque value cannot merge.
+      system = lib.mkOption {
+        type = lib.types.submodule {
+          freeformType = lib.types.attrsOf lib.types.anything;
+          options.activationScripts.preActivation.text = lib.mkOption {
+            type = lib.types.lines;
+            default = "";
+          };
+        };
+        default = { };
+      };
+      home-manager.sharedModules = lib.mkOption {
+        type = lib.types.listOf lib.types.anything;
+        default = [ ];
+      };
       home-manager.users = lib.mkOption {
         type = lib.types.attrsOf (
           lib.types.submoduleWith {
@@ -32,6 +47,10 @@ let
     lib.evalModules {
       specialArgs = {
         inherit delib host;
+        inputs.omniwm = {
+          overlays.default = "/stub/overlay";
+          homeManagerModules.default = { };
+        };
         profile.username = "probe";
         hm.dag = {
           entryBetween = before: after: data: { inherit before after data; };
@@ -63,14 +82,23 @@ let
     isServer = server;
   };
   selection = result: lib.genAttrs providers (provider: result.config.myconfig.${provider}.enable);
+  darwinBackends = [
+    "native"
+    "rift"
+    "aerospace"
+    "omniwm"
+  ];
+  darwinResult =
+    backend:
+    evaluate (hostFor "aarch64-darwin" false) {
+      desktop.darwin.windowManager = backend;
+    };
   darwinCases =
     map
       (
         backend:
         let
-          result = evaluate (hostFor "aarch64-darwin" false) {
-            desktop.darwin.windowManager = backend;
-          };
+          result = darwinResult backend;
           expected = {
             rift = backend == "rift";
             aerospace = backend == "aerospace";
@@ -81,17 +109,13 @@ let
           };
         in
         assert selection result == expected;
+        # omniwm.nix (stubbed here) declares the agent; the module only overrides it.
         assert
-          (result.config.home-manager.users.probe.launchd.agents.omniwm.enable or false)
+          (result.config.home-manager.users.probe.launchd.agents or { }) ? omniwm
           == (backend == "omniwm");
         true
       )
-      [
-        "native"
-        "rift"
-        "aerospace"
-        "omniwm"
-      ];
+      darwinBackends;
   linuxCases =
     map
       (
@@ -148,6 +172,10 @@ in
 assert builtins.all (passed: passed) (darwinCases ++ linuxCases ++ serverCases);
 assert !invalidSelector.success && !independentEnable.success;
 {
+  # Read by test_wm_switch.py, which runs each script against stubs.
+  preActivation = lib.genAttrs darwinBackends (
+    backend: (darwinResult backend).config.system.activationScripts.preActivation.text
+  );
   backendCases = builtins.length (darwinCases ++ linuxCases);
   serverCases = builtins.length serverCases;
   invalidSelector = "rejected";

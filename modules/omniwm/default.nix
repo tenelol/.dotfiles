@@ -6,7 +6,7 @@
   inputs,
   lib,
   pkgs,
-  profile,
+  stopDarwinWindowManager,
   ...
 }:
 delib.scopedModule {
@@ -22,23 +22,10 @@ delib.scopedModule {
 
   darwin.ifEnabled.home-manager.sharedModules = [ inputs.omniwm.homeManagerModules.default ];
 
-  darwin.ifEnabled.system.activationScripts.preActivation.text = lib.mkAfter ''
-    uid="$(/usr/bin/id -u ${profile.username})"
-
-    for label in git.acsandmann.rift org.nixos.rift homebrew.mxcl.rift org.nixos.aerospace org.nixos.autoraise; do
-      /bin/launchctl bootout "gui/$uid/$label" >/dev/null 2>&1 || true
-    done
-    for process in rift Rift AeroSpace aerospace AutoRaise autoraise; do
-      /usr/bin/pkill -u ${profile.username} -x "$process" >/dev/null 2>&1 || true
-    done
-  '';
-
-  darwin.ifDisabled.system.activationScripts.preActivation.text = lib.mkAfter ''
-    uid="$(/usr/bin/id -u ${profile.username})"
-
-    /bin/launchctl bootout "gui/$uid/org.nix-community.home.omniwm" >/dev/null 2>&1 || true
-    /usr/bin/pkill -u ${profile.username} -x OmniWM >/dev/null 2>&1 || true
-  '';
+  darwin.ifDisabled.system.activationScripts.preActivation.text = stopDarwinWindowManager {
+    labels = [ "org.nix-community.home.omniwm" ];
+    processes = [ "OmniWM" ];
+  };
 
   home.ifEnabled = {
     # Template for OmniWM App Theming; registering it is a one-time GUI step
