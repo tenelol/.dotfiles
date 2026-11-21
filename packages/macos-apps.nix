@@ -114,10 +114,10 @@ let
   apps = map mkApp selected;
   commands = lib.concatMap (app: builtins.attrNames (app.cli or { })) selected;
 in
-assert lib.length (lib.unique (map (app: app.name) catalog)) == lib.length catalog;
-assert lib.length (lib.unique commands) == lib.length commands;
+assert lib.allUnique (map (app: app.name) catalog);
+assert lib.allUnique commands;
 {
   installers = map (app: app.installer) apps;
   packages = lib.concatMap (app: app.packages) apps;
-  cliFiles = lib.foldl' (files: app: files // app.cliFiles) { } apps;
+  cliFiles = lib.mergeAttrsList (map (app: app.cliFiles) apps);
 }

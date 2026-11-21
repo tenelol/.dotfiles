@@ -28,17 +28,17 @@ delib.module {
             lib.nameValuePair ".pi/agent/extensions/${name}" { inherit source; force = true; }
           ) extensions;
           prompts = builtins.fromJSON (builtins.readFile ./files/prompt-catalog.json);
-          promptFiles = lib.listToAttrs (map (name:
+          promptFiles = lib.genAttrs' prompts (name:
             lib.nameValuePair ".pi/agent/prompts/${name}" {
               source = "${extensions.pi-subagents}/prompts/${name}";
               force = true;
             }
-          ) prompts);
+          );
           skillCatalog = builtins.fromJSON (builtins.readFile ./files/skill-catalog.json);
-          sharedSkillFiles = lib.listToAttrs (
-            map (name: lib.nameValuePair ".pi/agent/skills/${name}" {
+          sharedSkillFiles = lib.genAttrs' skillCatalog.shared (name:
+            lib.nameValuePair ".pi/agent/skills/${name}" {
               source = ../../.agents/skills + "/${name}";
-            }) skillCatalog.shared
+            }
           );
           piSkills = lib.filterAttrs (_: type: type == "directory") (builtins.readDir ./files/skills);
           piSkillFiles = lib.mapAttrs' (

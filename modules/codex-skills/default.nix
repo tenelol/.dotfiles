@@ -17,12 +17,9 @@ let
       force = true;
     }
   ) skills;
-  extensionSkillTargets = {
-    council-mode = ".pi/agent/extensions/pi-subagents/skills/council-mode";
-    pi-subagents = ".pi/agent/extensions/pi-subagents/skills/pi-subagents";
-    playwright-cli = ".pi/agent/extensions/playwright-cli/node_modules/@playwright/cli/skills/playwright-cli";
-    ponytail-bundle = ".pi/agent/extensions/ponytail/skills";
-  };
+  extensionSkillTargets = lib.mapAttrs (_: relative: ".pi/agent/${relative}") (
+    builtins.fromJSON (builtins.readFile ../pi-coding-agent/files/skill-catalog.json)
+  ).extensions;
   # Keep parent-side Claude delegation, Codex model routing, and Pi runtime skills out of Claude Code.
   runtimeSpecificSkills = [
     "ask-claude"

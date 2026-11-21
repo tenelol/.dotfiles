@@ -654,8 +654,7 @@ class ProjectContextInitTests(unittest.TestCase):
     def test_git_backup_creates_nested_repository_without_touching_project(self) -> None:
         run("git", "init", "--initial-branch=main", cwd=self.root)
         (self.root / "seed").write_text("seed\n")
-        run("git", "add", "seed", cwd=self.root)
-        run("git", "-c", "user.name=T", "-c", "user.email=t@example.invalid", "commit", "-m", "seed", cwd=self.root)
+        self.commit(self.root, "seed")
         remote = "git@example.invalid:me/context.git"
 
         changes = MODULE.initialize(self.root, "Example", git_backup=True, remote=remote)
