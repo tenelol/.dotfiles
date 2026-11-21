@@ -6,18 +6,12 @@ delib.rice {
     desktop.darwin.windowManager = "aerospace";
     theme = {
       sketchybar = {
-        glassBg = "0x2a07111f";
-        glassBorder = "0x387dd3fc";
         text = "0xffedf6ff";
-        textDim = "0xa8b8d8ff";
-        textMuted = "0xcfcae7ff";
         textStrong = "0xffffffff";
-        accent = "0xff7dd3fc";
       };
       ghostty = {
         foreground = "dbeafe";
         background = "0a0a0a";
-        backgroundBlur = 192;
         readabilityScrim = 0.58;
         cursor = "5f7695";
         selectionForeground = "e0f2fe";
@@ -26,7 +20,6 @@ delib.rice {
       jankyborders = {
         activeColor = "gradient(top_left=0xff0f172a,bottom_right=0xff7dd3fc)";
         inactiveColor = "gradient(top_left=0xff111827,bottom_right=0xff93a4b8)";
-        backgroundColor = "0x00000000";
       };
     };
   };

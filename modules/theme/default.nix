@@ -12,13 +12,8 @@ let
     let
       values = {
         TRANSPARENT = sketchybarTheme.transparent;
-        GLASS_BG = sketchybarTheme.glassBg;
-        GLASS_BORDER = sketchybarTheme.glassBorder;
         TEXT = sketchybarTheme.text;
-        TEXT_DIM = sketchybarTheme.textDim;
-        TEXT_MUTED = sketchybarTheme.textMuted;
         TEXT_STRONG = sketchybarTheme.textStrong;
-        ACCENT = sketchybarTheme.accent;
       };
     in
     lib.concatStringsSep "\n" (
@@ -91,19 +86,13 @@ delib.scopedModule {
       colors = enumOption [ "static" "omniwm" ] "static";
       sketchybar = {
         transparent = strOption "0x00000000";
-        glassBg = strOption "0x260b1018";
-        glassBorder = strOption "0x30ffffff";
         text = strOption "0xeef5f7fa";
-        textDim = strOption "0xa8f5f7fa";
-        textMuted = strOption "0xcff5f7fa";
         textStrong = strOption "0xffffffff";
-        accent = strOption "0xff8bd5ff";
       };
       # macOS uses the Glacier palette shared with Neovim; Linux keeps Tokyo Night.
       ghostty = {
         foreground = strOption (if pkgs.stdenv.hostPlatform.isDarwin then "c9d4e3" else "c0caf5");
         background = strOption (if pkgs.stdenv.hostPlatform.isDarwin then "0a0d12" else "24283b");
-        backgroundBlur = intOption (if pkgs.stdenv.hostPlatform.isDarwin then 96 else 64);
         readabilityScrim = floatOption 0.42;
         cursor = strOption (if pkgs.stdenv.hostPlatform.isDarwin then "8ab4f8" else "5f7695");
         selectionForeground = strOption (if pkgs.stdenv.hostPlatform.isDarwin then "eef3fa" else "c0caf5");
