@@ -101,6 +101,8 @@ return {
                 map("n", "]d", vim.diagnostic.goto_next, "Next diagnostic")
 
                 if client:supports_method("textDocument/documentHighlight") then
+                    -- document_highlight already asks every client, so one pair per buffer is enough.
+                    vim.api.nvim_clear_autocmds({ group = lsp_augroup, buffer = bufnr })
                     vim.api.nvim_create_autocmd({ "CursorHold", "CursorHoldI" }, {
                         group = lsp_augroup,
                         buffer = bufnr,
