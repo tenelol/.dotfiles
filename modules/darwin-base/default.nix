@@ -65,6 +65,7 @@ delib.module {
     ];
 
     programs.fish.enable = true;
+    programs.fish.useBabelfish = true;
 
     security.pam.services.sudo_local.touchIdAuth = true;
 

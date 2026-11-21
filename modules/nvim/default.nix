@@ -50,6 +50,8 @@ delib.module {
       withNodeJs = true;
       withPython3 = true;
       withRuby = false;
+      # Cache the module lookups of the many start plugins; this roughly halves startup.
+      luaLoader.enable = true;
       env.NVIM_SYSTEM_RPLUGIN_MANIFEST = "${nvim.moltenRemotePluginManifest}";
       extraConfigLuaPre = ''
         local function duplicate_current_or_visual_lines()
