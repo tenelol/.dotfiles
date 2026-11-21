@@ -1,6 +1,7 @@
 {
   delib,
   homeDir,
+  lib,
   pkgs,
   desktopSelection,
   hostTraits,
@@ -14,22 +15,24 @@ let
   package = pkgs.aerospace;
   appPath = "/Applications/Nix Apps/AeroSpace.app";
 
+  openArgs = [
+    "/usr/bin/open"
+    "-g"
+    "--env"
+    "HOME=${homeDir}"
+    "--env"
+    "XDG_CONFIG_HOME=${homeDir}/.config"
+    "--env"
+    "PATH=${path}"
+    appPath
+    "--args"
+    "--config-path"
+    "${homeDir}/.config/aerospace/aerospace.toml"
+  ];
+
   agent = {
     serviceConfig = {
-      ProgramArguments = [
-        "/usr/bin/open"
-        "-g"
-        "--env"
-        "HOME=${homeDir}"
-        "--env"
-        "XDG_CONFIG_HOME=${homeDir}/.config"
-        "--env"
-        "PATH=${path}"
-        appPath
-        "--args"
-        "--config-path"
-        "${homeDir}/.config/aerospace/aerospace.toml"
-      ];
+      ProgramArguments = openArgs;
       RunAtLoad = true;
       ProcessType = "Interactive";
       EnvironmentVariables = {
@@ -55,11 +58,7 @@ let
 
   prepareApp = ''
     if [ -d "${appPath}" ]; then
-      $DRY_RUN_CMD /usr/bin/open -g \
-        --env HOME=${homeDir} \
-        --env XDG_CONFIG_HOME=${homeDir}/.config \
-        --env PATH=${path} \
-        "${appPath}" --args --config-path ${homeDir}/.config/aerospace/aerospace.toml >/dev/null 2>&1 || true
+      $DRY_RUN_CMD ${lib.escapeShellArgs openArgs} >/dev/null 2>&1 || true
     fi
     $DRY_RUN_CMD ${package}/bin/aerospace reload-config --no-gui >/dev/null 2>&1 || true
   '';
