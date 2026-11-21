@@ -18,14 +18,9 @@ let
   };
   installHash = pkgs.callPackage ../../packages/firefox-install-hash.nix { };
   majorMinor = version: lib.concatStringsSep "." (lib.take 2 (lib.splitString "." version));
-  karabinerDmg = pkgs.fetchurl {
-    url = "https://github.com/pqrs-org/Karabiner-Elements/releases/download/v16.0.0/Karabiner-Elements-16.0.0.dmg";
-    hash = "sha256-uWD3MYkKdCMcIp5UU8TucQnvsyjE+2Ou2JdONH/R+cA=";
-  };
-  karabiner = extract {
-    name = "karabiner-elements-16.0.0";
-    src = karabinerDmg;
-    artifacts = [ "Karabiner-Elements.pkg" ];
+  virtualHid = pkgs.fetchurl {
+    url = "https://github.com/pqrs-org/Karabiner-DriverKit-VirtualHIDDevice/releases/download/v6.14.0/Karabiner-DriverKit-VirtualHIDDevice-6.14.0.pkg";
+    hash = "sha256-6/tqZD6pi7fC4IpPmTU7KjEp45f0MCNARDu9k28S6xw=";
   };
   wireshark =
     let
@@ -86,23 +81,21 @@ let
             running = [ "azooKeyMac" ];
           }
           {
-            name = "karabiner-elements";
+            name = "karabiner-virtualhid";
             kind = "pkg";
-            version = "16.0.0";
-            app = "/Applications/Karabiner-Elements.app";
-            appVersion = "16.0.0";
-            bundleId = "org.pqrs.Karabiner-Elements.Settings";
+            version = "6.14.0";
+            app = "/Applications/.Karabiner-VirtualHIDDevice-Manager.app";
+            appVersion = "6.14.0";
+            bundleId = "org.pqrs.Karabiner-VirtualHIDDevice-Manager";
             teamId = "G43BCU2T37";
             receipts = {
-              "org.pqrs.Karabiner-Elements" = "16.0.0";
               "org.pqrs.Karabiner-DriverKit-VirtualHIDDevice" = "6.14.0";
             };
-            requiredPaths = [ "/Library/Application Support/org.pqrs/Karabiner-DriverKit-VirtualHIDDevice" ];
-            packages = [ "${karabiner}/Karabiner-Elements.pkg" ];
-            running = [
-              "karabiner_grabber"
-              "Karabiner-Elements"
+            requiredPaths = [
+              "/Library/Application Support/org.pqrs/Karabiner-DriverKit-VirtualHIDDevice/Applications/Karabiner-VirtualHIDDevice-Daemon.app/Contents/MacOS/Karabiner-VirtualHIDDevice-Daemon"
             ];
+            packages = [ "${virtualHid}" ];
+            running = [ "Karabiner-VirtualHIDDevice-Daemon" ];
             strictVersion = true;
           }
           {

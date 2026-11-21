@@ -16,6 +16,7 @@ let
   packageBin = "${darwinKanataPackage}/bin/kanata";
   binPath = "/usr/local/bin/kanata";
   managedMarker = "/usr/local/bin/.kanata-managed-by-nix-darwin";
+  virtualHidBin = "/Library/Application Support/org.pqrs/Karabiner-DriverKit-VirtualHIDDevice/Applications/Karabiner-VirtualHIDDevice-Daemon.app/Contents/MacOS/Karabiner-VirtualHIDDevice-Daemon";
   checkManagedPath = ''
     kanata_managed=0
     if [ -e ${managedMarker} ]; then
@@ -47,10 +48,8 @@ let
   disabledPostActivation = ''
     uid="$(id -u ${profile.username})"
 
-    /bin/launchctl enable system/org.pqrs.service.daemon.Karabiner-Core-Service >/dev/null 2>&1 || true
-    /bin/launchctl enable "gui/$uid/org.pqrs.service.agent.Karabiner-Core-Service-rev2" >/dev/null 2>&1 || true
-
     /bin/launchctl bootout system/org.nixos.kanata >/dev/null 2>&1 || true
+    /bin/launchctl bootout system/org.nixos.kanata-vhid >/dev/null 2>&1 || true
     /bin/launchctl bootout "gui/$uid/org.nixos.kanata" >/dev/null 2>&1 || true
     /usr/bin/pkill -f '/Applications/Kanata.app/Contents/MacOS/kanata' >/dev/null 2>&1 || true
     /usr/bin/pkill -f '${binPath}' >/dev/null 2>&1 || true
@@ -62,6 +61,7 @@ let
     fi
     /bin/rm -f /Library/PrivilegedHelperTools/local.nix-kanata-root
     /bin/rm -f /Library/LaunchDaemons/org.nixos.kanata.plist
+    /bin/rm -f /Library/LaunchDaemons/org.nixos.kanata-vhid.plist
     /bin/rm -f /Library/LaunchAgents/org.nixos.kanata.plist
   '';
 
@@ -95,6 +95,18 @@ let
 
     /bin/rm -f /Library/PrivilegedHelperTools/local.nix-kanata-root
 
+    # Unregister SMAppService jobs before removing their containing app bundles.
+    agents='/Library/Application Support/org.pqrs/Karabiner-Elements/Karabiner-Elements Non-Privileged Agents v2.app/Contents/MacOS/Karabiner-Elements Non-Privileged Agents v2'
+    if [ -x "$agents" ]; then
+      for command in unregister-core-agents unregister-menu-agent unregister-multitouch-extension-agent unregister-notification-window-agent; do
+        /bin/launchctl asuser "$uid" /usr/bin/sudo -u ${profile.username} "$agents" "$command"
+      done
+    fi
+    daemons='/Library/Application Support/org.pqrs/Karabiner-Elements/Karabiner-Elements Privileged Daemons v2.app/Contents/MacOS/Karabiner-Elements Privileged Daemons v2'
+    if [ -x "$daemons" ]; then
+      "$daemons" unregister-core-daemons
+    fi
+
     for label in \
       org.nixos.start_karabiner_daemons \
       org.nixos.setsuid_karabiner_session_monitor; do
@@ -120,7 +132,8 @@ let
     for label in \
       org.pqrs.karabiner.karabiner_grabber \
       org.pqrs.karabiner.karabiner_observer \
-      org.pqrs.service.daemon.Karabiner-Core-Service; do
+      org.pqrs.service.daemon.Karabiner-Core-Service \
+      org.pqrs.service.daemon.Karabiner-VirtualHIDDevice-Daemon; do
       /bin/launchctl bootout "system/$label" >/dev/null 2>&1 || true
     done
 
@@ -128,6 +141,20 @@ let
     /usr/bin/pkill -f '/Applications/Karabiner-Elements.app/Contents/MacOS/Karabiner-Elements' >/dev/null 2>&1 || true
     /usr/bin/pkill -f '/Library/Application Support/org.pqrs/Karabiner-Elements/bin/karabiner_' >/dev/null 2>&1 || true
     /usr/bin/pkill -f '/Library/Application Support/org.pqrs/Karabiner-Elements/Karabiner-' >/dev/null 2>&1 || true
+
+    /bin/rm -rf \
+      /Applications/Karabiner-Elements.app \
+      /Applications/Karabiner-EventViewer.app \
+      '/Library/Application Support/org.pqrs/Karabiner-Elements'
+    if /usr/sbin/pkgutil --pkg-info org.pqrs.Karabiner-Elements >/dev/null 2>&1; then
+      /usr/sbin/pkgutil --forget org.pqrs.Karabiner-Elements
+    fi
+
+    /Applications/.Karabiner-VirtualHIDDevice-Manager.app/Contents/MacOS/Karabiner-VirtualHIDDevice-Manager activate
+    if ! /bin/launchctl print system/org.nixos.kanata-vhid >/dev/null 2>&1; then
+      /bin/launchctl bootstrap system /Library/LaunchDaemons/org.nixos.kanata-vhid.plist
+    fi
+    /bin/launchctl kickstart -k system/org.nixos.kanata-vhid
 
     /bin/rm -f "${homeDir}/Library/LaunchAgents/org.nixos.kanata.plist"
     # Clear launchd's stale crash/penalty state before starting Kanata.
@@ -181,6 +208,12 @@ delib.scopedModule {
     environment.etc."kanata/common.kbd".source = ./files/common.kbd;
 
     launchd.daemons.kanata = daemon;
+    launchd.daemons.kanata-vhid.serviceConfig = {
+      ProgramArguments = [ virtualHidBin ];
+      KeepAlive = true;
+      RunAtLoad = true;
+      ProcessType = "Interactive";
+    };
 
     system.activationScripts.postActivation.text = lib.mkAfter enabledPostActivation;
   };

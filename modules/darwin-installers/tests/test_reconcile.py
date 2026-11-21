@@ -72,18 +72,17 @@ class FakeHost:
 
 def entry(**changes):
     item = {
-        "name": "karabiner-elements",
-        "version": "16.0.0",
-        "app": "/Applications/Karabiner-Elements.app",
-        "appVersion": "16.0.0",
-        "bundleId": "org.pqrs.Karabiner-Elements.Settings",
+        "name": "karabiner-virtualhid",
+        "version": "6.14.0",
+        "app": "/Applications/.Karabiner-VirtualHIDDevice-Manager.app",
+        "appVersion": "6.14.0",
+        "bundleId": "org.pqrs.Karabiner-VirtualHIDDevice-Manager",
         "teamId": "G43BCU2T37",
         "receipts": {
-            "org.pqrs.Karabiner-Elements": "16.0.0",
             "org.pqrs.Karabiner-DriverKit-VirtualHIDDevice": "6.14.0",
         },
-        "packages": ["/nix/store/karabiner/Karabiner-Elements.pkg"],
-        "running": ["karabiner_grabber"],
+        "packages": ["/nix/store/virtualhid.pkg"],
+        "running": ["Karabiner-VirtualHIDDevice-Daemon"],
         "strictVersion": True,
     }
     item.update(changes)
@@ -115,7 +114,7 @@ class ReconcileTests(unittest.TestCase):
         RECONCILE.reconcile_entry(self.host, self.item, self.temp.name, status)
         self.assertEqual(status, "installed")
         self.assertEqual(self.host.installs, [])
-        self.assertEqual(self.host.markers["karabiner-elements"], "16.0.0")
+        self.assertEqual(self.host.markers["karabiner-virtualhid"], "6.14.0")
 
     def test_missing_driver_receipt_requires_original_signed_pkg(self):
         del self.host.receipts["org.pqrs.Karabiner-DriverKit-VirtualHIDDevice"]
@@ -123,24 +122,24 @@ class ReconcileTests(unittest.TestCase):
         self.assertEqual(status, "needs-install")
         self.assertEqual(
             self.host.verified,
-            [("/nix/store/karabiner/Karabiner-Elements.pkg", "G43BCU2T37")],
+            [("/nix/store/virtualhid.pkg", "G43BCU2T37")],
         )
 
-    def test_newer_karabiner_blocks_downgrade(self):
-        self.host.apps[self.item["app"]]["version"] = "16.3.0"
+    def test_newer_driver_blocks_downgrade(self):
+        self.host.apps[self.item["app"]]["version"] = "6.16.0"
         with self.assertRaisesRegex(RuntimeError, "pinned compatibility"):
             RECONCILE.preflight_entry(self.host, self.item, self.temp.name)
         self.assertEqual(self.host.installs, [])
 
     def test_marker_cannot_hide_missing_receipt(self):
-        self.host.markers[self.item["name"]] = "16.1.0"
-        del self.host.receipts["org.pqrs.Karabiner-Elements"]
+        self.host.markers[self.item["name"]] = "6.15.0"
+        del self.host.receipts["org.pqrs.Karabiner-DriverKit-VirtualHIDDevice"]
         with self.assertRaisesRegex(RuntimeError, "pinned compatibility"):
             RECONCILE.preflight_entry(self.host, self.item, self.temp.name)
 
     def test_running_app_blocks_before_install(self):
-        self.host.apps[self.item["app"]]["version"] = "15.9.0"
-        self.host.running_patterns.add("karabiner_grabber")
+        self.host.apps[self.item["app"]]["version"] = "6.13.0"
+        self.host.running_patterns.add("Karabiner-VirtualHIDDevice-Daemon")
         with self.assertRaisesRegex(RuntimeError, "close the running"):
             RECONCILE.preflight_entry(self.host, self.item, self.temp.name)
         self.assertEqual(self.host.installs, [])
@@ -316,7 +315,7 @@ class ReconcileTests(unittest.TestCase):
         ):
             RECONCILE.main()
         result = json.loads(output.getvalue())
-        self.assertEqual(result["packages"], [{"name": "karabiner-elements", "declaredVersion": "16.0.0", "status": "installed"}])
+        self.assertEqual(result["packages"], [{"name": "karabiner-virtualhid", "declaredVersion": "6.14.0", "status": "installed"}])
         self.assertEqual(result["masApps"], [
             {"name": "Pages", "id": 409201541, "installed": True},
             {"name": "LINE", "id": 539883307, "installed": False},
@@ -425,7 +424,7 @@ class ReconcileTests(unittest.TestCase):
     def test_running_nix_link_blocks_replacement(self):
         item = entry(selfUpdating=True, source="/nix/store/app.app")
         self.host.apps[item["app"]].update(symlink=True, resolvedPath=item["source"])
-        self.host.running_patterns.add("karabiner_grabber")
+        self.host.running_patterns.add("Karabiner-VirtualHIDDevice-Daemon")
         with self.assertRaisesRegex(RuntimeError, "close the running"):
             RECONCILE.preflight_entry(self.host, item, self.temp.name)
 

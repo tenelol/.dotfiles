@@ -69,8 +69,9 @@ Use denix and `nh` for bootstrap installation. Self-updating apps live in
 newer versions. Close an app before its initial migration or bootstrap upgrade.
 App profiles, caches and Keychain data keep their existing locations. App CLI
 commands follow the normal copies, while completion/man files remain in Nix.
-Office uses Microsoft AutoUpdate, and LINE uses the Mac App Store. Check
-Karabiner/Kanata driver compatibility before changing their versions. Use the
+Office uses Microsoft AutoUpdate, and LINE uses the Mac App Store. Kanata uses
+the standalone VirtualHIDDevice driver without Karabiner-Elements; check
+[driver compatibility](./docs/notes/kanata-karabiner-compatibility.md) before updating. Use the
 installer's read-only plan with `dotfiles-installers --plan` when diagnosing an
 activation failure.
 

@@ -1,0 +1,21 @@
+let
+  module = import ../default.nix {
+    delib = {
+      scopedModule = value: value;
+      singleEnableOption = value: value;
+    };
+    homeDir = "/Users/test";
+    hostTraits = {
+      darwinDesktop = true;
+      linuxDesktop = false;
+    };
+    lib.mkAfter = value: value;
+    pkgs.callPackage = _: _: "/nix/store/test-kanata";
+    profile.username = "test";
+  };
+in
+{
+  services = module.darwin.ifEnabled.launchd.daemons;
+  activation = module.darwin.ifEnabled.system.activationScripts.postActivation.text;
+  disabled = module.darwin.ifDisabled.system.activationScripts.postActivation.text;
+}
