@@ -16,3 +16,4 @@
 - nix-darwin の `activate` に入るのは、`preActivation`・`extraActivation`・`postActivation` などの決まった名前だけ。`system.activationScripts.<任意の名前>` は警告もなく捨てられる（`modules/system/activation-scripts.nix`）。Home Manager の `home.activation` は任意の名前でよい。
 - 2026-11-21 に、こうして一度も動いていなかった5つ（ログインシェル、スクリーンショットのフォルダ、メニューバーの再読み込み、yabai の掃除、AeroSpace へ切り替えるときの Rift の停止）を見つけた。必要なものは `postActivation`、または各 window manager の `ifDisabled` の `preActivation` へ移し、残りは消した。
 - 確かめ方: `nix eval .#darwinConfigurations.<target>.config.system.activationScripts.script.text` の出力に、書いた処理が入っているかを見る。
+- `activate` はビルド時に `shellcheck --exclude=SC2016,SC1112` を通り、warning でもビルドが失敗する。要素が1つの `for` ループ（SC2043）で switch が止まったことがある。上の出力を同じオプションの shellcheck にかければ、ビルドの前に確かめられる。
