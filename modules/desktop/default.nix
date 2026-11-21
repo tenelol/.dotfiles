@@ -33,14 +33,18 @@ delib.module {
     # started with `open` outlive bootout, hence the pkill.
     args.shared.stopDarwinWindowManager =
       { labels, processes }:
-      lib.mkAfter ''
-        uid="$(/usr/bin/id -u ${profile.username})"
-        for label in ${lib.escapeShellArgs labels}; do
-          /bin/launchctl bootout "gui/$uid/$label" >/dev/null 2>&1 || true
-        done
-        for process in ${lib.escapeShellArgs processes}; do
-          /usr/bin/pkill -u ${profile.username} -x "$process" >/dev/null 2>&1 || true
-        done
-      '';
+      # One line per item: nix-darwin shellchecks activate, and a one-item
+      # loop fails the build with SC2043.
+      lib.mkAfter (
+        ''
+          uid="$(/usr/bin/id -u ${profile.username})"
+        ''
+        + lib.concatMapStrings (label: ''
+          /bin/launchctl bootout "gui/$uid/${label}" >/dev/null 2>&1 || true
+        '') labels
+        + lib.concatMapStrings (process: ''
+          /usr/bin/pkill -u ${profile.username} -x ${lib.escapeShellArg process} >/dev/null 2>&1 || true
+        '') processes
+      );
   };
 }
