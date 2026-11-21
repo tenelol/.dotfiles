@@ -2,6 +2,7 @@
   delib,
   homeDir,
   host,
+  lib,
   pkgs,
   profile,
   ...
@@ -69,9 +70,10 @@ delib.module {
 
     security.pam.services.sudo_local.touchIdAuth = true;
 
-    system.activationScripts.setFishLoginShell.text = ''
-      grep -qx '/run/current-system/sw/bin/fish' /etc/shells || printf '\n/run/current-system/sw/bin/fish\n' >> /etc/shells
-      dscl . -create ${homeDir} UserShell /run/current-system/sw/bin/fish
+    # users.users.<name>.shell only applies to users.knownUsers, which would
+    # hand the whole account to nix-darwin. /etc/shells comes from environment.shells.
+    system.activationScripts.postActivation.text = lib.mkAfter ''
+      dscl . -create /Users/${profile.username} UserShell /run/current-system/sw/bin/fish
     '';
   };
 }

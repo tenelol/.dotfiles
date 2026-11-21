@@ -102,32 +102,17 @@ delib.module {
     };
 
     system.activationScripts = {
-      ensureScreenshotDirectory.text = ''
-        mkdir -p ${homeDir}/Pictures/Screenshots
-        chown ${profile.username} ${homeDir}/Pictures/Screenshots
-      '';
-
       postActivation.text = lib.mkAfter ''
         uid="$(id -u ${profile.username})"
+
+        # screencapture.location points here.
+        mkdir -p ${homeDir}/Pictures/Screenshots
+        chown ${profile.username} ${homeDir}/Pictures/Screenshots
 
         # Prevent the screen saver from triggering an automatic lock. Display
         # sleep, lid-close sleep, and manual locking remain unchanged.
         launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/defaults -currentHost write \
           com.apple.screensaver idleTime -int 0
-
-      '';
-
-      reloadNativeBars.text = ''
-        uid="$(id -u ${profile.username})"
-
-        launchctl asuser "$uid" sudo --user=${profile.username} /usr/bin/osascript \
-          -e 'tell application "System Events" to tell dock preferences to set autohide menu bar to false' \
-          -e 'delay 0.2' \
-          -e 'tell application "System Events" to tell dock preferences to set autohide menu bar to true' \
-          >/dev/null 2>&1 || true
-
-        killall Dock >/dev/null 2>&1 || true
-        killall SystemUIServer >/dev/null 2>&1 || true
       '';
     };
   };
