@@ -18,7 +18,6 @@ auto_focus_blacklist = [
 ]
 run_on_start = [
   "/bin/sh -lc \"$HOME/.config/rift/sketchybar-workspace-subscribe\"",
-  "/bin/sh -lc \"$HOME/.config/rift/assign-windows\"",
 ]
 hot_reload = true
 
@@ -126,10 +125,6 @@ workspace_names = [
 ]
 
 app_rules = [
-  { app_id = "com.mitchellh.ghostty", workspace = 0 },
-  { app_id = "company.thebrowser.dia", workspace = 0 },
-  { app_id = "com.anthropic.claudefordesktop", workspace = 8 },
-  { app_id = "com.openai.codex", workspace = 8 },
   { app_name = "System Settings", manage = false },
   { app_name = "System Preferences", manage = false },
   { app_name = "App Store", manage = false },

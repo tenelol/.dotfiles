@@ -1,7 +1,6 @@
 config-version = 2
 
 after-startup-command = [
-  'exec-and-forget /bin/sh -lc "$HOME/.config/aerospace/assign-windows"',
   'exec-and-forget /run/current-system/sw/bin/sketchybar --trigger workspace_change REFRESH=all',
 ]
 start-at-login = false
@@ -182,50 +181,6 @@ h = ['join-with left', 'mode main']
 j = ['join-with down', 'mode main']
 k = ['join-with up', 'mode main']
 l = ['join-with right', 'mode main']
-
-[[on-window-detected]]
-if.app-id = 'com.mitchellh.ghostty'
-run = 'move-node-to-workspace 2'
-
-[[on-window-detected]]
-if.app-id = 'com.anthropic.claudefordesktop'
-run = 'move-node-to-workspace 9'
-
-[[on-window-detected]]
-if.app-id = 'com.github.Electron'
-run = 'move-node-to-workspace 1'
-
-[[on-window-detected]]
-if.app-id = 'com.openai.codex'
-run = 'move-node-to-workspace 1'
-
-[[on-window-detected]]
-if.app-id = 'company.thebrowser.dia'
-run = 'move-node-to-workspace 2'
-
-[[on-window-detected]]
-if.app-id = 'org.qutebrowser.qutebrowser'
-run = 'move-node-to-workspace 2'
-
-[[on-window-detected]]
-if.app-id = 'com.apple.mail'
-run = 'move-node-to-workspace 3'
-
-[[on-window-detected]]
-if.app-id = 'com.tinyspeck.slackmacgap'
-run = 'move-node-to-workspace 3'
-
-[[on-window-detected]]
-if.app-id = 'jp.naver.line.mac'
-run = 'move-node-to-workspace 3'
-
-[[on-window-detected]]
-if.app-id = 'com.spotify.client'
-run = 'move-node-to-workspace 4'
-
-[[on-window-detected]]
-if.app-id = 'com.apple.Preview'
-run = 'move-node-to-workspace 5'
 
 [[on-window-detected]]
 if.app-id = 'com.apple.systempreferences'
