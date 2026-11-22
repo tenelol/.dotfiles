@@ -58,7 +58,6 @@ showLabels = false
 transparentBackground = true
 
 [[appRules]]
-assignToWorkspace = "9"
 bundleId = "com.openai.codex"
 id = "6A31F08A-4051-4354-B439-42F4C71894A3"
 minHeight = 600.0
@@ -101,7 +100,6 @@ minHeight = 120.0
 minWidth = 500.0
 
 [[appRules]]
-assignToWorkspace = "1"
 bundleId = "company.thebrowser.dia"
 id = "C21156B1-0224-4998-97E3-8F4FA65B9F3B"
 minHeight = 420.0
@@ -120,7 +118,6 @@ minHeight = 500.0
 minWidth = 800.0
 
 [[appRules]]
-assignToWorkspace = "1"
 bundleId = "com.mitchellh.ghostty"
 id = "7876C9EF-437E-4D4F-9C27-B1B02F4AABCE"
 layout = "tile"
@@ -140,11 +137,6 @@ minHeight = 320.0
 minWidth = 660.0
 
 [[appRules]]
-assignToWorkspace = "9"
-bundleId = "com.anthropic.claudefordesktop"
-id = "A27FC511-AA75-58F0-896E-D2A7A06860B0"
-
-[[appRules]]
 bundleId = "com.apple.systempreferences"
 id = "30135FD5-4509-486E-A7DD-15FD94AD1645"
 layout = "tile"
@@ -159,11 +151,6 @@ axSubrole = "AXStandardWindow"
 bundleId = "com.barut.OmniWM"
 id = "58FFE705-32A0-4095-B49A-95375B7A6C9A"
 layout = "tile"
-
-[[appRules]]
-assignToWorkspace = "1"
-bundleId = "com.phibrowser.Mac"
-id = "2CFBCBD8-DF67-541F-90EC-1C7FA536D766"
 
 [[hotkeys]]
 id = "workspaceBackAndForth"
