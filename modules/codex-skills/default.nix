@@ -50,6 +50,7 @@ let
       targets = [
         ".claude/skills"
         ".codex/skills"
+        ".gemini/config/skills"
         ".pi/agent/skills"
       ];
     };
@@ -72,13 +73,17 @@ delib.module {
       (
         { config, ... }:
         {
+          # Antigravity and its CLI read global skills from ~/.gemini/config/skills.
           home.file =
-            lib.mapAttrs' (
+            lib.concatMapAttrs (
               name: target:
-              lib.nameValuePair ".claude/skills/${name}" {
-                source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/${target}";
-                force = true;
-              }
+              lib.genAttrs' [ ".claude/skills" ".gemini/config/skills" ] (
+                dir:
+                lib.nameValuePair "${dir}/${name}" {
+                  source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/${target}";
+                  force = true;
+                }
+              )
             ) claudeSkillTargets
             // lib.concatMapAttrs (
               name: skill:
