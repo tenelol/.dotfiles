@@ -21,8 +21,12 @@ let
     let
       cask = pkgs.brewCasks.antigravity-cli;
     in
+    # The tarball holds the bare binary with no top directory, which the
+    # brew-nix unpack phase rejects, so extract the Cask source directly.
     pkgs.runCommand "agy-${cask.version}" { nativeBuildInputs = [ pkgs.makeWrapper ]; } ''
-      makeWrapper ${cask}/bin/antigravity "$out/bin/agy" --set AGY_CLI_DISABLE_AUTO_UPDATE 1
+      mkdir -p "$out/libexec"
+      tar -xzf ${cask.src} -C "$out/libexec" antigravity
+      makeWrapper "$out/libexec/antigravity" "$out/bin/agy" --set AGY_CLI_DISABLE_AUTO_UPDATE 1
     '';
 in
 delib.module {
