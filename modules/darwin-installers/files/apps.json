@@ -42,6 +42,13 @@
     "migrateBeforeNixApps": false
   },
   {
+    "name": "antigravity",
+    "app": "Antigravity",
+    "bundleId": "com.google.antigravity",
+    "teamId": "EQHXZ8M8AV",
+    "migrateBeforeNixApps": false
+  },
+  {
     "name": "cursor",
     "app": "Cursor",
     "bundleId": "com.todesktop.230313mzl4w4u92",

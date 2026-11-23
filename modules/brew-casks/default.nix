@@ -15,6 +15,15 @@ let
     entry: brewCask (builtins.removeAttrs entry [ "name" ] // { cask = pkgs.brewCasks.${entry.name}; });
   packages = lib.genAttrs' selected (app: lib.nameValuePair app.name (mkCask app));
   fontPackages = map mkCask apps.fonts;
+  # Homebrew links this Cask binary as agy. The Nix store copy cannot replace
+  # itself, so its background updater stays off; update through the pin.
+  antigravityCli =
+    let
+      cask = pkgs.brewCasks.antigravity-cli;
+    in
+    pkgs.runCommand "agy-${cask.version}" { nativeBuildInputs = [ pkgs.makeWrapper ]; } ''
+      makeWrapper ${cask}/bin/antigravity "$out/bin/agy" --set AGY_CLI_DISABLE_AUTO_UPDATE 1
+    '';
 in
 delib.module {
   name = "brew-casks";
@@ -29,7 +38,7 @@ delib.module {
       let
         packageList = lib.attrValues packages;
       in
-      packageList ++ lib.catAttrs "completionPackage" packageList;
+      packageList ++ lib.catAttrs "completionPackage" packageList ++ [ antigravityCli ];
     # ~/.local/bin precedes Homebrew in this repository's session PATH.
     home.file = lib.listToAttrs (
       lib.concatMap (
