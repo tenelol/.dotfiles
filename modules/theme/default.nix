@@ -112,6 +112,11 @@ delib.scopedModule {
         xdg.configFile."theme/sketchybar.env".text = sketchybarEnv cfg.sketchybar;
       }
 
+      (lib.mkIf pkgs.stdenv.hostPlatform.isDarwin {
+        # Read or set the wallpaper from the shell: `desktoppr <image>`.
+        home.packages = [ pkgs.desktoppr ];
+      })
+
       (lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
         xdg.configFile = {
           "theme/wallpaper.png".source = ../../rices/wallpapers + "/${cfg.wallpaper}";

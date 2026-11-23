@@ -149,7 +149,9 @@ On this rice, Ghostty, Neovim and herdr take their colors from OmniWM's App
 Theming, which can follow the wallpaper; the one-time setup is in
 [docs/notes/macos-wallpaper-theming.md](./docs/notes/macos-wallpaper-theming.md).
 
-macOS wallpapers are managed in System Settings. denix/Home Manager does not set them during `nh darwin switch`.
+macOS wallpapers are set in System Settings or with `desktoppr <image>` (no
+argument prints the current one). denix/Home Manager does not set them during
+`nh darwin switch`.
 
 ### Linux
 
