@@ -87,6 +87,7 @@ Use `$ask-claude` in Codex to ask Claude Code a question, request a review, or d
 | Tax and document-reading skills (24) | [kazukinagata/shinkoku](https://github.com/kazukinagata/shinkoku) |
 | Engineering and productivity skills (25) | [mattpocock/skills](https://github.com/mattpocock/skills) |
 | `frontend-design` | [anthropics/skills](https://github.com/anthropics/skills) |
+| `anything-frontend-art-direction` (without the `examples/` and `docs/` demo media) | [RNA4219/anything-frontend-art-direction](https://github.com/RNA4219/anything-frontend-art-direction) |
 | `find-skills` | [vercel-labs/skills](https://github.com/vercel-labs/skills) |
 | `security-audit` | [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill) |
 | `yomiyasu` | [nanaism/yomiyasu](https://github.com/nanaism/yomiyasu) |
