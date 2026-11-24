@@ -4,7 +4,7 @@ reads, herdr's [theme.custom], OmniWM's border colors and the OmniShell theme
 of its workspace bar from the macOS wallpaper.
 
 A stand-in until the pinned OmniWM has App Theming, which writes the same
-files (docs/notes/macos-wallpaper-theming.md). matugen turns the wallpaper into
+files (docs/wallpaper-theming.md). matugen turns the wallpaper into
 Material 3 roles; the terminal colors follow OmniWM's "Follow Palette" mapping.
 
 Usage: wallpaper-theme.py --matugen MATUGEN [IMAGE]

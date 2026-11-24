@@ -82,7 +82,7 @@ delib.scopedModule {
       # "omniwm" hands the Ghostty, Neovim and herdr colors to OmniWM's App
       # Theming, which follows its (wallpaper) palette. The static values below
       # then only seed those apps until OmniWM takes over.
-      # See docs/notes/macos-wallpaper-theming.md.
+      # See docs/wallpaper-theming.md.
       colors = enumOption [ "static" "omniwm" ] "static";
       sketchybar = {
         transparent = strOption "0x00000000";

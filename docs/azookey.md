@@ -1,14 +1,14 @@
-# azooKey を公式 pkg に戻したときの注意
+# azooKey
 
-2026-11 に、パッチを当てたソースビルドをやめて公式の署名付き pkg に戻した（`3e0c42d`）。その切り替えで入力できなくなった原因と、再発したときの確認点を残す。
+azooKey は公式の署名付き pkg を darwin-installers で入れる（[`modules/darwin-installers/default.nix`](../modules/darwin-installers/default.nix)）。入力ソースの設定は [`modules/azookey/default.nix`](../modules/azookey/default.nix)。パッチを当てたソースビルドは `3e0c42d` でやめた。
 
-## 入力モード ID
+## 入力ソースの設定
 
 - 公式版の `Info.plist` では、入力モード ID が `com.apple.inputmethod.Japanese` と `com.apple.inputmethod.Roman`。TIS の入力ソース ID は `dev.ensan.inputmethod.azooKeyMac.*` で、この2つは別物。
 - `AppleEnabledInputSources` の `Input Mode` に `dev.ensan.*` を書くと、macOS が日本語モードを有効として扱わず、Control+Space で日本語に切り替わらなくなる（`f903a67`）。
-- 英字モードを有効にすると Control+Space の切替先が ABC ではなく azooKey (English) になるので、有効にしない（`f54686d`）。
+- 英字モードは有効にしない。有効にすると Control+Space の切替先が ABC ではなく azooKey (English) になる（`f54686d`）。
 
-## 入れ替え時の落とし穴
+## pkg を入れ替えるときの注意
 
 - ad-hoc 署名のビルドが `/Library/Input Methods` にあると、darwin-installers は公式 pkg の導入を拒否する。先に退避する。
 - darwin-installers は `pgrep -f azooKeyMac` で起動中かを判定する。引数にこの文字列を含むコマンド（switch の完了待ちの監視など）を switch 中に動かすと、誤検出で止まる。

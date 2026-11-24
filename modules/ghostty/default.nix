@@ -108,7 +108,7 @@ let
 
   # Stand-in for OmniWM App Theming until the pinned OmniWM has it: writes the
   # same two themes from the macOS wallpaper. Remove it together with the agent
-  # below once App Theming is on (docs/notes/macos-wallpaper-theming.md).
+  # below once App Theming is on (docs/wallpaper-theming.md).
   wallpaperTheme = pkgs.writeShellScriptBin "ghostty-wallpaper-theme" ''
     exec ${pkgs.python3}/bin/python3 ${./files/wallpaper-theme.py} \
       --matugen ${pkgs.matugen}/bin/matugen "$@"

@@ -43,8 +43,8 @@
 ## Documentation expectations
 - README changes should describe the actual personal workflow used in this repo.
 - Mention `denix` and `nh` explicitly when explaining structure or operational commands.
-- Keep README as the entry point. This personal repository does not use the project context: write investigation history, rationale, machine-specific constraints, migration decisions, and open questions as notes in `docs/` (`docs/notes/` unless an existing layout fits better), for the owner to commit and consolidate at milestones. Keep only information useful for future decisions; discard routine logs and facts easily recovered from the repository.
-- The legacy store at `.git/project-context/` is read-only reference until its records are moved to `docs/` with `$project-context-promote`; add no new records there.
+- Keep README as the entry point. This personal repository does not use the project context. `docs/` holds formal, committed documentation, one file per topic directly under `docs/`: what is needed on another machine and still holds now, such as constraints, procedures, pitfalls, machine-specific state, and open decisions, with the reason when it guides future changes. Do not keep chronological history, investigation logs, or routine verification records there; point to the relevant commit hash instead, since `git log` is the history. Leave docs changes uncommitted for the owner to review and commit.
+- `context/` (the legacy v3 store at `.git/project-context/`) is a frozen archive of past records. Read it only when past history is needed, add nothing to it, and move only information that still holds into `docs/`, rewritten as current documentation.
 - Give each topic one authoritative location. Link to code for package lists, versions, and validation commands instead of copying them into narrative reports.
 - When organizing documentation, prune obsolete and repeated text, preserve needed context before removing its old location, and check references. Preserve unrelated work in progress.
 - Do not rewrite the repo as a generic public template unless the user asks for that.

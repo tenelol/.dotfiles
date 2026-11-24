@@ -1,31 +1,17 @@
 # 壁紙からの配色（OmniWM App Theming）
 
-OmniWM の rice では、Ghostty・Neovim・herdr の色を OmniWM のパレット（既定は壁紙から作る Material 3 配色）に追従させる。end-4 の dots-hyprland のような matugen とテンプレートの仕組みは自作せず、OmniWM 内蔵の機能に任せる。
+OmniWM の rice では、Ghostty・Neovim・herdr と OmniWM のバー・枠線の色を壁紙に追従させる。最終的には OmniWM 内蔵の App Theming（既定は壁紙から作る Material 3 配色）に任せる。App Theming 入りの OmniWM が配布されるまでは、matugen を使うつなぎのスクリプトが同じファイルを書く。end-4 の dots-hyprland のような matugen とテンプレートの仕組みは恒久的には自作しない。
 
-## 経緯・判断・理由
+## 方針
 
 - OmniWM には壁紙パレット（v0.8.0 以降、`theme = "wallpaper"`）と、そのパレットを他アプリへ書き出して再読み込みさせる App Theming がある。App Theming は 2026-11-13 に `main` へ入った（OmniNull/OmniWM PR #1207）。v0.8.0 と `canary-20261113-0413` には含まれないので、それより新しい canary か次のリリースが要る。
 - 自作すると壁紙変更の検知・ライト/ダークの切替・各アプリの再読み込みを自分で保守することになり、内蔵機能と役割が重なるので見送った。
 - OmniWM は書き込み先を home の中に限り、Nix store への symlink には書かない。そこで `myconfig.theme.colors = "omniwm"`（`rices/darwin/omniwm.nix`）のときだけ、該当ファイルを通常ファイルにしている。
-- App Theming の有効化は `~/.config/omniwm/settings.toml` に入る。このファイルは omniwm.nix が毎 switch で書き出し、GUI で変えた値は戻る（[macos-window-managers.md](./macos-window-managers.md)）。下の手順で GUI から有効にしたら、その値を `modules/omniwm/files/settings.toml` に移す。
+- App Theming の有効化は `~/.config/omniwm/settings.toml` に入る。このファイルは omniwm.nix が毎 switch で書き出し、GUI で変えた値は戻る（[window-managers.md](./window-managers.md)）。下の手順で GUI から有効にしたら、その値を `modules/omniwm/files/settings.toml` に移す。
 
-## 現状
+## 現状: matugen のつなぎ
 
-| 対象 | 仕組み | 実装 |
-| --- | --- | --- |
-| Ghostty | 設定から色の行を外し `theme = light:omniwm-light,dark:omniwm-dark` を参照する。OmniWM が `~/.config/ghostty/themes/omniwm-{light,dark}` を書いて `SIGUSR2` で再読み込みする。有効化までは Glacier の色を同じ名前で置いておく（無ければ作るだけで、上書きはしない）。 | `modules/ghostty/default.nix` |
-| herdr | `config.toml` を通常ファイルで置き、switch のたびに `[theme.custom]` 以外をリポジトリの内容へ戻す。OmniWM はその表だけを書き換える。 | `modules/herdr/files/sync-config.py` |
-| Neovim | OmniWM のカスタムテンプレートが `~/.config/theme/omniwm-palette` に役割ごとの色を書き、`core.theme` がそれを Glacier のキーへ割り当てる。動作中の Neovim はフォルダを監視して colorscheme を引き直す。 | `modules/omniwm/files/app-themes/nvim-palette`、`modules/nvim/files/lua/core/wallpaper-palette.lua` |
-| tmux・シェーダー | ANSI 色（`iPalette[4]` など）を使うので Ghostty に付いてくる。 | 変更なし |
-| OmniWM のバー | つなぎの間は matugen の色で書いた OmniShell テーマ `matugen` を使う（下の節）。App Theming へ移ったあとは `omniwmctl shell theme wallpaper` で OmniWM 内蔵の壁紙パレットにする。 | `modules/ghostty/files/wallpaper-theme.py` |
-
-- Neovim に OmniWM 内蔵の Neovim 項目は使わない。あれは base16-nvim で colorscheme ごと置き換えるので、tokyonight の上に組んだ Glacier の割り当て（`plugins/tokyonight.lua`）が消える。
-- キーワードの色は `accent` ではなく ANSI 4 にした。Terminal Colors が Follow Palette のとき ANSI 2（文字列）が `accent` になり、同じ色になるため。
-- フォーカス枠（`[borders]` の `color` / `darkColor`）は OmniWM のパレットには連動しない。App Theming の対象外で、連動させるには `settings.toml` を外から書き換えるしかない。つなぎの間は下の節のとおり色の値だけを書き換えている。
-
-## つなぎ: matugen で Ghostty・Neovim・herdr・枠線を先に追従させる
-
-App Theming 入りの OmniWM が配布されるまで（2026-11-17 時点で最新 canary はマージ前、その後の canary ビルドは失敗が続いている）、Ghostty・Neovim・herdr を壁紙に追従させている。OmniWM は配布バイナリをそのまま置いているので、上流の変更をパッチとして当てることはできない。
+App Theming 入りの OmniWM が配布されるまで（2026-11-17 時点で最新 canary はマージ前、その後の canary ビルドは失敗が続いている）、つなぎで追従させている。OmniWM は配布バイナリをそのまま置いているので、上流の変更をパッチとして当てることはできない。
 
 - `ghostty-wallpaper-theme`（`modules/ghostty/files/wallpaper-theme.py`）が matugen で壁紙から Material 3 の色を取り、OmniWM と同じ `omniwm-light` / `omniwm-dark` を書いて Ghostty に `SIGUSR2` を送る。あわせて、OmniWM のテンプレートが書くはずの `~/.config/theme/omniwm-palette` も同じ色で書くので、Neovim は既存の読み取りと監視（`core/wallpaper-palette.lua`）でそのまま追従する。引数に画像を渡せば、その画像で作る。
 - 今の壁紙は `~/Library/Application Support/com.apple.wallpaper/Store/Index.plist` から、最後に表示されたデスクトップの画像として読む。Apple の非公開の形式なので、macOS の更新で読めなくなったら引数で渡す。画像ファイル以外の壁紙（単色、動く壁紙）では何もしない。
@@ -34,21 +20,37 @@ App Theming 入りの OmniWM が配布されるまで（2026-11-17 時点で最�
 - 端末の16色は OmniWM の Follow Palette と同じ対応（赤は `error`、緑は `primary`、黄は `secondary`、青は `tertiary`）で、背景に対して 4.5:1 に満たない色は前景に寄せる。OmniWM の実装とは別物なので、切り替えると色は少し変わる。
 - Neovim 用のパレットは、実行時の macOS の外観（ライト/ダーク）の色で書く。外観の切替は監視していないので、切り替えたあとは `ghostty-wallpaper-theme` を一度実行する。
 - herdr は `~/.config/herdr/config.toml` の `[theme.custom]` だけを OmniWM の herdr テンプレートと同じキーで書き換え、`herdr server reload-config` で反映する。下地の4色は `reset` なので、端末の背景と透過がそのまま出る。この表は switch をまたいで残る（`modules/herdr/files/sync-config.py`）。Neovim と同じく、実行時の外観の色で書く。
-- OmniWM のフォーカス枠も壁紙の色にする。`~/.config/omniwm/settings.toml` の `[borders.color]` と `[borders.gradient.start]`（`primary`）、`[borders.gradient.end]`（`tertiary`）の `red` / `green` / `blue` だけを書き換え、OmniWM 0.7.6 は外からの編集をそのまま取り込む。GUI で決めた太さ・グロー・グラデーションの向きや有効/無効・透明度などは変えない。ほかの設定が一つでも変わる書き換えになる場合や、表の形が違う場合（新しい OmniWM など）は何もしない。最初に書き換える前の内容は `settings.toml.before-wallpaper-borders` に残る。GUI で枠線の色を変えても、次に壁紙が変わると上書きされる。
+- OmniWM のフォーカス枠（`[borders]` の `color` / `darkColor`）は OmniWM のパレットにも App Theming にも連動しないので、`settings.toml` を外から書き換えている。`[borders.color]` と `[borders.gradient.start]`（`primary`）、`[borders.gradient.end]`（`tertiary`）の `red` / `green` / `blue` だけを書き換え、OmniWM は外からの編集をそのまま取り込む（0.7.6 で確認）。omniwm.nix は `preserveSettings` でこの2つの表を switch をまたいで保つ（`modules/omniwm/default.nix`）。GUI で決めた太さ・グロー・グラデーションの向きや有効/無効・透明度などは変えない。ほかの設定が一つでも変わる書き換えになる場合や、表の形が違う場合（新しい OmniWM など）は何もしない。最初に書き換える前の内容は `settings.toml.before-wallpaper-borders` に残る。GUI で枠線の色を変えても、次に壁紙が変わると上書きされる。
 - OmniWM のワークスペースバーも同じ色にする。0.8.0 のバーは OmniShell のスタイル（今は vitreus）が描き、色はスタイルが選ぶテーマの役割（`accent`・`foreground` など）から取る。スクリプトは `~/.config/omniwm/shell/themes/matugen.toml` にライトとダークの両方を書く。役割の割り当ては OmniWM 内蔵の壁紙パレット（`ShellMaterialPalette.swift`）と同じで、そこに無い役割（`red` など）はネイティブの既定色のまま。OmniWM はシェルフォルダ直下の `themes/` をスタイルのものより先に探し、変更を監視して読み直すので、外から呼ぶものは無い。使うには一度だけ `omniwmctl shell theme matugen` を実行する。選択は profile ごとに `shell.toml` の `[profiles.<名前>]` に入るので、別のスタイルへ切り替えたらそこでもう一度選ぶ。元に戻すには `omniwmctl shell theme vitreus`。
 - OmniWM 内蔵の壁紙パレット（`omniwmctl shell theme wallpaper`）でもバーは追従するが、matugen とは別の実装なので Ghostty などと色がずれる。つなぎの間は他のアプリと揃えるため `matugen` を使う。
-- App Theming を有効にする前に、`modules/ghostty/default.nix` の `wallpaperTheme` と launchd の定義、スクリプトとテストを消して switch する。両方が同じファイルを書くと、OmniWM は外から変更されたと見て更新を止める。OmniWM が書いたテーマ（先頭が `# Generated by OmniWM`）や herdr の表、このスクリプトのものでないパレットを見つけたら、スクリプトは何も書かずに終わる。つなぎを外すときは、スクリプトが書いた `~/.config/theme/omniwm-palette` も消す（残すと OmniWM は自分が書いていないファイルとして確認を出す）。herdr の表は残してよく、OmniWM が差分の確認を出して置き換える。
 
-## 一度だけ行う設定
+## 移行先: App Theming の構成
+
+下準備（テンプレート、Ghostty のシード、herdr の通常ファイル化）は配置済みで、App Theming の有効化だけが残っている。
+
+| 対象 | 仕組み | 実装 |
+| --- | --- | --- |
+| Ghostty | 設定から色の行を外し `theme = light:omniwm-light,dark:omniwm-dark` を参照する。OmniWM が `~/.config/ghostty/themes/omniwm-{light,dark}` を書いて `SIGUSR2` で再読み込みする。有効化までは Glacier の色を同じ名前で置いておく（無ければ作るだけで、上書きはしない）。 | `modules/ghostty/default.nix` |
+| herdr | `config.toml` を通常ファイルで置き、switch のたびに `[theme.custom]` 以外をリポジトリの内容へ戻す。OmniWM はその表だけを書き換える。 | `modules/herdr/files/sync-config.py` |
+| Neovim | OmniWM のカスタムテンプレートが `~/.config/theme/omniwm-palette` に役割ごとの色を書き、`core.theme` がそれを Glacier のキーへ割り当てる。動作中の Neovim はフォルダを監視して colorscheme を引き直す。 | `modules/omniwm/files/app-themes/nvim-palette`、`modules/nvim/files/lua/core/wallpaper-palette.lua` |
+| tmux・シェーダー | ANSI 色（`iPalette[4]` など）を使うので Ghostty に付いてくる。 | 変更なし |
+| OmniWM のバー | `omniwmctl shell theme wallpaper` で OmniWM 内蔵の壁紙パレットにする。 | OmniWM の設定 |
+| OmniWM の枠線 | App Theming の対象外。連動させるには `settings.toml` を外から書き換えるしかない。 | つなぎの `wallpaper-theme.py` を外すと追従しなくなる |
+
+- Neovim に OmniWM 内蔵の Neovim 項目は使わない。あれは base16-nvim で colorscheme ごと置き換えるので、tokyonight の上に組んだ Glacier の割り当て（`plugins/tokyonight.lua`）が消える。
+- キーワードの色は `accent` ではなく ANSI 4 にした。Terminal Colors が Follow Palette のとき ANSI 2（文字列）が `accent` になり、同じ色になるため。
+
+## App Theming へ移る手順
 
 1. OmniWM を App Theming 入りの版にする（Settings に App Theming のページがあれば入っている）。版は flake 入力 `omniwm`（omniwm.nix）で固定していて、omniwm.nix は正式リリースの zip を取る（2026-11-20 時点で v0.8.0）。App Theming 入りのリリースに omniwm.nix が上がったら `nix flake update omniwm` で上げる。
 2. パレットを壁紙にする: `omniwmctl shell theme wallpaper`（配色の作り方は `tonalSpot` が既定。`vibrant` などを後ろに付けられる）。
-3. `nh darwin switch . -H macbook-omniwm` で下準備（シード、テンプレート、herdr の通常ファイル化）を入れる。
+3. つなぎを外して switch する。`modules/ghostty/default.nix` の `wallpaperTheme` と launchd の定義、スクリプトとテストを消し、`nh darwin switch . -H macbook-omniwm` を実行する。両方が同じファイルを書くと、OmniWM は外から変更されたと見て更新を止める。OmniWM が書いたテーマ（先頭が `# Generated by OmniWM`）や herdr の表、つなぎのものでないパレットを見つけたら、スクリプトは何も書かずに終わる。スクリプトが書いた `~/.config/theme/omniwm-palette` も消す（残すと OmniWM は自分が書いていないファイルとして確認を出す）。herdr の表は残してよく、OmniWM が差分の確認を出して置き換える。
 4. Settings → App Theming で次を有効にする。
    - Ghostty: 既存の `omniwm-light` / `omniwm-dark`（シード）を置き換える確認が出る。
    - herdr: `[theme.custom]` の差分の確認が出る。
    - Add Custom Template…: テンプレート `~/.config/omniwm/app-themes/nvim-palette`、出力 `~/.config/theme/omniwm-palette`、書き込み後は Do Nothing。
 5. Terminal Colors は好みで選ぶ。Follow Palette は壁紙の色に寄り、赤や緑が赤・緑に見えないことがある。Standard Hues は `git diff` などの色相を保つ。
+6. GUI で有効にした値を `modules/omniwm/files/settings.toml` に移す。
 
 ## 未確認・注意
 

@@ -9,7 +9,7 @@
 - brew-nix Cask metadata and Nix packages for macOS apps, fonts, installers and CLI tools
 - GitHub Actions / Determinate Nix / Magic Nix Cache
 - Neovim / Fish / Ghostty
-- Niri（Linux）/ Rift・AeroSpace（macOS）
+- Niri・Hyprland（Linux）/ Rift・AeroSpace・OmniWM（macOS）
 
 ## Hosts
 
@@ -33,6 +33,7 @@ Home servers on Proxmox VE are managed separately in
 | [`packages`](./packages) | custom packages, runtime builders, package-owned sources, and their tests |
 | [`extensions`](./extensions) | repository-owned denix extensions, including configuration scoping |
 | [`.agents/skills`](./.agents/skills) | Provider-original Codex skills and local integrations, deployed by Home Manager |
+| [`docs`](./docs) | current constraints, procedures, and troubleshooting not readable from the code |
 
 ## Module policy
 
@@ -71,7 +72,7 @@ App profiles, caches and Keychain data keep their existing locations. App CLI
 commands follow the normal copies, while completion/man files remain in Nix.
 Office uses Microsoft AutoUpdate, and LINE uses the Mac App Store. Kanata uses
 the standalone VirtualHIDDevice driver without Karabiner-Elements; check
-[driver compatibility](./docs/notes/kanata-karabiner-compatibility.md) before updating. Use the
+[driver compatibility](./docs/kanata.md) before updating. Use the
 installer's read-only plan with `dotfiles-installers --plan` when diagnosing an
 activation failure.
 
@@ -137,17 +138,12 @@ Select OmniWM with `nh darwin switch . -H macbook-omniwm`; return with
 `nh darwin switch . -H macbook-rift`. The denix rice stops the previous window
 manager before activation. OmniWM needs Accessibility and Input Monitoring
 permissions on first launch. Its settings are declared through
-[omniwm.nix](https://github.com/mst-mkt/omniwm.nix): the values that differ
-from the defaults live in
-[`modules/omniwm/files/settings.toml`](./modules/omniwm/files/settings.toml)
-(lists other than hotkeys replace the defaults whole),
-so a change made in the app is reverted by the next switch unless it is copied
-there. Monitor routing and the wallpaper-driven border colors are kept from the
-machine.
-Unsupported Rift layouts and command-launch bindings are not emulated.
-On this rice, Ghostty, Neovim and herdr take their colors from OmniWM's App
-Theming, which can follow the wallpaper; the one-time setup is in
-[docs/notes/macos-wallpaper-theming.md](./docs/notes/macos-wallpaper-theming.md).
+[omniwm.nix](https://github.com/mst-mkt/omniwm.nix) in
+[`modules/omniwm/files/settings.toml`](./modules/omniwm/files/settings.toml), so
+a change made in the app is reverted by the next switch unless it is copied
+there; see [the window manager notes](./docs/window-managers.md).
+On this rice, Ghostty, Neovim, herdr and the OmniWM bar and borders follow the
+wallpaper; see [wallpaper theming](./docs/wallpaper-theming.md).
 
 macOS wallpapers are set in System Settings or with `desktoppr <image>` (no
 argument prints the current one). denix/Home Manager does not set them during
